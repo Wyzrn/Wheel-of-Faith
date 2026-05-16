@@ -42,7 +42,7 @@ Declared values (must be multiples of 4):
 | 3xl | 64px | `gap-16` / `py-16` | Not used in Phase 2 |
 
 **Exceptions:**
-- Touch targets for "Spin" and "Next Spin" buttons: minimum 44px height (use `py-3` = 12px + 20px line-height = 44px, enforced)
+- Touch targets for "Spin Wheel" and "Next Spin" buttons: minimum 44px height (use `py-3` = 12px + 20px line-height = 44px, enforced)
 - SVG wheel size: 400×400px fixed (from Phase 1 — do not change)
 - Announcement banner: 8px top/bottom padding, full width — uses `py-2 px-4`
 
@@ -53,16 +53,18 @@ Declared values (must be multiples of 4):
 | Role | Size | Weight | Line Height | Tailwind Class |
 |------|------|--------|-------------|----------------|
 | Display (overall tier grade) | 72px | 700 | 1.0 | `text-7xl font-bold leading-none` |
-| Heading (page title, card title) | 28px | 700 | 1.2 | `text-3xl font-bold leading-tight` |
-| Subheading (category name, section labels) | 20px | 600 | 1.3 | `text-xl font-semibold` |
-| Body (result labels, descriptions, stat rows) | 16px | 400 | 1.5 | `text-base font-normal leading-relaxed` |
-| Label/Meta (numeric score, timestamps, counts) | 14px | 400 | 1.4 | `text-sm font-normal` |
-| Wheel segment text | 13px | 600 | n/a (SVG) | SVG `font-size="13" font-weight="600"` (locked from Phase 1) |
+| Heading (page title, card title, category names, card section headers) | 28px | 700 | 1.2 | `text-3xl font-bold leading-tight` |
+| Body (result labels, descriptions, stat rows, results panel subheadings) | 16px | 400 | 1.5 | `text-base font-normal leading-relaxed` |
+| Label/Meta (numeric score, timestamps, counts, secondary info) | 14px | 400 | 1.4 | `text-sm font-normal` |
 
 **Rules:**
-- Maximum 2 font weights in any single view: 400 (regular) + 700 (bold). Subheadings use 600 only within the results panel where visual hierarchy requires a third weight.
+- Exactly 2 font weights: 400 (regular) for body text, label/meta, and descriptions; 700 (bold) for display size, headings, and any element that previously used subheading weight.
+- Results panel subheadings that require hierarchy use Body (16px) at weight 700 (`text-base font-bold`) — smaller size but bold weight achieves sufficient visual hierarchy without a third weight.
 - All text is `text-white` on dark surfaces. Muted text uses `text-gray-400` only.
 - The overall tier grade letter (e.g., "God", "SSS+") renders at Display size in CharacterCard hero — this is the single largest typographic element on the page.
+
+> **Footnote — inherited Phase 1 SVG values (not declared in Phase 2 CSS typography):**
+> The SpinWheel SVG segment text uses `font-size="13" font-weight="600"` — these are SVG presentation attributes locked in `src/components/SpinWheel.svelte` from Phase 1. The 13px size and weight 600 are not Phase 2 CSS typography declarations and must not appear in this table or be counted against the 4-size / 2-weight limits. Do not change them.
 
 ---
 
@@ -75,10 +77,10 @@ Declared values (must be multiples of 4):
 | Dominant (60%) | `#030712` (gray-950) | `bg-gray-950` | Page background — entire screen surface |
 | Secondary (30%) | `#111827` (gray-900) | `bg-gray-900` | Results panel background, CharacterCard background, modal/resume prompt background |
 | Tertiary surface | `#1f2937` (gray-800) | `bg-gray-800` | Individual stat rows in results panel, inner card sections |
-| Accent (10%) | `#4f46e5` (indigo-600) | `bg-indigo-600` | Spin button, Next Spin button, active state only |
+| Accent (10%) | `#4f46e5` (indigo-600) | `bg-indigo-600` | Spin Wheel button, Next Spin button, active state only |
 | Destructive | `#dc2626` (red-600) | `bg-red-600` | "New Character" button (destructive — resets all state) |
 
-**Accent reserved for:** Spin button (active/enabled state only), Next Spin button (active/enabled state only). No other element uses indigo-600 as a background. Disabled states use `opacity-40` on the same color, not a different color.
+**Accent reserved for:** Spin Wheel button (active/enabled state only), Next Spin button (active/enabled state only). No other element uses indigo-600 as a background. Disabled states use `opacity-40` on the same color, not a different color.
 
 **Destructive reserved for:** "New Character" button only. No inline confirmation — the button resets immediately (per D-06: no page refresh, no modal). The destructive color is the sole warning signal.
 
@@ -173,7 +175,7 @@ export function tierToCssVar(grade: TierGrade): string {
 
 | State | Color | Usage |
 |-------|-------|-------|
-| Disabled | `opacity-40` on button color | Spin/Next Spin when not actionable |
+| Disabled | `opacity-40` on button color | Spin Wheel/Next Spin when not actionable |
 | Border (cards) | `border-gray-600` | Resume prompt, panels |
 | Border (active/highlighted) | `border-indigo-500` | Resumed session indicator (from Phase 1 pattern) |
 | Muted text | `text-gray-400` | Meta text, category sub-labels |
@@ -185,6 +187,8 @@ export function tierToCssVar(grade: TierGrade): string {
 
 This section is Claude's discretion (per CONTEXT.md). The layout contract must be followed exactly.
 
+**The 400×400px SpinWheel SVG is the primary visual anchor during active spins.** All surrounding layout elements — buttons, results panel, category header — are secondary to this focal point and must not compete for spatial dominance.
+
 ### Game Screen Layout (during spins 1 through N-1)
 
 ```
@@ -192,13 +196,13 @@ This section is Claude's discretion (per CONTEXT.md). The layout contract must b
 │  [Page background: bg-gray-950]                         │
 │                                                         │
 │  "Wheel of Fate"  [heading]        Spin 4 of 26  [meta] │
-│  "Next: Strength"  [subheading]                         │
+│  "Next: Strength"  [body bold]                          │
 │                                                         │
 │  ┌──────────────────────┐  ┌──────────────────────────┐ │
 │  │   SpinWheel SVG      │  │  Results Panel           │ │
 │  │   400×400px          │  │  bg-gray-900             │ │
 │  │                      │  │  max-h-[400px]           │ │
-│  │   [Spin] button      │  │  overflow-y-auto         │ │
+│  │   [Spin Wheel] btn   │  │  overflow-y-auto         │ │
 │  │   [Result label]     │  │                          │ │
 │  │   [Next Spin btn]    │  │  [Race]    Human  C+  36 │ │
 │  │                      │  │  [R.Abil]  Flight S  75  │ │
@@ -224,7 +228,7 @@ Displayed between the wheel result and the Next Spin button, when Race or Archet
 │  rounded-lg py-2 px-4 text-center          │
 │                                            │
 │  "Your race grants 3 ability spins!"       │
-│  [text-indigo-300 text-sm font-semibold]   │
+│  [text-indigo-300 text-sm font-bold]       │
 └────────────────────────────────────────────┘
 [Next Spin] button appears below
 ```
@@ -235,8 +239,8 @@ The announcement does NOT auto-dismiss. It persists until the user clicks "Next 
 
 Before each spin, shown above the wheel area. Replaces the subtitle with the upcoming spin's display name:
 
-- **During session:** `"Next: {displayName}"` in `text-xl font-semibold text-gray-300`
-- **Just landed (REVEALED):** `"{displayName} Result:"` in `text-xl font-semibold text-white`
+- **During session:** `"Next: {displayName}"` in `text-base font-bold text-gray-300`
+- **Just landed (REVEALED):** `"{displayName} Result:"` in `text-base font-bold text-white`
 
 ### Results Panel
 
@@ -303,7 +307,7 @@ Props: `results: SpinResult[]`
 - Contains hero TierBadge, two sections (stat rows + non-stat rows), "New Character" button
 - Stat rows: category name + TierBadge + numeric score + result label
 - Non-stat rows: category name + result label (no badge)
-- "New Character" button: `bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold text-base`
+- "New Character" button: `bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold text-base`
 
 ### SpinWheel.svelte (Phase 1 — no changes)
 
@@ -316,14 +320,14 @@ Locked from Phase 1. `segments`, `onSpinComplete` props unchanged. The `FlavorLa
 ### Spin Flow State Machine
 
 ```
-IDLE → [user clicks Spin] → SPINNING → LANDED → [500ms] → REVEALED
-  ↑                                                              │
-  └────────────────── [user clicks Next Spin] ──────────────────┘
-                           (clears announcement if any)
+IDLE → [user clicks Spin Wheel] → SPINNING → LANDED → [500ms] → REVEALED
+  ↑                                                                    │
+  └──────────────────── [user clicks Next Spin] ──────────────────────┘
+                              (clears announcement if any)
 ```
 
-| State | Spin button | Next Spin button | Announcement | Results panel |
-|-------|-------------|-----------------|--------------|---------------|
+| State | Spin Wheel button | Next Spin button | Announcement | Results panel |
+|-------|-------------------|-----------------|--------------|---------------|
 | IDLE | Enabled (indigo-600) | Hidden | Hidden | Visible |
 | SPINNING | Disabled (opacity-40) | Hidden | Hidden | Visible |
 | LANDED | Disabled (opacity-40) | Hidden | Hidden | Visible |
@@ -335,10 +339,10 @@ When "Next Spin" is clicked:
 
 1. `currentSpinIndex` increments
 2. Category header text changes — no animation, immediate swap
-3. Spin button appears (enabled) — no animation
+3. Spin Wheel button appears (enabled) — no animation
 4. `SpinWheel` receives new `segments` prop — wheel stays at its current rotation (per monotonic accumulation rule)
 
-There is no cross-fade or GSAP transition between spins. The state swap is instant. The GSAP animation only runs when the user clicks Spin. This preserves maximum tension — the user decides when to look at the next wheel.
+There is no cross-fade or GSAP transition between spins. The state swap is instant. The GSAP animation only runs when the user clicks Spin Wheel. This preserves maximum tension — the user decides when to look at the next wheel.
 
 **Single exception:** The announcement banner (D-12) uses a CSS fade-in: `opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]`. Define in `app.css`:
 
@@ -357,7 +361,7 @@ Format: `Spin {currentSpinIndex + 1} of {spinQueue.length}` — `text-sm text-gr
 
 Visual pattern unchanged from Phase 1:
 - `bg-gray-800 border border-gray-600 rounded-xl p-6` container
-- Two buttons: "Resume" (`bg-indigo-600`) and "Start Over" (`bg-gray-600`)
+- Two buttons: "Resume Session" (`bg-indigo-600`) and "Start Over" (`bg-gray-600`)
 - Shows last spin result + count of completed spins
 
 ---
@@ -366,7 +370,7 @@ Visual pattern unchanged from Phase 1:
 
 | Element | Copy |
 |---------|------|
-| Primary CTA (active spin) | "Spin" |
+| Primary CTA (active spin) | "Spin Wheel" |
 | Primary CTA (advance) | "Next Spin" |
 | Category header (pre-spin) | "Next: {displayName}" |
 | Category header (post-spin) | "{displayName} — Result:" |
@@ -378,7 +382,7 @@ Visual pattern unchanged from Phase 1:
 | New Character button | "New Character" |
 | Resume prompt heading | "You have a saved session" |
 | Resume prompt body | "Last spin: {label} ({n} spin{s} completed)" |
-| Resume button | "Resume" |
+| Resume button | "Resume Session" |
 | Start Over button | "Start Over" |
 | Empty results panel | "Your fate is being written..." |
 | Results panel heading | "Your Results" |
@@ -450,7 +454,7 @@ No shadcn, no third-party component registry. All components are hand-authored S
 |----------|--------|
 | Dark surface color (`bg-gray-950`) | Extracted from `src/routes/+page.svelte` Phase 1 baseline |
 | Accent color (`bg-indigo-600`) | Extracted from `src/routes/+page.svelte` and `SpinWheel.svelte` Phase 1 baseline |
-| Wheel segment text: 13px, weight 600 | Locked from `src/components/SpinWheel.svelte` (do not change) |
+| Wheel segment text: 13px, weight 600 | Locked from `src/components/SpinWheel.svelte` (do not change) — inherited Phase 1 SVG value, not a Phase 2 CSS declaration |
 | Wheel COLORS palette (8 colors) | Locked from `src/components/SpinWheel.svelte` (replaced in Phase 2 by tier-keyed colors) |
 | "Next Spin" button controls pacing | CONTEXT.md D-01 |
 | Category name shown before each spin | CONTEXT.md D-02 |
