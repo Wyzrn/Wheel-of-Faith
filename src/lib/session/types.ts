@@ -1,3 +1,7 @@
+// Phase 2 additions — import type only to avoid circular runtime dependency risk
+import type { TierGrade } from '$lib/game/scoreTier'
+import type { SpinDefinition } from '$lib/game/spinQueue'
+
 export type SpinStatus = 'IDLE' | 'SPINNING' | 'LANDED' | 'REVEALED'
 
 export interface WeightedSegment {
@@ -12,10 +16,16 @@ export interface SpinResult {
   resultLabel: string
   resultIndex: number
   timestamp: string
+  // Phase 2 additions: populated for stat spins; undefined for non-stat (Race, Power, etc.)
+  tier?: TierGrade
+  score?: number
 }
 
 export interface SessionState {
   sessionId: string
   startedAt: string
   completedSpins: SpinResult[]
+  // Phase 2 additions: persisted for mid-session resume (D-11, CORE-05)
+  spinQueue?: SpinDefinition[]    // serialized queue for resume; null = rebuild from scratch
+  currentSpinIndex?: number       // resume pointer into spinQueue
 }

@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { loadSession, saveSession, clearSession, createSession } from './store'
 
 beforeEach(() => {
+  const store: Record<string, string> = {}
   globalThis.localStorage = {
-    store: {} as Record<string, string>,
-    getItem(k: string) { return (this.store as Record<string, string>)[k] ?? null },
-    setItem(k: string, v: string) { (this.store as Record<string, string>)[k] = v },
-    removeItem(k: string) { delete (this.store as Record<string, string>)[k] },
+    getItem(k: string) { return store[k] ?? null },
+    setItem(k: string, v: string) { store[k] = v },
+    removeItem(k: string) { delete store[k] },
   } as unknown as Storage
 })
 
