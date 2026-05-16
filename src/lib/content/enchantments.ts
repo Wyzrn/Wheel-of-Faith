@@ -1,0 +1,40 @@
+// enchantments.ts — Enchantment content pool for Wheel of Fate.
+// 15+ SimpleItem entries spanning legendary to absurd. No default export. No functions.
+
+import type { SimpleItem } from './types'
+
+export const enchantments: SimpleItem[] = [
+  { label: 'Flamebrand', weight: 1 },
+  { label: 'Vorpal Edge', weight: 1 },
+  { label: 'Frostbite', weight: 1 },
+  { label: 'Thunderstrike', weight: 1 },
+  { label: 'Soulstealer', weight: 1 },
+  { label: 'Shadowmeld', weight: 1 },
+  { label: 'Holy Consecration', weight: 1 },
+  { label: 'Vampiric Drain', weight: 1 },
+  { label: 'Ethereal Phasing', weight: 1 },
+  { label: 'Unstoppable Force', weight: 1 },
+  { label: 'Immovable Object', weight: 1 },
+  { label: 'Cursed (But It Somehow Works Out)', weight: 1 },
+  { label: '+1 Against Tuesdays', weight: 1 },
+  { label: 'Slightly Magnetic', weight: 1 },
+  { label: 'Probably Cursed But Who Can Tell', weight: 1 },
+  { label: 'Glows When Goblins Are Nearby (Goblins Are Everywhere)', weight: 1 },
+  { label: 'Smells Like Victory (Investigators Dispute This)', weight: 1 },
+  { label: 'Extremely Loud Swish', weight: 1 },
+  { label: 'Anti-Social Properties', weight: 1 },
+  { label: 'Blessed by a Deity Who Was Having a Bad Day', weight: 1 },
+  { label: 'Keen Edge (Self-Assessed)', weight: 1 },
+  { label: 'Radiant (in the Humble Opinion of Its Wielder)', weight: 1 },
+  { label: 'Bound to a Soul (They Don\'t Know)', weight: 1 },
+  { label: 'Moderately Enchanted', weight: 1 },
+  { label: 'Strongly Worded Inscription', weight: 1 },
+  { label: 'Runes of Unclear Purpose', weight: 1 },
+  { label: 'Ancient Text (Nobody Can Read)', weight: 1 },
+  { label: 'Smite (Requires Paperwork)', weight: 1 },
+  { label: 'Infused with the Essence of a Very Tired Wizard', weight: 1 },
+  { label: 'Enchanted Specifically to Annoy One Person', weight: 1 },
+  { label: 'Twice Enchanted (The Second Cancelled the First)', weight: 1 },
+  { label: 'Forged in a Volcano on Purpose', weight: 1 },
+  { label: 'Blessed by the God of Mild Inconvenience', weight: 1 },
+]
