@@ -79,7 +79,7 @@
 
 ## Phases Summary
 
-- [ ] **Phase 1: Animation Foundation** — Validated single-wheel animation with correct easing and localStorage recovery
+- [x] **Phase 1: Animation Foundation** — Validated single-wheel animation with correct easing and localStorage recovery
 - [ ] **Phase 2: Full 23-Spin Game Loop** — Complete playable game loop from Race to Title with character card
 - [ ] **Phase 3: Redemption Spin** — Probability-gated two-stage mechanic with 18+ outcomes and simulation validation
 - [ ] **Phase 4: Backend + Sharing** — Fastify + MongoDB persistence with unique shareable URLs
@@ -90,7 +90,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Animation Foundation | 1/3 | In progress | — |
+| 1. Animation Foundation | 3/3 | Complete | 2026-05-15 |
 | 2. Full 23-Spin Game Loop | 0/? | Not started | — |
 | 3. Redemption Spin | 0/? | Not started | — |
 | 4. Backend + Sharing | 0/? | Not started | — |
