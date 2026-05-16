@@ -1,3 +1,11 @@
+## Project Configuration
+
+- **Language**: TypeScript
+- **Package Manager**: npm
+- **Add-ons**: none
+
+---
+
 # Wheel of Fate — Project Guide
 
 ## What This Is
