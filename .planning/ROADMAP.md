@@ -18,6 +18,13 @@
 **Goal:** User can play through all 23 spin categories in order — including variable ability spins — and see a complete styled character card at the end with every result and tier score displayed.
 **Mode:** mvp
 **Requirements:** CORE-02, CORE-03, CORE-04, REDEM-01, CARD-01
+**Plans:** 5 plans
+Plans:
+- [ ] 02-01-PLAN.md — Core utilities: scoreTier, spinQueue, tierColor, content types, session extension
+- [ ] 02-02-PLAN.md — Non-stat content data: races, archetypes, powers, weapons, weaknesses, backstories, titles, enchantments
+- [ ] 02-03-PLAN.md — Stat flavor label files (11 × ~560 labels) + app.css tier color palette
+- [ ] 02-04-PLAN.md — Game loop orchestrator: extend +page.svelte with queue, results panel, announcement, resume
+- [ ] 02-05-PLAN.md — Character card: TierBadge, CharacterCard, New Character reset flow
 **Success Criteria:**
 1. User spins through Race, then sees the correct number of Racial Ability spins (1–4 determined by the race result), then Archetype, then the correct number of Archetype Ability spins, then all remaining categories in the defined sequence — no spin appears out of order
 2. Each stat wheel (Strength, Speed, Agility, Durability, IQ, Charisma, Fighting Skill, Potential, Energy Level, Power Mastery, Weapon Mastery) displays flavor label segments; landing on a label shows its tier grade (e.g. "B") and numeric score without any manual lookup
@@ -64,35 +71,36 @@
 
 ---
 
-### Phase 6: Content + Polish
-**Goal:** User encounters a rich, non-repetitive content pool across all spin categories — with full flavor text, minimum counts met, and the game running smoothly on mobile.
+### Phase 6: Polish
+**Goal:** The game runs smoothly on mobile and the UI is refined — all content pools are already at launch minimums from Phase 2. Phase 6 focuses on mobile responsiveness, performance, and visual polish only.
 **Mode:** mvp
-**Requirements:** CONT-01, CONT-02, CONT-03, CONT-04, CONT-05, CONT-06, CONT-07, CONT-08
+**Requirements:** CONT-08
+**Note (D-09):** Full content authoring (CONT-01 through CONT-07) was folded into Phase 2. Phase 6 is now Polish only: mobile responsiveness, animation performance, layout overflow fixes, visual refinement. CONT-08 (seeded JS/JSON files importable into MongoDB) is the only content requirement remaining for Phase 6, as the content itself already exists as TypeScript modules after Phase 2.
 **Success Criteria:**
-1. Race wheel contains 35+ races with correct rarity weighting — in 100 playthroughs, Legendary races appear roughly 2% of the time and Common races roughly 35% of the time
-2. Powers pool contains 1,000+ unique entries spanning the full tonal range from epic to absurd; two characters generated back-to-back rarely share more than one power
-3. Weapons pool contains 500+ unique entries and Weaknesses pool contains 500+ unique entries; both span epic-to-absurd tonal range
-4. All content (powers, weapons, weaknesses, backstories, titles, enchantments, Redemption outcomes) is loadable from MongoDB via seeded JSON files, with a manifest file tracking counts against launch minimums; a pre-launch check script confirms all minimums are met before deployment
-5. On a mid-range Android phone in Chrome, the full 23-spin session completes without layout overflow, animation jank, or scroll trapping
+1. On a mid-range Android phone in Chrome, the full 23-spin session completes without layout overflow, animation jank, or scroll trapping
+2. The character card renders correctly at 375px viewport with no horizontal overflow
+3. The tier badge hero element is fully visible without scrolling on a 375px mobile viewport
+4. npm run build completes in under 30 seconds and the bundle size is under 2MB
+5. All CONT-01 through CONT-07 content minimums are confirmed met (script verifies counts against launch minimums)
 
 ---
 
 ## Phases Summary
 
 - [x] **Phase 1: Animation Foundation** — Validated single-wheel animation with correct easing and localStorage recovery
-- [ ] **Phase 2: Full 23-Spin Game Loop** — Complete playable game loop from Race to Title with character card
+- [ ] **Phase 2: Full 23-Spin Game Loop** — Complete playable game loop from Race to Title with character card (includes all content authoring per D-09)
 - [ ] **Phase 3: Redemption Spin** — Probability-gated two-stage mechanic with 18+ outcomes and simulation validation
 - [ ] **Phase 4: Backend + Sharing** — Fastify + MongoDB persistence with unique shareable URLs
 - [ ] **Phase 5: Gallery** — Public opt-in gallery with pagination and score sorting
-- [ ] **Phase 6: Content + Polish** — Full content pools at launch minimums, mobile polish
+- [ ] **Phase 6: Polish** — Mobile responsiveness, performance, visual refinement (content done in Phase 2)
 
 ## Progress Table
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Animation Foundation | 3/3 | Complete | 2026-05-15 |
-| 2. Full 23-Spin Game Loop | 0/? | Not started | — |
+| 2. Full 23-Spin Game Loop | 0/5 | Not started | — |
 | 3. Redemption Spin | 0/? | Not started | — |
 | 4. Backend + Sharing | 0/? | Not started | — |
 | 5. Gallery | 0/? | Not started | — |
-| 6. Content + Polish | 0/? | Not started | — |
+| 6. Polish | 0/? | Not started | — |
