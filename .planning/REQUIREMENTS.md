@@ -79,22 +79,32 @@
 
 ## Traceability
 
-| REQ-ID | Phase |
-|--------|-------|
-| CORE-01 | Phase 1 |
-| CORE-02 | Phase 2 |
-| CORE-03 | Phase 2 |
-| CORE-04 | Phase 2 |
-| CORE-05 | Phase 1 |
-| REDEM-01 | Phase 2 |
-| REDEM-02 | Phase 3 |
-| REDEM-03 | Phase 3 |
-| REDEM-04 | Phase 3 |
-| CARD-01 | Phase 2 |
-| CARD-02 | Phase 4 |
-| CARD-03 | Phase 5 |
-| CONT-01–02 | Phase 2 (stub) + Phase 6 (full) |
-| CONT-03–05 | Phase 6 (content sprint) |
-| CONT-06–08 | Phase 6 (content sprint) |
-| BACK-01–04 | Phase 4 |
-| GALL-01–03 | Phase 5 |
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| CORE-01 | Phase 1 | Pending |
+| CORE-05 | Phase 1 | Pending |
+| CORE-02 | Phase 2 | Pending |
+| CORE-03 | Phase 2 | Pending |
+| CORE-04 | Phase 2 | Pending |
+| REDEM-01 | Phase 2 | Pending |
+| CARD-01 | Phase 2 | Pending |
+| REDEM-02 | Phase 3 | Pending |
+| REDEM-03 | Phase 3 | Pending |
+| REDEM-04 | Phase 3 | Pending |
+| BACK-01 | Phase 4 | Pending |
+| BACK-02 | Phase 4 | Pending |
+| BACK-03 | Phase 4 | Pending |
+| BACK-04 | Phase 4 | Pending |
+| CARD-02 | Phase 4 | Pending |
+| GALL-01 | Phase 5 | Pending |
+| GALL-02 | Phase 5 | Pending |
+| GALL-03 | Phase 5 | Pending |
+| CARD-03 | Phase 5 | Pending |
+| CONT-01 | Phase 6 | Pending |
+| CONT-02 | Phase 6 | Pending |
+| CONT-03 | Phase 6 | Pending |
+| CONT-04 | Phase 6 | Pending |
+| CONT-05 | Phase 6 | Pending |
+| CONT-06 | Phase 6 | Pending |
+| CONT-07 | Phase 6 | Pending |
+| CONT-08 | Phase 6 | Pending |
