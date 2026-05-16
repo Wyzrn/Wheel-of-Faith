@@ -4,6 +4,51 @@
 
 import type { WeightedSegment } from '$lib/session/types'
 
+// Content imports — stat flavor labels (Plan 02-03)
+import { strengthLabels }    from '$lib/content/strength-labels'
+import { speedLabels }       from '$lib/content/speed-labels'
+import { agilityLabels }     from '$lib/content/agility-labels'
+import { durabilityLabels }  from '$lib/content/durability-labels'
+import { iqLabels }          from '$lib/content/iq-labels'
+import { charismaLabels }    from '$lib/content/charisma-labels'
+import { fightingSkillLabels } from '$lib/content/fighting-skill-labels'
+import { powerMasteryLabels } from '$lib/content/power-mastery-labels'
+import { weaponMasteryLabels } from '$lib/content/weapon-mastery-labels'
+import { potentialLabels }   from '$lib/content/potential-labels'
+import { energyLevelLabels } from '$lib/content/energy-level-labels'
+import { heightLabels }      from '$lib/content/height-labels'
+
+// Content imports — races, archetypes, items (Plans 02-02)
+import { races }       from '$lib/content/races'
+import { archetypes }  from '$lib/content/archetypes'
+import { powers }      from '$lib/content/powers'
+import { weapons }     from '$lib/content/weapons'
+import { weaknesses }  from '$lib/content/weaknesses'
+import { backstories } from '$lib/content/backstories'
+import { titles }      from '$lib/content/titles'
+import { enchantments } from '$lib/content/enchantments'
+
+// Shared ability pool for racialAbility and archetypeAbility slots.
+// Used until a dedicated racial-abilities content module is authored.
+// All entries weight 1 for uniform draw probability.
+const GENERAL_ABILITY_POOL: WeightedSegment[] = [
+  { label: 'Enhanced Senses',          weight: 1 },
+  { label: 'Regeneration',             weight: 1 },
+  { label: 'Elemental Affinity',       weight: 1 },
+  { label: 'Telepathic Whisper',       weight: 1 },
+  { label: 'Shadow Step',              weight: 1 },
+  { label: 'Iron Skin',                weight: 1 },
+  { label: 'Berserk Surge',            weight: 1 },
+  { label: 'Arcane Pulse',             weight: 1 },
+  { label: 'Venomous Touch',           weight: 1 },
+  { label: 'Gravity Shift',            weight: 1 },
+  { label: 'Time Fracture',            weight: 1 },
+  { label: 'Soul Drain',               weight: 1 },
+  { label: 'Divine Ward',              weight: 1 },
+  { label: 'Dimensional Anchor',       weight: 1 },
+  { label: 'Molecular Control',        weight: 1 },
+]
+
 export type SpinCategory =
   | 'race'
   | 'racialAbility'
@@ -72,102 +117,84 @@ export function buildInitialQueue(): SpinDefinition[] {
 }
 
 // Resolves the segments array for a given category.
-// In Wave 1 all content modules are stubs returning [].
-// Plan 02-02 (races, archetypes, powers, weapons, etc.) and
-// Plan 02-03 (stat flavor labels) will replace these stubs with real imports.
+// All stat labels and item pools are wired to real content modules.
+// racialAbility and archetypeAbility use GENERAL_ABILITY_POOL until
+// a dedicated racial-abilities module is authored.
+// redemptionSpin uses a placeholder until Plan 02-04.
 export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[] {
   switch (category) {
     case 'race':
-      // TODO: replace with import from '$lib/content/races' (Plan 02-02)
-      return []
+      return races as WeightedSegment[]
 
     case 'racialAbility':
-      // TODO: replace with import from '$lib/content/racial-abilities' (Plan 02-02)
-      return []
+      return GENERAL_ABILITY_POOL
 
     case 'archetype':
-      // TODO: replace with import from '$lib/content/archetypes' (Plan 02-02)
-      return []
+      return archetypes as WeightedSegment[]
 
     case 'archetypeAbility':
-      // TODO: replace with import from '$lib/content/racial-abilities' (shared pool, Plan 02-02)
-      return []
+      return GENERAL_ABILITY_POOL
 
     case 'backstory':
-      // TODO: replace with import from '$lib/content/backstories' (Plan 02-02)
-      return []
+      return backstories as WeightedSegment[]
 
     case 'height':
-      // TODO: replace with import from '$lib/content/heights' (Plan 02-03)
-      return []
+      return heightLabels as WeightedSegment[]
 
     case 'strength':
-      // TODO: replace with import from '$lib/content/strength-labels' (Plan 02-03)
-      return []
+      return strengthLabels as WeightedSegment[]
 
     case 'speed':
-      // TODO: replace with import from '$lib/content/speed-labels' (Plan 02-03)
-      return []
+      return speedLabels as WeightedSegment[]
 
     case 'agility':
-      // TODO: replace with import from '$lib/content/agility-labels' (Plan 02-03)
-      return []
+      return agilityLabels as WeightedSegment[]
 
     case 'durability':
-      // TODO: replace with import from '$lib/content/durability-labels' (Plan 02-03)
-      return []
+      return durabilityLabels as WeightedSegment[]
 
     case 'iq':
-      // TODO: replace with import from '$lib/content/iq-labels' (Plan 02-03)
-      return []
+      return iqLabels as WeightedSegment[]
 
     case 'charisma':
-      // TODO: replace with import from '$lib/content/charisma-labels' (Plan 02-03)
-      return []
+      return charismaLabels as WeightedSegment[]
 
     case 'fightingSkill':
-      // TODO: replace with import from '$lib/content/fighting-skill-labels' (Plan 02-03)
-      return []
+      return fightingSkillLabels as WeightedSegment[]
 
     case 'power':
-      // TODO: replace with import from '$lib/content/powers' (Plan 02-02)
-      return []
+      return powers as WeightedSegment[]
 
     case 'powerMastery':
-      // TODO: replace with import from '$lib/content/power-mastery-labels' (Plan 02-03)
-      return []
+      return powerMasteryLabels as WeightedSegment[]
 
     case 'weapon':
-      // TODO: replace with import from '$lib/content/weapons' (Plan 02-02)
-      return []
+      return weapons as WeightedSegment[]
 
     case 'weaponMastery':
-      // TODO: replace with import from '$lib/content/weapon-mastery-labels' (Plan 02-03)
-      return []
+      return weaponMasteryLabels as WeightedSegment[]
 
     case 'weaponEnchantment':
-      // TODO: replace with import from '$lib/content/enchantments' (Plan 02-02)
-      return []
+      return enchantments as WeightedSegment[]
 
     case 'potential':
-      // TODO: replace with import from '$lib/content/potential-labels' (Plan 02-03)
-      return []
+      return potentialLabels as WeightedSegment[]
 
     case 'energyLevel':
-      // TODO: replace with import from '$lib/content/energy-level-labels' (Plan 02-03)
-      return []
+      return energyLevelLabels as WeightedSegment[]
 
     case 'weakness':
-      // TODO: replace with import from '$lib/content/weaknesses' (Plan 02-02)
-      return []
+      return weaknesses as WeightedSegment[]
 
     case 'redemptionSpin':
-      // TODO: replace with redemption probability wheel segments (Plan 02-04)
-      return []
+      // Placeholder until Plan 02-04 wires the redemption probability wheel.
+      return [
+        { label: 'Redemption',    weight: 1 },
+        { label: 'No Redemption', weight: 1 },
+      ]
 
     case 'title':
-      // TODO: replace with import from '$lib/content/titles' (Plan 02-02)
-      return []
+      return titles as WeightedSegment[]
 
     default:
       // Unknown category — return empty array, no throw
