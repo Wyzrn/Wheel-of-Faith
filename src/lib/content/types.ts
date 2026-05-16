@@ -6,12 +6,24 @@ import type { TierGrade } from '$lib/game/scoreTier'
 
 // Race definition — drives racial ability spin count and weakness probability.
 // Used in src/lib/content/races.ts (Plan 02-02).
+// Stat bonus grants: maps stat category names to bonus ('statBonus') or penalty ('statPenalty') spin type.
+// When a transformation/class/subType with this field resolves, those stats get a bonus spin spliced after them.
+export type StatBonusGrants = Record<string, 'statBonus' | 'statPenalty'>
+
 export interface Race {
   label: string                       // display name shown on wheel and in results
   weight: number                      // for weightedRandom(); determines rarity
   abilitySpinCount: number            // 1–4; determines how many racialAbility slots are spliced
-  weaknessProbabilityModifier: number // multiplier on baseline weakness draw probability (0.5–2.0)
+  weaknessProbabilityModifier: number // kept for backward compat; used to derive weaknessCount when explicit count absent
+  weaknessCount?: number              // explicit weakness slots spliced at race resolution; derived from modifier if absent
   description?: string                // optional flavor text for character card
+  abilities: { label: string; weight: number }[]  // race-unique ability pool drawn for racialAbility spins
+  statModifiers?: Record<string, number>  // multiplier per stat category; >1 boosts higher tiers, <1 pushes lower
+  extraPowerSpins?: number                // additional power category spins spliced after race lands
+  customHeightPool?: { label: string; weight: number }[]  // overrides default height labels for this race
+  subTypePool?: { label: string; weight: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[] }[]       // if set, a raceSubType spin is spliced after race lands
+  classPool?: { label: string; weight: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[] }[]         // if set, a raceClass spin is spliced after subType (or after race if no subType)
+  transformationPool?: { label: string; weight: number; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[] }[]  // if set, a raceTransformation spin is spliced; statBonus multiplies all stat probabilities
 }
 
 // Archetype definition — drives archetype ability spin count.
@@ -21,6 +33,7 @@ export interface Archetype {
   weight: number
   abilitySpinCount: number // 1–4; determines how many archetypeAbility slots are spliced
   description?: string
+  abilities: { label: string; weight: number }[]  // archetype-unique ability pool
 }
 
 // Minimal shared type for content items with only label, weight, and optional description.
@@ -29,6 +42,9 @@ export interface SimpleItem {
   label: string
   weight: number          // for rarity variation within pool
   description?: string
+  bonusSpin?: string      // SpinCategory string — if set, this item splices an extra spin when landed on
+  bonusSpinDisplayName?: string  // display name for the bonus spin slot
+  statBonusGrants?: StatBonusGrants  // maps stat category → statBonus/statPenalty; spliced immediately after this item resolves
 }
 
 // Weakness extends SimpleItem — adds a severity flag for race-modulated drawing.

@@ -3,22 +3,22 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-05-16T01:40:00Z"
+last_updated: "2026-05-16T16:45:00Z"
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 8
-  completed_plans: 6
-  percent: 37
+  completed_phases: 3
+  total_plans: 9
+  completed_plans: 9
+  percent: 62
 ---
 
 # Project State — Wheel of Fate
 
 ## Current Status
 
-Phase: Phase 2 — Full 23-Spin Game Loop (In Progress)
-Active Phase: 02-full-23-spin-game-loop
-Current Plan: 3 / 5 (Plan 02-03 complete — stat flavor labels, height labels, spinQueue wired to all content modules)
+Phase: Phase 3 — Redemption Spin (In Progress)
+Active Phase: 03-redemption-spin
+Current Plan: 0 / 1
 Last Updated: 2026-05-16
 
 ## Project Reference
@@ -31,8 +31,8 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 ## Phase Progress
 
 - Phase 1: Animation Foundation — Complete (3/3 plans complete)
-- Phase 2: Full 23-Spin Game Loop — In Progress (3/5 plans executed)
-- Phase 3: Redemption Spin — Not Started
+- Phase 2: Full 23-Spin Game Loop — Complete (5/5 plans executed, 2026-05-16)
+- Phase 3: Redemption Spin — Complete (1/1 plans executed, 2026-05-16)
 - Phase 4: Backend + Sharing — Not Started
 - Phase 5: Gallery — Not Started
 - Phase 6: Content + Polish — Not Started
@@ -41,10 +41,10 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 | Metric | Value |
 |--------|-------|
-| Phases completed | 0 / 6 |
+| Phases completed | 2 / 6 |
 | Requirements covered | 27 / 27 |
-| Plans executed | 6 |
-| Session count | 4 |
+| Plans executed | 8 |
+| Session count | 5 |
 
 ## Accumulated Context
 
@@ -60,7 +60,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 - tailwindcss() placed first in vite.config.ts plugins array — mandatory for Tailwind v4 class detection
 - vitest.config.ts kept separate from vite.config.ts — isolates test environment from SvelteKit Vite config
 - calculateTargetAngle always monotonically accumulates rotation (currentRotation + minSpins*360 + delta)
-- buildInitialQueue() returns 21 fixed entries (not 22) — plan comment was off-by-one; RESEARCH.md code example shows 21 categories Race through Title
+- buildInitialQueue() returns 20 fixed entries — weaponEnchantment is spliced conditionally (B+ weaponMastery tier), weakness count derived from race modifier; tests updated to match
 - TIER_THRESHOLDS uses exact ranges from RESEARCH.md Pattern 3: F-(1-3), God(100 single point), wider ranges for common tiers
 - getSegmentsForCategory stubs all categories with [] and per-category TODO comments for Plan 02-02/02-03 replacement
 - GENERAL_ABILITY_POOL (15 inline entries) used for racialAbility/archetypeAbility — pending dedicated racial-abilities content module
@@ -98,7 +98,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 ## Session Continuity
 
-**Last session:** Phase 2 Plan 03 executed — 6,160 FlavorLabel entries across 11 stat files, 25 height SimpleItem entries, spinQueue wired to all content modules (2026-05-16)
-**Stopped at:** 02-03-SUMMARY.md committed — 3 tasks, 9 files created, 2 modified, 61 tests, 0 svelte-check errors
-**Next action:** Execute Phase 2 Plan 04 (game loop orchestrator: extend +page.svelte with queue, results panel, announcement, resume)
-**Context to carry:** Plans 02-01, 02-02, 02-03 complete. All content pools and stat labels populated. getSegmentsForCategory() returns live segments for all 23 categories. redemptionSpin placeholder until Plan 02-04. GENERAL_ABILITY_POOL inline until dedicated racial-abilities module authored.
+**Last session:** Phase 2 complete — all 5 plans executed. Full game loop with dynamic queue splicing, gold/void UI overhaul, two-column layout, result overlay on wheel, character naming screen, CharacterCard with tier-colored hero grade banner. All 61 tests passing (2026-05-16).
+**Stopped at:** Phase 2 closed, tracking files updated, Phase 3 starting.
+**Next action:** Implement Phase 3 — score-based redemption probability function, wire into +page.svelte `currentSegments` derived block, write simulation script and tests.
+**Context to carry:** redemptionSpin category exists in spinQueue. currentSegments in +page.svelte currently returns a fixed [Redemption: 1, No Redemption: 3] array for redemptionSpin. Phase 3 replaces this with a probability computed from overallScore via quadratic formula: p = max(0.05, min(0.85, 0.05 + 0.80 * (1 - overallScore/100)^2)).

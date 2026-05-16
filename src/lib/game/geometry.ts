@@ -17,6 +17,22 @@ export function equalSegmentAngles(count: number): Array<{ startDeg: number; end
   }))
 }
 
+// Distributes arc angles proportional to each segment's weight.
+// Higher weight = larger slice; lower weight = smaller slice.
+export function weightedSegmentAngles(
+  segments: Array<{ weight: number }>
+): Array<{ startDeg: number; endDeg: number; midDeg: number }> {
+  const totalWeight = segments.reduce((sum, s) => sum + s.weight, 0)
+  const result: Array<{ startDeg: number; endDeg: number; midDeg: number }> = []
+  let cumDeg = 0
+  for (const seg of segments) {
+    const span = (seg.weight / totalWeight) * 360
+    result.push({ startDeg: cumDeg, endDeg: cumDeg + span, midDeg: cumDeg + span / 2 })
+    cumDeg += span
+  }
+  return result
+}
+
 export function calculateTargetAngle(
   currentRotation: number,
   targetIndex: number,

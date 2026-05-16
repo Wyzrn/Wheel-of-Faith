@@ -1,39 +1,88 @@
 @import "tailwindcss";
 
+@theme {
+  --color-surface: #13121c;
+  --color-surface-dim: #0d0d16;
+  --color-surface-container-lowest: #0d0d16;
+  --color-surface-container-low: #1b1b24;
+  --color-surface-container: #1f1f28;
+  --color-surface-container-high: #292933;
+  --color-surface-container-highest: #34343e;
+  --color-on-surface: #e4e1ee;
+  --color-on-surface-variant: #d2c5ae;
+  --color-outline-variant: #4e4635;
+  --color-outline: #9a907b;
+  --color-primary: #ffdf96;
+  --color-primary-dim: #f0c040;
+  --color-secondary: #f4be5d;
+  --color-tertiary: #fed6ff;
+  --color-error: #ffb4ab;
+  --color-background: #07070d;
+
+  --font-cinzel: "Cinzel", serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+:root {
+  --bg-void: #07070d;
+  --gold-bright: #ffdf96;
+  --gold-mid: #f0c040;
+  --gold-dim: #9a907b;
+  --gold-glow: rgba(240, 192, 64, 0.4);
+  --purple-glow: rgba(141, 0, 169, 0.3);
+
+  /* Tier colors (kept for backwards-compat) */
+  --tier-f-minus: #555;
+  --tier-f:       #666;
+  --tier-f-plus:  #777;
+  --tier-e-minus: #6b7280;
+  --tier-e:       #9ca3af;
+  --tier-e-plus:  #d1d5db;
+  --tier-d-minus: #92400e;
+  --tier-d:       #b45309;
+  --tier-d-plus:  #d97706;
+  --tier-c-minus: #1d4ed8;
+  --tier-c:       #2563eb;
+  --tier-c-plus:  #3b82f6;
+  --tier-b-minus: #065f46;
+  --tier-b:       #059669;
+  --tier-b-plus:  #34d399;
+  --tier-a-minus: #7c3aed;
+  --tier-a:       #8b5cf6;
+  --tier-a-plus:  #a78bfa;
+  --tier-s-minus: #b91c1c;
+  --tier-s:       #dc2626;
+  --tier-s-plus:  #ef4444;
+  --tier-ss-minus: #ea580c;
+  --tier-ss:       #f97316;
+  --tier-ss-plus:  #fb923c;
+  --tier-sss-minus: #ca8a04;
+  --tier-sss:       #eab308;
+  --tier-sss-plus:  #fde047;
+  --tier-god:      #e879f9;
+}
+
 @layer base {
-  :root {
-    --tier-f-minus: #6b4226;
-    --tier-f:       #7c3d1a;
-    --tier-f-plus:  #92400e;
-    --tier-e-minus: #78350f;
-    --tier-e:       #854d0e;
-    --tier-e-plus:  #713f12;
-    --tier-d-minus: #4b5563;
-    --tier-d:       #374151;
-    --tier-d-plus:  #4b5563;
-    --tier-c-minus: #1e40af;
-    --tier-c:       #1d4ed8;
-    --tier-c-plus:  #2563eb;
-    --tier-b-minus: #065f46;
-    --tier-b:       #047857;
-    --tier-b-plus:  #059669;
-    --tier-a-minus: #15803d;
-    --tier-a:       #16a34a;
-    --tier-a-plus:  #22c55e;
-    --tier-s-minus: #a16207;
-    --tier-s:       #ca8a04;
-    --tier-s-plus:  #eab308;
-    --tier-ss-minus: #b45309;
-    --tier-ss:       #d97706;
-    --tier-ss-plus:  #f59e0b;
-    --tier-sss-minus: #7e22ce;
-    --tier-sss:       #9333ea;
-    --tier-sss-plus:  #a855f7;
-    --tier-god:     #fef9c3;
+  body {
+    background-color: var(--bg-void);
+    color: #e4e1ee;
+    font-family: "Inter", sans-serif;
   }
+
+  * { box-sizing: border-box; }
 }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGold {
+  0%, 100% { box-shadow: 0 0 20px rgba(240,192,64,0.18); }
+  50%       { box-shadow: 0 0 36px rgba(240,192,64,0.42), 0 0 60px rgba(240,192,64,0.12); }
 }

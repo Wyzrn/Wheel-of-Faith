@@ -533,4 +533,7 @@ export const weapons: SimpleItem[] = [
   { label: 'Flashbang (Camera Flash)', weight: 1 },
   { label: 'Stun Gun (Novelty)', weight: 1 },
   { label: 'Cattle Prod (Repurposed)', weight: 1 },
+
+  // ── No Weapon ──
+  { label: 'No Weapon (Unarmed)', weight: 4 },
 ]

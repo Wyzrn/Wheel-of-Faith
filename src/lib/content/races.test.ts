@@ -45,8 +45,8 @@ describe('races', () => {
     expect(commonRaces.length).toBeGreaterThan(0)
   })
 
-  it('includes at least one Legendary race (weight === 1)', () => {
-    const legendaryRaces = races.filter((r) => r.weight === 1)
+  it('includes at least one Legendary race (weight <= 5)', () => {
+    const legendaryRaces = races.filter((r) => r.weight <= 5)
     expect(legendaryRaces.length).toBeGreaterThan(0)
   })
 

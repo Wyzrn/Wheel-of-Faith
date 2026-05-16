@@ -8,6 +8,7 @@ export interface WeightedSegment {
   label: string
   weight: number
   color?: string
+  dimmed?: boolean  // true = shown greyed-out on wheel, weight should be 0 (never selectable)
 }
 
 export interface SpinResult {
@@ -28,4 +29,6 @@ export interface SessionState {
   // Phase 2 additions: persisted for mid-session resume (D-11, CORE-05)
   spinQueue?: SpinDefinition[]    // serialized queue for resume; null = rebuild from scratch
   currentSpinIndex?: number       // resume pointer into spinQueue
+  // Phase 3+: tracks which stats are awaiting a bonus/penalty spin (populated by transformations/classes)
+  pendingStatBonuses?: Record<string, 'statBonus' | 'statPenalty'>
 }

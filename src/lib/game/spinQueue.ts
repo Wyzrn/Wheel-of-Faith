@@ -28,6 +28,31 @@ import { backstories } from '$lib/content/backstories'
 import { titles }      from '$lib/content/titles'
 import { enchantments } from '$lib/content/enchantments'
 
+// Redemption outcomes — spun when the redemptionSpin lands on 'Redemption'.
+// Rare/powerful outcomes have lower weight; fun/mild ones are more common.
+const REDEMPTION_OUTCOMES: WeightedSegment[] = [
+  { label: 'Reroll Your Worst Stat', weight: 3 },
+  { label: 'Gain a Bonus Power', weight: 3 },
+  { label: 'Lose One Weakness', weight: 3 },
+  { label: 'Plot Armour (Permanent)', weight: 3 },
+  { label: 'Free Power Reroll', weight: 3 },
+  { label: 'Your Weakness Becomes a Strength (Somehow)', weight: 2 },
+  { label: 'Immunity to Your Own Weaknesses', weight: 2 },
+  { label: 'Swap Race Abilities (Narrator Chooses)', weight: 2 },
+  { label: 'All Stats +1 Tier', weight: 1 },
+  { label: 'Stat of Your Choice: S Tier', weight: 1 },
+  { label: 'Bonus Archetype Ability', weight: 2 },
+  { label: 'Secret Fourth Racial Ability', weight: 1 },
+  { label: 'Double Your Best Stat', weight: 1 },
+  { label: 'God Tier Potential (One Use)', weight: 1 },
+  { label: 'Demigod Status (Unofficial)', weight: 1 },
+  { label: 'Free God Tier Strength', weight: 1 },
+  { label: 'Retroactive Legendary Race Upgrade', weight: 1 },
+  { label: 'The Universe Owes You One', weight: 1 },
+  { label: 'The DM Sighs and Gives You One Thing You Want', weight: 1 },
+  { label: 'Reroll Everything (Chaos Edition)', weight: 1 },
+]
+
 // Shared ability pool for racialAbility and archetypeAbility slots.
 // Used until a dedicated racial-abilities content module is authored.
 // All entries weight 1 for uniform draw probability.
@@ -51,6 +76,9 @@ const GENERAL_ABILITY_POOL: WeightedSegment[] = [
 
 export type SpinCategory =
   | 'race'
+  | 'raceSubType'
+  | 'raceClass'
+  | 'raceTransformation'
   | 'racialAbility'
   | 'archetype'
   | 'archetypeAbility'
@@ -65,18 +93,24 @@ export type SpinCategory =
   | 'fightingSkill'
   | 'power'
   | 'powerMastery'
+  | 'weaponType'
   | 'weapon'
   | 'weaponMastery'
   | 'weaponEnchantment'
   | 'potential'
   | 'energyLevel'
   | 'weakness'
+  | 'statBonus'
+  | 'statPenalty'
   | 'redemptionSpin'
+  | 'redemptionOutcome'
   | 'title'
 
 export interface SpinDefinition {
   category: SpinCategory
-  displayName: string // shown in "Next: {displayName}" header (D-02)
+  displayName: string  // shown in "Next: {displayName}" header (D-02)
+  isSentinel?: boolean // true only on the initial weakness spin; spliced weakness spins omit this
+  targetStat?: string  // for statBonus/statPenalty spins: which stat category this bonus modifies
 }
 
 // Returns the initial queue of 22 fixed spin definitions.
@@ -90,29 +124,33 @@ export interface SpinDefinition {
 // = 21 fixed categories + 1 for a total of 22 (ability slots expand dynamically)
 export function buildInitialQueue(): SpinDefinition[] {
   return [
-    { category: 'race',              displayName: 'Race'               },
-    // racialAbility slots spliced here after Race lands (count = race.abilitySpinCount)
-    { category: 'archetype',         displayName: 'Archetype'          },
-    // archetypeAbility slots spliced here after Archetype lands (count = archetype.abilitySpinCount)
-    { category: 'backstory',         displayName: 'Backstory'          },
-    { category: 'height',            displayName: 'Height'             },
-    { category: 'strength',          displayName: 'Strength'           },
-    { category: 'speed',             displayName: 'Speed'              },
-    { category: 'agility',           displayName: 'Agility'            },
-    { category: 'durability',        displayName: 'Durability'         },
-    { category: 'iq',                displayName: 'IQ'                 },
-    { category: 'charisma',          displayName: 'Charisma'           },
-    { category: 'fightingSkill',     displayName: 'Fighting Skill'     },
-    { category: 'power',             displayName: 'Power'              },
-    { category: 'powerMastery',      displayName: 'Power Mastery'      },
-    { category: 'weapon',            displayName: 'Weapon'             },
-    { category: 'weaponMastery',     displayName: 'Weapon Mastery'     },
-    { category: 'weaponEnchantment', displayName: 'Weapon Enchantment' },
-    { category: 'potential',         displayName: 'Potential'          },
-    { category: 'energyLevel',       displayName: 'Energy Level'       },
-    { category: 'weakness',          displayName: 'Weakness'           },
-    { category: 'redemptionSpin',    displayName: 'Redemption Spin'    },
-    { category: 'title',             displayName: 'Title'              },
+    { category: 'race',          displayName: 'Race'          },
+    // raceSubType spliced here if race has subTypePool
+    // racialAbility slots spliced here (count = race.abilitySpinCount)
+    // weakness slots spliced here (count = race.weaknessCount or derived)
+    { category: 'archetype',     displayName: 'Archetype'     },
+    // archetypeAbility slots spliced here (count = archetype.abilitySpinCount)
+    { category: 'backstory',     displayName: 'Backstory'     },
+    // bonus stat spin spliced here if backstory has bonusSpin
+    { category: 'height',        displayName: 'Height'        },
+    { category: 'strength',      displayName: 'Strength'      },
+    { category: 'speed',         displayName: 'Speed'         },
+    { category: 'agility',       displayName: 'Agility'       },
+    { category: 'durability',    displayName: 'Durability'    },
+    { category: 'iq',            displayName: 'IQ'            },
+    { category: 'charisma',      displayName: 'Charisma'      },
+    { category: 'fightingSkill', displayName: 'Fighting Skill'},
+    { category: 'power',         displayName: 'Power'         },
+    { category: 'powerMastery',  displayName: 'Power Mastery' },
+    { category: 'weaponType',    displayName: 'Weapon Type'   },
+    { category: 'weapon',        displayName: 'Weapon'        },
+    { category: 'weaponMastery', displayName: 'Weapon Mastery'},
+    // weaponEnchantment spliced here if weaponMastery tier >= C-
+    { category: 'potential',     displayName: 'Potential'     },
+    { category: 'energyLevel',   displayName: 'Energy Level'  },
+    { category: 'redemptionSpin',displayName: 'Redemption Spin'},
+    { category: 'title',         displayName: 'Title'         },
+    // bonus stat spin spliced here if title has bonusSpin
   ]
 }
 
@@ -125,6 +163,18 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
   switch (category) {
     case 'race':
       return races as WeightedSegment[]
+
+    case 'raceSubType':
+      // Fallback; actual pool resolved in +page.svelte from race.subTypePool
+      return [{ label: 'Standard Variant', weight: 1 }]
+
+    case 'raceClass':
+      // Fallback; actual pool resolved in +page.svelte from race.classPool
+      return [{ label: 'Standard Class', weight: 1 }]
+
+    case 'raceTransformation':
+      // Fallback; actual pool resolved in +page.svelte from race.transformationPool
+      return [{ label: 'Base Form', weight: 1 }]
 
     case 'racialAbility':
       return GENERAL_ABILITY_POOL
@@ -168,6 +218,14 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
     case 'powerMastery':
       return powerMasteryLabels as WeightedSegment[]
 
+    case 'weaponType':
+      return [
+        { label: 'Melee',  weight: 4 },
+        { label: 'Ranged', weight: 3 },
+        { label: 'Magic',  weight: 2 },
+        { label: 'Exotic', weight: 1 },
+      ]
+
     case 'weapon':
       return weapons as WeightedSegment[]
 
@@ -186,12 +244,32 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
     case 'weakness':
       return weaknesses as WeightedSegment[]
 
+    case 'statBonus':
+      // Actual segments imported from stat-bonus content; resolved in +page.svelte
+      return [
+        { label: '+1', weight: 15 }, { label: '+2', weight: 12 }, { label: '+3', weight: 9 },
+        { label: '+4', weight: 7 },  { label: '+5', weight: 5 },  { label: '+6', weight: 4 },
+        { label: '+7', weight: 3 },  { label: '+8', weight: 2 },  { label: '+10', weight: 2 },
+        { label: '+12', weight: 1 }, { label: '+15', weight: 1 }, { label: '+20', weight: 1 },
+      ]
+
+    case 'statPenalty':
+      return [
+        { label: '-1', weight: 15 }, { label: '-2', weight: 12 }, { label: '-3', weight: 9 },
+        { label: '-4', weight: 7 },  { label: '-5', weight: 5 },  { label: '-7', weight: 4 },
+        { label: '-10', weight: 3 }, { label: '-12', weight: 2 }, { label: '-15', weight: 1 },
+        { label: '-20', weight: 1 },
+      ]
+
     case 'redemptionSpin':
-      // Placeholder until Plan 02-04 wires the redemption probability wheel.
+      // Redemption is rare (~25%); most spins yield no redemption
       return [
         { label: 'Redemption',    weight: 1 },
-        { label: 'No Redemption', weight: 1 },
+        { label: 'No Redemption', weight: 3 },
       ]
+
+    case 'redemptionOutcome':
+      return REDEMPTION_OUTCOMES
 
     case 'title':
       return titles as WeightedSegment[]

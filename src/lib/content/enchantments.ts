@@ -1,5 +1,5 @@
 // enchantments.ts — Enchantment content pool for Wheel of Fate.
-// 15+ SimpleItem entries spanning legendary to absurd. No default export. No functions.
+// 80+ SimpleItem entries spanning legendary to absurd. No default export. No functions.
 
 import type { SimpleItem } from './types'
 
@@ -37,4 +37,67 @@ export const enchantments: SimpleItem[] = [
   { label: 'Twice Enchanted (The Second Cancelled the First)', weight: 1 },
   { label: 'Forged in a Volcano on Purpose', weight: 1 },
   { label: 'Blessed by the God of Mild Inconvenience', weight: 1 },
+
+  // Legendary / powerful (rare)
+  { label: 'World-Breaker Runes', weight: 1 },
+  { label: 'Sundering Edge', weight: 1 },
+  { label: 'Voidheart Binding', weight: 1 },
+  { label: 'Eternal Sharpness', weight: 1 },
+  { label: 'Soul Reaper', weight: 1 },
+  { label: 'Celestial Temper', weight: 1 },
+  { label: 'Abyssal Infusion', weight: 1 },
+  { label: 'Time-Locked Strike', weight: 1 },
+  { label: 'Reality Sever', weight: 1 },
+  { label: 'Fate Cutter', weight: 1 },
+  { label: 'Godslayer Edge', weight: 1 },
+  { label: 'Dragon\'s Fury Inscription', weight: 1 },
+  { label: 'Primordial Consecration', weight: 1 },
+  { label: 'Starblight Temper', weight: 1 },
+  { label: 'Death\'s Own Edge', weight: 1 },
+
+  // Elemental / classical (uncommon)
+  { label: 'Acid Bite', weight: 2 },
+  { label: 'Poison Seep', weight: 2 },
+  { label: 'Chain Lightning Etching', weight: 2 },
+  { label: 'Blizzard Binding', weight: 2 },
+  { label: 'Earthquake Rune', weight: 2 },
+  { label: 'Galeforce Carving', weight: 2 },
+  { label: 'Magma Heart', weight: 2 },
+  { label: 'Tidal Rune', weight: 2 },
+  { label: 'Thornwall Inscription', weight: 2 },
+  { label: 'Crystal Resonance', weight: 2 },
+  { label: 'Arcane Sharpening', weight: 2 },
+  { label: 'Necrotic Leach', weight: 2 },
+  { label: 'Radiant Smite', weight: 2 },
+  { label: 'Psychic Resonance', weight: 2 },
+  { label: 'Entropic Decay', weight: 2 },
+
+  // Tactical / practical (common)
+  { label: 'Returning', weight: 3 },
+  { label: 'Extending Rune', weight: 3 },
+  { label: 'Seeking Inscription', weight: 3 },
+  { label: 'Parrying Groove', weight: 3 },
+  { label: 'Lightweight Alloy', weight: 3 },
+  { label: 'Bloodhunter Mark', weight: 3 },
+  { label: 'Silencing Strike', weight: 3 },
+  { label: 'Phase Shift', weight: 3 },
+  { label: 'Warding Sigil', weight: 3 },
+  { label: 'Binding Hex', weight: 3 },
+
+  // Absurd (common)
+  { label: 'Slightly Faster', weight: 3 },
+  { label: 'Warm to the Touch (No One Knows Why)', weight: 3 },
+  { label: 'Mildly Ominous Glow', weight: 3 },
+  { label: 'Hums Off-Key', weight: 3 },
+  { label: 'Definitely Not Haunted', weight: 3 },
+  { label: 'Resonates with Nostalgia', weight: 3 },
+  { label: 'Attractive to Small Birds', weight: 3 },
+  { label: 'Makes a Satisfying "Thunk"', weight: 3 },
+  { label: 'Previous Owner Unspecified (It\'s Fine)', weight: 3 },
+  { label: 'Blessed by a Passing Deity Who Didn\'t Stop', weight: 3 },
+  { label: 'Slightly Smug', weight: 3 },
+  { label: 'Named (Refuses to Answer)', weight: 3 },
+  { label: 'Self-Aware (Embarrassed About It)', weight: 3 },
+  { label: 'Enhanced by Exposure to Tuesdays', weight: 3 },
+  { label: 'Anointed with Something That Smells Like Victory', weight: 3 },
 ]

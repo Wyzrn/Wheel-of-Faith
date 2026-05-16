@@ -23,8 +23,8 @@ Plans:
 - [x] 02-01-PLAN.md — Core utilities: scoreTier, spinQueue, tierColor, content types, session extension
 - [x] 02-02-PLAN.md — Non-stat content data: races, archetypes, powers, weapons, weaknesses, backstories, titles, enchantments
 - [x] 02-03-PLAN.md — Stat flavor label files (11 × ~560 labels) + app.css tier color palette
-- [ ] 02-04-PLAN.md — Game loop orchestrator: extend +page.svelte with queue, results panel, announcement, resume
-- [ ] 02-05-PLAN.md — Character card: TierBadge, CharacterCard, New Character reset flow
+- [x] 02-04-PLAN.md — Game loop orchestrator: extend +page.svelte with queue, results panel, announcement, resume
+- [x] 02-05-PLAN.md — Character card: TierBadge, CharacterCard, New Character reset flow
 **Success Criteria:**
 1. User spins through Race, then sees the correct number of Racial Ability spins (1–4 determined by the race result), then Archetype, then the correct number of Archetype Ability spins, then all remaining categories in the defined sequence — no spin appears out of order
 2. Each stat wheel (Strength, Speed, Agility, Durability, IQ, Charisma, Fighting Skill, Potential, Energy Level, Power Mastery, Weapon Mastery) displays flavor label segments; landing on a label shows its tier grade (e.g. "B") and numeric score without any manual lookup
@@ -88,8 +88,8 @@ Plans:
 ## Phases Summary
 
 - [x] **Phase 1: Animation Foundation** — Validated single-wheel animation with correct easing and localStorage recovery
-- [ ] **Phase 2: Full 23-Spin Game Loop** — Complete playable game loop from Race to Title with character card (includes all content authoring per D-09)
-- [ ] **Phase 3: Redemption Spin** — Probability-gated two-stage mechanic with 18+ outcomes and simulation validation
+- [x] **Phase 2: Full 23-Spin Game Loop** — Complete playable game loop from Race to Title with character card (includes all content authoring per D-09)
+- [x] **Phase 3: Redemption Spin** — Probability-gated two-stage mechanic with 18+ outcomes and simulation validation
 - [ ] **Phase 4: Backend + Sharing** — Fastify + MongoDB persistence with unique shareable URLs
 - [ ] **Phase 5: Gallery** — Public opt-in gallery with pagination and score sorting
 - [ ] **Phase 6: Polish** — Mobile responsiveness, performance, visual refinement (content done in Phase 2)
@@ -99,8 +99,8 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Animation Foundation | 3/3 | Complete | 2026-05-15 |
-| 2. Full 23-Spin Game Loop | 3/5 | In progress | — |
-| 3. Redemption Spin | 0/? | Not started | — |
+| 2. Full 23-Spin Game Loop | 5/5 | Complete | 2026-05-16 |
+| 3. Redemption Spin | 1/1 | Complete | 2026-05-16 |
 | 4. Backend + Sharing | 0/? | Not started | — |
 | 5. Gallery | 0/? | Not started | — |
 | 6. Polish | 0/? | Not started | — |
