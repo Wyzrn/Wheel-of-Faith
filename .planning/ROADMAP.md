@@ -90,7 +90,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Animation Foundation | 0/? | Not started | — |
+| 1. Animation Foundation | 1/3 | In progress | — |
 | 2. Full 23-Spin Game Loop | 0/? | Not started | — |
 | 3. Redemption Spin | 0/? | Not started | — |
 | 4. Backend + Sharing | 0/? | Not started | — |

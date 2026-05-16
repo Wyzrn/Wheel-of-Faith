@@ -81,8 +81,8 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| CORE-01 | Phase 1 | Pending |
-| CORE-05 | Phase 1 | Pending |
+| CORE-01 | Phase 1 | In Progress (01-01: scaffold + geometry; 01-02: SVG+GSAP) |
+| CORE-05 | Phase 1 | In Progress (01-01: session store types; 01-03: localStorage integration) |
 | CORE-02 | Phase 2 | Pending |
 | CORE-03 | Phase 2 | Pending |
 | CORE-04 | Phase 2 | Pending |
