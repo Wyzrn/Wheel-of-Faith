@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_execute
-last_updated: "2026-05-16T00:00:00.000Z"
+status: in_progress
+last_updated: "2026-05-16T04:14:11Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 8
-  completed_plans: 3
-  percent: 17
+  completed_plans: 4
+  percent: 25
 ---
 
 # Project State — Wheel of Fate
 
 ## Current Status
 
-Phase: Phase 2 — Full 23-Spin Game Loop (Ready to Execute)
+Phase: Phase 2 — Full 23-Spin Game Loop (In Progress)
 Active Phase: 02-full-23-spin-game-loop
-Current Plan: 0 / 5 (Phase 2 planned — 5 plans in 4 waves)
+Current Plan: 1 / 5 (Plan 02-01 complete — scoreTier, spinQueue, tierColor, content types)
 Last Updated: 2026-05-16
 
 ## Project Reference
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 ## Phase Progress
 
 - Phase 1: Animation Foundation — Complete (3/3 plans complete)
-- Phase 2: Full 23-Spin Game Loop — Planned (0/5 plans executed)
+- Phase 2: Full 23-Spin Game Loop — In Progress (1/5 plans executed)
 - Phase 3: Redemption Spin — Not Started
 - Phase 4: Backend + Sharing — Not Started
 - Phase 5: Gallery — Not Started
@@ -43,8 +43,8 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 |--------|-------|
 | Phases completed | 0 / 6 |
 | Requirements covered | 27 / 27 |
-| Plans executed | 2 |
-| Session count | 1 |
+| Plans executed | 4 |
+| Session count | 2 |
 
 ## Accumulated Context
 
@@ -60,6 +60,10 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 - tailwindcss() placed first in vite.config.ts plugins array — mandatory for Tailwind v4 class detection
 - vitest.config.ts kept separate from vite.config.ts — isolates test environment from SvelteKit Vite config
 - calculateTargetAngle always monotonically accumulates rotation (currentRotation + minSpins*360 + delta)
+- buildInitialQueue() returns 21 fixed entries (not 22) — plan comment was off-by-one; RESEARCH.md code example shows 21 categories Race through Title
+- TIER_THRESHOLDS uses exact ranges from RESEARCH.md Pattern 3: F-(1-3), God(100 single point), wider ranges for common tiers
+- getSegmentsForCategory stubs all categories with [] and per-category TODO comments for Plan 02-02/02-03 replacement
+- import type used for all cross-module type references (TierGrade, SpinDefinition) to prevent circular runtime dependency risk
 
 ### Architecture Notes
 
@@ -86,7 +90,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 ## Session Continuity
 
-**Last session:** Phase 2 planned — 5 plans in 4 waves created and verified (2026-05-16)
-**Stopped at:** Plan checker verification passed — all 5 requirements covered, all 12 dimensions green
-**Next action:** /gsd-execute-phase 2
-**Context to carry:** Phase 2 has CONTEXT.md + RESEARCH.md + UI-SPEC.md + VALIDATION.md + PATTERNS.md + 5 PLAN.md files. Wave 2 (02-02 + 02-03) can run in parallel. Waves 3 and 4 each have human checkpoints. $state.snapshot() mandatory before every saveSession() call.
+**Last session:** Phase 2 Plan 01 executed — scoreTier, spinQueue, tierColor, content types, session extension (2026-05-16)
+**Stopped at:** 02-01-SUMMARY.md committed — 3 tasks, 8 files, 46 tests, 0 svelte-check errors
+**Next action:** Execute Phase 2 Plan 02 (non-stat content: races, archetypes, powers, weapons, weaknesses, backstories, titles, enchantments) — Wave 2 can run 02-02 and 02-03 in parallel
+**Context to carry:** Phase 2 Wave 1 complete. All type foundations in place. getSegmentsForCategory() has stubs for all 21 categories. Plans 02-02 and 02-03 will replace stubs. $state.snapshot() mandatory before every saveSession() call. buildInitialQueue() returns 21 entries.
