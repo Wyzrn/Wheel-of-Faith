@@ -83,8 +83,8 @@
 |--------|-------|--------|
 | CORE-01 | Phase 1 | In Progress (01-01: scaffold + geometry; 01-02: SVG+GSAP) |
 | CORE-05 | Phase 1 | In Progress (01-01: session store types; 01-03: localStorage integration) |
-| CORE-02 | Phase 2 | Pending |
-| CORE-03 | Phase 2 | Pending |
+| CORE-02 | Phase 2 | Partial (02-02: content data authored; 02-04: queue mechanics pending) |
+| CORE-03 | Phase 2 | Partial (02-02: races/archetypes with abilitySpinCount authored; 02-04: dynamic queue pending) |
 | CORE-04 | Phase 2 | Pending |
 | REDEM-01 | Phase 2 | Pending |
 | CARD-01 | Phase 2 | Pending |

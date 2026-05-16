@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-05-16T04:14:11Z"
+last_updated: "2026-05-16T04:30:00Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 8
-  completed_plans: 4
-  percent: 25
+  completed_plans: 5
+  percent: 31
 ---
 
 # Project State — Wheel of Fate
@@ -18,7 +18,7 @@ progress:
 
 Phase: Phase 2 — Full 23-Spin Game Loop (In Progress)
 Active Phase: 02-full-23-spin-game-loop
-Current Plan: 1 / 5 (Plan 02-01 complete — scoreTier, spinQueue, tierColor, content types)
+Current Plan: 2 / 5 (Plan 02-02 complete — races, archetypes, powers, weapons, weaknesses, backstories, titles, enchantments)
 Last Updated: 2026-05-16
 
 ## Project Reference
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 ## Phase Progress
 
 - Phase 1: Animation Foundation — Complete (3/3 plans complete)
-- Phase 2: Full 23-Spin Game Loop — In Progress (1/5 plans executed)
+- Phase 2: Full 23-Spin Game Loop — In Progress (2/5 plans executed)
 - Phase 3: Redemption Spin — Not Started
 - Phase 4: Backend + Sharing — Not Started
 - Phase 5: Gallery — Not Started
@@ -43,8 +43,8 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 |--------|-------|
 | Phases completed | 0 / 6 |
 | Requirements covered | 27 / 27 |
-| Plans executed | 4 |
-| Session count | 2 |
+| Plans executed | 5 |
+| Session count | 3 |
 
 ## Accumulated Context
 
@@ -64,6 +64,11 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 - TIER_THRESHOLDS uses exact ranges from RESEARCH.md Pattern 3: F-(1-3), God(100 single point), wider ranges for common tiers
 - getSegmentsForCategory stubs all categories with [] and per-category TODO comments for Plan 02-02/02-03 replacement
 - import type used for all cross-module type references (TierGrade, SpinDefinition) to prevent circular runtime dependency risk
+- Powers split into powers-epic.ts + powers-absurd.ts, merged in powers.ts via spread — keeps files under 800 lines, enables tonal editing
+- Content file pattern: single import, typed const export, no functions, no default export — consistent across all 8 content modules
+- Race rarity via weight: Common 30-38, Uncommon 12-20, Rare 4-9, Legendary 1; total weight ~498; weightedRandom normalizes
+- weaknessProbabilityModifier reflects lore: Vampire 1.8, Celestial 0.4, Human 1.0, Goblin 1.3 — drives race-modulated weakness draw
+- Severe boolean on Weakness: severe: true (51 entries) are classic debilitations; severe: false (501) are absurd/social
 
 ### Architecture Notes
 
@@ -90,7 +95,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 ## Session Continuity
 
-**Last session:** Phase 2 Plan 01 executed — scoreTier, spinQueue, tierColor, content types, session extension (2026-05-16)
-**Stopped at:** 02-01-SUMMARY.md committed — 3 tasks, 8 files, 46 tests, 0 svelte-check errors
-**Next action:** Execute Phase 2 Plan 02 (non-stat content: races, archetypes, powers, weapons, weaknesses, backstories, titles, enchantments) — Wave 2 can run 02-02 and 02-03 in parallel
-**Context to carry:** Phase 2 Wave 1 complete. All type foundations in place. getSegmentsForCategory() has stubs for all 21 categories. Plans 02-02 and 02-03 will replace stubs. $state.snapshot() mandatory before every saveSession() call. buildInitialQueue() returns 21 entries.
+**Last session:** Phase 2 Plan 02 executed — all 8 non-stat content modules authored (races, archetypes, powers, weapons, weaknesses, backstories, titles, enchantments) (2026-05-16)
+**Stopped at:** 02-02-SUMMARY.md committed — 3 tasks, 11 files, 61 tests, 0 svelte-check errors
+**Next action:** Execute Phase 2 Plan 03 (FlavorLabel stat content for 11 stat wheels) or Plan 04 (game loop orchestrator) — Plan 02-03 can continue in parallel
+**Context to carry:** Phase 2 Wave 2 Plan 02-02 complete. All non-stat content arrays populated. getSegmentsForCategory() stubs ready to be replaced with real arrays. Powers split across powers-epic.ts + powers-absurd.ts, merged in powers.ts. Race rarity total weight ~498. weaknessProbabilityModifier on each Race drives Weakness draw probability.
