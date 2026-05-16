@@ -22,7 +22,7 @@
 Plans:
 - [x] 02-01-PLAN.md — Core utilities: scoreTier, spinQueue, tierColor, content types, session extension
 - [x] 02-02-PLAN.md — Non-stat content data: races, archetypes, powers, weapons, weaknesses, backstories, titles, enchantments
-- [ ] 02-03-PLAN.md — Stat flavor label files (11 × ~560 labels) + app.css tier color palette
+- [x] 02-03-PLAN.md — Stat flavor label files (11 × ~560 labels) + app.css tier color palette
 - [ ] 02-04-PLAN.md — Game loop orchestrator: extend +page.svelte with queue, results panel, announcement, resume
 - [ ] 02-05-PLAN.md — Character card: TierBadge, CharacterCard, New Character reset flow
 **Success Criteria:**
@@ -99,7 +99,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Animation Foundation | 3/3 | Complete | 2026-05-15 |
-| 2. Full 23-Spin Game Loop | 2/5 | In progress | — |
+| 2. Full 23-Spin Game Loop | 3/5 | In progress | — |
 | 3. Redemption Spin | 0/? | Not started | — |
 | 4. Backend + Sharing | 0/? | Not started | — |
 | 5. Gallery | 0/? | Not started | — |
