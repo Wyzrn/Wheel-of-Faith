@@ -1,1 +1,39 @@
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    --tier-f-minus: #6b4226;
+    --tier-f:       #7c3d1a;
+    --tier-f-plus:  #92400e;
+    --tier-e-minus: #78350f;
+    --tier-e:       #854d0e;
+    --tier-e-plus:  #713f12;
+    --tier-d-minus: #4b5563;
+    --tier-d:       #374151;
+    --tier-d-plus:  #4b5563;
+    --tier-c-minus: #1e40af;
+    --tier-c:       #1d4ed8;
+    --tier-c-plus:  #2563eb;
+    --tier-b-minus: #065f46;
+    --tier-b:       #047857;
+    --tier-b-plus:  #059669;
+    --tier-a-minus: #15803d;
+    --tier-a:       #16a34a;
+    --tier-a-plus:  #22c55e;
+    --tier-s-minus: #a16207;
+    --tier-s:       #ca8a04;
+    --tier-s-plus:  #eab308;
+    --tier-ss-minus: #b45309;
+    --tier-ss:       #d97706;
+    --tier-ss-plus:  #f59e0b;
+    --tier-sss-minus: #7e22ce;
+    --tier-sss:       #9333ea;
+    --tier-sss-plus:  #a855f7;
+    --tier-god:     #fef9c3;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
