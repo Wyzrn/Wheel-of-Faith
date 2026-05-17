@@ -21,5 +21,14 @@ export async function createApp() {
   await app.register(mongoosePlugin)
   await app.register(characterRoutes, { prefix: '/api' })
 
+  if (process.env.NODE_ENV === 'production') {
+    const handlerPath = new URL('../../build/handler.js', import.meta.url).href
+    const { handler } = await import(handlerPath)
+    app.all('*', (request, reply) => {
+      reply.hijack()
+      handler(request.raw, reply.raw)
+    })
+  }
+
   return app
 }

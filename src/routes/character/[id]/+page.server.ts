@@ -5,7 +5,7 @@ import type { PageServerLoad } from './$types'
 // This load function runs server-side in Node.js and MUST call the Fastify backend directly
 // via API_URL env var, NOT via '/api/...' which would hit the Vite dev server and 404.
 export const load: PageServerLoad = async ({ params, fetch }) => {
-	const apiUrl = process.env.API_URL ?? 'http://localhost:3001'
+	const apiUrl = process.env.API_URL ?? `http://localhost:${process.env.PORT ?? 3001}`
 
 	const res = await fetch(`${apiUrl}/api/characters/${params.id}`)
 
