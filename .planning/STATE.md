@@ -3,22 +3,22 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-05-17T02:48:54Z"
+last_updated: "2026-05-17T02:58:04Z"
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 11
-  completed_plans: 10
-  percent: 67
+  completed_plans: 11
+  percent: 73
 ---
 
 # Project State — Wheel of Fate
 
 ## Current Status
 
-Phase: Phase 4 — Backend + Sharing (In Progress)
-Active Phase: 04-backend-sharing
-Current Plan: 1 / 2
+Phase: Phase 4 — Backend + Sharing (Complete)
+Active Phase: 05-gallery
+Current Plan: 0 / 0
 Last Updated: 2026-05-17
 
 ## Project Reference
@@ -26,14 +26,14 @@ Last Updated: 2026-05-17
 See: .planning/PROJECT.md (updated 2026-05-15)
 
 **Core value:** The dramatic sequential spin-by-spin reveal — each wheel lands somewhere unexpected, culminating in the Redemption Spin and a Title that defines who your character is.
-**Current focus:** Phase 2 planned — 5 plans ready to execute (scoreTier+spinQueue → content → stat labels → game loop → character card)
+**Current focus:** Phase 4 complete — Save & Share button live, /character/[id] share route with SSR + styled 404, Vite proxy configured.
 
 ## Phase Progress
 
 - Phase 1: Animation Foundation — Complete (3/3 plans complete)
 - Phase 2: Full 23-Spin Game Loop — Complete (5/5 plans executed, 2026-05-16)
 - Phase 3: Redemption Spin — Complete (1/1 plans executed, 2026-05-16)
-- Phase 4: Backend + Sharing — In Progress (1/2 plans complete, 2026-05-17)
+- Phase 4: Backend + Sharing — Complete (2/2 plans executed, 2026-05-17)
 - Phase 5: Gallery — Not Started
 - Phase 6: Content + Polish — Not Started
 
@@ -41,10 +41,10 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 | Metric | Value |
 |--------|-------|
-| Phases completed | 2 / 6 |
-| Requirements covered | 27 / 27 |
-| Plans executed | 10 |
-| Session count | 6 |
+| Phases completed | 4 / 6 |
+| Requirements covered | 30 / 30 |
+| Plans executed | 12 |
+| Session count | 7 |
 
 ## Accumulated Context
 
@@ -77,6 +77,10 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 - pre(/^find/) soft-delete hook is unconditional — revisit for Phase 6 if admin queries need deleted docs
 - Rate-limit test uses shared app with unique IP rather than second createApp() — mongoose is a singleton
 - npm run dev now boots both Vite and Fastify in parallel via concurrently
+- SSR enabled per-route for /character/[id] via +layout.js override — root layout has ssr=false for the game; share route needs SSR for +page.server.ts load function
+- canSave hides Save button after 24h (sessionAgeSec >= 86400) — rough proxy for archived share views; revisit in Phase 5 if gallery deep-links need different behavior
+- CharacterCard requires startedAt: string prop (required) — Phase 5 gallery consumers must pass character.session_started_at
+- Vite proxy /api -> localhost:3001 is browser-only — +page.server.ts MUST use process.env.API_URL directly (RESEARCH.md Pitfall 1)
 
 ### Architecture Notes
 
@@ -85,6 +89,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 - Backend: Fastify 5.8.5 + MongoDB Atlas / Mongoose 9.6.2
 - Share IDs: nanoid 5.1.11
 - 4 API endpoints total: POST /api/characters, GET /api/characters/:id, GET /api/characters, DELETE /api/characters/:id
+- Share URL: /character/[shareId] — SSR rendered, pixel-identical to live session CharacterCard
 
 ### Open Questions
 
@@ -103,7 +108,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 ## Session Continuity
 
-**Last session:** Phase 4 Plan 01 complete — Fastify 5 backend scaffolded in server/ with POST/GET /api/characters, Mongoose Character model, nanoid(10) share IDs, soft-delete, rate limiting. 14 backend tests passing. npm run dev boots both Vite + Fastify (2026-05-17).
-**Stopped at:** 04-01-PLAN.md complete, SUMMARY written, STATE.md updated.
-**Next action:** Execute Plan 04-02 — frontend integration (Save & Share button, /character/[id] page, Vite proxy config).
-**Context to carry:** POST /api/characters returns { shareId, url }. GET /api/characters/:shareId returns lean doc or 404. MONGODB_URI defaults to localhost:27017/wheel-of-fate. Vite proxy /api → http://localhost:3001 needed for browser fetch calls. SvelteKit +page.server.ts load must call http://localhost:3001 directly (not via Vite proxy) for SSR.
+**Last session:** Phase 4 Plan 02 complete — Save & Share button on CharacterCard, /character/[id] SSR share route with styled 404, Vite proxy /api -> localhost:3001. Phase 4 fully end-to-end: complete session, save, open URL in another window, see same character (2026-05-17).
+**Stopped at:** 04-02-PLAN.md complete, SUMMARY written, STATE.md updated.
+**Next action:** Execute Phase 5 — Gallery (browse and discover other characters).
+**Context to carry:** CharacterCard requires startedAt: string prop. /character/[id] is canonical share URL. Vite proxy browser-only — SSR loads must use API_URL env var. Root +layout.js has ssr=false; new SSR routes need per-route +layout.js override.
