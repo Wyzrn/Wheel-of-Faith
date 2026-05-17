@@ -24,7 +24,7 @@ export async function createApp() {
   if (process.env.NODE_ENV === 'production') {
     const handlerPath = new URL('../../build/handler.js', import.meta.url).href
     const { handler } = await import(handlerPath)
-    app.all('*', (request, reply) => {
+    app.setNotFoundHandler((request, reply) => {
       reply.hijack()
       handler(request.raw, reply.raw)
     })
