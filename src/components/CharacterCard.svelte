@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { SpinResult } from '$lib/session/types'
   import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
+  import { archetypes } from '$lib/content/archetypes'
+  import { onMount, onDestroy } from 'svelte'
 
-  let { results, name = '', onNewCharacter }: {
+  let { results, name = '', startedAt, onNewCharacter }: {
     results: SpinResult[]
     name?: string
+    startedAt: string
     onNewCharacter: () => void
   } = $props()
 
@@ -38,6 +41,7 @@
   let raceType          = $derived(get('raceSubType'))
   let transformation    = $derived(get('raceTransformation'))
   let archetype         = $derived(get('archetype'))
+  let archetypeTypeLabel = $derived(archetypes.find(a => a.label === archetype)?.archetypeType ?? null)
   let backstory         = $derived(get('backstory'))
   let height            = $derived(get('height'))
   let title             = $derived(get('title'))
@@ -62,6 +66,88 @@
     Object.fromEntries(statCategories.map(cat => [cat, results.find(r => r.category === cat)?.score ?? 0]))
   ))
   let overallGrade = $derived(scoreTier(overallScore))
+
+  // ── Save & Share state ────────────────────────────────────────────────────
+
+  let saving    = $state(false)
+  let shareUrl  = $state<string | null>(null)
+  let saveError = $state<string | null>(null)
+  let copied    = $state(false)
+  // now ticks every second so canSave/$derived values update in real time
+  let now = $state(Date.now())
+
+  let intervalId: ReturnType<typeof setInterval> | null = null
+
+  onMount(() => {
+    intervalId = setInterval(() => { now = Date.now() }, 1000)
+  })
+
+  onDestroy(() => {
+    if (intervalId !== null) {
+      clearInterval(intervalId)
+      intervalId = null
+    }
+  })
+
+  // Session age in seconds from the startedAt prop timestamp
+  let sessionAgeSec = $derived((now - new Date(startedAt).getTime()) / 1000)
+
+  // canSave: true when 90s minimum is met AND session is under 24h old.
+  // Per RESEARCH.md Assumption A4: on a share view the session_started_at is the original
+  // session timestamp. Sessions over 24h are treated as archived share views — we hide
+  // the Save button to avoid duplicate re-saves of the same character from the share URL.
+  let canSave = $derived(sessionAgeSec >= 90 && sessionAgeSec < 86400)
+
+  async function handleSaveAndShare() {
+    saving = true
+    saveError = null
+    try {
+      const res = await fetch('/api/characters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: displayName,
+          // race and archetype extracted from results by category — NOT raceClass or raceSubType
+          race: results.find(r => r.category === 'race')?.resultLabel ?? '',
+          archetype: results.find(r => r.category === 'archetype')?.resultLabel ?? '',
+          overall_score: overallScore,
+          overall_tier: overallGrade,
+          spins: results,
+          session_started_at: startedAt,
+          share_in_gallery: false, // Phase 5 wires the gallery toggle per CARD-03 — out of scope
+        }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        if (res.status === 429) {
+          saveError = 'Too many saves from this device. Try again in a few minutes.'
+        } else if (res.status === 422) {
+          saveError = 'Session too brief — fate needs at least 90 seconds to settle.'
+        } else {
+          saveError = (body as { message?: string }).message ?? 'Save failed — please try again.'
+        }
+        return
+      }
+
+      const { url } = await res.json() as { shareId: string; url: string }
+      shareUrl = `${window.location.origin}${url}`
+    } finally {
+      saving = false
+    }
+  }
+
+  async function handleCopy() {
+    if (!shareUrl) return
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+    } catch {
+      // Clipboard API not available (private browsing, insecure context, etc.)
+      // The URL pill text is selectable so users can copy manually (T-04-14 mitigation)
+    }
+    copied = true
+    setTimeout(() => { copied = false }, 1500)
+  }
 </script>
 
 <div class="w-full max-w-3xl flex flex-col gap-5" style="animation: slideUp 0.4s ease-out forwards;">
@@ -84,7 +170,7 @@
         {/if}
         <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 6vw, 2rem); font-weight: 700; color: #ffdf96; line-height: 1.15; word-break: break-word;">{displayName}</h1>
         <p class="text-sm mt-1.5" style="color: #d2c5ae;">
-          {raceType !== '—' ? `${raceType} ` : ''}{race} · {archetype}
+          {raceType !== '—' ? `${raceType} ` : ''}{race} · {archetype}{archetypeTypeLabel ? ` · ${archetypeTypeLabel}` : ''}
         </p>
         {#if transformation !== '—'}
           <p class="text-xs mt-0.5 font-semibold" style="color: #fb923c;">{transformation}</p>
@@ -211,15 +297,83 @@
     </div>
   {/if}
 
-  <!-- Action buttons -->
-  <div class="flex gap-3 pt-1">
-    <button
-      onclick={onNewCharacter}
-      class="flex-1 py-3 rounded-lg text-sm tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
-      style="font-family: 'Cinzel', serif; color: #ffdf96; background: linear-gradient(135deg, #1c1a2a, #13121c); border: 1px solid #f0c040; box-shadow: 0 0 22px rgba(240,192,64,0.12);"
-    >
-      Rewrite Destiny
-    </button>
+  <!-- Action row -->
+  <div class="flex flex-col gap-3 pt-1">
+
+    {#if shareUrl}
+      <!-- Success state: URL pill + Copy button -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2 rounded-lg px-4 py-3" style="background: #0d0d16; border: 1px solid rgba(125,211,252,0.3);">
+          <span class="text-xs flex-1 truncate" style="font-family: 'JetBrains Mono', monospace; color: #7dd3fc; user-select: text; cursor: text;">{shareUrl}</span>
+          <button
+            onclick={handleCopy}
+            class="shrink-0 text-xs px-3 py-1.5 rounded font-bold transition-all active:scale-95"
+            style="font-family: 'JetBrains Mono', monospace; color: {copied ? '#34d399' : '#7dd3fc'}; background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.25);"
+          >
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+        <!-- Secondary action: Rewrite Destiny (smaller, below URL pill) -->
+        <button
+          onclick={onNewCharacter}
+          class="w-full py-2.5 rounded-lg text-xs tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
+          style="font-family: 'Cinzel', serif; color: #9a907b; background: #1b1b24; border: 1px solid #4e4635;"
+        >
+          Rewrite Destiny
+        </button>
+      </div>
+
+    {:else}
+      <!-- Default / disabled / saving state: two buttons side by side -->
+      <div class="flex gap-3">
+
+        <!-- Save & Share button (cyan/silver accent to distinguish from gold Rewrite Destiny) -->
+        {#if canSave}
+          <button
+            onclick={handleSaveAndShare}
+            disabled={saving}
+            class="flex-1 py-3 rounded-lg text-sm tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
+            style="font-family: 'Cinzel', serif; color: #7dd3fc; background: linear-gradient(135deg, #0d1520, #0a1018); border: 1px solid #7dd3fc; box-shadow: 0 0 18px rgba(125,211,252,0.1); opacity: {saving ? '0.7' : '1'};"
+          >
+            {saving ? 'Saving…' : 'Save & Share'}
+          </button>
+        {:else}
+          <!-- Disabled: session under 90s OR over 24h (share view) -->
+          <button
+            disabled
+            aria-disabled="true"
+            class="flex-1 py-3 rounded-lg text-sm tracking-[0.15em] uppercase font-bold"
+            style="font-family: 'Cinzel', serif; color: #4a5568; background: #0d0d16; border: 1px solid #2d3748; cursor: not-allowed;"
+          >
+            Save & Share
+          </button>
+        {/if}
+
+        <button
+          onclick={onNewCharacter}
+          class="flex-1 py-3 rounded-lg text-sm tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
+          style="font-family: 'Cinzel', serif; color: #ffdf96; background: linear-gradient(135deg, #1c1a2a, #13121c); border: 1px solid #f0c040; box-shadow: 0 0 22px rgba(240,192,64,0.12);"
+        >
+          Rewrite Destiny
+        </button>
+      </div>
+
+      <!-- Inline explanation when disabled (aria-disabled + visible text per accessibility requirement) -->
+      {#if !canSave && sessionAgeSec < 86400}
+        <p class="text-xs text-center" style="font-family: 'JetBrains Mono', monospace; color: #6b7280;">
+          Session too brief — fate needs at least 90 seconds to settle.
+        </p>
+      {/if}
+
+      <!-- Error state -->
+      {#if saveError}
+        <p class="text-xs text-center" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">
+          {saveError}
+        </p>
+      {/if}
+
+    {/if}
+
   </div>
 
 </div>

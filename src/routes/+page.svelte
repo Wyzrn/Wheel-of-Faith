@@ -3,6 +3,7 @@
   import SpinWheel from '../components/SpinWheel.svelte'
   import TierBadge from '../components/TierBadge.svelte'
   import CharacterCard from '../components/CharacterCard.svelte'
+  import SettingsPanel from '../components/SettingsPanel.svelte'
   import { loadSession, saveSession, clearSession, createSession } from '$lib/session/store'
   import type { SessionState, SpinResult } from '$lib/session/types'
   import { buildInitialQueue, getSegmentsForCategory } from '$lib/game/spinQueue'
@@ -14,7 +15,13 @@
   import { archetypes } from '$lib/content/archetypes'
   import { backstories } from '$lib/content/backstories'
   import { titles } from '$lib/content/titles'
+  import { weaponMasteryLabels } from '$lib/content/weapon-mastery-labels'
+  import { settings } from '$lib/settings.svelte'
   // Derives weakness count from race's probability modifier when no explicit count is set
+  function archetypeTypeFor(label: string): string {
+    return archetypes.find(a => a.label === label)?.archetypeType ?? ''
+  }
+
   function deriveWeaknessCount(modifier: number): number {
     if (modifier < 0.65) return 0
     if (modifier < 1.15) return 1
@@ -31,12 +38,17 @@
   let showAnnouncement = $state<string | null>(null)
   let showCard = $state(false)
   let pendingStatBonuses = $state<Record<string, 'statBonus' | 'statPenalty'>>({})
+  // Class/subType/transformation power pool override — used only by racial bonus power spins
+  let activePowerPool = $state<{ label: string; weight: number }[]>([])
+  // Tracks cumulative tier shifts per stat so rerolls can re-apply bonuses
+  let statBonusOffsets = $state<Record<string, number>>({})
   // Track which ability labels have been used to enable greyed-out deduplication
   let usedRacialAbilities = $state<Set<string>>(new Set())
   let usedArchetypeAbilities = $state<Set<string>>(new Set())
   let showNameScreen = $state(false)
   let characterName = $state('')
   let isRevealed = $state(false)
+  let showSettings = $state(false)
 
   // ── Derived values ────────────────────────────────────────────────────────
   let currentDef = $derived(spinQueue[currentSpinIndex])
@@ -56,6 +68,16 @@
 
   // ── Ordered tier grades for tier-shift calculations ──────────────────────
   const TIER_ORDER = TIER_THRESHOLDS.map(t => t.grade)
+
+  // ── Stat grants applied when possessionStrength lands ────────────────────
+  const POSSESSION_GRANTS: Record<string, Record<string, 'statBonus' | 'statPenalty'>> = {
+    'Barely a Whisper (5%)':        {},
+    'A Flicker of Influence (20%)': { charisma: 'statBonus' },
+    'Shared Consciousness (40%)':   { charisma: 'statBonus', iq: 'statBonus' },
+    'Dominant Presence (60%)':      { strength: 'statBonus', charisma: 'statBonus' },
+    'Consuming Takeover (80%)':     { strength: 'statBonus', speed: 'statBonus', charisma: 'statBonus' },
+    'Full Possession (100%)':       { strength: 'statBonus', speed: 'statBonus', iq: 'statBonus', durability: 'statBonus' },
+  }
 
   // ── Tier → color map (used by result overlay and sidebar badges) ──────────
   const TIER_COLORS: Record<string, string> = {
@@ -103,6 +125,8 @@
     redemptionSpin:      90,
     redemptionOutcome:  160,
     title:               45,
+    possessionRace:     290,
+    possessionStrength: 315,
   }
 
   let currentCategoryHue = $derived(CATEGORY_HUES[currentDef?.category ?? ''])
@@ -112,11 +136,15 @@
     const def = currentDef
     if (!def) return getSegmentsForCategory('race')
 
-    // Use race-specific ability pool — dimm already-used abilities
+    // Use race-specific ability pool — prefer class or subType abilities when available
     if (def.category === 'racialAbility') {
       const raceResult = results.find(r => r.category === 'race')
       const race = races.find(r => r.label === raceResult?.resultLabel)
-      const pool = race?.abilities ?? getSegmentsForCategory('racialAbility')
+      const classResult = results.find(r => r.category === 'raceClass')
+      const classItem = race?.classPool?.find(c => c.label === classResult?.resultLabel)
+      const subTypeResult = results.find(r => r.category === 'raceSubType')
+      const subTypeItem = race?.subTypePool?.find(s => s.label === subTypeResult?.resultLabel)
+      const pool = classItem?.abilities ?? subTypeItem?.abilities ?? race?.abilities ?? getSegmentsForCategory('racialAbility')
       return pool.map(seg =>
         usedRacialAbilities.has(seg.label) ? { ...seg, weight: 0, dimmed: true } : seg
       )
@@ -143,14 +171,19 @@
       return race?.transformationPool ?? getSegmentsForCategory('raceTransformation')
     }
 
-    // Use archetype-specific ability pool — dimm already-used abilities
+    // Use archetype-specific ability pool — prefer customAbilityPool, then abilities, then fallback
     if (def.category === 'archetypeAbility') {
       const archetypeResult = results.find(r => r.category === 'archetype')
       const archetype = archetypes.find(a => a.label === archetypeResult?.resultLabel)
-      const pool = archetype?.abilities ?? getSegmentsForCategory('archetypeAbility')
+      const pool = archetype?.customAbilityPool ?? archetype?.abilities ?? getSegmentsForCategory('archetypeAbility')
       return pool.map(seg =>
         usedArchetypeAbilities.has(seg.label) ? { ...seg, weight: 0, dimmed: true } : seg
       )
+    }
+
+    // Possession target draws from races; possessionStrength uses spinQueue pool
+    if (def.category === 'possessionRace' || def.category === 'possessionStrength') {
+      return getSegmentsForCategory(def.category)
     }
 
     // Use race custom height pool when available
@@ -184,10 +217,11 @@
 
     const baseSegments = getSegmentsForCategory(def.category)
 
-    // Power category: filter already-used powers so the same power can't land twice
+    // Power category: racial bonus spins use activePowerPool; the global 'power' spin always uses global pool
     if (def.category === 'power') {
+      const pool = (def.useRacialPowerPool && activePowerPool.length > 0) ? activePowerPool : baseSegments
       const usedPowerLabels = new Set(results.filter(r => r.category === 'power').map(r => r.resultLabel))
-      return baseSegments.filter(s => !usedPowerLabels.has(s.label))
+      return pool.filter(s => !usedPowerLabels.has(s.label))
     }
 
     // Stat categories: apply tier rarity weights + race stat modifiers + transformation bonus
@@ -211,16 +245,27 @@
       }
       const modifier = baseModifier * transformationBonus
 
-      return baseSegments.map(seg => {
-        const fl = seg as { label: string; weight: number; score?: number }
-        const score = fl.score
-        if (score === undefined) return seg
-        // Higher score = rarer tier = lower weight; lower score = more common = higher weight
-        const rarityWeight = Math.max(0.3, 11 - score * 0.105)
-        // Race modifier: >1 shifts toward high scores, <1 shifts toward low scores
-        const finalWeight = Math.max(0.1, rarityWeight * Math.pow(modifier, score / 50))
-        return { ...seg, weight: finalWeight }
-      })
+      // Filter out stat tiers locked by racial tier (minStatTier)
+      const minTierIdx = race?.minStatTier != null ? TIER_ORDER.indexOf(race.minStatTier) : -1
+
+      return baseSegments
+        .filter(seg => {
+          if (minTierIdx < 0) return true
+          const fl = seg as { tier?: string }
+          if (!fl.tier) return true
+          const tIdx = TIER_ORDER.indexOf(fl.tier as TierGrade)
+          return tIdx < 0 || tIdx >= minTierIdx
+        })
+        .map(seg => {
+          const fl = seg as { label: string; weight: number; score?: number }
+          const score = fl.score
+          if (score === undefined) return seg
+          // Higher score = rarer tier = lower weight; lower score = more common = higher weight
+          const rarityWeight = Math.max(0.3, 11 - score * 0.105)
+          // Race modifier: >1 shifts toward high scores, <1 shifts toward low scores
+          const finalWeight = Math.max(0.1, rarityWeight * Math.pow(modifier, score / 50))
+          return { ...seg, weight: finalWeight }
+        })
     }
 
     return baseSegments
@@ -278,9 +323,9 @@
         insertSlots.push({ category: 'racialAbility' as const, displayName: `Racial Ability ${count > 1 ? i + 1 : ''}`.trim() })
       }
 
-      // Bonus power slots
+      // Bonus power slots — racial, use class-specific power pool if set
       for (let i = 0; i < extraPowers; i++) {
-        insertSlots.push({ category: 'power' as const, displayName: `Bonus Power ${extraPowers > 1 ? i + 1 : ''}`.trim() })
+        insertSlots.push({ category: 'power' as const, displayName: `Bonus Power ${extraPowers > 1 ? i + 1 : ''}`.trim(), useRacialPowerPool: true })
       }
 
       // Weakness slots immediately after abilities
@@ -307,6 +352,9 @@
           pendingStatBonuses[stat] = bonusType
         }
       }
+      if (subTypeItem?.powerPool?.length) {
+        activePowerPool = subTypeItem.powerPool
+      }
       if (subTypeItem?.grantedPowers?.length) {
         pendingGrantedPowers = subTypeItem.grantedPowers
         showAnnouncement = `${resultLabel}: grants ${pendingGrantedPowers.length} power${pendingGrantedPowers.length > 1 ? 's' : ''}!`
@@ -321,6 +369,11 @@
         }
         const bonusCount = Object.keys(classItem.statBonusGrants).length
         showAnnouncement = `${resultLabel}: unlocks ${bonusCount} stat bonus spin${bonusCount > 1 ? 's' : ''}!`
+      }
+      if (classItem?.powerPool?.length) {
+        activePowerPool = classItem.powerPool
+        const msg = `${resultLabel}: power pool activated!`
+        showAnnouncement = showAnnouncement ? showAnnouncement + ' ' + msg : msg
       }
       if (classItem?.grantedPowers?.length) {
         pendingGrantedPowers = classItem.grantedPowers
@@ -338,6 +391,11 @@
         const bonusCount = Object.keys(transItem.statBonusGrants).length
         showAnnouncement = `${resultLabel}: unlocks ${bonusCount} stat bonus spin${bonusCount > 1 ? 's' : ''}!`
       }
+      if (transItem?.powerPool?.length) {
+        activePowerPool = transItem.powerPool
+        const msg = `${resultLabel}: power pool activated!`
+        showAnnouncement = showAnnouncement ? showAnnouncement + ' ' + msg : msg
+      }
       if (transItem?.grantedPowers?.length) {
         pendingGrantedPowers = transItem.grantedPowers
         const msg = `${resultLabel}: grants ${pendingGrantedPowers.length} power${pendingGrantedPowers.length > 1 ? 's' : ''}!`
@@ -347,43 +405,142 @@
       usedRacialAbilities.add(resultLabel)
     } else if (def.category === 'archetypeAbility') {
       usedArchetypeAbilities.add(resultLabel)
+    } else if (def.category === 'possessionRace') {
+      // Just record who's possessing — no ability/weakness splicing unlike a real race land
+      showAnnouncement = `Possessed by ${resultLabel}!`
+    } else if (def.category === 'possessionStrength') {
+      const grants = POSSESSION_GRANTS[resultLabel] ?? {}
+      const grantKeys = Object.keys(grants)
+      for (const [stat, bonusType] of Object.entries(grants)) {
+        pendingStatBonuses[stat] = bonusType
+      }
+      if (grantKeys.length > 0) {
+        showAnnouncement = `${resultLabel} — the possession grants ${grantKeys.length} stat modifier${grantKeys.length > 1 ? 's' : ''}!`
+      } else {
+        showAnnouncement = `${resultLabel} — the possession barely stirs within you.`
+      }
     } else if (def.category === 'archetype') {
       const archetype = archetypes.find(a => a.label === resultLabel)
       const count = archetype?.abilitySpinCount ?? 1
-      const slots: SpinDefinition[] = Array.from({ length: count }, (_, i) => ({
-        category: 'archetypeAbility' as const,
-        displayName: count > 1 ? `Archetype Ability ${i + 1}` : 'Archetype Ability',
-      }))
-      spinQueue.splice(currentSpinIndex + 1, 0, ...slots)
-      showAnnouncement = `${resultLabel} grants ${count} ability spin${count > 1 ? 's' : ''}!`
+      const abilityLabel = archetype?.abilitySpinDisplayName ?? 'Archetype Ability'
+      const insertSlots: SpinDefinition[] = []
+
+      // Ability slots (custom display name for Stand, Breathing Style, Titan Form, etc.)
+      for (let i = 0; i < count; i++) {
+        insertSlots.push({
+          category: 'archetypeAbility' as const,
+          displayName: count > 1 ? `${abilityLabel} ${i + 1}` : abilityLabel,
+        })
+      }
+
+      // Stat bonus grants — deferred to when that stat is spun
+      if (archetype?.statBonusGrants) {
+        for (const [stat, bonusType] of Object.entries(archetype.statBonusGrants)) {
+          pendingStatBonuses[stat] = bonusType as 'statBonus' | 'statPenalty'
+        }
+      }
+
+      // Extra power spins
+      const extraPowers = archetype?.extraPowerSpins ?? 0
+      for (let i = 0; i < extraPowers; i++) {
+        insertSlots.push({
+          category: 'power' as const,
+          displayName: extraPowers > 1 ? `Bonus Power ${i + 1}` : 'Bonus Power',
+        })
+      }
+
+      // Bonus weapon spins (dual wielders, artificers, bounty hunters)
+      const extraWeapons = archetype?.bonusWeaponSpins ?? 0
+      for (let i = 0; i < extraWeapons; i++) {
+        insertSlots.push({
+          category: 'weapon' as const,
+          displayName: extraWeapons > 1 ? `Second Weapon ${i + 1}` : 'Second Weapon',
+        })
+      }
+
+      // Arbitrary bonus spins (possession race + strength, etc.)
+      for (const bonusSpin of (archetype?.bonusSpins ?? [])) {
+        insertSlots.push({
+          category: bonusSpin.category as SpinCategory,
+          displayName: bonusSpin.displayName,
+        })
+      }
+
+      // Granted powers — injected directly without a spin
+      if (archetype?.grantedPowers?.length) {
+        pendingGrantedPowers = archetype.grantedPowers
+      }
+
+      spinQueue.splice(currentSpinIndex + 1, 0, ...insertSlots)
+
+      // Build announcement
+      const parts: string[] = []
+      if (count > 0) parts.push(`${count} ${abilityLabel.toLowerCase()} spin${count > 1 ? 's' : ''}`)
+      if (extraPowers > 0) parts.push(`${extraPowers} bonus power${extraPowers > 1 ? 's' : ''}`)
+      if (extraWeapons > 0) parts.push(`${extraWeapons} bonus weapon${extraWeapons > 1 ? 's' : ''}`)
+      if (archetype?.bonusSpins?.length) parts.push(`${archetype.bonusSpins.length} special spin${archetype.bonusSpins.length > 1 ? 's' : ''}`)
+      if (archetype?.grantedPowers?.length) parts.push(`${archetype.grantedPowers.length} granted power${archetype.grantedPowers.length > 1 ? 's' : ''}`)
+      if (archetype?.statBonusGrants) {
+        const n = Object.keys(archetype.statBonusGrants).length
+        parts.push(`${n} stat modifier${n > 1 ? 's' : ''}`)
+      }
+      showAnnouncement = parts.length > 0 ? `${resultLabel}: ${parts.join(', ')}!` : `${resultLabel} archetype selected!`
     } else if (def.category === 'backstory' || def.category === 'title') {
       const pool = def.category === 'backstory' ? backstories : titles
       const item = pool.find(b => b.label === resultLabel)
       if (item?.statBonusGrants && Object.keys(item.statBonusGrants).length > 0) {
-        const insertSlots: SpinDefinition[] = []
+        // If the stat was already spun: splice bonus spin immediately (retroactive).
+        // If not yet spun: defer into pendingStatBonuses so it fires right after that stat.
+        const immediateSlots: SpinDefinition[] = []
+        let deferredCount = 0
         for (const [stat, bonusType] of Object.entries(item.statBonusGrants)) {
-          const statName = stat.replace(/([A-Z])/g, ' $1').trim()
-          const capStat = statName.charAt(0).toUpperCase() + statName.slice(1)
-          insertSlots.push({
-            category: bonusType as 'statBonus' | 'statPenalty',
-            displayName: `${capStat} ${bonusType === 'statBonus' ? 'Bonus' : 'Penalty'}`,
-            targetStat: stat,
-          })
+          const alreadySpun = results.some(r => r.category === stat)
+          if (alreadySpun) {
+            const statName = stat.replace(/([A-Z])/g, ' $1').trim()
+            const capStat = statName.charAt(0).toUpperCase() + statName.slice(1)
+            immediateSlots.push({
+              category: bonusType as 'statBonus' | 'statPenalty',
+              displayName: `${capStat} ${bonusType === 'statBonus' ? 'Bonus' : 'Penalty'}`,
+              targetStat: stat,
+            })
+          } else {
+            pendingStatBonuses[stat] = bonusType as 'statBonus' | 'statPenalty'
+            deferredCount++
+          }
         }
-        spinQueue.splice(currentSpinIndex + 1, 0, ...insertSlots)
-        const count = insertSlots.length
-        showAnnouncement = `${resultLabel}: ${count} stat modifier spin${count > 1 ? 's' : ''} granted!`
+        if (immediateSlots.length > 0) spinQueue.splice(currentSpinIndex + 1, 0, ...immediateSlots)
+        const totalCount = immediateSlots.length + deferredCount
+        showAnnouncement = `${resultLabel}: ${totalCount} stat modifier spin${totalCount > 1 ? 's' : ''} granted!`
       }
     } else if (def.category === 'weaponMastery') {
-      const segs = getSegmentsForCategory('weaponMastery')
-      const fl = segs[resultIndex] as { label: string; weight: number; tier?: string }
-      const tierIdx = TIER_ORDER.indexOf((fl?.tier ?? '') as TierGrade)
-      if (tierIdx >= TIER_ORDER.indexOf('C-' as TierGrade)) {
-        spinQueue.splice(currentSpinIndex + 1, 0, {
-          category: 'weaponEnchantment' as const,
-          displayName: 'Weapon Enchantment',
-        })
-        showAnnouncement = `Weapon mastery ${fl?.tier} — enchantment unlocked!`
+      // Use direct typed import — avoids WeightedSegment cast issues with filtered wheels
+      const fl = weaponMasteryLabels.find(s => s.label === resultLabel)
+      const tierIdx = fl != null ? TIER_ORDER.indexOf(fl.tier) : -1
+      const cMinusIdx = TIER_ORDER.indexOf('C-' as TierGrade)
+      const sMinusIdx = TIER_ORDER.indexOf('S-' as TierGrade)
+      const godIdx    = TIER_ORDER.indexOf('God' as TierGrade)
+      // Determine enchants per weapon based on tier
+      let enchantsPerWeapon = 0
+      if (tierIdx >= cMinusIdx) enchantsPerWeapon = 1
+      if (tierIdx >= sMinusIdx) enchantsPerWeapon = 2
+      if (tierIdx >= godIdx)    enchantsPerWeapon = 3
+      // Count all real weapons (bonus + main); Unarmed doesn't qualify
+      const weaponResults = results.filter(r => r.category === 'weapon' && r.resultLabel !== 'No Weapon (Unarmed)')
+      const totalEnchants = weaponResults.length * enchantsPerWeapon
+      if (totalEnchants > 0) {
+        const enchantSlots: SpinDefinition[] = []
+        let n = 1
+        for (const wr of weaponResults) {
+          const weaponName = wr.resultLabel.length > 18 ? wr.resultLabel.slice(0, 16) + '…' : wr.resultLabel
+          for (let e = 0; e < enchantsPerWeapon; e++) {
+            enchantSlots.push({
+              category: 'weaponEnchantment' as const,
+              displayName: totalEnchants > 1 ? `Enchantment ${n++} — ${weaponName}` : 'Weapon Enchantment',
+            })
+          }
+        }
+        spinQueue.splice(currentSpinIndex + 1, 0, ...enchantSlots)
+        showAnnouncement = `Weapon mastery ${fl?.tier} — ${totalEnchants} enchantment${totalEnchants > 1 ? 's' : ''} unlocked!`
       }
     } else if (def.category === 'redemptionSpin') {
       if (resultLabel === 'Redemption') {
@@ -412,10 +569,122 @@
             ?? results[targetIdx].resultLabel
           // Index-based replacement triggers Svelte 5 reactivity correctly
           results[targetIdx] = { ...results[targetIdx], tier: newGrade, score: newScore, resultLabel: newLabel }
+          // Track cumulative shift so rerolls can re-apply bonuses
+          statBonusOffsets[def.targetStat] = (statBonusOffsets[def.targetStat] ?? 0) + tierShift
         }
       }
       const statLabel = def.targetStat ?? 'stat'
       showAnnouncement = `${statLabel.replace(/([A-Z])/g, ' $1').trim()} shifted by ${resultLabel} tier${Math.abs(tierShift) > 1 ? 's' : ''}!`
+    } else if (def.category === 'redemptionOutcome') {
+      const STAT_CATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','potential','energyLevel','powerMastery','weaponMastery']
+      if (resultLabel === 'Reroll Everything (Chaos Edition)') {
+        // Remove all existing stat results; splice fresh stat spins marked as rerolls
+        for (const cat of STAT_CATS) {
+          const idx = results.findIndex(r => r.category === cat)
+          if (idx !== -1) results.splice(idx, 1)
+        }
+        const rerollSlots: SpinDefinition[] = STAT_CATS.map(cat => ({
+          category: cat as SpinCategory,
+          displayName: `Reroll: ${cat.replace(/([A-Z])/g, ' $1').trim().replace(/^\w/, c => c.toUpperCase())}`,
+          isReroll: true,
+        }))
+        spinQueue.splice(currentSpinIndex + 1, 0, ...rerollSlots)
+        showAnnouncement = 'Chaos reigns — all stats rerolling! (Your bonuses are saved.)'
+      } else if (resultLabel === 'All Stats +1 Tier') {
+        for (const cat of STAT_CATS) {
+          const idx = results.findIndex(r => r.category === cat)
+          if (idx !== -1 && results[idx].tier) {
+            const curIdx = TIER_ORDER.indexOf(results[idx].tier as TierGrade)
+            const newIdx = Math.min(TIER_ORDER.length - 1, curIdx + 1)
+            const newGrade = TIER_ORDER[newIdx]
+            const statSegs = getSegmentsForCategory(cat as SpinCategory)
+            const newLbl = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === newGrade)?.label ?? results[idx].resultLabel
+            results[idx] = { ...results[idx], tier: newGrade, score: gradeToScore(newGrade), resultLabel: newLbl }
+            statBonusOffsets[cat] = (statBonusOffsets[cat] ?? 0) + 1
+          }
+        }
+        showAnnouncement = 'Every stat bumped up one tier!'
+      } else if (resultLabel === 'Demigod Status (Unofficial)') {
+        for (const cat of STAT_CATS) {
+          const idx = results.findIndex(r => r.category === cat)
+          if (idx !== -1 && results[idx].tier) {
+            const curIdx = TIER_ORDER.indexOf(results[idx].tier as TierGrade)
+            const newIdx = Math.min(TIER_ORDER.length - 1, curIdx + 3)
+            const newGrade = TIER_ORDER[newIdx]
+            const statSegs = getSegmentsForCategory(cat as SpinCategory)
+            const newLbl = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === newGrade)?.label ?? results[idx].resultLabel
+            results[idx] = { ...results[idx], tier: newGrade, score: gradeToScore(newGrade), resultLabel: newLbl }
+            statBonusOffsets[cat] = (statBonusOffsets[cat] ?? 0) + 3
+          }
+        }
+        showAnnouncement = 'Demigod Status: all stats +3 tiers!'
+      } else if (resultLabel === 'Reroll Your Worst Stat') {
+        const worstStat = STAT_CATS.reduce((worst, cat) => {
+          const r = results.find(r => r.category === cat)
+          const worstR = results.find(r => r.category === worst)
+          if (!r) return worst
+          if (!worstR) return cat
+          return (r.score ?? 0) < (worstR.score ?? 0) ? cat : worst
+        }, STAT_CATS[0])
+        const worstIdx = results.findIndex(r => r.category === worstStat)
+        if (worstIdx !== -1) results.splice(worstIdx, 1)
+        spinQueue.splice(currentSpinIndex + 1, 0, {
+          category: worstStat as SpinCategory,
+          displayName: `Reroll: ${worstStat.replace(/([A-Z])/g, ' $1').trim().replace(/^\w/, c => c.toUpperCase())}`,
+          isReroll: true,
+        })
+        showAnnouncement = `Rerolling your worst stat!`
+      } else if (resultLabel === 'Double Your Best Stat') {
+        const bestStat = STAT_CATS.reduce((best, cat) => {
+          const r = results.find(r => r.category === cat)
+          const bestR = results.find(r => r.category === best)
+          if (!r) return best
+          if (!bestR) return cat
+          return (r.score ?? 0) > (bestR.score ?? 0) ? cat : best
+        }, STAT_CATS[0])
+        const bestIdx = results.findIndex(r => r.category === bestStat)
+        if (bestIdx !== -1 && results[bestIdx].tier) {
+          const curIdx = TIER_ORDER.indexOf(results[bestIdx].tier as TierGrade)
+          const newIdx = Math.min(TIER_ORDER.length - 1, curIdx + 5)
+          const newGrade = TIER_ORDER[newIdx]
+          const statSegs = getSegmentsForCategory(bestStat as SpinCategory)
+          const newLbl = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === newGrade)?.label ?? results[bestIdx].resultLabel
+          results[bestIdx] = { ...results[bestIdx], tier: newGrade, score: gradeToScore(newGrade), resultLabel: newLbl }
+          statBonusOffsets[bestStat] = (statBonusOffsets[bestStat] ?? 0) + 5
+        }
+        showAnnouncement = 'Best stat doubled (+5 tiers)!'
+      } else if (resultLabel === 'God Tier Potential (One Use)') {
+        const potIdx = results.findIndex(r => r.category === 'potential')
+        if (potIdx !== -1) {
+          const statSegs = getSegmentsForCategory('potential')
+          const godLbl = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === 'God')?.label ?? 'God Tier Potential'
+          results[potIdx] = { ...results[potIdx], tier: 'God', score: 100, resultLabel: godLbl }
+        }
+        showAnnouncement = 'Potential raised to God Tier!'
+      } else if (resultLabel === 'Free God Tier Strength') {
+        const strIdx = results.findIndex(r => r.category === 'strength')
+        if (strIdx !== -1) {
+          const statSegs = getSegmentsForCategory('strength')
+          const godLbl = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === 'God')?.label ?? 'Lifts Reality Itself'
+          results[strIdx] = { ...results[strIdx], tier: 'God', score: 100, resultLabel: godLbl }
+        }
+        showAnnouncement = 'Strength raised to God Tier!'
+      } else if (resultLabel === 'Gain a Bonus Power' || resultLabel === 'Free Power Reroll') {
+        spinQueue.splice(currentSpinIndex + 1, 0, { category: 'power' as const, displayName: 'Redemption Power' })
+        showAnnouncement = resultLabel === 'Free Power Reroll' ? 'Spin for a free power!' : 'Bonus power granted!'
+      } else if (resultLabel === 'Lose One Weakness') {
+        const weakIdx = results.map((r, i) => ({ r, i })).reverse().find(({ r }) => r.category === 'weakness')?.i ?? -1
+        if (weakIdx !== -1) results.splice(weakIdx, 1)
+        showAnnouncement = 'One weakness removed!'
+      } else if (resultLabel === 'Bonus Archetype Ability') {
+        spinQueue.splice(currentSpinIndex + 1, 0, { category: 'archetypeAbility' as const, displayName: 'Redemption Archetype Ability' })
+        showAnnouncement = 'Bonus archetype ability spin granted!'
+      } else if (resultLabel === 'Secret Fourth Racial Ability') {
+        spinQueue.splice(currentSpinIndex + 1, 0, { category: 'racialAbility' as const, displayName: 'Secret Racial Ability' })
+        showAnnouncement = 'A hidden racial ability has been unlocked!'
+      } else {
+        showAnnouncement = `${resultLabel} — fate is strange.`
+      }
     }
 
     // Step 2a: For stat categories, check pendingStatBonuses and splice modifier spin
@@ -438,10 +707,12 @@
       timestamp: new Date().toISOString(),
     }
 
-    // For stat categories, look up tier + score from the FlavorLabel embedded data
+    // For stat categories, look up tier + score from the FlavorLabel embedded data.
+    // Must search by resultLabel (not resultIndex) because minStatTier filtering shifts indices.
     if (STAT_CATEGORIES.has(def.category)) {
       const segments = getSegmentsForCategory(def.category)
-      const label = segments[resultIndex] as { label: string; weight: number; color?: string; tier?: TierGrade; score?: number }
+      const label = (segments as { label: string; weight: number; color?: string; tier?: TierGrade; score?: number }[])
+        .find(s => s.label === resultLabel)
       if (label?.tier !== undefined) {
         spinResult.tier = label.tier
       }
@@ -450,7 +721,27 @@
       }
     }
 
+    // If this is a reroll spin, remove the old result for this category before pushing
+    if (def.isReroll) {
+      const oldIdx = results.findIndex(r => r.category === def.category)
+      if (oldIdx !== -1) results.splice(oldIdx, 1)
+    }
+
     results.push(spinResult)
+
+    // Re-apply saved bonus offsets so rerolled stats keep their previously earned shifts
+    if (def.isReroll && STAT_CATEGORIES.has(def.category) && statBonusOffsets[def.category]) {
+      const offset = statBonusOffsets[def.category]
+      const newIdx = results.findIndex(r => r.category === def.category)
+      if (newIdx !== -1 && results[newIdx].tier) {
+        const curTierIdx = TIER_ORDER.indexOf(results[newIdx].tier as TierGrade)
+        const shiftedIdx = Math.max(0, Math.min(TIER_ORDER.length - 1, curTierIdx + offset))
+        const shiftedGrade = TIER_ORDER[shiftedIdx]
+        const statSegs = getSegmentsForCategory(def.category as SpinCategory)
+        const shiftedLabel = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === shiftedGrade)?.label ?? results[newIdx].resultLabel
+        results[newIdx] = { ...results[newIdx], tier: shiftedGrade, score: gradeToScore(shiftedGrade), resultLabel: shiftedLabel }
+      }
+    }
 
     // Inject class/subType/transformation granted powers directly (no spin required)
     for (const powerLabel of pendingGrantedPowers) {
@@ -517,6 +808,8 @@
     pendingStatBonuses = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
+    activePowerPool = []
+    statBonusOffsets = {}
   }
 
   // ── handleNewCharacter: same as start over ────────────────────────────────
@@ -535,6 +828,8 @@
     pendingStatBonuses = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
+    activePowerPool = []
+    statBonusOffsets = {}
   }
 
   function handleNameSubmit() {
@@ -553,10 +848,21 @@
       <span class="material-symbols-outlined" style="color: #f0c040; font-size: 18px; font-variation-settings: 'FILL' 1;">casino</span>
       <span style="font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #ffdf96; letter-spacing: 0.18em;">WHEEL OF FATE</span>
     </div>
-    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9a907b; letter-spacing: 0.05em;">
-      {spinCounterText}
-    </span>
+    <div class="flex items-center gap-3">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9a907b; letter-spacing: 0.05em;">{spinCounterText}</span>
+      <button
+        onclick={() => showSettings = !showSettings}
+        style="background: none; border: none; cursor: pointer; color: {showSettings ? '#f0c040' : '#9a907b'}; display: flex; align-items: center; transition: color 0.15s;"
+        aria-label="Settings"
+      >
+        <span class="material-symbols-outlined" style="font-size: 20px; font-variation-settings: 'FILL' {showSettings ? '1' : '0'};">settings</span>
+      </button>
+    </div>
   </nav>
+
+  {#if showSettings}
+    <SettingsPanel onClose={() => showSettings = false} />
+  {/if}
 
   <!-- Resume prompt (modal overlay) -->
   {#if showResumePrompt}
@@ -622,7 +928,7 @@
   <!-- Character card screen -->
   {#if showCard}
     <div class="flex justify-center pt-20 pb-8 px-4">
-      <CharacterCard {results} name={characterName} onNewCharacter={handleNewCharacter} />
+      <CharacterCard {results} name={characterName} startedAt={currentSession.startedAt} onNewCharacter={handleNewCharacter} />
     </div>
   {/if}
 
@@ -662,7 +968,7 @@
               <div class="flex-1 min-w-0">
                 <p class="text-xs truncate mb-0.5"
                   style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 10px;">{result.category}</p>
-                <p class="text-xs truncate" style="color: #e4e1ee; line-height: 1.3;">{result.resultLabel}</p>
+                <p class="text-xs truncate" style="color: #e4e1ee; line-height: 1.3;">{result.resultLabel}{result.category === 'archetype' && archetypeTypeFor(result.resultLabel) ? ` · ${archetypeTypeFor(result.resultLabel)}` : ''}</p>
               </div>
               {#if result.tier}
                 <span class="text-xs font-bold shrink-0 self-center px-1.5 py-0.5 rounded"
@@ -698,6 +1004,9 @@
               segments={currentSegments}
               onSpinComplete={handleSpinComplete}
               categoryHue={currentCategoryHue}
+              soundEnabled={settings.soundEnabled}
+              effectsEnabled={settings.effectsEnabled}
+              spinSpeedMultiplier={settings.spinSpeed}
             />
           {/key}
 
@@ -707,9 +1016,11 @@
             {@const tc = TIER_COLORS[last?.tier ?? ''] ?? null}
             <div
               class="absolute inset-0 flex flex-col items-center justify-center rounded-2xl z-10"
-              style="background: rgba(0,0,0,0.78); backdrop-filter: blur(4px); animation: fadeIn 0.22s ease-out forwards;"
+              style="background: rgba(0,0,0,0.78); backdrop-filter: blur(4px); animation: fadeIn 0.18s ease-out forwards;"
             >
-              <div class="flex flex-col items-center gap-4 px-8 text-center">
+              <div class="flex flex-col items-center gap-4 px-8 text-center"
+                style="animation: resultReveal 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;"
+              >
 
                 <!-- Tier badge (stats only) -->
                 {#if last?.tier && tc}
