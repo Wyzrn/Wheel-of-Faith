@@ -83,16 +83,12 @@ describe('POST /api/characters', () => {
   })
 
   it('returns 429 on the 6th POST from the same IP within 10 minutes', async () => {
-    // Use a fresh app instance so rate limit state is clean for this test
-    const rateMongod = await MongoMemoryServer.create()
-    process.env.MONGODB_URI = rateMongod.getUri()
-    const rateApp = await createApp()
-
-    const ip = '203.0.113.99'
-    let lastRes: Awaited<ReturnType<typeof rateApp.inject>> | null = null
+    // Use a unique IP to avoid pollution from other tests in the same app instance
+    const ip = '10.0.0.99'
+    let lastRes: Awaited<ReturnType<typeof app.inject>> | null = null
 
     for (let i = 0; i < 6; i++) {
-      lastRes = await rateApp.inject({
+      lastRes = await app.inject({
         method: 'POST',
         url: '/api/characters',
         payload: { ...validBody(), session_started_at: new Date(Date.now() - 91_000).toISOString() },
@@ -101,12 +97,6 @@ describe('POST /api/characters', () => {
     }
 
     expect(lastRes!.statusCode).toBe(429)
-
-    await rateApp.close()
-    await rateMongod.stop()
-
-    // Restore original MONGODB_URI for other tests
-    process.env.MONGODB_URI = mongod.getUri()
   })
 })
 
