@@ -4,11 +4,12 @@
   import { archetypes } from '$lib/content/archetypes'
   import { onMount, onDestroy } from 'svelte'
 
-  let { results, name = '', startedAt, onNewCharacter }: {
+  let { results, name = '', startedAt, onNewCharacter, onBackToMenu }: {
     results: SpinResult[]
     name?: string
     startedAt: string
     onNewCharacter: () => void
+    onBackToMenu?: () => void
   } = $props()
 
   function get(category: string) {
@@ -130,8 +131,15 @@
         return
       }
 
-      const { url } = await res.json() as { shareId: string; url: string }
+      const { shareId, url } = await res.json() as { shareId: string; url: string }
       shareUrl = `${window.location.origin}${url}`
+      // persist to local character list for the View Characters menu
+      try {
+        const existing: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
+        if (!existing.includes(shareId)) {
+          localStorage.setItem('wof_saved_chars', JSON.stringify([shareId, ...existing].slice(0, 50)))
+        }
+      } catch { /* ignore storage errors */ }
     } finally {
       saving = false
     }
@@ -313,14 +321,25 @@
             {copied ? 'Copied!' : 'Copy'}
           </button>
         </div>
-        <!-- Secondary action: Rewrite Destiny (smaller, below URL pill) -->
-        <button
-          onclick={onNewCharacter}
-          class="w-full py-2.5 rounded-lg text-xs tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
-          style="font-family: 'Cinzel', serif; color: #9a907b; background: #1b1b24; border: 1px solid #4e4635;"
-        >
-          Rewrite Destiny
-        </button>
+        <!-- Secondary actions row -->
+        <div class="flex gap-2">
+          {#if onBackToMenu}
+            <button
+              onclick={onBackToMenu}
+              class="flex-1 py-2.5 rounded-lg text-xs tracking-[0.12em] uppercase font-bold transition-all active:scale-95"
+              style="font-family: 'Cinzel', serif; color: #9a907b; background: #0d0d16; border: 1px solid #4e4635;"
+            >
+              ← Menu
+            </button>
+          {/if}
+          <button
+            onclick={onNewCharacter}
+            class="flex-1 py-2.5 rounded-lg text-xs tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
+            style="font-family: 'Cinzel', serif; color: #9a907b; background: #1b1b24; border: 1px solid #4e4635;"
+          >
+            Rewrite Destiny
+          </button>
+        </div>
       </div>
 
     {:else}
@@ -370,6 +389,17 @@
         <p class="text-xs text-center" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">
           {saveError}
         </p>
+      {/if}
+
+      <!-- Back to Menu (bottom, quiet) -->
+      {#if onBackToMenu}
+        <button
+          onclick={onBackToMenu}
+          class="w-full py-2 text-xs tracking-[0.12em] uppercase transition-all"
+          style="font-family: 'JetBrains Mono', monospace; color: #4e4635; background: none; border: none; cursor: pointer;"
+        >
+          ← Back to Menu
+        </button>
       {/if}
 
     {/if}

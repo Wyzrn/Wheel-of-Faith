@@ -30,6 +30,7 @@
   }
 
   // ── State declarations ────────────────────────────────────────────────────
+  let showMenu = $state(true)
   let currentSession = $state<SessionState>(createSession())
   let showResumePrompt = $state(false)
   let spinQueue = $state<SpinDefinition[]>(buildInitialQueue())
@@ -277,6 +278,7 @@
     if (saved && saved.completedSpins.length > 0) {
       currentSession = saved
       showResumePrompt = true
+      showMenu = false
       // Restore queue and position if available (D-11 resume logic)
       if (saved.spinQueue && saved.spinQueue.length > 0) {
         spinQueue = saved.spinQueue
@@ -812,6 +814,13 @@
     statBonusOffsets = {}
   }
 
+  // ── handleBackToMenu: return to main menu without starting a new session ─
+  function handleBackToMenu() {
+    showMenu = true
+    showCard = false
+    showNameScreen = false
+  }
+
   // ── handleNewCharacter: same as start over ────────────────────────────────
   function handleNewCharacter() {
     clearSession()
@@ -849,7 +858,9 @@
       <span style="font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #ffdf96; letter-spacing: 0.18em;">WHEEL OF FATE</span>
     </div>
     <div class="flex items-center gap-3">
-      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9a907b; letter-spacing: 0.05em;">{spinCounterText}</span>
+      {#if !showMenu}
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #9a907b; letter-spacing: 0.05em;">{spinCounterText}</span>
+      {/if}
       <button
         onclick={() => showSettings = !showSettings}
         style="background: none; border: none; cursor: pointer; color: {showSettings ? '#f0c040' : '#9a907b'}; display: flex; align-items: center; transition: color 0.15s;"
@@ -862,6 +873,47 @@
 
   {#if showSettings}
     <SettingsPanel onClose={() => showSettings = false} />
+  {/if}
+
+  <!-- Main Menu -->
+  {#if showMenu}
+    <div class="min-h-screen flex flex-col items-center justify-center px-6 pt-14" style="background: #07070d;">
+      <!-- Decorative top glow -->
+      <div class="absolute top-0 inset-x-0 h-64 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240,192,64,0.07), transparent);"></div>
+
+      <!-- Logo mark -->
+      <div class="mb-8 flex flex-col items-center gap-4">
+        <span class="material-symbols-outlined" style="font-size: 56px; color: #f0c040; font-variation-settings: 'FILL' 1;">casino</span>
+        <div class="text-center">
+          <h1 style="font-family: 'Cinzel', serif; font-size: clamp(2rem, 8vw, 3.2rem); font-weight: 900; color: #ffdf96; letter-spacing: 0.18em; line-height: 1.1;">WHEEL OF FATE</h1>
+          <p class="mt-3 text-sm tracking-[0.25em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Spin your destiny. Accept the consequences.</p>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="w-24 h-px mb-10" style="background: linear-gradient(90deg, transparent, #f0c04040, transparent);"></div>
+
+      <!-- Buttons -->
+      <div class="flex flex-col gap-4 w-full max-w-xs">
+        <button
+          onclick={() => { showMenu = false }}
+          class="w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold transition-all active:scale-95 hover:scale-[1.02]"
+          style="font-family: 'Cinzel', serif; color: #ffdf96; background: linear-gradient(135deg, #1c1a2a, #13121c); border: 1px solid #f0c040; box-shadow: 0 0 32px rgba(240,192,64,0.18);"
+        >
+          Spin Your Fate
+        </button>
+        <a
+          href="/characters"
+          class="w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold transition-all active:scale-95 hover:scale-[1.02] text-center block"
+          style="font-family: 'Cinzel', serif; color: #9a907b; background: #0d0d16; border: 1px solid #4e4635; text-decoration: none;"
+        >
+          View Characters
+        </a>
+      </div>
+
+      <!-- Bottom flavour -->
+      <p class="mt-14 text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">23 spins. One fate. No take-backs.</p>
+    </div>
   {/if}
 
   <!-- Resume prompt (modal overlay) -->
@@ -928,7 +980,7 @@
   <!-- Character card screen -->
   {#if showCard}
     <div class="flex justify-center pt-20 pb-8 px-4">
-      <CharacterCard {results} name={characterName} startedAt={currentSession.startedAt} onNewCharacter={handleNewCharacter} />
+      <CharacterCard {results} name={characterName} startedAt={currentSession.startedAt} onNewCharacter={handleNewCharacter} onBackToMenu={handleBackToMenu} />
     </div>
   {/if}
 
