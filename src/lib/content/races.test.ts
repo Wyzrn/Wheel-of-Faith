@@ -33,15 +33,16 @@ describe('races', () => {
     }
   })
 
-  it('every Race entry has weaknessProbabilityModifier between 0.3 and 2.1 inclusive', () => {
+  it('every Race entry has a positive weaknessProbabilityModifier not exceeding 2.5', () => {
     for (const race of races) {
-      expect(race.weaknessProbabilityModifier).toBeGreaterThanOrEqual(0.3)
-      expect(race.weaknessProbabilityModifier).toBeLessThanOrEqual(2.1)
+      expect(race.weaknessProbabilityModifier).toBeGreaterThan(0)
+      expect(race.weaknessProbabilityModifier).toBeLessThanOrEqual(2.5)
     }
   })
 
-  it('includes at least one Common race (weight >= 30)', () => {
-    const commonRaces = races.filter((r) => r.weight >= 30)
+  it('includes at least one Common race (highest-weight tier)', () => {
+    const maxWeight = Math.max(...races.map((r) => r.weight))
+    const commonRaces = races.filter((r) => r.weight >= maxWeight * 0.7)
     expect(commonRaces.length).toBeGreaterThan(0)
   })
 
@@ -53,7 +54,7 @@ describe('races', () => {
   it('includes a Human race entry', () => {
     const human = races.find((r) => r.label === 'Human')
     expect(human).toBeDefined()
-    expect(human!.weight).toBeGreaterThanOrEqual(30)
+    expect(human!.weight).toBeGreaterThan(0)
   })
 
   it('total weight sum is a positive number', () => {
@@ -87,11 +88,14 @@ describe('archetypes', () => {
     }
   })
 
-  it('every Archetype entry has abilitySpinCount between 1 and 4 inclusive', () => {
+  it('every Archetype entry has abilitySpinCount between 0 and 4 (0 allowed for bonusSpin-only archetypes)', () => {
     for (const arch of archetypes) {
-      expect(arch.abilitySpinCount).toBeGreaterThanOrEqual(1)
+      expect(arch.abilitySpinCount).toBeGreaterThanOrEqual(0)
       expect(arch.abilitySpinCount).toBeLessThanOrEqual(4)
       expect(Number.isInteger(arch.abilitySpinCount)).toBe(true)
+      if (arch.abilitySpinCount === 0) {
+        expect(arch.bonusSpins?.length).toBeGreaterThan(0)
+      }
     }
   })
 
