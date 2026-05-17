@@ -12,6 +12,7 @@ export interface ICharacter extends Document {
   created_at: Date
   deleted_at: Date | null
   share_in_gallery: boolean
+  rivals_wins: number
 }
 
 const CharacterSchema = new Schema<ICharacter>({
@@ -26,6 +27,7 @@ const CharacterSchema = new Schema<ICharacter>({
   created_at:          { type: Date, default: Date.now },
   deleted_at:          { type: Date, default: null, index: true },
   share_in_gallery:    { type: Boolean, default: false },
+  rivals_wins:         { type: Number, default: 0 },
 }, {
   collection: 'characters',
   versionKey: false,

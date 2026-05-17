@@ -20,20 +20,50 @@ export interface Race {
   abilities: { label: string; weight: number }[]  // race-unique ability pool drawn for racialAbility spins
   statModifiers?: Record<string, number>  // multiplier per stat category; >1 boosts higher tiers, <1 pushes lower
   extraPowerSpins?: number                // additional power category spins spliced after race lands
+  minStatTier?: TierGrade                 // lowest stat tier grade that can be rolled; tiers below this are excluded
   customHeightPool?: { label: string; weight: number }[]  // overrides default height labels for this race
-  subTypePool?: { label: string; weight: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[] }[]       // if set, a raceSubType spin is spliced after race lands
-  classPool?: { label: string; weight: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[] }[]         // if set, a raceClass spin is spliced after subType (or after race if no subType)
-  transformationPool?: { label: string; weight: number; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[] }[]  // if set, a raceTransformation spin is spliced; statBonus multiplies all stat probabilities
+  // Multipliers applied to base weaponType/armorType segment weights for this race.
+  // Keys match segment labels (e.g. 'Melee', 'None'). Missing keys default to ×1.
+  weaponTypeBias?: Record<string, number>
+  armorTypeBias?: Record<string, number>
+  subTypePool?: { label: string; weight: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]       // if set, a raceSubType spin is spliced after race lands
+  classPool?: { label: string; weight: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]         // if set, a raceClass spin is spliced after subType (or after race if no subType)
+  transformationPool?: { label: string; weight: number; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]  // if set, a raceTransformation spin is spliced; statBonus multiplies all stat probabilities
 }
 
-// Archetype definition — drives archetype ability spin count.
+// Archetype definition — drives archetype ability spin count and special effects.
 // Used in src/lib/content/archetypes.ts (Plan 02-02).
 export interface Archetype {
   label: string
   weight: number
-  abilitySpinCount: number // 1–4; determines how many archetypeAbility slots are spliced
+  abilitySpinCount: number    // 0–4; how many archetypeAbility slots are spliced
   description?: string
-  abilities: { label: string; weight: number }[]  // archetype-unique ability pool
+  abilities: { label: string; weight: number }[]  // archetype-unique ability pool (fallback)
+
+  // Overrides the standard ability pool — used for Stand names, breathing styles, titan forms, etc.
+  customAbilityPool?: { label: string; weight: number }[]
+  // Custom display name for ability spin slots (e.g. "Stand" instead of "Archetype Ability")
+  abilitySpinDisplayName?: string
+  // Stat bonus/penalty spins spliced immediately after archetype lands
+  statBonusGrants?: StatBonusGrants
+  // Extra power spins spliced after archetype lands
+  extraPowerSpins?: number
+  // Extra weapon spins spliced after archetype lands (dual wielders, gadgeteers, etc.)
+  bonusWeaponSpins?: number
+  // Arbitrary extra spins of any category spliced after archetype lands
+  bonusSpins?: { category: string; displayName: string }[]
+  // Powers injected directly into results without requiring a spin
+  grantedPowers?: string[]
+  // Category tag displayed alongside the archetype result (e.g. "Fighter", "Spellcaster")
+  archetypeType?: string
+  // Stat probability multipliers: >1 shifts toward higher tiers, <1 pushes lower.
+  // Applied multiplicatively with race modifier during stat segment derivation.
+  statModifiers?: Record<string, number>
+  // Weapon/armor type probability multipliers (same semantics as Race.weaponTypeBias).
+  weaponTypeBias?: Record<string, number>
+  armorTypeBias?: Record<string, number>
+  // Weapons auto-injected into results when this archetype lands (no spin required).
+  grantedWeapons?: string[]
 }
 
 // Minimal shared type for content items with only label, weight, and optional description.

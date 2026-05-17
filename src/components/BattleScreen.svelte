@@ -1,0 +1,352 @@
+<script lang="ts">
+  import { onMount, onDestroy, tick } from 'svelte'
+  import { buildBattleCharacter, simulateBattle, formatHp } from '$lib/game/battle'
+  import type { BattleCharacter, BattleRound } from '$lib/game/battle'
+  import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
+  import type { SpinResult } from '$lib/session/types'
+
+  interface Props {
+    p1Results: SpinResult[]
+    p1Name: string
+    p1StartedAt: string
+    p1ShareId?: string        // set if P1 is a pre-saved character (skip POST, only PATCH wins)
+    p2Results: SpinResult[]
+    p2Name: string
+    p2StartedAt: string
+    p2ShareId?: string        // set if P2 is a pre-saved character
+    onRematch: () => void
+    onBackToMenu: () => void
+    onChallengeWinner?: (winnerResults: SpinResult[], winnerName: string, winnerShareId: string) => void
+  }
+  let {
+    p1Results, p1Name, p1StartedAt, p1ShareId = '',
+    p2Results, p2Name, p2StartedAt, p2ShareId = '',
+    onRematch, onBackToMenu, onChallengeWinner,
+  }: Props = $props()
+
+  let p1Char   = $state<BattleCharacter | null>(null)
+  let p2Char   = $state<BattleCharacter | null>(null)
+  let rounds   = $state<BattleRound[]>([])
+  let roundIdx = $state(0)
+
+  let p1DisplayHp = $state(0)
+  let p2DisplayHp = $state(0)
+
+  let logLines = $state<string[]>([])
+  let phase    = $state<'intro' | 'battle' | 'result'>('intro')
+  let winner   = $state<'p1' | 'p2' | 'draw' | null>(null)
+
+  // Winner save state
+  let saveStatus   = $state<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  let savedShareId = $state('')    // shareId of saved winner (empty until saved)
+  let savedWins    = $state(0)
+
+  let logEl = $state<HTMLDivElement | null>(null)
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+  let p1HpPct = $derived(p1Char ? Math.max(0, p1DisplayHp / p1Char.maxHp) : 1)
+  let p2HpPct = $derived(p2Char ? Math.max(0, p2DisplayHp / p2Char.maxHp) : 1)
+
+  function hpColor(pct: number): string {
+    if (pct > 0.50) return '#22c55e'
+    if (pct > 0.25) return '#eab308'
+    return '#ef4444'
+  }
+
+  async function scrollLog() {
+    await tick()
+    if (logEl) logEl.scrollTop = logEl.scrollHeight
+  }
+
+  function playLines(lines: string[], onDone: () => void) {
+    if (lines.length === 0) { onDone(); return }
+    const [head, ...rest] = lines
+    logLines = [...logLines, head]
+    scrollLog()
+    // Round headers get a short beat; action lines breathe longer
+    const delay = head.startsWith('──') ? 550 : 1600
+    timeoutId = setTimeout(() => playLines(rest, onDone), delay)
+  }
+
+  function playRound() {
+    if (roundIdx >= rounds.length) {
+      phase  = 'result'
+      winner = rounds.at(-1)?.winner ?? null
+      afterBattle()
+      return
+    }
+
+    const round = rounds[roundIdx]
+    roundIdx++
+    // HP bars drop at round start — creates suspense before the lines explain why
+    p1DisplayHp = round.p1Hp
+    p2DisplayHp = round.p2Hp
+
+    const lines = [`── Round ${round.roundNum} ──`, ...round.lines]
+
+    playLines(lines, () => {
+      if (round.winner !== undefined) {
+        phase  = 'result'
+        winner = round.winner
+        afterBattle()
+      } else {
+        // Brief pause between rounds before the next exchange
+        timeoutId = setTimeout(playRound, 900)
+      }
+    })
+  }
+
+  function afterBattle() {
+    if (winner && winner !== 'draw') {
+      saveWinnerToBackend()
+    }
+  }
+
+  async function saveWinnerToBackend() {
+    if (!winner || winner === 'draw') return
+    saveStatus = 'saving'
+
+    const winnerResults   = winner === 'p1' ? p1Results : p2Results
+    const winnerName      = winner === 'p1' ? p1Name    : p2Name
+    const winnerStartedAt = winner === 'p1' ? p1StartedAt : p2StartedAt
+    const existingShareId = winner === 'p1' ? p1ShareId  : p2ShareId
+
+    try {
+      let shareId = existingShareId
+
+      if (!shareId) {
+        // Fresh character — POST to save
+        const race      = winnerResults.find(r => r.category === 'race')?.resultLabel      ?? ''
+        const archetype = winnerResults.find(r => r.category === 'archetype')?.resultLabel ?? ''
+        const STAT_CATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','potential','energyLevel']
+        const statScores = Object.fromEntries(STAT_CATS.map(c => [c, winnerResults.find(r => r.category === c)?.score ?? 0]))
+        const overallScore = computeOverallScore(statScores)
+        const overallTier  = scoreTier(overallScore)
+
+        const res = await fetch('/api/characters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name:               winnerName || race,
+            race,
+            archetype,
+            overall_score:      overallScore,
+            overall_tier:       overallTier,
+            spins:              winnerResults,
+            session_started_at: winnerStartedAt,
+          }),
+        })
+
+        if (!res.ok) {
+          saveStatus = 'error'
+          return
+        }
+
+        const data = await res.json() as { shareId: string }
+        shareId = data.shareId
+
+        // Add to device's saved-character list
+        try {
+          const existing: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
+          if (!existing.includes(shareId)) {
+            localStorage.setItem('wof_saved_chars', JSON.stringify([shareId, ...existing].slice(0, 50)))
+          }
+        } catch { /* ignore */ }
+      }
+
+      // Increment wins on backend
+      const patchRes = await fetch(`/api/characters/${shareId}/rivals-win`, { method: 'PATCH' })
+      if (patchRes.ok) {
+        const patchData = await patchRes.json() as { rivals_wins: number }
+        savedWins    = patchData.rivals_wins
+        savedShareId = shareId
+        saveStatus   = 'saved'
+      } else {
+        savedShareId = shareId
+        saveStatus   = 'saved'
+      }
+    } catch {
+      saveStatus = 'error'
+    }
+  }
+
+  onMount(() => {
+    p1Char = buildBattleCharacter(p1Results, p1Name)
+    p2Char = buildBattleCharacter(p2Results, p2Name)
+    p1DisplayHp = p1Char.hp
+    p2DisplayHp = p2Char.hp
+    rounds = simulateBattle(p1Char, p2Char)
+
+    timeoutId = setTimeout(() => {
+      phase = 'battle'
+      playRound()
+    }, 2600)
+  })
+
+  onDestroy(() => {
+    if (timeoutId) clearTimeout(timeoutId)
+  })
+</script>
+
+<div class="w-full min-h-screen flex flex-col items-center px-4 py-8" style="max-width: 800px; margin: 0 auto;">
+
+  <!-- Header -->
+  <div class="text-center mb-8" style="animation: fadeIn 0.3s ease-out forwards;">
+    <p class="text-xs tracking-[0.28em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #f9a8d4;">⚔ Rivals Mode</p>
+    <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.6rem, 6vw, 2.4rem); font-weight: 900; color: #ffdf96; letter-spacing: 0.15em;">RIVALS BATTLE</h1>
+  </div>
+
+  <!-- Character panels -->
+  {#if p1Char && p2Char}
+    <div class="w-full grid grid-cols-2 gap-4 mb-6">
+
+      <!-- P1 panel -->
+      <div class="rounded-xl p-4 flex flex-col gap-2"
+        style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,{phase === 'result' && winner === 'p1' ? '0.7' : '0.22'}); box-shadow: {phase === 'result' && winner === 'p1' ? '0 0 40px rgba(240,192,64,0.3)' : 'none'}; transition: box-shadow 0.5s, border-color 0.5s;">
+        <div class="flex items-center gap-2 min-w-0">
+          {#if phase === 'result' && winner === 'p1'}
+            <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+          {:else if phase === 'result' && winner === 'p2'}
+            <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
+          {/if}
+          <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.95rem;">{p1Char.name}</p>
+        </div>
+        <p class="text-xs truncate" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{p1Char.raceLabel} · {p1Char.archetypeLabel}</p>
+        <div class="rounded-full overflow-hidden" style="height: 10px; background: rgba(255,255,255,0.08);">
+          <div class="h-full rounded-full" style="width: {p1HpPct * 100}%; background: {hpColor(p1HpPct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
+        </div>
+        <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(p1HpPct)};">{formatHp(p1DisplayHp)} / {formatHp(p1Char.maxHp)} HP</p>
+        <div class="grid grid-cols-3 gap-1 mt-1">
+          {#each [['ATK', formatHp(p1Char.physicalDamage)], ['DEF', Math.round(p1Char.armorReduction * 100) + '%'], ['INIT', Math.round(p1Char.initiative)]] as [lbl, val]}
+            <div class="text-center rounded py-1" style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,0.1);">
+              <p style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 9px;">{lbl}</p>
+              <p class="font-bold text-xs" style="font-family: 'Cinzel', serif; color: #ffdf96;">{val}</p>
+            </div>
+          {/each}
+        </div>
+      </div>
+
+      <!-- P2 panel -->
+      <div class="rounded-xl p-4 flex flex-col gap-2"
+        style="background: rgba(232,121,249,0.06); border: 1px solid rgba(232,121,249,{phase === 'result' && winner === 'p2' ? '0.7' : '0.22'}); box-shadow: {phase === 'result' && winner === 'p2' ? '0 0 40px rgba(232,121,249,0.3)' : 'none'}; transition: box-shadow 0.5s, border-color 0.5s;">
+        <div class="flex items-center gap-2 min-w-0">
+          {#if phase === 'result' && winner === 'p2'}
+            <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #e879f9; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+          {:else if phase === 'result' && winner === 'p1'}
+            <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
+          {/if}
+          <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #e879f9; font-size: 0.95rem;">{p2Char.name}</p>
+        </div>
+        <p class="text-xs truncate" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{p2Char.raceLabel} · {p2Char.archetypeLabel}</p>
+        <div class="rounded-full overflow-hidden" style="height: 10px; background: rgba(255,255,255,0.08);">
+          <div class="h-full rounded-full" style="width: {p2HpPct * 100}%; background: {hpColor(p2HpPct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
+        </div>
+        <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(p2HpPct)};">{formatHp(p2DisplayHp)} / {formatHp(p2Char.maxHp)} HP</p>
+        <div class="grid grid-cols-3 gap-1 mt-1">
+          {#each [['ATK', formatHp(p2Char.physicalDamage)], ['DEF', Math.round(p2Char.armorReduction * 100) + '%'], ['INIT', Math.round(p2Char.initiative)]] as [lbl, val]}
+            <div class="text-center rounded py-1" style="background: rgba(232,121,249,0.06); border: 1px solid rgba(232,121,249,0.1);">
+              <p style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 9px;">{lbl}</p>
+              <p class="font-bold text-xs" style="font-family: 'Cinzel', serif; color: #e879f9;">{val}</p>
+            </div>
+          {/each}
+        </div>
+      </div>
+
+    </div>
+  {/if}
+
+  <!-- Intro VS splash -->
+  {#if phase === 'intro' && p1Char && p2Char}
+    <div class="text-center py-6" style="animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+      <p style="font-family: 'Cinzel', serif; font-size: 3rem; font-weight: 900; color: #f0c040; letter-spacing: 0.2em; filter: drop-shadow(0 0 20px rgba(240,192,64,0.5));">VS</p>
+      <p class="mt-2 text-sm tracking-[0.2em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Calculating fate…</p>
+    </div>
+  {/if}
+
+  <!-- Battle log -->
+  {#if phase !== 'intro'}
+    <div class="w-full rounded-xl overflow-hidden mb-6" style="border: 1px solid rgba(240,192,64,0.12); background: #0d0d16;">
+      <div class="flex items-center gap-2 px-4 py-2.5" style="border-bottom: 1px solid rgba(240,192,64,0.08);">
+        <span class="material-symbols-outlined" style="font-size: 14px; color: #9a907b; font-variation-settings: 'FILL' 1;">menu_book</span>
+        <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Battle Log</p>
+        {#if phase === 'battle'}
+          <span class="ml-auto text-xs px-2 py-0.5 rounded" style="background: rgba(157,23,77,0.3); border: 1px solid rgba(157,23,77,0.5); font-family: 'JetBrains Mono', monospace; color: #f9a8d4;">
+            Round {roundIdx} of {rounds.length}
+          </span>
+        {/if}
+      </div>
+      <div bind:this={logEl} class="overflow-y-auto px-4 py-3" style="max-height: 300px; scroll-behavior: smooth;">
+        {#if logLines.length === 0}
+          <p class="text-xs text-center py-4" style="color: #4e4635; font-style: italic;">The battle begins…</p>
+        {/if}
+        {#each logLines as line}
+          {#if line.startsWith('──')}
+            <p class="text-xs mt-3 mb-1 tracking-[0.15em]" style="font-family: 'JetBrains Mono', monospace; color: #9a907b; border-bottom: 1px solid rgba(240,192,64,0.08); padding-bottom: 4px;">{line}</p>
+          {:else if line.includes('CRITICAL') || line.includes('DEVASTATING') || line.includes('PERFECT STRIKE') || line.includes('OVERWHELMING') || line.includes('UNSTOPPABLE') || line.includes('OVERKILL')}
+            <p class="text-xs mb-1 font-bold" style="color: #fde047; font-family: 'JetBrains Mono', monospace;">{line}</p>
+          {:else if p1Char && line.startsWith(p1Char.name)}
+            <p class="text-xs mb-1" style="color: #fde68a; font-family: 'JetBrains Mono', monospace;">{line}</p>
+          {:else if p2Char && line.startsWith(p2Char.name)}
+            <p class="text-xs mb-1" style="color: #e9d5ff; font-family: 'JetBrains Mono', monospace;">{line}</p>
+          {:else}
+            <p class="text-xs mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-style: italic;">{line}</p>
+          {/if}
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Winner declaration -->
+  {#if phase === 'result' && winner}
+    {@const winnerName = winner === 'p1' ? p1Char?.name : winner === 'p2' ? p2Char?.name : null}
+    {@const winColor   = winner === 'draw' ? '#9ca3af' : winner === 'p1' ? '#f0c040' : '#e879f9'}
+    <div class="w-full text-center py-8 rounded-2xl mb-4"
+      style="background: {winner === 'draw' ? 'rgba(156,163,175,0.08)' : winner === 'p1' ? 'rgba(240,192,64,0.08)' : 'rgba(232,121,249,0.08)'}; border: 1px solid {winColor}55; box-shadow: 0 0 60px {winColor}18; animation: resultReveal 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+      {#if winner === 'draw'}
+        <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">The battle concludes</p>
+        <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: #d1d5db; letter-spacing: 0.15em;">IT'S A DRAW!</p>
+        <p class="mt-2 text-sm" style="color: #9a907b;">Two warriors of equal destiny.</p>
+      {:else}
+        <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: {winColor};">Victory</p>
+        <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: {winColor}; letter-spacing: 0.12em; filter: drop-shadow(0 0 16px {winColor}55);">{winnerName} WINS!</p>
+        <p class="mt-2 text-sm" style="color: #9a907b;">Fate has spoken.</p>
+
+        <!-- Save status -->
+        {#if saveStatus === 'saving'}
+          <p class="mt-3 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Saving to champions record…</p>
+        {:else if saveStatus === 'saved'}
+          <div class="mt-3 flex items-center justify-center gap-1.5">
+            <span class="material-symbols-outlined" style="font-size: 14px; color: #34d399; font-variation-settings: 'FILL' 1;">check_circle</span>
+            <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #34d399;">Saved — {savedWins} rival win{savedWins !== 1 ? 's' : ''} total</p>
+          </div>
+        {:else if saveStatus === 'error'}
+          <p class="mt-3 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">Could not save — session too brief or server unavailable.</p>
+        {/if}
+      {/if}
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex flex-wrap gap-3 w-full max-w-sm justify-center">
+      {#if winner !== 'draw' && onChallengeWinner && saveStatus === 'saved'}
+        {@const winResults = winner === 'p1' ? p1Results : p2Results}
+        {@const winName    = winner === 'p1' ? p1Name    : p2Name}
+        <button
+          onclick={() => onChallengeWinner!(winResults, winName, savedShareId)}
+          class="flex-1 py-3 rounded-lg text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95 min-w-0"
+          style="font-family: 'Cinzel', serif; color: #fde68a; background: linear-gradient(135deg, #1c1a2a, #13121c); border: 1px solid #f0c040; box-shadow: 0 0 20px rgba(240,192,64,0.18);"
+        >Challenge Winner</button>
+      {/if}
+      <button
+        onclick={onRematch}
+        class="flex-1 py-3 rounded-lg text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95 min-w-0"
+        style="font-family: 'Cinzel', serif; color: #f9a8d4; background: #0d0d16; border: 1px solid #9d174d; box-shadow: 0 0 16px rgba(157,23,77,0.15);"
+      >⚔ Rematch</button>
+      <button
+        onclick={onBackToMenu}
+        class="flex-1 py-3 rounded-lg text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95 min-w-0"
+        style="font-family: 'Cinzel', serif; color: #9a907b; background: #0d0d16; border: 1px solid #4e4635;"
+      >Menu</button>
+    </div>
+  {/if}
+
+</div>

@@ -4,10 +4,12 @@
   import { archetypes } from '$lib/content/archetypes'
   import { onMount, onDestroy } from 'svelte'
 
-  let { results, name = '', startedAt, onNewCharacter, onBackToMenu }: {
+  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, onNewCharacter, onBackToMenu }: {
     results: SpinResult[]
     name?: string
     startedAt: string
+    readonly?: boolean
+    rivalsWins?: number
     onNewCharacter: () => void
     onBackToMenu?: () => void
   } = $props()
@@ -34,17 +36,25 @@
     'S-':'#b91c1c','S':'#dc2626','S+':'#ef4444',
     'SS-':'#ea580c','SS':'#f97316','SS+':'#fb923c',
     'SSS-':'#ca8a04','SSS':'#eab308','SSS+':'#fde047',
-    'God':'#e879f9',
+    'Z-':'#0e7490','Z':'#0891b2','Z+':'#06b6d4',
+    'ZZ-':'#3730a3','ZZ':'#4f46e5','ZZ+':'#818cf8',
+    'ZZZ-':'#9d174d','ZZZ':'#be185d','ZZZ+':'#ec4899',
+    'Celestial-':'#075985','Celestial':'#0284c7','Celestial+':'#38bdf8',
+    'Godly-':'#c026d3','Godly':'#e879f9',
+    'Primordial':'#ffffff',
   }
 
   let displayName       = $derived(name?.trim() || 'The Unnamed')
   let race              = $derived(get('race'))
   let raceType          = $derived(get('raceSubType'))
+  let raceClass         = $derived(get('raceClass'))
+  let devilFruitName    = $derived(get('devilFruitName'))
   let transformation    = $derived(get('raceTransformation'))
   let archetype         = $derived(get('archetype'))
   let archetypeTypeLabel = $derived(archetypes.find(a => a.label === archetype)?.archetypeType ?? null)
   let backstory         = $derived(get('backstory'))
   let height            = $derived(get('height'))
+  let gender            = $derived(get('gender'))
   let title             = $derived(get('title'))
   let racialAbilities   = $derived(getAll('racialAbility'))
   let archetypeAbilities = $derived(getAll('archetypeAbility'))
@@ -52,10 +62,15 @@
   let weaknesses        = $derived(getAll('weakness'))
   let weapon            = $derived(get('weapon'))
   let weaponType        = $derived(get('weaponType'))
-  let weaponEnch        = $derived(get('weaponEnchantment'))
+  let weaponEnchs       = $derived(getAll('weaponEnchantment'))
+  let armor             = $derived(get('armor'))
+  let armorType         = $derived(get('armorType'))
+  let armorEnchs        = $derived(getAll('armorEnchantment'))
+  let possessionRace    = $derived(get('possessionRace'))
+  let possessionStrength = $derived(get('possessionStrength'))
   let redemptionOutcome = $derived(results.find(r => r.category === 'redemptionOutcome')?.resultLabel)
 
-  const statCategories = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','potential','energyLevel'] as const
+  const statCategories = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','armorStrength','potential','energyLevel'] as const
   let stats = $derived(statCategories.map(cat => ({
     cat,
     label: results.find(r => r.category === cat)?.resultLabel ?? '—',
@@ -70,10 +85,11 @@
 
   // ── Save & Share state ────────────────────────────────────────────────────
 
-  let saving    = $state(false)
-  let shareUrl  = $state<string | null>(null)
-  let saveError = $state<string | null>(null)
-  let copied    = $state(false)
+  let saving         = $state(false)
+  let shareUrl       = $state<string | null>(null)
+  let saveError      = $state<string | null>(null)
+  let copied         = $state(false)
+  let shareInGallery = $state(false)
   // now ticks every second so canSave/$derived values update in real time
   let now = $state(Date.now())
 
@@ -115,7 +131,7 @@
           overall_tier: overallGrade,
           spins: results,
           session_started_at: startedAt,
-          share_in_gallery: false, // Phase 5 wires the gallery toggle per CARD-03 — out of scope
+          share_in_gallery: shareInGallery,
         }),
       })
 
@@ -161,15 +177,22 @@
 <div class="w-full max-w-3xl flex flex-col gap-5" style="animation: slideUp 0.4s ease-out forwards;">
 
   <!-- Hero banner: grade + name + identity -->
-  <div class="rounded-xl p-6"
-    style="background: linear-gradient(135deg, {TIER_COLORS[overallGrade] ?? '#1f1f28'}18, {TIER_COLORS[overallGrade] ?? '#1f1f28'}30); border: 1px solid {TIER_COLORS[overallGrade] ?? '#4e4635'}55; box-shadow: 0 0 40px {TIER_COLORS[overallGrade] ?? '#374151'}20;"
+  <div class="rounded-xl p-6 relative overflow-hidden"
+    style="background: linear-gradient(135deg, {TIER_COLORS[overallGrade] ?? '#1f1f28'}22 0%, #0d0c16 100%); border: 1px solid {TIER_COLORS[overallGrade] ?? '#4e4635'}55; box-shadow: 0 0 50px {TIER_COLORS[overallGrade] ?? '#374151'}28, inset 1px 1px 0 rgba(255,223,150,0.1);"
   >
-    <div class="flex items-start justify-between gap-4">
+    <!-- Noise texture -->
+    <div class="noise-overlay"></div>
+    <!-- Corner brackets -->
+    <div class="absolute top-3 left-3 w-8 h-8" style="border-top: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60; border-left: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60;"></div>
+    <div class="absolute top-3 right-3 w-8 h-8" style="border-top: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60; border-right: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60;"></div>
+    <div class="absolute bottom-3 left-3 w-8 h-8" style="border-bottom: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60; border-left: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60;"></div>
+    <div class="absolute bottom-3 right-3 w-8 h-8" style="border-bottom: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60; border-right: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60;"></div>
+    <div class="flex items-start justify-between gap-4 relative z-10">
       <!-- Grade column -->
       <div class="shrink-0">
         <p class="text-xs tracking-[0.2em] uppercase mb-1" style="font-family: 'JetBrains Mono', monospace; color: {TIER_COLORS[overallGrade] ?? '#9a907b'};">Overall Grade</p>
         <p class="leading-none font-black" style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 4.5rem); color: {TIER_COLORS[overallGrade] ?? '#ffdf96'}; filter: drop-shadow(0 0 12px {TIER_COLORS[overallGrade] ?? '#f0c040'}55);">{overallGrade}</p>
-        <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Score {overallScore} / 100</p>
+        <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Score {overallScore} / 130</p>
       </div>
       <!-- Identity column -->
       <div class="text-right min-w-0">
@@ -180,11 +203,19 @@
         <p class="text-sm mt-1.5" style="color: #d2c5ae;">
           {raceType !== '—' ? `${raceType} ` : ''}{race} · {archetype}{archetypeTypeLabel ? ` · ${archetypeTypeLabel}` : ''}
         </p>
+        {#if raceClass !== '—'}
+          <p class="text-xs mt-0.5 font-semibold" style="color: #fb923c;">{raceClass}</p>
+        {/if}
+        {#if devilFruitName !== '—'}
+          <p class="text-xs mt-0.5" style="color: #7dd3fc; font-family: 'JetBrains Mono', monospace;">{devilFruitName}</p>
+        {/if}
         {#if transformation !== '—'}
           <p class="text-xs mt-0.5 font-semibold" style="color: #fb923c;">{transformation}</p>
         {/if}
-        {#if height !== '—'}
-          <p class="text-xs mt-0.5" style="color: #9a907b;">{height}</p>
+        {#if height !== '—' || gender !== '—'}
+          <p class="text-xs mt-0.5" style="color: #9a907b;">
+            {[gender, height].filter(v => v !== '—').join(' · ')}
+          </p>
         {/if}
       </div>
     </div>
@@ -200,11 +231,11 @@
     <div class="grid grid-cols-2 gap-1.5">
       {#each stats as stat}
         {#if stat.label !== '—'}
-          <div class="rounded-lg px-3 py-2 flex items-center gap-2"
-            style="background: #0d0d16; border-left: 2px solid {TIER_COLORS[stat.tier ?? ''] ?? '#4e4635'};">
+          <div class="obsidian-slab rounded-lg px-3 py-2 flex items-center gap-2"
+            style="border-left: 3px solid {TIER_COLORS[stat.tier ?? ''] ?? '#4e4635'}; border-top: none; border-right: none; border-bottom: none;">
             {#if stat.tier}
               <span class="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
-                style="background: {TIER_COLORS[stat.tier] ?? '#374151'}22; color: {TIER_COLORS[stat.tier] ?? '#9a907b'}; border: 1px solid {TIER_COLORS[stat.tier] ?? '#4e4635'}66;">
+                style="background: {TIER_COLORS[stat.tier] ?? '#374151'}22; color: {TIER_COLORS[stat.tier] ?? '#9a907b'}; border: 1px solid {TIER_COLORS[stat.tier] ?? '#4e4635'}66; box-shadow: 0 0 6px {TIER_COLORS[stat.tier] ?? 'transparent'}33;">
                 {stat.tier}
               </span>
             {/if}
@@ -223,7 +254,7 @@
         <p class="text-xs tracking-[0.15em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Racial Abilities</p>
         <ul class="space-y-1">
           {#each racialAbilities as ab}
-            <li class="text-xs rounded px-3 py-2" style="background: #0d0d16; color: #e4e1ee; border: 1px solid rgba(240,192,64,0.1);">{ab}</li>
+            <li class="obsidian-slab text-xs rounded px-3 py-2" style="color: #e4e1ee; border: 1px solid rgba(240,192,64,0.12); border-left: 2px solid rgba(240,192,64,0.35);">{ab}</li>
           {/each}
         </ul>
       </div>
@@ -233,7 +264,7 @@
         <p class="text-xs tracking-[0.15em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Archetype Abilities</p>
         <ul class="space-y-1">
           {#each archetypeAbilities as ab}
-            <li class="text-xs rounded px-3 py-2" style="background: #0d0d16; color: #e4e1ee; border: 1px solid rgba(240,192,64,0.1);">{ab}</li>
+            <li class="obsidian-slab text-xs rounded px-3 py-2" style="color: #e4e1ee; border: 1px solid rgba(139,92,246,0.15); border-left: 2px solid rgba(139,92,246,0.4);">{ab}</li>
           {/each}
         </ul>
       </div>
@@ -256,27 +287,54 @@
   {/if}
 
   <!-- Weapon -->
-  <div>
-    <div class="flex items-center gap-2 mb-2">
-      <span class="material-symbols-outlined text-sm" style="color: #f0c040; font-variation-settings: 'FILL' 1;">swords</span>
-      <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Weapon</p>
+  {#if weapon !== '—' && weapon !== 'No Weapon'}
+    <div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="material-symbols-outlined text-sm" style="color: #f0c040; font-variation-settings: 'FILL' 1;">swords</span>
+        <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Weapon</p>
+      </div>
+      <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3" style="border: 1px solid rgba(240,192,64,0.15); border-left: 3px solid rgba(240,192,64,0.4);">
+        {#if weaponType !== '—'}
+          <span class="text-xs px-2 py-1 rounded" style="background: rgba(240,192,64,0.08); color: #9a907b; border: 1px solid rgba(240,192,64,0.15);">{weaponType}</span>
+        {/if}
+        <span class="text-sm font-medium" style="color: #e4e1ee;">{weapon}</span>
+        {#each weaponEnchs as ench}
+          <span class="text-xs" style="color: #f0c040;">✦ {ench}</span>
+        {/each}
+        {#if getTier('weaponMastery')}
+          <span class="ml-auto text-xs font-bold px-1.5 py-0.5 rounded"
+            style="background: {TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#374151'}22; color: {TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#9a907b'}; border: 1px solid {TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#4e4635'}66;">
+            {getTier('weaponMastery')}
+          </span>
+        {/if}
+      </div>
     </div>
-    <div class="rounded-lg px-4 py-3 flex flex-wrap items-center gap-3" style="background: #0d0d16; border: 1px solid rgba(240,192,64,0.12);">
-      {#if weaponType !== '—'}
-        <span class="text-xs px-2 py-1 rounded" style="background: #1b1b24; color: #9a907b;">{weaponType}</span>
-      {/if}
-      <span class="text-sm font-medium" style="color: #e4e1ee;">{weapon}</span>
-      {#if weaponEnch !== '—' && weaponEnch}
-        <span class="text-xs" style="color: #f0c040;">✦ {weaponEnch}</span>
-      {/if}
-      {#if getTier('weaponMastery')}
-        <span class="ml-auto text-xs font-bold px-1.5 py-0.5 rounded"
-          style="background: {TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#374151'}22; color: {TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#9a907b'}; border: 1px solid {TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#4e4635'}66;">
-          {getTier('weaponMastery')}
-        </span>
-      {/if}
+  {/if}
+
+  <!-- Armor -->
+  {#if armor !== '—'}
+    <div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="material-symbols-outlined text-sm" style="color: #fb923c; font-variation-settings: 'FILL' 1;">shield</span>
+        <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Armor</p>
+      </div>
+      <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3" style="border: 1px solid rgba(251,146,60,0.15); border-left: 3px solid rgba(251,146,60,0.4);">
+        {#if armorType !== '—'}
+          <span class="text-xs px-2 py-1 rounded" style="background: rgba(251,146,60,0.08); color: #9a907b; border: 1px solid rgba(251,146,60,0.15);">{armorType}</span>
+        {/if}
+        <span class="text-sm font-medium" style="color: #e4e1ee;">{armor}</span>
+        {#each armorEnchs as ench}
+          <span class="text-xs" style="color: #fb923c;">✦ {ench}</span>
+        {/each}
+        {#if getTier('armorStrength')}
+          <span class="ml-auto text-xs font-bold px-1.5 py-0.5 rounded"
+            style="background: {TIER_COLORS[getTier('armorStrength') ?? ''] ?? '#374151'}22; color: {TIER_COLORS[getTier('armorStrength') ?? ''] ?? '#9a907b'}; border: 1px solid {TIER_COLORS[getTier('armorStrength') ?? ''] ?? '#4e4635'}66;">
+            {getTier('armorStrength')}
+          </span>
+        {/if}
+      </div>
     </div>
-  </div>
+  {/if}
 
   <!-- Weaknesses -->
   {#if weaknesses.length > 0}
@@ -293,6 +351,40 @@
     </div>
   {/if}
 
+  <!-- Possession -->
+  {#if possessionRace !== '—'}
+    <div class="rounded-lg px-4 py-3"
+      style="background: linear-gradient(135deg, rgba(30,10,50,0.5), rgba(60,20,80,0.3)); border: 1px solid rgba(192,132,252,0.35);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="material-symbols-outlined text-sm" style="color: #c084fc; font-variation-settings: 'FILL' 1;">psychology</span>
+        <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #c084fc;">Possessed By</p>
+      </div>
+      <p class="text-sm font-medium" style="color: #e4e1ee;">{possessionRace}</p>
+      {#if possessionStrength !== '—'}
+        <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{possessionStrength}</p>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- Rivals Wins -->
+  {#if rivalsWins > 0}
+    <div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="material-symbols-outlined text-sm" style="color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+        <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Rivals Wins</p>
+      </div>
+      <div class="rounded-lg px-4 py-3 flex flex-wrap items-center gap-2" style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,0.25);">
+        {#each Array.from({ length: Math.min(rivalsWins, 20) }, (_, i) => i) as _}
+          <span class="material-symbols-outlined" style="font-size: 22px; color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+        {/each}
+        {#if rivalsWins > 20}
+          <span class="text-sm font-bold" style="font-family: 'Cinzel', serif; color: #f0c040;">+{rivalsWins - 20}</span>
+        {/if}
+        <span class="ml-auto text-sm font-bold" style="font-family: 'Cinzel', serif; color: #ffdf96;">{rivalsWins} Win{rivalsWins !== 1 ? 's' : ''}</span>
+      </div>
+    </div>
+  {/if}
+
   <!-- Redemption -->
   {#if redemptionOutcome}
     <div class="rounded-lg px-4 py-3"
@@ -305,18 +397,19 @@
     </div>
   {/if}
 
-  <!-- Action row -->
+  <!-- Action row (hidden on share/readonly views — nav handles navigation) -->
+  {#if !readonly}
   <div class="flex flex-col gap-3 pt-1">
 
     {#if shareUrl}
       <!-- Success state: URL pill + Copy button -->
       <div class="flex flex-col gap-2">
-        <div class="flex items-center gap-2 rounded-lg px-4 py-3" style="background: #0d0d16; border: 1px solid rgba(125,211,252,0.3);">
+        <div class="carved-groove flex items-center gap-2 rounded-lg px-4 py-3" style="border: 1px solid rgba(125,211,252,0.2);">
           <span class="text-xs flex-1 truncate" style="font-family: 'JetBrains Mono', monospace; color: #7dd3fc; user-select: text; cursor: text;">{shareUrl}</span>
           <button
             onclick={handleCopy}
-            class="shrink-0 text-xs px-3 py-1.5 rounded font-bold transition-all active:scale-95"
-            style="font-family: 'JetBrains Mono', monospace; color: {copied ? '#34d399' : '#7dd3fc'}; background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.25);"
+            class="shrink-0 text-xs px-3 py-1.5 rounded font-bold transition-all active:scale-95 obsidian-slab"
+            style="font-family: 'JetBrains Mono', monospace; color: {copied ? '#34d399' : '#7dd3fc'}; border: 1px solid {copied ? 'rgba(52,211,153,0.3)' : 'rgba(125,211,252,0.25)'};"
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>
@@ -326,16 +419,16 @@
           {#if onBackToMenu}
             <button
               onclick={onBackToMenu}
-              class="flex-1 py-2.5 rounded-lg text-xs tracking-[0.12em] uppercase font-bold transition-all active:scale-95"
-              style="font-family: 'Cinzel', serif; color: #9a907b; background: #0d0d16; border: 1px solid #4e4635;"
+              class="obsidian-slab flex-1 py-2.5 rounded-lg text-xs tracking-[0.12em] uppercase font-bold transition-all active:scale-95"
+              style="font-family: 'Cinzel', serif; color: #9a907b; border: 1px solid #4e4635;"
             >
               ← Menu
             </button>
           {/if}
           <button
             onclick={onNewCharacter}
-            class="flex-1 py-2.5 rounded-lg text-xs tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
-            style="font-family: 'Cinzel', serif; color: #9a907b; background: #1b1b24; border: 1px solid #4e4635;"
+            class="obsidian-slab flex-1 py-2.5 rounded-lg text-xs tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
+            style="font-family: 'Cinzel', serif; color: #d2c5ae; border: 1px solid rgba(240,192,64,0.2);"
           >
             Rewrite Destiny
           </button>
@@ -343,26 +436,48 @@
       </div>
 
     {:else}
+      <!-- Gallery opt-in toggle -->
+      <label class="flex items-center gap-2.5 cursor-pointer select-none py-1" style="opacity: {saving ? 0.5 : 1};">
+        <div class="relative shrink-0 w-9 h-5"
+          onclick={() => { if (!saving) shareInGallery = !shareInGallery }}
+          role="checkbox"
+          aria-checked={shareInGallery}
+          tabindex="0"
+          onkeydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !saving) shareInGallery = !shareInGallery }}
+        >
+          <div class="absolute inset-0 rounded-full transition-all duration-200"
+            style="background: {shareInGallery ? 'rgba(167,139,250,0.35)' : 'rgba(255,255,255,0.06)'}; border: 1px solid {shareInGallery ? 'rgba(167,139,250,0.6)' : 'rgba(255,255,255,0.12)'};">
+          </div>
+          <div class="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
+            style="background: {shareInGallery ? '#a78bfa' : '#4e4635'}; left: {shareInGallery ? '18px' : '2px'}; box-shadow: 0 1px 4px rgba(0,0,0,0.4);">
+          </div>
+        </div>
+        <span class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: {shareInGallery ? '#a78bfa' : '#6b7280'};">
+          Share in public gallery
+        </span>
+      </label>
+
       <!-- Default / disabled / saving state: two buttons side by side -->
       <div class="flex gap-3">
 
-        <!-- Save & Share button (cyan/silver accent to distinguish from gold Rewrite Destiny) -->
+        <!-- Save & Share button -->
         {#if canSave}
           <button
             onclick={handleSaveAndShare}
             disabled={saving}
-            class="flex-1 py-3 rounded-lg text-sm tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
-            style="font-family: 'Cinzel', serif; color: #7dd3fc; background: linear-gradient(135deg, #0d1520, #0a1018); border: 1px solid #7dd3fc; box-shadow: 0 0 18px rgba(125,211,252,0.1); opacity: {saving ? '0.7' : '1'};"
+            class="hammered-gold flex-1 py-3 rounded-lg relative"
+            style="font-family: 'Cinzel', serif; font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #f0c040; background: linear-gradient(180deg, #13121c 0%, #0c0b14 100%); opacity: {saving ? '0.7' : '1'};"
           >
+            <div class="l-bracket" style="color: rgba(240,192,64,0.35);"></div>
             {saving ? 'Saving…' : 'Save & Share'}
           </button>
         {:else}
-          <!-- Disabled: session under 90s OR over 24h (share view) -->
+          <!-- Disabled -->
           <button
             disabled
             aria-disabled="true"
-            class="flex-1 py-3 rounded-lg text-sm tracking-[0.15em] uppercase font-bold"
-            style="font-family: 'Cinzel', serif; color: #4a5568; background: #0d0d16; border: 1px solid #2d3748; cursor: not-allowed;"
+            class="obsidian-slab flex-1 py-3 rounded-lg text-sm tracking-[0.15em] uppercase font-bold"
+            style="font-family: 'Cinzel', serif; color: #4e4635; border: 1px solid #2d3748; cursor: not-allowed;"
           >
             Save & Share
           </button>
@@ -370,8 +485,8 @@
 
         <button
           onclick={onNewCharacter}
-          class="flex-1 py-3 rounded-lg text-sm tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
-          style="font-family: 'Cinzel', serif; color: #ffdf96; background: linear-gradient(135deg, #1c1a2a, #13121c); border: 1px solid #f0c040; box-shadow: 0 0 22px rgba(240,192,64,0.12);"
+          class="obsidian-slab flex-1 py-3 rounded-lg text-sm tracking-[0.15em] uppercase font-bold transition-all active:scale-95"
+          style="font-family: 'Cinzel', serif; color: #d2c5ae; border: 1px solid rgba(240,192,64,0.22);"
         >
           Rewrite Destiny
         </button>
@@ -405,5 +520,6 @@
     {/if}
 
   </div>
+  {/if}
 
 </div>

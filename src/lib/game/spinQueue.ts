@@ -27,6 +27,8 @@ import { weaknesses }  from '$lib/content/weaknesses'
 import { backstories } from '$lib/content/backstories'
 import { titles }      from '$lib/content/titles'
 import { enchantments } from '$lib/content/enchantments'
+import { armors } from '$lib/content/armors'
+import { armorStrengthLabels } from '$lib/content/armor-strength-labels'
 
 // Redemption outcomes — spun when the redemptionSpin lands on 'Redemption'.
 // Rare/powerful outcomes have lower weight; fun/mild ones are more common.
@@ -51,6 +53,30 @@ const REDEMPTION_OUTCOMES: WeightedSegment[] = [
   { label: 'The Universe Owes You One', weight: 1 },
   { label: 'The DM Sighs and Gives You One Thing You Want', weight: 1 },
   { label: 'Reroll Everything (Chaos Edition)', weight: 1 },
+]
+
+// Corruption reveal pool — spun when corruptionScore hits threshold after Title.
+const CORRUPTION_REVEAL_OUTCOMES: WeightedSegment[] = [
+  { label: 'Lich Ascension',          weight: 2 },
+  { label: 'Half-Demon Emergence',    weight: 3 },
+  { label: 'Void-Touched',            weight: 3 },
+  { label: 'Cursed Champion',         weight: 4 },
+  { label: 'Dark God Candidate',      weight: 2 },
+  { label: 'Shadow Soul',             weight: 4 },
+  { label: 'Undying Revenant',        weight: 3 },
+  { label: 'Infernal Pact Sealed',    weight: 3 },
+  { label: 'Corruption: Consumed',    weight: 1 },
+]
+
+// Possession strength pool — used when the Possessed archetype lands.
+// Higher possession = more stat grants applied in +page.svelte POSSESSION_GRANTS lookup.
+const POSSESSION_STRENGTH_POOL: WeightedSegment[] = [
+  { label: 'Barely a Whisper (5%)',        weight: 4 },
+  { label: 'A Flicker of Influence (20%)', weight: 3 },
+  { label: 'Shared Consciousness (40%)',   weight: 2 },
+  { label: 'Dominant Presence (60%)',      weight: 2 },
+  { label: 'Consuming Takeover (80%)',     weight: 1 },
+  { label: 'Full Possession (100%)',       weight: 1 },
 ]
 
 // Shared ability pool for racialAbility and archetypeAbility slots.
@@ -105,12 +131,23 @@ export type SpinCategory =
   | 'redemptionSpin'
   | 'redemptionOutcome'
   | 'title'
+  | 'possessionRace'
+  | 'possessionStrength'
+  | 'devilFruitName'
+  | 'armorType'
+  | 'armor'
+  | 'armorStrength'
+  | 'armorEnchantment'
+  | 'gender'
+  | 'corruptionReveal'
 
 export interface SpinDefinition {
   category: SpinCategory
   displayName: string  // shown in "Next: {displayName}" header (D-02)
   isSentinel?: boolean // true only on the initial weakness spin; spliced weakness spins omit this
   targetStat?: string  // for statBonus/statPenalty spins: which stat category this bonus modifies
+  useRacialPowerPool?: boolean  // if true, power spin draws from activePowerPool instead of global pool
+  isReroll?: boolean   // if true, this spin replaces an existing result of the same category
 }
 
 // Returns the initial queue of 22 fixed spin definitions.
@@ -133,6 +170,7 @@ export function buildInitialQueue(): SpinDefinition[] {
     { category: 'backstory',     displayName: 'Backstory'     },
     // bonus stat spin spliced here if backstory has bonusSpin
     { category: 'height',        displayName: 'Height'        },
+    { category: 'gender',        displayName: 'Gender'        },
     { category: 'strength',      displayName: 'Strength'      },
     { category: 'speed',         displayName: 'Speed'         },
     { category: 'agility',       displayName: 'Agility'       },
@@ -146,6 +184,10 @@ export function buildInitialQueue(): SpinDefinition[] {
     { category: 'weapon',        displayName: 'Weapon'        },
     { category: 'weaponMastery', displayName: 'Weapon Mastery'},
     // weaponEnchantment spliced here if weaponMastery tier >= C-
+    { category: 'armorType',     displayName: 'Armor Type'    },
+    { category: 'armor',         displayName: 'Armor'         },
+    { category: 'armorStrength', displayName: 'Armor Strength'},
+    // armorEnchantment spliced here if armorStrength tier >= C-
     { category: 'potential',     displayName: 'Potential'     },
     { category: 'energyLevel',   displayName: 'Energy Level'  },
     { category: 'redemptionSpin',displayName: 'Redemption Spin'},
@@ -220,10 +262,24 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
 
     case 'weaponType':
       return [
-        { label: 'Melee',  weight: 4 },
-        { label: 'Ranged', weight: 3 },
-        { label: 'Magic',  weight: 2 },
-        { label: 'Exotic', weight: 1 },
+        { label: 'None',    weight: 5 },
+        { label: 'Melee',   weight: 8 },
+        { label: 'Ranged',  weight: 6 },
+        { label: 'Magical', weight: 4 },
+        { label: 'Exotic',  weight: 3 },
+        { label: 'Cursed',  weight: 2 },
+        { label: 'Ancient', weight: 2 },
+      ]
+
+    case 'armorType':
+      return [
+        { label: 'None',        weight: 4 },
+        { label: 'Helmet Only', weight: 8 },
+        { label: 'Half-Suit',   weight: 6 },
+        { label: 'Full-Suit',   weight: 5 },
+        { label: 'Exotic',      weight: 4 },
+        { label: 'Cursed',      weight: 2 },
+        { label: 'Ancient',     weight: 2 },
       ]
 
     case 'weapon':
@@ -234,6 +290,22 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
 
     case 'weaponEnchantment':
       return enchantments as WeightedSegment[]
+
+    case 'armor':
+      // Fallback; actual pool filtered by armorType in +page.svelte
+      return armors as WeightedSegment[]
+
+    case 'armorStrength':
+      return armorStrengthLabels as WeightedSegment[]
+
+    case 'armorEnchantment':
+      return enchantments as WeightedSegment[]
+
+    case 'gender':
+      return [
+        { label: 'Male',   weight: 1 },
+        { label: 'Female', weight: 1 },
+      ]
 
     case 'potential':
       return potentialLabels as WeightedSegment[]
@@ -273,6 +345,20 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
 
     case 'title':
       return titles as WeightedSegment[]
+
+    case 'possessionRace':
+      // Which entity/race is possessing the character — draws from the full race pool
+      return races as WeightedSegment[]
+
+    case 'possessionStrength':
+      return POSSESSION_STRENGTH_POOL
+
+    case 'devilFruitName':
+      // Fallback; actual pool resolved in +page.svelte from DEVIL_FRUIT_POOLS[raceClass]
+      return [{ label: 'Unknown Devil Fruit', weight: 1 }]
+
+    case 'corruptionReveal':
+      return CORRUPTION_REVEAL_OUTCOMES
 
     default:
       // Unknown category — return empty array, no throw

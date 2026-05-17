@@ -30,5 +30,5 @@ export interface SessionState {
   spinQueue?: SpinDefinition[]    // serialized queue for resume; null = rebuild from scratch
   currentSpinIndex?: number       // resume pointer into spinQueue
   // Phase 3+: tracks which stats are awaiting a bonus/penalty spin (populated by transformations/classes)
-  pendingStatBonuses?: Record<string, 'statBonus' | 'statPenalty'>
+  pendingStatBonuses?: Record<string, Array<'statBonus' | 'statPenalty'>>
 }
