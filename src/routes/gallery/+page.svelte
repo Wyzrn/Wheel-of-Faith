@@ -145,6 +145,42 @@
   }
 
   let activeSortOption = $derived(SORT_OPTIONS.find(o => o.value === sortBy)!)
+
+  // ── Challenge flow ────────────────────────────────────────────────────────
+  type MyChar = { shareId: string; name: string; race: string; overall_tier: string; overall_score: number }
+
+  let challengeTarget  = $state<GalleryChar | null>(null)
+  let myChars          = $state<MyChar[]>([])
+  let myCharsLoading   = $state(false)
+
+  async function openChallenge(char: GalleryChar) {
+    challengeTarget = char
+    myCharsLoading  = true
+    myChars         = []
+
+    const ids: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
+    if (ids.length === 0) { myCharsLoading = false; return }
+
+    const results = await Promise.all(
+      ids.map(id =>
+        fetch(`/api/characters/${id}`)
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      )
+    )
+    myChars = results.filter(Boolean) as MyChar[]
+    myCharsLoading = false
+  }
+
+  function closeChallenge() {
+    challengeTarget = null
+    myChars = []
+  }
+
+  function startBattle(myId: string) {
+    if (!challengeTarget) return
+    window.location.href = `/battle?t1=${myId}&t2=${challengeTarget.shareId}`
+  }
 </script>
 
 <main class="min-h-screen" style="background: #07070d; color: #e4e1ee;">
@@ -269,47 +305,66 @@
         {#each chars as char}
           {@const titleLabel = getTitle(char)}
           {@const tierColor = TIER_COLORS[char.overall_tier] ?? '#6b7280'}
-          <a
-            href="/character/{char.shareId}"
-            class="flex items-center gap-0 rounded-lg overflow-hidden transition-all hover:brightness-110 active:scale-[0.99]"
-            style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(167,139,250,0.18); box-shadow: inset 1px 1px 0 rgba(167,139,250,0.05); text-decoration: none;"
+          <div
+            class="flex rounded-lg overflow-hidden transition-all hover:brightness-110"
+            style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(167,139,250,0.18); box-shadow: inset 1px 1px 0 rgba(167,139,250,0.05);"
           >
-            <!-- Tier badge -->
-            <div class="shrink-0 w-16 self-stretch flex items-center justify-center"
-              style="background: {tierColor}18; border-right: 1px solid {tierColor}28;">
-              {#if char.overall_tier}
-                <span class="text-sm font-black" style="color: {tierColor}; font-family: 'Cinzel', serif; letter-spacing: -0.02em;">{char.overall_tier}</span>
-              {:else}
-                <span class="material-symbols-outlined" style="color: #4e4635; font-size: 20px; font-variation-settings: 'FILL' 1;">person_play</span>
-              {/if}
-            </div>
-
-            <!-- Info -->
-            <div class="flex-1 min-w-0 px-4 py-3.5">
-              {#if titleLabel}
-                <p class="text-xs truncate mb-0.5" style="font-family: 'JetBrains Mono', monospace; color: #a78bfa; letter-spacing: 0.08em;">{titleLabel}</p>
-              {/if}
-              <div class="flex items-center gap-2 min-w-0">
-                <p class="text-sm font-semibold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{char.name}</p>
-                {#if char.rivals_wins > 0}
-                  <span class="shrink-0 flex items-center gap-0.5 text-xs" style="color: #f0c040;">
-                    <span class="material-symbols-outlined" style="font-size: 13px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-                    {char.rivals_wins}
-                  </span>
+            <!-- Main link area -->
+            <a
+              href="/character/{char.shareId}"
+              class="flex flex-1 items-center gap-0 min-w-0 active:scale-[0.99] transition-all"
+              style="text-decoration: none;"
+            >
+              <!-- Tier badge -->
+              <div class="shrink-0 w-16 self-stretch flex items-center justify-center"
+                style="background: {tierColor}18; border-right: 1px solid {tierColor}28;">
+                {#if char.overall_tier}
+                  <span class="text-sm font-black" style="color: {tierColor}; font-family: 'Cinzel', serif; letter-spacing: -0.02em;">{char.overall_tier}</span>
+                {:else}
+                  <span class="material-symbols-outlined" style="color: #4e4635; font-size: 20px; font-variation-settings: 'FILL' 1;">person_play</span>
                 {/if}
               </div>
-              <div class="flex items-center gap-2 mt-0.5">
-                <p class="text-xs truncate" style="color: #9a907b;">{char.race} · {char.archetype}</p>
-                <p class="shrink-0 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">{timeAgo(char.created_at)}</p>
-              </div>
-            </div>
 
-            <!-- Score -->
-            <div class="shrink-0 px-4 flex flex-col items-center justify-center self-stretch" style="border-left: 1px solid rgba(255,255,255,0.05);">
-              <span class="text-sm font-black" style="font-family: 'JetBrains Mono', monospace; color: {tierColor};">{char.overall_score}</span>
-              <span style="color: #4e4635; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.05em;">pts</span>
-            </div>
-          </a>
+              <!-- Info -->
+              <div class="flex-1 min-w-0 px-4 py-3.5">
+                {#if titleLabel}
+                  <p class="text-xs truncate mb-0.5" style="font-family: 'JetBrains Mono', monospace; color: #a78bfa; letter-spacing: 0.08em;">{titleLabel}</p>
+                {/if}
+                <div class="flex items-center gap-2 min-w-0">
+                  <p class="text-sm font-semibold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{char.name}</p>
+                  {#if char.rivals_wins > 0}
+                    <span class="shrink-0 flex items-center gap-0.5 text-xs" style="color: #f0c040;">
+                      <span class="material-symbols-outlined" style="font-size: 13px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+                      {char.rivals_wins}
+                    </span>
+                  {/if}
+                </div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <p class="text-xs truncate" style="color: #9a907b;">{char.race} · {char.archetype}</p>
+                  <p class="shrink-0 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">{timeAgo(char.created_at)}</p>
+                </div>
+              </div>
+
+              <!-- Score -->
+              <div class="shrink-0 px-3 flex flex-col items-center justify-center self-stretch" style="border-left: 1px solid rgba(255,255,255,0.05);">
+                <span class="text-sm font-black" style="font-family: 'JetBrains Mono', monospace; color: {tierColor};">{char.overall_score}</span>
+                <span style="color: #4e4635; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.05em;">pts</span>
+              </div>
+            </a>
+
+            <!-- Challenge button -->
+            <button
+              onclick={() => openChallenge(char)}
+              aria-label="Challenge {char.name}"
+              class="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 transition-all active:scale-95"
+              style="border-left: 1px solid rgba(167,139,250,0.12); background: none; cursor: pointer; color: #4e4635;"
+              onmouseenter={(e) => (e.currentTarget as HTMLElement).style.color = '#f43f5e'}
+              onmouseleave={(e) => (e.currentTarget as HTMLElement).style.color = '#4e4635'}
+            >
+              <span class="material-symbols-outlined" style="font-size: 18px; font-variation-settings: 'FILL' 1;">swords</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 0.06em;">FIGHT</span>
+            </button>
+          </div>
         {/each}
       </div>
 
@@ -333,5 +388,91 @@
     {/if}
 
   </div>
+
+  <!-- Challenge picker modal -->
+  {#if challengeTarget}
+    <!-- Backdrop -->
+    <div
+      class="fixed inset-0 z-40"
+      style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);"
+      onclick={closeChallenge}
+      role="presentation"
+    ></div>
+
+    <!-- Sheet -->
+    <div class="fixed bottom-0 inset-x-0 z-50 rounded-t-2xl pb-8 max-h-[80vh] flex flex-col"
+      style="background: #0f0e1a; border-top: 1px solid rgba(244,63,94,0.3); box-shadow: 0 -8px 40px rgba(244,63,94,0.1);"
+    >
+      <!-- Handle -->
+      <div class="flex justify-center pt-3 pb-1 shrink-0">
+        <div class="w-10 h-1 rounded-full" style="background: rgba(255,255,255,0.1);"></div>
+      </div>
+
+      <!-- Header -->
+      <div class="px-5 py-3 shrink-0" style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <p class="text-xs tracking-[0.2em] uppercase mb-0.5" style="font-family: 'JetBrains Mono', monospace; color: #f43f5e;">Challenge</p>
+        <p style="font-family: 'Cinzel', serif; font-size: 0.95rem; color: #ffdf96;">
+          vs <span style="color: #f43f5e;">{challengeTarget.name}</span>
+        </p>
+        <p class="text-xs mt-0.5" style="color: #6b7280;">Pick your fighter</p>
+      </div>
+
+      <!-- Character list -->
+      <div class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2">
+        {#if myCharsLoading}
+          <div class="flex items-center justify-center py-10 gap-3">
+            <span class="material-symbols-outlined animate-spin" style="color: #a78bfa; font-size: 20px;">progress_activity</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6b7280;">Loading your characters…</span>
+          </div>
+
+        {:else if myChars.length === 0}
+          <div class="flex flex-col items-center justify-center py-10 gap-3 text-center">
+            <span class="material-symbols-outlined text-4xl" style="color: #4e4635; font-variation-settings: 'FILL' 1;">person_off</span>
+            <p style="font-family: 'Cinzel', serif; color: #9a907b; font-size: 0.9rem;">No saved characters</p>
+            <p class="text-xs" style="color: #4e4635;">Spin a character and save it first.</p>
+            <a href="/" onclick={closeChallenge}
+              class="mt-2 px-6 py-2.5 rounded-lg text-xs tracking-[0.15em] uppercase font-bold"
+              style="font-family: 'Cinzel', serif; color: #a78bfa; background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.25); text-decoration: none;">
+              Spin Now
+            </a>
+          </div>
+
+        {:else}
+          {#each myChars as mine}
+            {@const myTierColor = TIER_COLORS[mine.overall_tier] ?? '#6b7280'}
+            <button
+              onclick={() => startBattle(mine.shareId)}
+              class="flex items-center gap-3 w-full rounded-lg px-4 py-3 text-left transition-all active:scale-[0.98]"
+              style="background: rgba(255,255,255,0.03); border: 1px solid rgba(167,139,250,0.12); cursor: pointer;"
+              onmouseenter={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(244,63,94,0.4)'}
+              onmouseleave={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(167,139,250,0.12)'}
+            >
+              <div class="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                style="background: {myTierColor}18; border: 1px solid {myTierColor}30;">
+                <span class="text-xs font-black" style="font-family: 'Cinzel', serif; color: {myTierColor};">{mine.overall_tier}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{mine.name}</p>
+                <p class="text-xs truncate" style="color: #6b7280;">{mine.race}</p>
+              </div>
+              <div class="shrink-0 flex items-center gap-1" style="color: #f43f5e;">
+                <span class="text-xs font-bold" style="font-family: 'JetBrains Mono', monospace;">{mine.overall_score}</span>
+                <span class="material-symbols-outlined" style="font-size: 16px;">chevron_right</span>
+              </div>
+            </button>
+          {/each}
+        {/if}
+      </div>
+
+      <!-- Cancel -->
+      <div class="px-4 pt-2 shrink-0">
+        <button
+          onclick={closeChallenge}
+          class="w-full py-3 rounded-lg text-sm tracking-[0.12em] uppercase font-bold transition-all active:scale-[0.98]"
+          style="font-family: 'Cinzel', serif; color: #6b7280; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); cursor: pointer;"
+        >Cancel</button>
+      </div>
+    </div>
+  {/if}
 
 </main>
