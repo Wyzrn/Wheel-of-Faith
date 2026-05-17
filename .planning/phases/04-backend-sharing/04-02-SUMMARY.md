@@ -167,6 +167,23 @@ Phase 5 (Gallery) can now:
 - Render the same `CharacterCard` component (CARD-03 adds gallery toggle, out of scope here)
 - `CharacterCard` requires `startedAt: string` — gallery fetch response includes `session_started_at`
 
+## Self-Check: PASSED
+
+- FOUND: vite.config.ts (Vite proxy added)
+- FOUND: .env.example (API_URL documented)
+- FOUND: src/routes/character/[id]/+page.server.ts
+- FOUND: src/routes/character/[id]/+page.svelte
+- FOUND: src/routes/character/[id]/+error.svelte
+- FOUND: src/routes/character/[id]/+layout.js
+- FOUND: src/components/CharacterCard.svelte (startedAt prop + Save & Share)
+- FOUND: src/routes/+page.svelte (startedAt prop passed)
+- FOUND: .planning/phases/04-backend-sharing/04-02-SUMMARY.md
+- FOUND: commit eba1fd9 (Task 1)
+- FOUND: commit 41780ae (Task 2)
+- FOUND: commit fc5afdf (metadata)
+- npx tsc --noEmit: PASS (0 errors)
+- npm run check: PASS (0 errors, 0 warnings)
+
 ---
 *Phase: 04-backend-sharing*
 *Completed: 2026-05-17*
