@@ -3,23 +3,23 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-05-16T16:45:00Z"
+last_updated: "2026-05-17T02:48:54Z"
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
-  percent: 62
+  total_plans: 11
+  completed_plans: 10
+  percent: 67
 ---
 
 # Project State — Wheel of Fate
 
 ## Current Status
 
-Phase: Phase 3 — Redemption Spin (In Progress)
-Active Phase: 03-redemption-spin
-Current Plan: 0 / 1
-Last Updated: 2026-05-16
+Phase: Phase 4 — Backend + Sharing (In Progress)
+Active Phase: 04-backend-sharing
+Current Plan: 1 / 2
+Last Updated: 2026-05-17
 
 ## Project Reference
 
@@ -33,7 +33,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 - Phase 1: Animation Foundation — Complete (3/3 plans complete)
 - Phase 2: Full 23-Spin Game Loop — Complete (5/5 plans executed, 2026-05-16)
 - Phase 3: Redemption Spin — Complete (1/1 plans executed, 2026-05-16)
-- Phase 4: Backend + Sharing — Not Started
+- Phase 4: Backend + Sharing — In Progress (1/2 plans complete, 2026-05-17)
 - Phase 5: Gallery — Not Started
 - Phase 6: Content + Polish — Not Started
 
@@ -43,8 +43,8 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 |--------|-------|
 | Phases completed | 2 / 6 |
 | Requirements covered | 27 / 27 |
-| Plans executed | 8 |
-| Session count | 5 |
+| Plans executed | 10 |
+| Session count | 6 |
 
 ## Accumulated Context
 
@@ -72,6 +72,11 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 - Race rarity via weight: Common 30-38, Uncommon 12-20, Rare 4-9, Legendary 1; total weight ~498; weightedRandom normalizes
 - weaknessProbabilityModifier reflects lore: Vampire 1.8, Celestial 0.4, Human 1.0, Goblin 1.3 — drives race-modulated weakness draw
 - Severe boolean on Weakness: severe: true (51 entries) are classic debilitations; severe: false (501) are absurd/social
+- server/ is a separate npm ESM package (not a workspace) — simplest setup for Phase 4 Fastify backend
+- spins stored as Schema.Types.Mixed blob; race/archetype/overall_score/overall_tier denormalized for future gallery queries
+- pre(/^find/) soft-delete hook is unconditional — revisit for Phase 6 if admin queries need deleted docs
+- Rate-limit test uses shared app with unique IP rather than second createApp() — mongoose is a singleton
+- npm run dev now boots both Vite and Fastify in parallel via concurrently
 
 ### Architecture Notes
 
@@ -98,7 +103,7 @@ See: .planning/PROJECT.md (updated 2026-05-15)
 
 ## Session Continuity
 
-**Last session:** Phase 2 complete — all 5 plans executed. Full game loop with dynamic queue splicing, gold/void UI overhaul, two-column layout, result overlay on wheel, character naming screen, CharacterCard with tier-colored hero grade banner. All 61 tests passing (2026-05-16).
-**Stopped at:** Phase 2 closed, tracking files updated, Phase 3 starting.
-**Next action:** Implement Phase 3 — score-based redemption probability function, wire into +page.svelte `currentSegments` derived block, write simulation script and tests.
-**Context to carry:** redemptionSpin category exists in spinQueue. currentSegments in +page.svelte currently returns a fixed [Redemption: 1, No Redemption: 3] array for redemptionSpin. Phase 3 replaces this with a probability computed from overallScore via quadratic formula: p = max(0.05, min(0.85, 0.05 + 0.80 * (1 - overallScore/100)^2)).
+**Last session:** Phase 4 Plan 01 complete — Fastify 5 backend scaffolded in server/ with POST/GET /api/characters, Mongoose Character model, nanoid(10) share IDs, soft-delete, rate limiting. 14 backend tests passing. npm run dev boots both Vite + Fastify (2026-05-17).
+**Stopped at:** 04-01-PLAN.md complete, SUMMARY written, STATE.md updated.
+**Next action:** Execute Plan 04-02 — frontend integration (Save & Share button, /character/[id] page, Vite proxy config).
+**Context to carry:** POST /api/characters returns { shareId, url }. GET /api/characters/:shareId returns lean doc or 404. MONGODB_URI defaults to localhost:27017/wheel-of-fate. Vite proxy /api → http://localhost:3001 needed for browser fetch calls. SvelteKit +page.server.ts load must call http://localhost:3001 directly (not via Vite proxy) for SSR.
