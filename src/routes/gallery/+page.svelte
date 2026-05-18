@@ -401,7 +401,7 @@
 
     <!-- Sheet -->
     <div class="fixed bottom-0 inset-x-0 z-50 rounded-t-2xl pb-8 max-h-[80vh] flex flex-col"
-      style="background: #0f0e1a; border-top: 1px solid rgba(244,63,94,0.3); box-shadow: 0 -8px 40px rgba(244,63,94,0.1);"
+      style="background: #0f0e1a; border-top: 1px solid rgba(244,63,94,0.3); box-shadow: 0 -8px 40px rgba(244,63,94,0.1); animation: slideInBottom 0.28s cubic-bezier(0.25,0.46,0.45,0.94) both;"
     >
       <!-- Handle -->
       <div class="flex justify-center pt-3 pb-1 shrink-0">

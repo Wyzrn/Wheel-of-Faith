@@ -198,10 +198,10 @@
 
   <!-- Character panels -->
   {#if p1Char && p2Char}
-    <div class="w-full grid grid-cols-2 gap-4 mb-6">
+    <div class="w-full grid grid-cols-2 gap-2 sm:gap-4 mb-6">
 
       <!-- P1 panel -->
-      <div class="rounded-xl p-4 flex flex-col gap-2"
+      <div class="rounded-xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-2"
         style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,{phase === 'result' && winner === 'p1' ? '0.7' : '0.22'}); box-shadow: {phase === 'result' && winner === 'p1' ? '0 0 40px rgba(240,192,64,0.3)' : 'none'}; transition: box-shadow 0.5s, border-color 0.5s;">
         <div class="flex items-center gap-2 min-w-0">
           {#if phase === 'result' && winner === 'p1'}
@@ -227,7 +227,7 @@
       </div>
 
       <!-- P2 panel -->
-      <div class="rounded-xl p-4 flex flex-col gap-2"
+      <div class="rounded-xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-2"
         style="background: rgba(232,121,249,0.06); border: 1px solid rgba(232,121,249,{phase === 'result' && winner === 'p2' ? '0.7' : '0.22'}); box-shadow: {phase === 'result' && winner === 'p2' ? '0 0 40px rgba(232,121,249,0.3)' : 'none'}; transition: box-shadow 0.5s, border-color 0.5s;">
         <div class="flex items-center gap-2 min-w-0">
           {#if phase === 'result' && winner === 'p2'}

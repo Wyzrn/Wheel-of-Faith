@@ -204,6 +204,7 @@
   }
 
   let currentCategoryHue = $derived(CATEGORY_HUES[currentDef?.category ?? ''])
+  let reversedResults = $derived(reversedResults)
 
   // ── Segment resolver: handles race/archetype ability pools + modifiers ────
   let currentSegments = $derived.by(() => {
@@ -505,7 +506,7 @@
         } else if (outcome.type === 'double_edge') {
           newLabel = shiftTierLabel(resultLabel, 4, statSegs)
         } else if (outcome.type === 'shared') {
-          const lastStat = [...results].reverse().find(r => STAT_CATEGORIES.has(r.category) && r.tier !== undefined)
+          const lastStat = reversedResults.find(r => STAT_CATEGORIES.has(r.category) && r.tier !== undefined)
           if (lastStat?.tier) newLabel = statSegs.find(s => s.tier === lastStat.tier)?.label ?? resultLabel
         }
         // 'reroll' and 'power_gift' leave newLabel unchanged; effects applied in handleWildcardContinue
@@ -1820,7 +1821,7 @@
               Your fate is being written…
             </p>
           {/if}
-          {#each [...results].reverse() as result}
+          {#each reversedResults as result}
             {@const tc = TIER_COLORS[result.tier ?? ''] ?? null}
             <div class="flex items-start gap-2.5 px-3 py-2.5"
               style="border-bottom: 1px solid rgba(255,255,255,0.04); {tc ? `border-left: 2px solid ${tc}44;` : 'border-left: 2px solid transparent;'}">
@@ -1939,7 +1940,7 @@
                   style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Destiny Log</p>
               </div>
               <div class="max-h-48 overflow-y-auto">
-                {#each [...results].reverse() as result}
+                {#each reversedResults as result}
                   {@const tc = TIER_COLORS[result.tier ?? ''] ?? null}
                   <div class="flex items-center gap-3 px-4 py-2.5"
                     style="border-bottom: 1px solid rgba(255,255,255,0.04);">

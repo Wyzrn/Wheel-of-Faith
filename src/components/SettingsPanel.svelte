@@ -30,7 +30,7 @@
 
 <!-- Panel -->
 <aside class="fixed left-0 top-0 bottom-0 z-[95] flex flex-col"
-  style="width: 300px; background: linear-gradient(180deg, #12111e 0%, #09090f 100%); border-right: 1px solid rgba(240,192,64,0.22); box-shadow: 8px 0 50px rgba(0,0,0,0.9), inset -1px 0 0 rgba(255,223,150,0.05);">
+  style="width: min(300px, 100vw); background: linear-gradient(180deg, #12111e 0%, #09090f 100%); border-right: 1px solid rgba(240,192,64,0.22); box-shadow: 8px 0 50px rgba(0,0,0,0.9), inset -1px 0 0 rgba(255,223,150,0.05); animation: slideInLeft 0.22s cubic-bezier(0.25,0.46,0.45,0.94) both;">
   <div class="noise-overlay" style="border-radius: 0;"></div>
 
   <!-- Header -->
@@ -40,9 +40,9 @@
       <span style="font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 700; color: #ffdf96; letter-spacing: 0.14em;">SETTINGS</span>
     </div>
     <button onclick={onClose}
-      style="color: #9a907b; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; cursor: pointer; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: color 0.15s;"
-      onmouseenter={(e) => (e.currentTarget as HTMLElement).style.color = '#e4e1ee'}
-      onmouseleave={(e) => (e.currentTarget as HTMLElement).style.color = '#9a907b'}
+      style="color: #9a907b; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; cursor: pointer; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: color 0.15s, background 0.15s; -webkit-tap-highlight-color: transparent;"
+      onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.color = '#e4e1ee'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'; }}
+      onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.color = '#9a907b'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
     >&times;</button>
   </div>
 
@@ -125,9 +125,10 @@
   }
   .divider { height: 1px; background: rgba(240,192,64,0.08); }
   .speed-chip {
-    padding: 5px 10px; border-radius: 6px; border: 1px solid;
+    padding: 9px 14px; border-radius: 8px; border: 1px solid;
     font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600;
-    cursor: pointer; transition: all 0.15s;
+    cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    min-height: 40px;
   }
   .battle-speed-chip {
     width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid;

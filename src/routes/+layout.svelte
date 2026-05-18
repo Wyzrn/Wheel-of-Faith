@@ -2,7 +2,7 @@
   import '../app.css'
   import SettingsPanel from '../components/SettingsPanel.svelte'
   import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
+  import { goto, onNavigate } from '$app/navigation'
   import { triggerMenu } from '$lib/menuState.svelte'
 
   let { children } = $props()
@@ -11,6 +11,8 @@
   let activeTab = $derived(
     $page.url.pathname === '/' ? 'home' :
     $page.url.pathname.startsWith('/character') ? 'characters' :
+    $page.url.pathname.startsWith('/gallery') ? 'gallery' :
+    $page.url.pathname.startsWith('/battle') ? 'battle' :
     'home'
   )
 
@@ -21,6 +23,17 @@
       goto('/')
     }
   }
+
+  // View Transitions API — smooth crossfade between SvelteKit pages
+  onNavigate((navigation) => {
+    if (!document.startViewTransition) return
+    return new Promise((resolve) => {
+      document.startViewTransition(async () => {
+        resolve()
+        await navigation.complete
+      })
+    })
+  })
 </script>
 
 {@render children()}
@@ -74,8 +87,13 @@
     border: none;
     background: none;
     color: #4e4635;
-    transition: color 0.15s;
+    transition: color 0.15s, transform 0.1s;
     position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .nav-tab:active {
+    transform: scale(0.88);
   }
 
   .nav-tab::before {
