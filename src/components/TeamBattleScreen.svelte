@@ -49,12 +49,13 @@
     if (animTimeoutId) clearTimeout(animTimeoutId)
     activeAnim = { type, color, key: ++animKey, direction }
     animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
+    if (direction !== 'center') emitTrail(direction, color, type)
   }
 
   function detectAnim(line: string): { type: string; color: string; direction: AnimDir } | null {
     const hasAction = line.includes('damage!') || line.includes('restores') ||
       line.includes('recovers') || line.includes('barrier') || line.includes('defensive') ||
-      /BERSERK|combo finisher|follow-up/i.test(line)
+      /BERSERK|combo finisher|follow-up|evad|dodge|riposte|counter-attack|retaliates|strikes back/i.test(line)
     if (!hasAction) return null
 
     const direction: AnimDir =
@@ -81,6 +82,8 @@
     if (/wind|gust|tornado|vortex|cyclone|whirlwind/i.test(line)) return { type: 'wind', color: '#e2e8f0', direction }
     if (/earth|rock|stone|ground|quake|mountain|boulder/i.test(line)) return { type: 'earth', color: '#a16207', direction }
     if (/energy|power|force|blast|surge|beam/i.test(line)) return { type: 'energy', color: '#60a5fa', direction }
+    if (/evad|dodge|sidestep|narrowly avoids|slips past/i.test(line)) return { type: 'dodge', color: '#94a3b8', direction: 'center' }
+    if (/riposte|counter-attack|retaliates|strikes back/i.test(line)) return { type: 'counter', color: '#f59e0b', direction }
     if (line.includes('damage!')) return { type: 'slash', color: '#f87171', direction }
     return null
   }
@@ -95,7 +98,7 @@
   interface Particle {
     id: number; x: number; y: number; text: string
     color: string; shadowColor: string; size: number
-    ambient?: boolean; confetti?: boolean
+    ambient?: boolean; confetti?: boolean; trail?: boolean
   }
   let particles   = $state<Particle[]>([])
   let pId = 0
@@ -328,6 +331,72 @@
     setTimeout(() => { particles = particles.filter(q => q.id !== p.id) }, 2800)
   }
 
+  function getTrailSymbol(type: string): string {
+    const m: Record<string, string> = {
+      fire: '∗', lightning: '╻', ice: '·', shadow: '◦', holy: '✦',
+      psychic: '◦', void: '○', poison: '·', energy: '·', blood: '∙',
+      earth: '∙', wind: '·', slash: '╱', crit: '★', counter: '✦',
+      berserker: '∗', cursed: '◦', time: '◦', gravity: '·',
+    }
+    return m[type] ?? '·'
+  }
+
+  function emitTrail(direction: AnimDir, color: string, type: string) {
+    if (!settings.effectsEnabled) return
+    const t1El = t1PanelEl
+    const t2El = t2PanelEl
+    if (!t1El || !t2El) return
+    const t1R = t1El.getBoundingClientRect()
+    const t2R = t2El.getBoundingClientRect()
+    const startX = ((direction === 'ltr' ? t1R.left + t1R.width / 2 : t2R.left + t2R.width / 2) / window.innerWidth) * 100
+    const endX   = ((direction === 'ltr' ? t2R.left + t2R.width / 2 : t1R.left + t1R.width / 2) / window.innerWidth) * 100
+    const baseY  = ((t1R.top + t1R.height * 0.4) / window.innerHeight) * 100
+    const steps = 8
+    const sym = getTrailSymbol(type)
+    for (let i = 1; i <= steps; i++) {
+      const delay = (i / (steps + 1)) * 560
+      setTimeout(() => {
+        const t = i / (steps + 1)
+        const x = startX + (endX - startX) * t + (Math.random() - 0.5) * 3
+        const yArc = Math.sin(t * Math.PI) * -7
+        const y = baseY + yArc + (Math.random() - 0.5) * 5
+        const p: Particle = { id: pId++, x, y, text: sym, color, shadowColor: color + 'cc', size: 0.26 + Math.random() * 0.22, trail: true }
+        particles = [...particles, p]
+        setTimeout(() => { particles = particles.filter(q => q.id !== p.id) }, 320)
+      }, delay)
+    }
+  }
+
+  function emitImpactBurst(team: 1 | 2, color: string, isCrit: boolean) {
+    if (!settings.effectsEnabled) return
+    const el = team === 1 ? t1PanelEl : t2PanelEl
+    let cx = team === 1 ? 20 : 80
+    let cy = 45
+    if (el) {
+      const r = el.getBoundingClientRect()
+      cx = ((r.left + r.width * 0.5) / window.innerWidth)  * 100
+      cy = ((r.top  + r.height * 0.4) / window.innerHeight) * 100
+    }
+    const count = isCrit ? 14 : 8
+    const chars = ['✦', '★', '·', '◆', '∗', '◦', '∘']
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2
+      const dist = (isCrit ? 9 : 5) + Math.random() * (isCrit ? 9 : 5)
+      setTimeout(() => {
+        const p: Particle = {
+          id: pId++,
+          x: cx + Math.cos(angle) * dist * 0.75,
+          y: cy + Math.sin(angle) * dist * 0.5,
+          text: chars[Math.floor(Math.random() * chars.length)],
+          color, shadowColor: color + 'aa', size: 0.28 + Math.random() * 0.38,
+          trail: true
+        }
+        particles = [...particles, p]
+        setTimeout(() => { particles = particles.filter(q => q.id !== p.id) }, isCrit ? 650 : 450)
+      }, i * 28)
+    }
+  }
+
   function parseDamage(line: string): string | null {
     const m = line.match(/([0-9]+(?:\.[0-9]+)?[KM]?) damage!/)
     return m ? `-${m[1]}` : null
@@ -349,6 +418,8 @@
     const isBurn    = /burn|scorch|ignit|on fire/i.test(line)
     const isPoison  = /poison|venom|toxic/i.test(line)
     const isFreeze  = /freez|frozen|ice|frost|chill/i.test(line)
+    const isDodge   = /evad|dodge|sidestep|narrowly avoids|slips past/i.test(line)
+    const isCounter = /riposte|counter-attack|retaliates|strikes back/i.test(line)
 
     if (isRound) { playSound('round'); return }
 
@@ -375,9 +446,13 @@
       if (victimTeam) {
         flashPanel(victimTeam, 'crit')
         spawnImpactRing(victimTeam)
+        setTimeout(() => spawnImpactRing(victimTeam), 70)
+        setTimeout(() => spawnImpactRing(victimTeam), 150)
+        emitImpactBurst(victimTeam, '#fde047', true)
         const dmg = parseDamage(line)
         spawnParticle(victimTeam, dmg ?? '💥 CRIT', '#fde047', 'rgba(253,224,71,0.9)', 1.4)
         spawnParticle(victimTeam, '✦', '#fbbf24', 'rgba(251,191,36,0.7)', 0.9)
+        spawnParticle(victimTeam, '★', '#fde047', 'rgba(253,224,71,0.6)', 0.8)
       }
       playSound('crit')
     } else if (isHit) {
@@ -385,6 +460,8 @@
       triggerSpeedLines()
       if (victimTeam) {
         flashPanel(victimTeam, 'hit')
+        spawnImpactRing(victimTeam)
+        emitImpactBurst(victimTeam, '#f87171', false)
         const dmg = parseDamage(line)
         if (dmg) spawnParticle(victimTeam, dmg, '#f87171', 'rgba(248,113,113,0.7)', 1.0)
       }
@@ -406,6 +483,27 @@
 
     if (isCombo)   showCenter('COMBO!',   '#fde047', 1100)
     if (isBerserk) showCenter('BERSERK!', '#f87171', 1300)
+
+    if (isDodge) {
+      const dodgingTeam: 1 | 2 | null = startsT1 ? 1 : startsT2 ? 2 : null
+      if (dodgingTeam) {
+        showCenter('DODGE!', '#94a3b8', 900)
+        flashPanel(dodgingTeam, 'heal')
+        spawnParticle(dodgingTeam, '💨', '#94a3b8', 'rgba(148,163,184,0.7)', 1.1)
+        emitImpactBurst(dodgingTeam, '#94a3b8', false)
+      }
+    }
+
+    if (isCounter) {
+      showCenter('COUNTER!', '#f59e0b', 1100)
+      triggerSpeedLines()
+      if (actorTeam) {
+        flashPanel(actorTeam, 'crit')
+        spawnImpactRing(actorTeam)
+        spawnParticle(actorTeam, '⚡', '#f59e0b', 'rgba(245,158,11,0.8)', 1.2)
+        emitImpactBurst(actorTeam, '#f59e0b', false)
+      }
+    }
 
     if (isBurn || isPoison || isFreeze) {
       const icon = isBurn ? '🔥' : isPoison ? '☠️' : '❄️'
@@ -580,11 +678,11 @@
   <div class="impact-ring" style="left:{ring.x}px;top:{ring.y}px;"></div>
 {/each}
 
-<!-- All particles (combat, ambient, confetti) -->
+<!-- All particles (combat, ambient, confetti, trail) -->
 {#each particles as p (p.id)}
   <div
-    class={p.confetti ? 'confetti-particle' : p.ambient ? 'ambient-particle' : 'particle'}
-    style="left:{p.x}%;top:{p.y}%;color:{p.color};text-shadow:0 0 14px {p.shadowColor};font-size:{p.size}rem;"
+    class={p.confetti ? 'confetti-particle' : p.ambient ? 'ambient-particle' : p.trail ? 'trail-particle' : 'particle'}
+    style="left:{p.x}%;top:{p.y}%;color:{p.color};text-shadow:0 0 10px {p.shadowColor};font-size:{p.size}rem;"
   >{p.text}</div>
 {/each}
 
@@ -607,9 +705,10 @@
     <!-- Attack FX overlay: flies from T1 (left) to T2 (right) or vice versa -->
     {#if phase === 'battle' && activeAnim}
       {#key activeAnim.key}
-        <div style="position:absolute;top:35%;transform:translateY(-50%);
-                    {activeAnim.direction === 'rtl' ? 'right:3%' : 'left:3%'};
-                    z-index:30;pointer-events:none;">
+        <div style="position:absolute;top:35%;z-index:30;pointer-events:none;
+                    {activeAnim.direction === 'rtl'    ? 'right:3%;transform:translateY(-50%)' :
+                     activeAnim.direction === 'center' ? 'left:50%;transform:translate(-50%,-50%)' :
+                                                         'left:3%;transform:translateY(-50%)'}">
           <AttackFX type={activeAnim.type} color={activeAnim.color}
                     direction={activeAnim.direction} size={68}/>
         </div>
@@ -990,6 +1089,18 @@
     font-weight: 900;
     animation: confettiFall 3.5s linear forwards;
     white-space: nowrap;
+  }
+  :global(.trail-particle) {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9997;
+    animation: trailFade 0.32s ease-out forwards;
+    white-space: nowrap;
+  }
+  @keyframes trailFade {
+    0%   { opacity: 0.9; transform: scale(1.1); }
+    60%  { opacity: 0.5; transform: scale(0.8); }
+    100% { opacity: 0;   transform: scale(0.3) translateY(-6px); }
   }
 
   @keyframes particleRise {
