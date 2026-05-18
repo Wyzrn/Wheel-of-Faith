@@ -506,7 +506,7 @@
         } else if (outcome.type === 'double_edge') {
           newLabel = shiftTierLabel(resultLabel, 4, statSegs)
         } else if (outcome.type === 'shared') {
-          const lastStat = reversedResults.find(r => STAT_CATEGORIES.has(r.category) && r.tier !== undefined)
+          const lastStat = [...results].reverse().find(r => STAT_CATEGORIES.has(r.category) && r.tier !== undefined)
           if (lastStat?.tier) newLabel = statSegs.find(s => s.tier === lastStat.tier)?.label ?? resultLabel
         }
         // 'reroll' and 'power_gift' leave newLabel unchanged; effects applied in handleWildcardContinue
