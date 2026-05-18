@@ -1634,9 +1634,11 @@
       p2StartedAt = new Date().toISOString()
       rivalPhase = 'p2'
     } else if (rivalMode && rivalPhase === 'p2') {
+      clearSession()
       rivalPhase = 'battle'
       showNameScreen = false
     } else {
+      clearSession()
       showNameScreen = false
       showCard = true
     }
