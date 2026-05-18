@@ -6,27 +6,39 @@ describe('redemptionProbability', () => {
     expect(redemptionProbability(0)).toBeCloseTo(0.85)
   })
 
-  it('score 100 returns 0.05 (capped minimum)', () => {
-    expect(redemptionProbability(100)).toBeCloseTo(0.05)
+  it('score 130 returns 0.05 (capped minimum)', () => {
+    expect(redemptionProbability(130)).toBeCloseTo(0.05)
   })
 
-  it('score 50 returns ~0.25', () => {
-    expect(redemptionProbability(50)).toBeCloseTo(0.25, 2)
+  it('score 50 returns ~0.35', () => {
+    // p = 0.05 + 0.80 * (80/130)^2 ≈ 0.353
+    expect(redemptionProbability(50)).toBeCloseTo(0.353, 2)
   })
 
-  it('score 25 returns ~0.50', () => {
-    // p = 0.05 + 0.80 * (0.75)^2 = 0.05 + 0.45 = 0.50
-    expect(redemptionProbability(25)).toBeCloseTo(0.50, 2)
+  it('score 25 returns ~0.57', () => {
+    // p = 0.05 + 0.80 * (105/130)^2 ≈ 0.573
+    expect(redemptionProbability(25)).toBeCloseTo(0.573, 2)
   })
 
-  it('score 75 returns ~0.10', () => {
-    // p = 0.05 + 0.80 * (0.25)^2 = 0.05 + 0.05 = 0.10
-    expect(redemptionProbability(75)).toBeCloseTo(0.10, 2)
+  it('score 75 returns ~0.19', () => {
+    // p = 0.05 + 0.80 * (55/130)^2 ≈ 0.193
+    expect(redemptionProbability(75)).toBeCloseTo(0.193, 2)
+  })
+
+  it('score 100 (SSS range) returns ~0.09', () => {
+    // p = 0.05 + 0.80 * (30/130)^2 ≈ 0.093
+    expect(redemptionProbability(100)).toBeCloseTo(0.093, 2)
+  })
+
+  it('score 115 (ZZZ range) returns ~0.05 (near minimum)', () => {
+    // p = 0.05 + 0.80 * (15/130)^2 ≈ 0.057
+    expect(redemptionProbability(115)).toBeGreaterThanOrEqual(0.05)
+    expect(redemptionProbability(115)).toBeLessThan(0.08)
   })
 
   it('never returns a value below 0.05', () => {
-    expect(redemptionProbability(100)).toBeGreaterThanOrEqual(0.05)
-    expect(redemptionProbability(99)).toBeGreaterThanOrEqual(0.05)
+    expect(redemptionProbability(130)).toBeGreaterThanOrEqual(0.05)
+    expect(redemptionProbability(200)).toBeGreaterThanOrEqual(0.05)
   })
 
   it('never returns a value above 0.85', () => {
