@@ -179,9 +179,12 @@
 
   function svgToCanvas(svgX: number, svgY: number): [number, number] {
     if (!particleCanvas || !svgEl) return [0, 0]
-    const rect = svgEl.getBoundingClientRect()
+    const svgRect    = svgEl.getBoundingClientRect()
+    const canvasRect = particleCanvas.getBoundingClientRect()
     const dpr = window.devicePixelRatio || 1
-    return [(svgX / SVG_SIZE) * rect.width * dpr, (svgY / SVG_SIZE) * rect.height * dpr]
+    const vx = svgRect.left + (svgX / SVG_SIZE) * svgRect.width
+    const vy = svgRect.top  + (svgY / SVG_SIZE) * svgRect.height
+    return [(vx - canvasRect.left) * dpr, (vy - canvasRect.top) * dpr]
   }
 
   function resizeCanvas() {
