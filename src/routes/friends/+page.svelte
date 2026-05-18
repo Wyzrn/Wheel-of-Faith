@@ -137,16 +137,16 @@
     {:else}
 
       <!-- Add friend -->
-      <div class="mb-6 p-4 rounded-xl" style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.15);">
-        <p class="text-xs tracking-widest uppercase mb-3" style="font-family: 'JetBrains Mono', monospace; color: #7c6fa0;">Add Friend</p>
+      <div class="obsidian-slab mb-6 p-4 rounded-xl">
+        <p class="text-xs tracking-widest uppercase mb-3" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Add Friend</p>
         <div class="flex gap-2">
           <input
             bind:value={addUsername}
             type="text"
             placeholder="Enter username…"
             onkeydown={(e) => e.key === 'Enter' && sendRequest()}
-            class="flex-1 rounded-lg px-3 py-2.5 text-sm outline-none"
-            style="background: rgba(255,255,255,0.04); border: 1px solid rgba(167,139,250,0.2); color: #e4e1ee; font-family: 'JetBrains Mono', monospace; font-size: 12px;"
+            class="carved-groove flex-1 rounded-lg px-3 py-2.5 text-sm outline-none"
+            style="color: #e4e1ee; font-family: 'JetBrains Mono', monospace; font-size: 12px;"
           />
           <button
             onclick={sendRequest}

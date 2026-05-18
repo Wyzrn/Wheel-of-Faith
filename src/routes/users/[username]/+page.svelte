@@ -116,7 +116,7 @@
           { label: 'Losses', value: data.user.rivalsLosses, color: '#f87171' },
           { label: 'Games', value: data.user.gamesPlayed, color: '#a78bfa' },
         ] as stat}
-          <div class="rounded-xl p-3 text-center" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);">
+          <div class="obsidian-slab rounded-xl p-3 text-center">
             <p class="text-xl font-black" style="font-family: 'JetBrains Mono', monospace; color: {stat.color};">{stat.value}</p>
             <p class="text-xs mt-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4e4635; letter-spacing: 0.08em;">{stat.label}</p>
           </div>

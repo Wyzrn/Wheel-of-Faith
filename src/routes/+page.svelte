@@ -111,6 +111,7 @@
   let heightModifiers = $state<Record<string, number>>({})
   // Wildcard state — phase drives the overlay lifecycle
   let wildcardPhase = $state<'idle' | 'flashing' | 'reveal'>('idle')
+  let tutorialWildcardDone = $state(false)
   let wildcardOutcomeType = $state('')
   let wildcardOutcomeLabel = $state('')
   let wildcardOutcomeDesc = $state('')
@@ -136,18 +137,23 @@
   // Auto-advance based on the current spin category so the right card shows
   // without the player needing to manually navigate.
   $effect(() => {
-    if (tutorialStep <= 0 || tutorialStep >= 9) return
+    if (tutorialStep <= 0 || tutorialStep >= 14) return
     const cat = currentDef?.category
     if (!cat) return
     const CAT_STEP: Record<string, number> = {
       race: 1,
-      archetype: 3,
-      strength: 4, speed: 4, agility: 4, durability: 4,
-      iq: 4, charisma: 4, fightingSkill: 4,
-      power: 5,
-      weakness: 6,
-      redemptionSpin: 7,
-      title: 8,
+      raceSubType: 3, raceClass: 3, raceTransformation: 3, racialAbility: 3,
+      archetype: 4,
+      strength: 5,
+      speed: 5, agility: 5, durability: 5,
+      iq: 5, charisma: 5, fightingSkill: 5,
+      potential: 5, energyLevel: 5, powerMastery: 5, weaponMastery: 5,
+      power: 7,
+      weapon: 8,
+      armor: 9, armorStrength: 9,
+      weakness: 10,
+      redemptionSpin: 11,
+      title: 12,
     }
     const needed = CAT_STEP[cat]
     if (needed !== undefined && tutorialStep < needed) {
@@ -163,8 +169,8 @@
   })
 
   function handleTutorialGotIt(nextStep: number) {
-    if (nextStep > 8) {
-      tutorialStep = 9   // triggers completion toast
+    if (nextStep > 12) {
+      tutorialStep = 13   // triggers completion toast
     } else {
       tutorialStep = nextStep
     }
@@ -515,7 +521,7 @@
       // weight 3 (Kryptonian) → ~2.1x capped at 2.0, weight 10 → ~1.8x, weight 20 → ~1.4x, weight 38 → ~0.7x (floored)
       const raceWeight = race?.weight ?? 20
       // Steeper curve: rare races (low weight) feel significantly more powerful
-      const globalModifier = Math.max(0.5, Math.min(2.5, 2.7 - raceWeight * 0.05))
+      const globalModifier = Math.max(0.3, Math.min(3.2, 3.0 - raceWeight * 0.17))
       // Stat-specific race modifier, falling back to global
       const raceMod = race?.statModifiers?.[def.category] ?? globalModifier
       // Archetype modifier: shapes stat probability on top of race
@@ -555,7 +561,7 @@
           // Higher score = rarer tier = lower weight; lower score = more common = higher weight
           const rarityWeight = Math.max(0.3, 11 - score * 0.105)
           // Race modifier: >1 shifts toward high scores, <1 shifts toward low scores
-          const finalWeight = Math.max(0.1, rarityWeight * Math.pow(modifier, score / 50))
+          const finalWeight = Math.max(0.1, rarityWeight * Math.pow(modifier, score / 30))
           return { ...seg, weight: finalWeight }
         })
     }
@@ -638,9 +644,13 @@
       const isStatSpin = STAT_CATEGORIES.has(def.category) && !def.isReroll
       const isItemSpin = def.category === 'weapon' || def.category === 'armor' || def.category === 'power'
 
-      if (isStatSpin && Math.random() < 0.05) {
+      const forceTutorialWildcard = isStatSpin && def.category === 'strength' && tutorialStep > 0 && tutorialStep < 14 && !tutorialWildcardDone
+      if (forceTutorialWildcard) tutorialWildcardDone = true
+      if (isStatSpin && (Math.random() < 0.05 || forceTutorialWildcard)) {
         // Stat wildcard: pick outcome from weighted table
-        const outcome = pickWeighted(STAT_WILDCARD_OUTCOMES)
+        const outcome = forceTutorialWildcard
+          ? (STAT_WILDCARD_OUTCOMES.find(o => o.type === 'blessing') ?? pickWeighted(STAT_WILDCARD_OUTCOMES))
+          : pickWeighted(STAT_WILDCARD_OUTCOMES)
         const statSegs = getSegmentsForCategory(def.category as SpinCategory) as { label: string; tier?: string; score?: number }[]
 
         let newLabel = resultLabel
@@ -1500,6 +1510,11 @@
         category: cat as SpinCategory,
         displayName: `Bonus ${spinQueue[currentSpinIndex]?.displayName ?? cat}`,
       })
+    }
+
+    // After tutorial wildcard on strength resolves, advance to wildcard explanation card
+    if (tutorialWildcardDone && cat === 'strength' && tutorialStep >= 1 && tutorialStep < 14) {
+      tutorialStep = Math.max(tutorialStep, 6)
     }
 
     handleSpinComplete(idx, lbl)

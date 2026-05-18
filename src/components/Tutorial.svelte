@@ -2,8 +2,8 @@
   // Tutorial overlay — shown to first-time players.
   // step -1 = tutorial inactive (done / skipped)
   // step  0 = welcome modal (fullscreen)
-  // step 1–8 = category-keyed bottom cards
-  // step  9 = completion toast
+  // step 1–12 = category-keyed bottom cards
+  // step 13 = completion toast
 
   interface Props {
     step: number
@@ -25,77 +25,150 @@
     accent: string
   }
 
+  const RACIAL_CATS = new Set(['raceSubType', 'raceClass', 'raceTransformation', 'racialAbility'])
   const STAT_CATS = new Set([
     'strength','speed','agility','durability','iq','charisma','fightingSkill',
+    'potential','energyLevel','powerMastery','weaponMastery',
   ])
 
+  const STAT_DETAILS: Record<string, string> = {
+    strength:     'Raw physical force — how hard you hit, what you can lift, and how many walls you walk through.',
+    speed:        'Reaction time and movement speed. Also affects how fast your powers activate in combat.',
+    agility:      'Flexibility, acrobatics, and evasion. Higher agility = harder to land a hit on you.',
+    durability:   'How much punishment you can absorb. Cannot go below zero — you\'re either surviving or you\'re not.',
+    iq:           'Intelligence and tactical thinking. Affects magic complexity, trap detection, and how many bad decisions you make.',
+    charisma:     'Social presence — persuasion, intimidation, and how quickly people trust (or are terrified of) you.',
+    fightingSkill:'Combat technique — the most heavily weighted stat in your overall score. Raw power without skill is just noise.',
+    potential:    'Your untapped ceiling — how much stronger you can become with training. Important to fans. Rarely decides fights.',
+    energyLevel:  'Ki, mana, chakra, aura — whatever fuels your abilities. More energy = more uses before you run dry.',
+    powerMastery: 'How precisely you control your powers. Low mastery = destructive but unstable. High mastery = efficient and lethal.',
+    weaponMastery:'Skill with weapons. Race and archetype can bias specific weapon types on top of this base score.',
+  }
+
   // Maps current game state → which tutorial card to show (null = none).
-  // Keyed by "id" so onGotIt(content.id + 1) advances cleanly past it.
   function resolveCard(s: number, cat: string | undefined, revealed: boolean): CardContent | null {
-    if (s <= 0 || s >= 9) return null
+    if (s <= 0 || s >= 13) return null
     if (!cat) return null
 
+    // Step 1 — Race (before spin)
     if (cat === 'race' && !revealed && s <= 1) return {
       id: 1,
       icon: 'diversity_3',
       title: 'Spin 1: Race',
-      body: '35+ races — from Humans and Elves to Saiyans, Dragons, Hollow Arrancars and Eldritch Beings. Rarer races have lower odds but unlock unique racial ability spins, hidden stat multipliers, and exclusive power pools.',
+      body: '50+ races available — from Humans and Halflings to Saiyans, Hollow Arrancars, Eldritch Beings, and literal Gods. Rarer races (lower spawn odds) carry higher stat multipliers, more racial ability spins, and access to exclusive power pools. The wheel decides. Accept it.',
       cta: 'Got it — spin!',
       accent: '#f0c040',
     }
+
+    // Step 2 — Race locked in
     if (cat === 'race' && revealed && s <= 2) return {
       id: 2,
       icon: 'check_circle',
       title: 'Race Locked In',
-      body: 'Your race shapes everything ahead: how many Racial Ability spins you get (0–3), how many Weaknesses you\'ll roll (0–3), and hidden multipliers on future stat wheels. Certain race + archetype pairs also trigger SYNERGY bonuses mid-session.',
+      body: 'Your race shapes everything ahead:\n\n• Racial Abilities — passive or active traits unique to your race (1–3 spins incoming)\n• Class / Subtype — your racial variant (e.g., Wood Elf vs. High Elf vs. Drow vs. Eladrin). Each unlocks different abilities and stat bonuses\n• Transformation — some races roll a power multiplier: 0.9× to 2.2× on ALL future stats\n• Stat Multipliers — hidden modifiers on your stat wheels (Dragon gets Strength 1.8×; Goblin gets Durability 0.7×)\n• SYNERGY — certain race × archetype combos trigger bonus spins mid-session',
       cta: 'Next spin →',
       accent: '#22c55e',
     }
-    if (cat === 'archetype' && s <= 3) return {
+
+    // Step 3 — Racial features (class, subtype, transformation, ability)
+    if (RACIAL_CATS.has(cat) && s <= 3) return {
       id: 3,
-      icon: 'military_tech',
-      title: 'Spin: Archetype',
-      body: 'Your class — Warrior, Mage, Rogue, Necromancer, Chaos Gremlin, and more. Specific race × archetype combos trigger SYNERGY: bonus spins, extra abilities, or powers spliced into your queue right now.',
+      icon: 'auto_awesome',
+      title: 'Racial Features',
+      body: 'These spins build your racial identity:\n\n• Class / Subtype — your variant within the race. Each has unique abilities and grants a stat bonus (e.g., Berserker Orc = Strength bonus; Runic Dwarf = Power Mastery bonus)\n• Racial Abilities — passive and active traits. Separate from regular Powers — these are your birthright\n• Transformation (some races) — scales all your stats by a multiplier. Higher transformation = stronger overall character\n\nRarer subtype picks tend to grant better abilities and larger bonuses. The wheel decides which variant you are.',
       cta: 'Got it — spin!',
       accent: '#a78bfa',
     }
-    if (STAT_CATS.has(cat) && s <= 4) return {
+
+    // Step 4 — Archetype
+    if (cat === 'archetype' && s <= 4) return {
       id: 4,
-      icon: 'bar_chart',
-      title: 'The Tier System',
-      body: 'Stats run 42 grades: F–, F, F+, E, D, C, B, A, S, SS, SSS, then Z, ZZ, ZZZ, Celestial, Godly, and finally Primordial. The label you land on IS your result — tier and score are embedded in it. Every stat spin also has a 5% chance to trigger ⚡ WILDCARD, which rewrites the rules entirely.',
+      icon: 'military_tech',
+      title: 'Spin: Archetype',
+      body: 'Your class — what role you fill. Archetypes have types:\n\n• Combat (Warrior, Gladiator, Berserker) — Fighting Skill + Strength\n• Magic (Mage, Warlock, Sorcerer) — Power Mastery + IQ\n• Stealth (Rogue, Assassin, Shinobi) — Agility + Speed\n• Support / Aura (Paladin, Healer, Bard) — Charisma + Potential\n• Chaos (Chaos Gremlin, Berserker, Anti-Hero) — wild bonuses across the board\n\nYour archetype also has its own ability pool and can grant bonus stat spins. Specific race × archetype combos trigger SYNERGY bonuses — watch the announcement bar.',
       cta: 'Got it — spin!',
+      accent: '#a78bfa',
+    }
+
+    // Step 5 — First stat (shown on any stat category)
+    if (STAT_CATS.has(cat) && !revealed && s <= 5) {
+      const statDetail = STAT_DETAILS[cat] ?? ''
+      return {
+        id: 5,
+        icon: 'bar_chart',
+        title: `Stat: ${cat.replace(/([A-Z])/g, ' $1').trim()}`,
+        body: `${statDetail}\n\nStats run 42 grades:\nF–, F, F+ → E, D, C, B, A, S, SS, SSS → Z, ZZ, ZZZ, Celestial, Godly, Primordial\n\nThe label you land on IS your tier — score is embedded in it. Your race shifts the odds: common races average C–B, rare races skew toward S–SSS+. You have 11 stats total.\n\n⚡ Every stat spin has a 5% WILDCARD chance. Watch for it.`,
+        cta: 'Got it — spin!',
+        accent: '#f0c040',
+      }
+    }
+
+    // Step 6 — Wildcard (shown after forced wildcard resolves on strength)
+    if (cat === 'strength' && revealed && s === 6) return {
+      id: 6,
+      icon: 'bolt',
+      title: '⚡ That Was a Wildcard',
+      body: 'A 5% chance on every stat spin that overwrites fate. Possible outcomes:\n\n• Fate\'s Blessing — +3 tiers above your roll\n• Fate\'s Curse — −3 tiers below your roll\n• Chaos Reroll — immediate re-spin, no modifiers\n• Mirror of Glory — copy your highest stat so far\n• Gift of Power — keep your roll AND get a bonus power spin\n• Double-Edged Fate — +4 tiers but a new weakness is added\n• Primordial Ascension — max tier, instantly\n• Frozen Mediocrity — locked to C, no argument\n• Forgotten by Fate — F–, no argument\n\nItem spins (powers, weapons) have a 20% bonus extra-spin wildcard instead.',
+      cta: 'Got it →',
       accent: '#f0c040',
     }
-    if (cat === 'power' && s <= 5) return {
-      id: 5,
+
+    // Step 7 — Powers and elements
+    if (cat === 'power' && s <= 7) return {
+      id: 7,
       icon: 'bolt',
-      title: 'Powers: 1000+ Options',
-      body: 'From reality manipulation and time stop to aggressive negotiations and becoming a licensed bureaucrat. What lands is what you get. No filtering. No second chances. Your power is your power.',
+      title: 'Powers & Elements',
+      body: 'Powers are your special abilities. You spin 1–3+ based on race and archetype.\n\nEvery power, ability, and weapon has an Element and Grade:\n\nElements: Fire, Ice, Lightning, Shadow, Arcane, Light, Nature, Poison, Gravity, Time, Cosmic, Soul, Chaos, Blood, Psychic, Sound, Water, Metal, Earth\n\nGrades:\n• D / C — functional, reliable\n• B / A — strong with unique effects\n• S / SS — game-defining\n• SSS+ — world-ending\n• God — you are now the problem\n\nYour race gates which powers can appear. Rarer races unlock exclusive pools.',
       cta: 'Got it — spin!',
       accent: '#fb923c',
     }
-    if (cat === 'weakness' && s <= 6) return {
-      id: 6,
+
+    // Step 8 — Weapons
+    if (cat === 'weapon' && s <= 8) return {
+      id: 8,
+      icon: 'swords',
+      title: 'Weapons',
+      body: 'Weapon types: Melee, Ranged, Magical, Ancient, Exotic, Cursed, and None.\n\nEach weapon has an Element and Grade — higher grade = more broken.\n\nYour race and archetype bias certain types:\n• Dwarves → Ancient melee\n• Goblins → Cursed / Exotic\n• Elves → Ranged / Magical\n• Kryptonians → their bare hands (None)\n\nWeapon Mastery (a stat you\'ll spin soon) measures how well you use whatever you\'re holding. Even a god-tier weapon needs someone competent to hold it.',
+      cta: 'Got it — spin!',
+      accent: '#64748b',
+    }
+
+    // Step 9 — Armor
+    if ((cat === 'armor' || cat === 'armorStrength') && s <= 9) return {
+      id: 9,
+      icon: 'shield',
+      title: 'Armor',
+      body: 'Armor types: None, Helmet Only, Half-Suit, Full-Suit, Ancient, Exotic, Cursed.\n\nArmor has its own strength tier — land on B+ or above and you unlock armor enchantments. SS+ unlocks multiple enchantments.\n\nArmor Strength is a separate stat wheel that determines the protective power of your armor — even basic armor can be supernaturally durable at high tiers.\n\nHigher-tier armors from rare races have type biases — Orcs tend toward Full-Suit ancient plating, Elves toward Half-Suit or None.',
+      cta: 'Got it — spin!',
+      accent: '#94a3b8',
+    }
+
+    // Step 10 — Weaknesses
+    if (cat === 'weakness' && s <= 10) return {
+      id: 10,
       icon: 'broken_image',
       title: 'Weaknesses',
-      body: 'How many weaknesses you roll depends on your race\'s modifier — anywhere from 0 to 3. They\'re permanent and they\'re yours. The more powerful the race, the more likely it comes with strings attached.',
+      body: 'How many weaknesses you roll depends on your race\'s weakness modifier — anywhere from 0 to 3.\n\nThey\'re permanent. They\'re real. They\'re yours.\n\nMore powerful races tend to have more weaknesses — cosmic balance demands payment. A God-tier character is still vulnerable to something humiliating.\n\nRace-specific weaknesses can be tailored to the race. Some are funnier than others. You\'ll see.',
       cta: 'Got it — spin!',
       accent: '#f87171',
     }
-    if (cat === 'redemptionSpin' && s <= 7) return {
-      id: 7,
+
+    // Step 11 — Redemption spin
+    if (cat === 'redemptionSpin' && s <= 11) return {
+      id: 11,
       icon: 'casino',
       title: 'The Redemption Spin',
-      body: '25% chance. Land on Redemption and a second wheel activates — reroll your worst stat, gain a bonus power, lose a weakness, or trigger something far more chaotic. Even fate gives second chances. Sometimes.',
+      body: '25% chance to land Redemption. If you do, a second wheel activates:\n\n• Reroll Your Worst Stat\n• Gain a Bonus Power\n• Lose One Weakness\n• All Stats +1 Tier\n• Double Your Best Stat\n• Demigod Status — all stats +3 tiers (very rare)\n• Reroll Everything: Chaos Edition\n• Plot Armour (Permanent)\n• The Universe Owes You One\n\nEven fate gives second chances. Sometimes.',
       cta: 'Got it — spin!',
       accent: '#c084fc',
     }
-    if (cat === 'title' && s <= 8) return {
-      id: 8,
+
+    // Step 12 — Title (final spin)
+    if (cat === 'title' && s <= 12) return {
+      id: 12,
       icon: 'workspace_premium',
       title: 'Final Spin: Title',
-      body: 'Your Title is the capstone of your identity — an honorary designation that wraps up who your character is. After this spin, you\'ll name your legend and see your complete character card.',
+      body: 'Your Title is the capstone of your identity — an honorary designation that wraps up who your character is. Their legacy, their reputation, their vibe.\n\nAfter this spin, you\'ll name your legend and your complete character card will be revealed with your overall tier grade.\n\nThe wheel has spoken. Own it.',
       cta: 'Last spin — let\'s go!',
       accent: '#f0c040',
     }
@@ -105,10 +178,10 @@
 
   let card = $derived(resolveCard(step, currentCategory, isRevealed))
 
-  // Completion toast: briefly visible when step hits 9
+  // Completion toast: briefly visible when step hits 13
   let toastVisible = $state(false)
   $effect(() => {
-    if (step === 9) {
+    if (step === 13) {
       toastVisible = true
       const t = setTimeout(() => { toastVisible = false; onSkip() }, 2200)
       return () => clearTimeout(t)
@@ -146,14 +219,11 @@
         </h2>
 
         <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #9a907b; line-height: 1.7; margin-bottom: 24px;">
-          <p>You'll spin <span style="color: #f0c040; font-weight: 700;">~23 fate-chosen wheels</span> to build your character from scratch.</p>
-          <p class="mt-2">Race. Archetype. Stats. Powers. Weaknesses. Title.</p>
+          <p>You'll spin <span style="color: #f0c040; font-weight: 700;">~23+ fate-chosen wheels</span> to build your character from scratch.</p>
+          <p class="mt-2">Race. Class. Stats. Powers. Weaknesses. Title.</p>
+          <p class="mt-2">The tutorial walks you through <span style="color: #e4e1ee;">each system</span> as it appears — race mechanics, wildcards, elements, grades, weapons, armor, and everything in between.</p>
           <p class="mt-2" style="color: #4e4635; font-style: italic;">Everything is permanent. No take-backs.</p>
         </div>
-
-        <p class="text-[10px] tracking-[0.15em] uppercase mb-5" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">
-          This tutorial walks you through each wheel.
-        </p>
 
         <button
           onclick={() => { onStartGame() }}
@@ -175,7 +245,7 @@
   </div>
 {/if}
 
-<!-- ─── Bottom card (steps 1–8) ──────────────────────────────────────────── -->
+<!-- ─── Bottom card (steps 1–12) ──────────────────────────────────────────── -->
 {#if card}
   <div
     class="fixed inset-x-0 z-40 flex justify-center px-3"
@@ -190,12 +260,12 @@
         <span class="material-symbols-outlined" style="font-size: 13px; color: {card.accent}; font-variation-settings: 'FILL' 1;">school</span>
         <span class="text-[9px] tracking-[0.25em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Tutorial</span>
 
-        <!-- Progress dots -->
-        <div class="ml-auto flex gap-1.5 items-center">
-          {#each [1,2,3,4,5,6,7,8] as n}
+        <!-- Progress dots (12 steps) -->
+        <div class="ml-auto flex gap-1 items-center">
+          {#each [1,2,3,4,5,6,7,8,9,10,11,12] as n}
             <div
               class="rounded-full transition-all duration-300"
-              style="width: {n === card.id ? 16 : 5}px; height: 5px; background: {n < card.id ? '#4e4635' : n === card.id ? card.accent : '#2a2a38'};"
+              style="width: {n === card.id ? 14 : 4}px; height: 4px; background: {n < card.id ? '#4e4635' : n === card.id ? card.accent : '#2a2a38'};"
             ></div>
           {/each}
         </div>
@@ -210,14 +280,14 @@
       </div>
 
       <!-- Content -->
-      <div class="px-4 pt-3.5 pb-1 flex gap-3.5">
+      <div class="px-4 pt-3.5 pb-1 flex gap-3.5" style="max-height: 55vh; overflow-y: auto;">
         <span
           class="material-symbols-outlined shrink-0 mt-0.5"
           style="font-size: 22px; color: {card.accent}; font-variation-settings: 'FILL' 1;"
         >{card.icon}</span>
         <div class="flex-1 min-w-0">
           <p style="font-family: 'Cinzel', serif; font-size: 0.88rem; font-weight: 700; color: #ffdf96; margin-bottom: 5px; letter-spacing: 0.04em;">{card.title}</p>
-          <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #9a907b; line-height: 1.65;">{card.body}</p>
+          <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #9a907b; line-height: 1.7; white-space: pre-line;">{card.body}</p>
         </div>
       </div>
 
@@ -236,7 +306,7 @@
   </div>
 {/if}
 
-<!-- ─── Completion toast (step 9) ─────────────────────────────────────────── -->
+<!-- ─── Completion toast (step 13) ─────────────────────────────────────────── -->
 {#if toastVisible}
   <div
     class="fixed top-16 inset-x-0 z-50 flex justify-center px-4 pointer-events-none"

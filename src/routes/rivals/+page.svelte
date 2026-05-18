@@ -239,7 +239,7 @@
   let searchPct = $derived(Math.min(searchSeconds / MATCH_TIMEOUT, 1))
 </script>
 
-<main class="min-h-screen pt-16 pb-24 px-4" style="background: #09090f;">
+<main class="min-h-screen pt-16 pb-24 px-4" style="background: #07070d;">
   <div class="max-w-md mx-auto">
 
     <!-- ── Auth wall (online play requires login) ────────────────────────── -->
@@ -250,7 +250,8 @@
     <!-- ── Mode selection ─────────────────────────────────────────────────── -->
     {#if phase === 'mode'}
       <div class="text-center mb-8 mt-8">
-        <h1 style="font-family: 'Cinzel', serif; font-size: 1.75rem; font-weight: 900; color: #f9a8d4; letter-spacing: 0.12em;">⚔ RIVALS MODE</h1>
+        <p class="text-xs tracking-[0.3em] uppercase mb-3" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Live PvP</p>
+        <h1 style="font-family: 'Cinzel', serif; font-size: 1.75rem; font-weight: 900; color: #f9a8d4; letter-spacing: 0.12em;">RIVALS MODE</h1>
         <p class="text-xs mt-2 tracking-widest uppercase" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Challenge another player in a live duel</p>
       </div>
 
@@ -258,8 +259,8 @@
         <!-- Offline -->
         <button
           onclick={() => goto('/?rivals=offline')}
-          class="py-4 rounded-2xl text-left px-6 transition-opacity hover:opacity-80"
-          style="background: #1a1a28; border: 1px solid rgba(255,255,255,0.08);"
+          class="obsidian-slab py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]"
+          style="cursor: pointer;"
         >
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined" style="color: #9a907b; font-size: 24px;">person</span>
@@ -273,8 +274,8 @@
         <!-- Find Match (requires login) -->
         <button
           onclick={() => auth.loggedIn ? findMatch() : goto('/login')}
-          class="py-4 rounded-2xl text-left px-6 transition-opacity hover:opacity-80"
-          style="background: linear-gradient(135deg, #0a1f14 0%, #0a1a2e 100%); border: 1px solid rgba(52,211,153,0.3);"
+          class="py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]"
+          style="background: linear-gradient(180deg, #0d1f17 0%, #091410 100%); border: 1px solid rgba(52,211,153,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 1px 1px 0 rgba(52,211,153,0.08); cursor: pointer;"
         >
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined" style="color: #34d399; font-size: 24px;">search</span>
@@ -293,8 +294,8 @@
         <!-- Online (room code) -->
         <button
           onclick={() => auth.loggedIn ? (phase = 'create_or_join') : goto('/login')}
-          class="py-4 rounded-2xl text-left px-6 transition-opacity hover:opacity-80"
-          style="background: linear-gradient(135deg, #1f0a1a 0%, #1a0a2e 100%); border: 1px solid rgba(249,168,212,0.25);"
+          class="py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]"
+          style="background: linear-gradient(180deg, #1a0d18 0%, #100910 100%); border: 1px solid rgba(249,168,212,0.25); box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 1px 1px 0 rgba(249,168,212,0.06); cursor: pointer;"
         >
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined" style="color: #f9a8d4; font-size: 24px;">wifi</span>
@@ -378,7 +379,7 @@
           Create Room
         </button>
 
-        <div class="flex flex-col gap-3 p-5 rounded-2xl" style="background: #0f0e1a; border: 1px solid rgba(240,192,64,0.12);">
+        <div class="obsidian-slab flex flex-col gap-3 p-5 rounded-2xl">
           <p class="text-xs tracking-widest uppercase" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Join with a code</p>
           <input
             bind:value={joinCode}
@@ -386,7 +387,7 @@
             maxlength="6"
             placeholder="FATE42"
             class="w-full rounded-lg px-3 py-2.5 text-center text-xl font-black tracking-widest uppercase outline-none"
-            style="background: #1a1a28; border: 1px solid rgba(255,255,255,0.1); color: #ffdf96; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.4em;"
+            style="background: #05050d; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(0,0,0,0.4); color: #ffdf96; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.4em;"
           />
           {#if joinError}
             <p class="text-xs text-red-400 text-center" style="font-family: 'JetBrains Mono', monospace;">{joinError}</p>
@@ -409,7 +410,7 @@
           {isP1 ? 'Waiting for opponent…' : 'Joining room…'}
         </h2>
         {#if roomCode}
-          <div class="px-6 py-4 rounded-2xl" style="background: #0f0e1a; border: 1px solid rgba(240,192,64,0.2);">
+          <div class="obsidian-slab px-6 py-4 rounded-2xl" style="border: 1px solid rgba(240,192,64,0.25)!important;">
             <p class="text-xs mb-2 tracking-widest uppercase" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Room code — share this</p>
             <p class="text-4xl font-black tracking-[0.4em]" style="color: #ffdf96; font-family: 'JetBrains Mono', monospace;">{roomCode}</p>
           </div>
@@ -444,7 +445,7 @@
           </a>
         {:else}
           <p class="text-xs" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Watch their spins appear below as they happen…</p>
-          <div class="w-full mt-4 rounded-xl overflow-hidden" style="border: 1px solid rgba(240,192,64,0.1); background: #0f0e1a;">
+          <div class="obsidian-slab w-full mt-4 rounded-xl overflow-hidden">
             {#if partnerSpins.size === 0}
               <p class="text-xs text-center py-8" style="color: #4e4635; font-style: italic;">Waiting for first spin…</p>
             {:else}

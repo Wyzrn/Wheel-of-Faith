@@ -36,6 +36,16 @@
     loading = false
   })
 
+  // Top 10 characters by score (strongest first)
+  let topCharacters = $derived(
+    [...characters].sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0)).slice(0, 10)
+  )
+
+  // 10 most recent spin history entries
+  let recentHistory = $derived(
+    [...spinHistory].sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()).slice(0, 10)
+  )
+
   // Stats derived from local history
   let totalSpins = $derived(spinHistory.reduce((s, e) => s + e.spinCount, 0))
   let bestTier = $derived(spinHistory.length
@@ -61,7 +71,7 @@
   }
 </script>
 
-<main class="min-h-screen pt-16 pb-24 px-4" style="background: #09090f;">
+<main class="min-h-screen pt-16 pb-24 px-4" style="background: #07070d;">
   <div class="max-w-2xl mx-auto">
 
     {#if loading || auth.loading}
@@ -70,12 +80,13 @@
       </div>
     {:else if auth.user}
       <!-- Avatar + Name -->
-      <div class="flex items-center gap-4 mb-8">
-        <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black"
-          style="background: #1e1e2e; border: 2px solid rgba(240,192,64,0.3); color: #f0c040; font-family: 'Cinzel', serif;">
+      <div class="obsidian-slab flex items-center gap-4 mb-6 rounded-2xl p-5">
+        <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black shrink-0"
+          style="background: linear-gradient(135deg, #1f1f28 0%, #13121c 100%); border: 2px solid rgba(240,192,64,0.4); color: #f0c040; font-family: 'Cinzel', serif; box-shadow: 0 0 20px rgba(240,192,64,0.12);">
           {auth.user.username[0].toUpperCase()}
         </div>
-        <div>
+        <div class="flex-1 min-w-0">
+          <p class="text-[10px] tracking-[0.25em] uppercase mb-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Fate Bearer</p>
           <h1 style="font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 700; color: #ffdf96;">
             {auth.user.username}
           </h1>
@@ -85,15 +96,15 @@
         </div>
         <button
           onclick={async () => { await auth.logout(); goto('/') }}
-          class="ml-auto text-xs px-3 py-1.5 rounded-lg"
-          style="background: #1a1a28; border: 1px solid rgba(255,255,255,0.08); color: #9a907b; font-family: 'JetBrains Mono', monospace;"
+          class="ml-auto text-xs px-3 py-1.5 rounded-lg shrink-0"
+          style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #9a907b; font-family: 'JetBrains Mono', monospace; cursor: pointer;"
         >Sign out</button>
       </div>
 
       <!-- Stats -->
       <div class="grid grid-cols-3 gap-3 mb-8">
         {#each [['Rivals Wins', auth.user.rivalsWins, '#22c55e'], ['Rivals Losses', auth.user.rivalsLosses, '#ef4444'], ['Games Played', auth.user.gamesPlayed, '#f0c040']] as [label, val, color]}
-          <div class="rounded-xl p-4 text-center" style="background: #0f0e1a; border: 1px solid rgba(240,192,64,0.1);">
+          <div class="obsidian-slab rounded-xl p-4 text-center">
             <div class="text-2xl font-black mb-1" style="color: {color}; font-family: 'Cinzel', serif;">{val}</div>
             <div class="text-[10px] tracking-widest uppercase" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">{label}</div>
           </div>
@@ -102,18 +113,23 @@
 
       <!-- Characters -->
       <div class="mb-8">
-        <h2 class="text-xs tracking-[0.2em] uppercase mb-4" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Your Characters</h2>
+        <div class="flex items-baseline gap-2 mb-4">
+          <h2 class="text-xs tracking-[0.2em] uppercase" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Your Characters</h2>
+          {#if characters.length > 0}
+            <span class="text-[10px]" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">Top {Math.min(characters.length, 10)} of {characters.length}</span>
+          {/if}
+        </div>
         {#if characters.length === 0}
           <p class="text-sm text-center py-8" style="color: #4e4635; font-style: italic;">No saved characters yet — finish a spin session to save one.</p>
         {/if}
         <div class="flex flex-col gap-3">
-          {#each characters as c}
+          {#each topCharacters as c}
             {@const tc = TIER_COLORS[c.overall_tier] ?? '#9a907b'}
             <a href="/character/{c.shareId}"
-              class="flex items-center gap-4 px-4 py-3 rounded-xl transition-colors hover:opacity-90"
-              style="background: #0f0e1a; border: 1px solid {tc}22; text-decoration: none;">
-              <div class="shrink-0 px-2 py-1 rounded text-xs font-black" style="background: {tc}22; border: 1px solid {tc}55; color: {tc}; min-width: 2.5rem; text-align: center; font-family: 'JetBrains Mono', monospace;">
-                {c.overall_tier}
+              class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:brightness-110"
+              style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid {tc}22; box-shadow: inset 1px 1px 0 rgba(255,223,150,0.04); text-decoration: none;">
+              <div class="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center" style="background: {tc}18; border: 1px solid {tc}44;">
+                <span class="text-xs font-black" style="color: {tc}; font-family: 'Cinzel', serif;">{c.overall_tier}</span>
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-semibold truncate" style="color: #ffdf96; font-family: 'Cinzel', serif;">{c.name}</p>
@@ -131,7 +147,9 @@
           <!-- Header + lifetime stats -->
           <div class="flex items-baseline gap-3 mb-4">
             <h2 class="text-xs tracking-[0.2em] uppercase" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Spin History</h2>
-            <span class="text-[10px]" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">{spinHistory.length} session{spinHistory.length === 1 ? '' : 's'} · {totalSpins} total spins</span>
+            <span class="text-[10px]" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">
+              {#if spinHistory.length > 10}Last 10 of {spinHistory.length} sessions{:else}{spinHistory.length} session{spinHistory.length === 1 ? '' : 's'}{/if} · {totalSpins} total spins
+            </span>
           </div>
 
           <!-- Lifetime summary chips -->
@@ -153,11 +171,11 @@
 
           <!-- History list -->
           <div class="flex flex-col gap-2">
-            {#each spinHistory as entry}
+            {#each recentHistory as entry}
               {@const tc = TIER_COLORS[entry.overallTier] ?? '#9a907b'}
               <div
                 class="flex items-center gap-3 px-4 py-3 rounded-xl"
-                style="background: #0a0a12; border: 1px solid rgba(255,255,255,0.04);"
+                style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(255,223,150,0.06); box-shadow: inset 1px 1px 0 rgba(255,223,150,0.03);"
               >
                 <!-- Tier badge -->
                 <div class="shrink-0 px-2 py-1 rounded text-[11px] font-black" style="background: {tc}18; border: 1px solid {tc}44; color: {tc}; min-width: 2.5rem; text-align: center; font-family: 'JetBrains Mono', monospace;">
@@ -173,7 +191,7 @@
                 <!-- Spin count + date -->
                 <div class="shrink-0 text-right">
                   <p class="text-[11px]" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">{entry.spinCount} spins</p>
-                  <p class="text-[10px] mt-0.5" style="color: #2a2a38; font-family: 'JetBrains Mono', monospace;">{formatDate(entry.completedAt)}</p>
+                  <p class="text-[10px] mt-0.5" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">{formatDate(entry.completedAt)}</p>
                 </div>
               </div>
             {/each}

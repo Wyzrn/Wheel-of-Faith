@@ -21,20 +21,21 @@
   }
 </script>
 
-<main class="min-h-screen flex items-center justify-center px-4" style="background: #09090f;">
+<main class="min-h-screen flex items-center justify-center px-4" style="background: #07070d;">
   <div class="w-full max-w-sm">
     <!-- Header -->
     <div class="text-center mb-8">
+      <p class="text-xs tracking-[0.3em] uppercase mb-3" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Wheel of Fate</p>
       <h1 style="font-family: 'Cinzel', serif; font-size: 1.75rem; font-weight: 900; color: #ffdf96; letter-spacing: 0.1em;">
-        WHEEL OF FATE
+        {mode === 'login' ? 'Welcome Back' : 'Create Account'}
       </h1>
       <p class="text-xs mt-2 tracking-widest uppercase" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">
-        {mode === 'login' ? 'Welcome back' : 'Create your account'}
+        {mode === 'login' ? 'Sign in to sync your fates' : 'Start your legend'}
       </p>
     </div>
 
     <!-- Card -->
-    <div class="rounded-2xl p-6" style="background: #0f0e1a; border: 1px solid rgba(240,192,64,0.15);">
+    <div class="obsidian-slab rounded-2xl p-6">
       <!-- Form -->
       <form onsubmit={(e) => { e.preventDefault(); submit() }} class="flex flex-col gap-4">
         <div>
@@ -44,8 +45,8 @@
             type="text"
             autocomplete="username"
             required
-            class="w-full rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
-            style="background: #1a1a28; border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; font-family: 'JetBrains Mono', monospace;"
+            class="carved-groove w-full rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
+            style="color: #e4e1ee; font-family: 'JetBrains Mono', monospace;"
             placeholder="your_username"
           />
         </div>
@@ -57,8 +58,8 @@
               bind:value={email}
               type="email"
               autocomplete="email"
-              class="w-full rounded-lg px-3 py-2.5 text-sm outline-none"
-              style="background: #1a1a28; border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; font-family: 'JetBrains Mono', monospace;"
+              class="carved-groove w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+              style="color: #e4e1ee; font-family: 'JetBrains Mono', monospace;"
               placeholder="you@example.com"
             />
           </div>
@@ -72,8 +73,8 @@
             autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
             required
             minlength={6}
-            class="w-full rounded-lg px-3 py-2.5 text-sm outline-none"
-            style="background: #1a1a28; border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; font-family: 'JetBrains Mono', monospace;"
+            class="carved-groove w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+            style="color: #e4e1ee; font-family: 'JetBrains Mono', monospace;"
             placeholder="••••••••"
           />
         </div>
