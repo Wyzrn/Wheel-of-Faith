@@ -10,6 +10,17 @@ import type { TierGrade } from '$lib/game/scoreTier'
 // When a transformation/class/subType with this field resolves, those stats get a bonus spin spliced after them.
 export type StatBonusGrants = Record<string, 'statBonus' | 'statPenalty'>
 
+// Item grade — rarity/power tier for powers, weapons, and armors.
+// F = Common, D = Uncommon, C = Rare, B = Epic, A = Legendary, S = Mythic, SS = Divine, SSS = Primordial
+export type ItemGrade = 'F' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS'
+
+// Element type — thematic elemental affinity for powers, weapons, armor, and race classes.
+export type ElementType =
+  | 'Fire' | 'Ice' | 'Lightning' | 'Earth' | 'Wind' | 'Shadow' | 'Light'
+  | 'Arcane' | 'Nature' | 'Void' | 'Cosmic' | 'Blood' | 'Metal' | 'Soul'
+  | 'Poison' | 'Time' | 'Water' | 'Sound' | 'Gravity' | 'Psychic' | 'Chaos'
+  | 'Neutral'
+
 export interface Race {
   label: string                       // display name shown on wheel and in results
   weight: number                      // for weightedRandom(); determines rarity
@@ -26,9 +37,9 @@ export interface Race {
   // Keys match segment labels (e.g. 'Melee', 'None'). Missing keys default to ×1.
   weaponTypeBias?: Record<string, number>
   armorTypeBias?: Record<string, number>
-  subTypePool?: { label: string; weight: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]       // if set, a raceSubType spin is spliced after race lands
-  classPool?: { label: string; weight: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]         // if set, a raceClass spin is spliced after subType (or after race if no subType)
-  transformationPool?: { label: string; weight: number; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]  // if set, a raceTransformation spin is spliced; statBonus multiplies all stat probabilities
+  subTypePool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]       // if set, a raceSubType spin is spliced after race lands
+  classPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]         // if set, a raceClass spin is spliced after subType (or after race if no subType)
+  transformationPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]  // if set, a raceTransformation spin is spliced; statBonus multiplies all stat probabilities
 }
 
 // Archetype definition — drives archetype ability spin count and special effects.
@@ -75,6 +86,8 @@ export interface SimpleItem {
   bonusSpin?: string      // SpinCategory string — if set, this item splices an extra spin when landed on
   bonusSpinDisplayName?: string  // display name for the bonus spin slot
   statBonusGrants?: StatBonusGrants  // maps stat category → statBonus/statPenalty; spliced immediately after this item resolves
+  element?: ElementType   // thematic elemental affinity
+  grade?: ItemGrade       // rarity/power tier (F=Common → SSS=Primordial)
 }
 
 // Weakness extends SimpleItem — adds a severity flag for race-modulated drawing.

@@ -2,6 +2,11 @@
   import type { SpinResult } from '$lib/session/types'
   import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
   import { archetypes } from '$lib/content/archetypes'
+  import { powers as powersPool } from '$lib/content/powers'
+  import { weapons as weaponsPool } from '$lib/content/weapons'
+  import { armors as armorsPool } from '$lib/content/armors'
+  import { ITEM_GRADE_INFO, ELEMENT_COLORS, ELEMENT_ICONS, highestGrade } from '$lib/content/elements'
+  import type { ItemGrade } from '$lib/content/types'
   import { onMount, onDestroy } from 'svelte'
 
   let { results, name = '', startedAt, readonly = false, rivalsWins = 0, onNewCharacter, onBackToMenu }: {
@@ -82,6 +87,17 @@
     Object.fromEntries(statCategories.map(cat => [cat, results.find(r => r.category === cat)?.score ?? 0]))
   ))
   let overallGrade = $derived(scoreTier(overallScore))
+
+  // Content lookup maps — built once from static pool arrays
+  const powerMap  = new Map(powersPool.map(p => [p.label, p]))
+  const weaponMap = new Map(weaponsPool.map(w => [w.label, w]))
+  const armorMap  = new Map(armorsPool.map(a => [a.label, a]))
+
+  let topPowerGrade = $derived(highestGrade(powers.map(label => powerMap.get(label)?.grade)))
+  let weaponGrade   = $derived((weaponMap.get(weapon)?.grade ?? 'F') as ItemGrade)
+  let armorGrade    = $derived((armorMap.get(armor)?.grade  ?? 'F') as ItemGrade)
+  let weaponElement = $derived(weaponMap.get(weapon)?.element)
+  let armorElement  = $derived(armorMap.get(armor)?.element)
 
   // ── Save & Share state ────────────────────────────────────────────────────
 
@@ -225,6 +241,33 @@
     <p class="text-sm italic text-center px-3" style="color: #9a907b;">"{backstory}"</p>
   {/if}
 
+  <!-- Combat Grades -->
+  {#if powers.length > 0 || (weapon !== '—' && weapon !== 'No Weapon') || armor !== '—'}
+    <div class="flex gap-3">
+      {#if powers.length > 0}
+        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center" style="border: 1px solid {ITEM_GRADE_INFO[topPowerGrade].color}44;">
+          <p class="text-[9px] tracking-[0.18em] uppercase mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Power Grade</p>
+          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[topPowerGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[topPowerGrade].glow});">{topPowerGrade}</p>
+          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[topPowerGrade].label}</p>
+        </div>
+      {/if}
+      {#if weapon !== '—' && weapon !== 'No Weapon'}
+        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center" style="border: 1px solid {ITEM_GRADE_INFO[weaponGrade].color}44;">
+          <p class="text-[9px] tracking-[0.18em] uppercase mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Weapon Grade</p>
+          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[weaponGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[weaponGrade].glow});">{weaponGrade}</p>
+          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[weaponGrade].label}</p>
+        </div>
+      {/if}
+      {#if armor !== '—'}
+        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center" style="border: 1px solid {ITEM_GRADE_INFO[armorGrade].color}44;">
+          <p class="text-[9px] tracking-[0.18em] uppercase mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Armor Grade</p>
+          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[armorGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[armorGrade].glow});">{armorGrade}</p>
+          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[armorGrade].label}</p>
+        </div>
+      {/if}
+    </div>
+  {/if}
+
   <!-- Stats grid -->
   <div>
     <p class="text-xs tracking-[0.18em] uppercase mb-3" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Stats</p>
@@ -280,7 +323,17 @@
       </div>
       <div class="flex flex-wrap gap-1.5">
         {#each powers as p}
-          <span class="text-xs px-3 py-1.5 rounded-full" style="background: rgba(91,33,182,0.22); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.3);">{p}</span>
+          {@const pInfo = powerMap.get(p)}
+          {@const pColor = pInfo?.element ? ELEMENT_COLORS[pInfo.element] : '#8b5cf6'}
+          {@const pGrade = pInfo?.grade ?? 'F'}
+          {@const pGradeInfo = ITEM_GRADE_INFO[pGrade]}
+          <span class="text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5"
+            style="background: {pColor}18; color: {pColor}dd; border: 1px solid {pColor}44;">
+            {#if pInfo?.element}<span style="font-size: 11px; line-height: 1;">{ELEMENT_ICONS[pInfo.element]}</span>{/if}
+            {p}
+            <span class="text-[9px] font-bold px-1 py-0.5 rounded shrink-0"
+              style="background: {pGradeInfo.color}22; color: {pGradeInfo.color}; border: 1px solid {pGradeInfo.color}55;">{pGrade}</span>
+          </span>
         {/each}
       </div>
     </div>
@@ -288,12 +341,21 @@
 
   <!-- Weapon -->
   {#if weapon !== '—' && weapon !== 'No Weapon'}
+    {@const wBorderColor = weaponElement ? ELEMENT_COLORS[weaponElement] : 'rgba(240,192,64,0.4)'}
     <div>
       <div class="flex items-center gap-2 mb-2">
         <span class="material-symbols-outlined text-sm" style="color: #f0c040; font-variation-settings: 'FILL' 1;">swords</span>
         <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Weapon</p>
       </div>
-      <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3" style="border: 1px solid rgba(240,192,64,0.15); border-left: 3px solid rgba(240,192,64,0.4);">
+      <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3"
+        style="border: 1px solid {wBorderColor}33; border-left: 3px solid {wBorderColor};">
+        <span class="text-xs font-bold px-2 py-0.5 rounded"
+          style="background: {ITEM_GRADE_INFO[weaponGrade].color}22; color: {ITEM_GRADE_INFO[weaponGrade].color}; border: 1px solid {ITEM_GRADE_INFO[weaponGrade].color}55;">
+          {ITEM_GRADE_INFO[weaponGrade].label}
+        </span>
+        {#if weaponElement}
+          <span class="text-xs" style="color: {ELEMENT_COLORS[weaponElement]};">{ELEMENT_ICONS[weaponElement]} {weaponElement}</span>
+        {/if}
         {#if weaponType !== '—'}
           <span class="text-xs px-2 py-1 rounded" style="background: rgba(240,192,64,0.08); color: #9a907b; border: 1px solid rgba(240,192,64,0.15);">{weaponType}</span>
         {/if}
@@ -313,12 +375,21 @@
 
   <!-- Armor -->
   {#if armor !== '—'}
+    {@const aBorderColor = armorElement ? ELEMENT_COLORS[armorElement] : 'rgba(251,146,60,0.4)'}
     <div>
       <div class="flex items-center gap-2 mb-2">
         <span class="material-symbols-outlined text-sm" style="color: #fb923c; font-variation-settings: 'FILL' 1;">shield</span>
         <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Armor</p>
       </div>
-      <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3" style="border: 1px solid rgba(251,146,60,0.15); border-left: 3px solid rgba(251,146,60,0.4);">
+      <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3"
+        style="border: 1px solid {aBorderColor}33; border-left: 3px solid {aBorderColor};">
+        <span class="text-xs font-bold px-2 py-0.5 rounded"
+          style="background: {ITEM_GRADE_INFO[armorGrade].color}22; color: {ITEM_GRADE_INFO[armorGrade].color}; border: 1px solid {ITEM_GRADE_INFO[armorGrade].color}55;">
+          {ITEM_GRADE_INFO[armorGrade].label}
+        </span>
+        {#if armorElement}
+          <span class="text-xs" style="color: {ELEMENT_COLORS[armorElement]};">{ELEMENT_ICONS[armorElement]} {armorElement}</span>
+        {/if}
         {#if armorType !== '—'}
           <span class="text-xs px-2 py-1 rounded" style="background: rgba(251,146,60,0.08); color: #9a907b; border: 1px solid rgba(251,146,60,0.15);">{armorType}</span>
         {/if}

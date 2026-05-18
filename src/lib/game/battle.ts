@@ -4,6 +4,15 @@
 import type { SpinResult } from '$lib/session/types'
 import { TIER_THRESHOLDS, scoreTier } from '$lib/game/scoreTier'
 import type { TierGrade } from '$lib/game/scoreTier'
+import { powers as powersPool } from '$lib/content/powers'
+import { weapons as weaponsPool } from '$lib/content/weapons'
+import { armors as armorsPool } from '$lib/content/armors'
+import { ITEM_GRADE_INFO, highestGrade } from '$lib/content/elements'
+
+// Grade lookup maps — built once at module load
+const _powerMap  = new Map(powersPool.map(p => [p.label, p]))
+const _weaponMap = new Map(weaponsPool.map(w => [w.label, w]))
+const _armorMap  = new Map(armorsPool.map(a => [a.label, a]))
 
 // ─── HP Table ─────────────────────────────────────────────────────────────────
 // F- through C+ are user-specified. Higher tiers extrapolated ~2× per major tier.
@@ -295,21 +304,33 @@ export function buildBattleCharacter(results: SpinResult[], name: string): Battl
     hpForTier(potTier) * 0.10
   )
 
+  // Item grade bonuses — weapon/power/armor quality scales damage and protection
+  const powerLabels  = results.filter(r => r.category === 'power').map(r => r.resultLabel)
+  const weaponLabel  = results.find(r => r.category === 'weapon')?.resultLabel ?? ''
+  const armorLabel   = results.find(r => r.category === 'armor')?.resultLabel  ?? ''
+  const topPowerGrade  = highestGrade(powerLabels.map(l => _powerMap.get(l)?.grade))
+  const weaponGradeVal = _weaponMap.get(weaponLabel)?.grade ?? 'F'
+  const armorGradeVal  = _armorMap.get(armorLabel)?.grade  ?? 'F'
+  // battleBonus 0–70 → multiplier 1.0–1.70 for power/weapon; flat armor fraction per point
+  const powerGradeMult  = 1 + ITEM_GRADE_INFO[topPowerGrade].battleBonus  / 100
+  const weaponGradeMult = 1 + ITEM_GRADE_INFO[weaponGradeVal].battleBonus / 100
+  const armorGradeFlat  = ITEM_GRADE_INFO[armorGradeVal].battleBonus * 0.003
+
   // Physical damage: fightingSkill (55%), strength (25%), weaponMastery (20%)
   // Technique and mastery matter more than raw power
   const strScore = results.find(r => r.category === 'strength')?.score ?? 28
   const fskScore = results.find(r => r.category === 'fightingSkill')?.score ?? 28
   const wmScore  = results.find(r => r.category === 'weaponMastery')?.score ?? 28
   const physDamageTier = scoreTier(Math.round(strScore * 0.25 + fskScore * 0.55 + wmScore * 0.20))
-  const physicalDamage = Math.round(hpForTier(physDamageTier) / 2)
+  const physicalDamage = Math.round(hpForTier(physDamageTier) / 2 * weaponGradeMult)
 
   // Power damage: blended score from power mastery (60%), energy level (40%)
   const pmScore = results.find(r => r.category === 'powerMastery')?.score ?? 28
   const elScore = results.find(r => r.category === 'energyLevel')?.score ?? 28
   const pwrDamageTier = scoreTier(Math.round(pmScore * 0.60 + elScore * 0.40))
-  const powerDamage = Math.round(hpForTier(pwrDamageTier) / 2)
+  const powerDamage = Math.round(hpForTier(pwrDamageTier) / 2 * powerGradeMult)
 
-  // Armor: armorStrength rank → base fraction, modulated by armor type
+  // Armor: armorStrength rank → base fraction, modulated by armor type + armor grade
   // Cap lowered to 0.62 — even the heaviest armor doesn't make you immune
   const armorTypeLabel = results.find(r => r.category === 'armorType')?.resultLabel ?? 'None'
   const baseArmor = 0.05 + (armStrRank / 41) * 0.45
@@ -317,7 +338,7 @@ export function buildBattleCharacter(results: SpinResult[], name: string): Battl
     'None': 0, 'Helmet Only': 0.40, 'Half-Suit': 0.70,
     'Full-Suit': 1.0, 'Exotic': 0.85, 'Cursed': 0.75, 'Ancient': 1.15,
   }
-  const armorReduction = Math.min(0.62, baseArmor * (ARMOR_TYPE_MULT[armorTypeLabel] ?? 1.0))
+  const armorReduction = Math.min(0.62, baseArmor * (ARMOR_TYPE_MULT[armorTypeLabel] ?? 1.0) + armorGradeFlat)
 
   const weaponTypeLabel = results.find(r => r.category === 'weaponType')?.resultLabel ?? 'Melee'
 
