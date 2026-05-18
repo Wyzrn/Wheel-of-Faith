@@ -69,6 +69,11 @@ export async function authRoutes(app: FastifyInstance) {
     reply.send({ user: { id: user._id, username: user.username, rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed, avatarUrl: user.avatarUrl, email: user.email } })
   })
 
+  // ── Auth config (tells frontend which providers are enabled) ─────────────
+  app.get('/auth/config', async (req, reply) => {
+    reply.send({ googleEnabled: !!process.env.GOOGLE_CLIENT_ID })
+  })
+
   // ── Google OAuth start ────────────────────────────────────────────────────
   // Redirect to Google's OAuth consent screen
   app.get('/auth/google', async (req, reply) => {
