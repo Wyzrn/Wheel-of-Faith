@@ -83,21 +83,21 @@ const POSSESSION_STRENGTH_POOL: WeightedSegment[] = [
 // Used until a dedicated racial-abilities content module is authored.
 // All entries weight 1 for uniform draw probability.
 const GENERAL_ABILITY_POOL: WeightedSegment[] = [
-  { label: 'Enhanced Senses',          weight: 1 },
-  { label: 'Regeneration',             weight: 1 },
-  { label: 'Elemental Affinity',       weight: 1 },
-  { label: 'Telepathic Whisper',       weight: 1 },
-  { label: 'Shadow Step',              weight: 1 },
-  { label: 'Iron Skin',                weight: 1 },
-  { label: 'Berserk Surge',            weight: 1 },
-  { label: 'Arcane Pulse',             weight: 1 },
-  { label: 'Venomous Touch',           weight: 1 },
-  { label: 'Gravity Shift',            weight: 1 },
-  { label: 'Time Fracture',            weight: 1 },
-  { label: 'Soul Drain',               weight: 1 },
-  { label: 'Divine Ward',              weight: 1 },
-  { label: 'Dimensional Anchor',       weight: 1 },
-  { label: 'Molecular Control',        weight: 1 },
+  { label: 'Enhanced Senses',          weight: 1, element: 'Nature', grade: 'C' },
+  { label: 'Regeneration',             weight: 1, element: 'Nature', grade: 'C' },
+  { label: 'Elemental Affinity',       weight: 1, element: 'Arcane', grade: 'C' },
+  { label: 'Telepathic Whisper',       weight: 1, element: 'Psychic', grade: 'B' },
+  { label: 'Shadow Step',              weight: 1, element: 'Shadow', grade: 'B' },
+  { label: 'Iron Skin',                weight: 1, element: 'Earth', grade: 'C' },
+  { label: 'Berserk Surge',            weight: 1, element: 'Chaos', grade: 'C' },
+  { label: 'Arcane Pulse',             weight: 1, element: 'Arcane', grade: 'C' },
+  { label: 'Venomous Touch',           weight: 1, element: 'Poison', grade: 'B' },
+  { label: 'Gravity Shift',            weight: 1, element: 'Gravity', grade: 'B' },
+  { label: 'Time Fracture',            weight: 1, element: 'Time', grade: 'A' },
+  { label: 'Soul Drain',               weight: 1, element: 'Soul', grade: 'B' },
+  { label: 'Divine Ward',              weight: 1, element: 'Light', grade: 'B' },
+  { label: 'Dimensional Anchor',       weight: 1, element: 'Void', grade: 'B' },
+  { label: 'Molecular Control',        weight: 1, element: 'Arcane', grade: 'A' },
 ]
 
 export type SpinCategory =

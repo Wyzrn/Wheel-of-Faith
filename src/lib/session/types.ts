@@ -1,6 +1,7 @@
 // Phase 2 additions — import type only to avoid circular runtime dependency risk
 import type { TierGrade } from '$lib/game/scoreTier'
 import type { SpinDefinition } from '$lib/game/spinQueue'
+import type { ElementType, ItemGrade } from '$lib/content/types'
 
 export type SpinStatus = 'IDLE' | 'SPINNING' | 'LANDED' | 'REVEALED'
 
@@ -9,6 +10,8 @@ export interface WeightedSegment {
   weight: number
   color?: string
   dimmed?: boolean  // true = shown greyed-out on wheel, weight should be 0 (never selectable)
+  element?: ElementType
+  grade?: ItemGrade
 }
 
 export interface SpinResult {

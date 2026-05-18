@@ -43,33 +43,26 @@
     }
   }
 
-  // Keyword-based element inference for ability labels (no element field in ability data)
-  const _ABILITY_ELEMENT_KEYWORDS: Array<[ElementType, RegExp]> = [
-    ['Shadow',   /shadow|dark(?:ness)?|night(?:shade)?|void step|umbra/i],
-    ['Fire',     /fire|flame|burn|blaze|inferno|ember|scorch|ignite/i],
-    ['Ice',      /ice|frost|frozen|cold|cryo|glacial|winter|blizzard/i],
-    ['Lightning',/lightning|thunder|electric|volt|shock|spark/i],
-    ['Light',    /\blight\b|divine|holy|sacred|blessed|radiant|luminous/i],
-    ['Water',    /water|aqua|tidal|flood|wave|ocean|sea(?:born)?/i],
-    ['Arcane',   /arcane|magic|mana|spell|rune|mystic|sorcery|ether/i],
-    ['Blood',    /blood|hemato|crimson|sanguine/i],
-    ['Poison',   /poison|venom|toxic|acid|corros/i],
-    ['Psychic',  /psychic|\bmental\b|\bmind\b|telepat|telekin|psion|thought/i],
-    ['Time',     /\btime\b|temporal|chrono|haste|stasis|rewind/i],
-    ['Wind',     /wind|gust|breeze|tempest|cyclone/i],
-    ['Nature',   /nature|plant|vine|forest|feral|wild(?!card)|growth|root|bark|regen/i],
-    ['Earth',    /earth|stone|ground|rock|quake|mountain/i],
-    ['Soul',     /soul|spirit(?:ual)?|death(?:mark)?|undead|necro|ghost|spectral/i],
-    ['Metal',    /\bmetal\b|iron(?!\b.*will)|steel|alloy|forge/i],
-    ['Void',     /\bvoid\b|abyss|nothingness/i],
-    ['Gravity',  /gravit|weight(?:less)?|mass|pull|crush/i],
-    ['Chaos',    /chaos|berserk|rampage/i],
-  ]
-  function inferAbilityElement(label: string): ElementType | null {
-    for (const [el, re] of _ABILITY_ELEMENT_KEYWORDS) {
-      if (re.test(label)) return el
+  // Flat lookup from all race + archetype ability arrays (element + grade now in data)
+  const _abilityLookup = new Map<string, { element?: ElementType; grade?: ItemGrade }>()
+  for (const race of races) {
+    for (const entry of [
+      ...race.abilities,
+      ...(race.subTypePool ?? []).flatMap(e => e.abilities ?? []),
+      ...(race.classPool ?? []).flatMap(e => e.abilities ?? []),
+      ...(race.transformationPool ?? []).flatMap(e => e.abilities ?? []),
+    ]) {
+      if ((entry.element || entry.grade) && !_abilityLookup.has(entry.label)) {
+        _abilityLookup.set(entry.label, { element: entry.element, grade: entry.grade })
+      }
     }
-    return null
+  }
+  for (const arc of archetypes) {
+    for (const entry of [...arc.abilities, ...(arc.customAbilityPool ?? [])]) {
+      if ((entry.element || entry.grade) && !_abilityLookup.has(entry.label)) {
+        _abilityLookup.set(entry.label, { element: entry.element, grade: entry.grade })
+      }
+    }
   }
   // Derives weakness count from race's probability modifier when no explicit count is set
   function archetypeTypeFor(label: string): string {
@@ -2058,16 +2051,25 @@
                   {/if}
                 {/if}
 
-                <!-- Racial / archetype ability: inferred element badge -->
+                <!-- Racial / archetype ability: element + grade from data lookup -->
                 {#if last?.category === 'racialAbility' || last?.category === 'archetypeAbility'}
-                  {@const inferredEl = inferAbilityElement(last.resultLabel ?? '')}
-                  {#if inferredEl}
-                    {@const elColor = ELEMENT_COLORS[inferredEl]}
+                  {@const abilMeta = _abilityLookup.get(last.resultLabel ?? '')}
+                  {#if abilMeta?.element || abilMeta?.grade}
+                    {@const elColor = abilMeta.element ? ELEMENT_COLORS[abilMeta.element] : '#9a907b'}
+                    {@const gradeInfo = abilMeta.grade ? ITEM_GRADE_INFO[abilMeta.grade] : null}
                     <div class="flex items-center gap-2 flex-wrap justify-center">
-                      <span class="px-2 py-0.5 rounded text-xs font-bold"
-                        style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
-                        {ELEMENT_ICONS[inferredEl]} {inferredEl}
-                      </span>
+                      {#if abilMeta.element}
+                        <span class="px-2 py-0.5 rounded text-xs font-bold"
+                          style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
+                          {ELEMENT_ICONS[abilMeta.element]} {abilMeta.element}
+                        </span>
+                      {/if}
+                      {#if gradeInfo}
+                        <span class="px-2 py-0.5 rounded text-xs font-bold"
+                          style="background: {gradeInfo.color}22; border: 1px solid {gradeInfo.color}55; color: {gradeInfo.color}; font-family: 'JetBrains Mono', monospace; box-shadow: 0 0 8px {gradeInfo.glow}; letter-spacing: 0.05em;">
+                          {abilMeta.grade} · {gradeInfo.label}
+                        </span>
+                      {/if}
                     </div>
                   {/if}
                 {/if}

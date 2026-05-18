@@ -28,7 +28,7 @@ export interface Race {
   weaknessProbabilityModifier: number // kept for backward compat; used to derive weaknessCount when explicit count absent
   weaknessCount?: number              // explicit weakness slots spliced at race resolution; derived from modifier if absent
   description?: string                // optional flavor text for character card
-  abilities: { label: string; weight: number }[]  // race-unique ability pool drawn for racialAbility spins
+  abilities: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]  // race-unique ability pool drawn for racialAbility spins
   statModifiers?: Record<string, number>  // multiplier per stat category; >1 boosts higher tiers, <1 pushes lower
   extraPowerSpins?: number                // additional power category spins spliced after race lands
   minStatTier?: TierGrade                 // lowest stat tier grade that can be rolled; tiers below this are excluded
@@ -38,9 +38,9 @@ export interface Race {
   // Keys match segment labels (e.g. 'Melee', 'None'). Missing keys default to ×1.
   weaponTypeBias?: Record<string, number>
   armorTypeBias?: Record<string, number>
-  subTypePool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]       // if set, a raceSubType spin is spliced after race lands
-  classPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]         // if set, a raceClass spin is spliced after subType (or after race if no subType)
-  transformationPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number }[] }[]  // if set, a raceTransformation spin is spliced; statBonus multiplies all stat probabilities
+  subTypePool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  classPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  transformationPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
 }
 
 // Archetype definition — drives archetype ability spin count and special effects.
@@ -50,10 +50,10 @@ export interface Archetype {
   weight: number
   abilitySpinCount: number    // 0–4; how many archetypeAbility slots are spliced
   description?: string
-  abilities: { label: string; weight: number }[]  // archetype-unique ability pool (fallback)
+  abilities: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
 
   // Overrides the standard ability pool — used for Stand names, breathing styles, titan forms, etc.
-  customAbilityPool?: { label: string; weight: number }[]
+  customAbilityPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
   // Custom display name for ability spin slots (e.g. "Stand" instead of "Archetype Ability")
   abilitySpinDisplayName?: string
   // Stat bonus/penalty spins spliced immediately after archetype lands
