@@ -26,6 +26,8 @@
   import { settings } from '$lib/settings.svelte'
   import { menuSignal } from '$lib/menuState.svelte'
   import { powers as powersPool } from '$lib/content/powers'
+  import Tutorial from '../components/Tutorial.svelte'
+  import { appendSpinHistory } from '$lib/spinHistory'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   const _powerLookup      = new Map(powersPool.map(p => [p.label, p]))
@@ -125,6 +127,61 @@
   let p1StartedAt = $state('')     // session_started_at for P1 character save
   let p2StartedAt = $state('')     // session_started_at for P2 character save
   let p1ShareId = $state('')       // set if P1 is a pre-saved character (from challenge flow)
+
+  // ── Tutorial state ────────────────────────────────────────────────────────
+  // -1 = inactive (done/skipped), 0 = welcome modal, 1–8 = step cards, 9 = toast
+  const TUTORIAL_KEY = 'wof_tutorial_done'
+  let tutorialStep = $state(-1)   // initialised to real value in onMount
+
+  // Auto-advance based on the current spin category so the right card shows
+  // without the player needing to manually navigate.
+  $effect(() => {
+    if (tutorialStep <= 0 || tutorialStep >= 9) return
+    const cat = currentDef?.category
+    if (!cat) return
+    const CAT_STEP: Record<string, number> = {
+      race: 1,
+      archetype: 3,
+      strength: 4, speed: 4, agility: 4, durability: 4,
+      iq: 4, charisma: 4, fightingSkill: 4,
+      power: 5,
+      weakness: 6,
+      redemptionSpin: 7,
+      title: 8,
+    }
+    const needed = CAT_STEP[cat]
+    if (needed !== undefined && tutorialStep < needed) {
+      tutorialStep = needed
+    }
+  })
+
+  // Step 1 → 2: once race result is revealed, bump to show the "Race locked in" card.
+  $effect(() => {
+    if (tutorialStep === 1 && isRevealed && currentDef?.category === 'race') {
+      tutorialStep = 2
+    }
+  })
+
+  function handleTutorialGotIt(nextStep: number) {
+    if (nextStep > 8) {
+      tutorialStep = 9   // triggers completion toast
+    } else {
+      tutorialStep = nextStep
+    }
+  }
+
+  function handleTutorialSkip() {
+    tutorialStep = -1
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(TUTORIAL_KEY, '1')
+    }
+  }
+
+  function handleTutorialStartGame() {
+    // Welcome "Let's go!" — start the spin session and advance past the welcome modal
+    showMenu = false
+    tutorialStep = 1
+  }
 
   // ── Derived values ────────────────────────────────────────────────────────
   let currentDef = $derived(spinQueue[currentSpinIndex])
@@ -525,6 +582,11 @@
       if (currentSpinIndex >= spinQueue.length) {
         showNameScreen = true
       }
+      // User has a saved session → they've played before, skip tutorial
+      tutorialStep = -1
+    } else {
+      // Fresh game: show tutorial if player hasn't seen it
+      tutorialStep = localStorage.getItem(TUTORIAL_KEY) ? -1 : 0
     }
   })
 
@@ -1638,12 +1700,30 @@
       rivalPhase = 'battle'
       showNameScreen = false
     } else {
+      // Save to local spin history before clearing
+      appendSpinHistory($state.snapshot(results) as SpinResult[], characterName, currentSession.sessionId)
+      // Mark tutorial complete on first full run
+      if (tutorialStep >= 0) {
+        tutorialStep = 9
+      }
       clearSession()
       showNameScreen = false
       showCard = true
     }
   }
 </script>
+
+<!-- Tutorial overlay — shown on first ever play, skipped for rivals mode and resume sessions -->
+{#if tutorialStep >= 0 && !rivalMode}
+  <Tutorial
+    step={tutorialStep}
+    currentCategory={currentDef?.category}
+    isRevealed={isRevealed}
+    onGotIt={handleTutorialGotIt}
+    onSkip={handleTutorialSkip}
+    onStartGame={handleTutorialStartGame}
+  />
+{/if}
 
 <main class="min-h-screen" style="background: #07070d; color: #e4e1ee;">
 
@@ -1716,7 +1796,7 @@
       <!-- Buttons -->
       <div class="flex flex-col gap-4 w-full max-w-xs">
         <button
-          onclick={() => { showMenu = false }}
+          onclick={() => { showMenu = false; if (tutorialStep === 0) tutorialStep = 1 }}
           class="metal-stamp-gold w-full py-4 rounded-lg relative"
           style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;"
         >

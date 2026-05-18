@@ -2,11 +2,24 @@
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
   import { auth } from '$lib/stores/auth.svelte'
+  import { loadSpinHistory } from '$lib/spinHistory'
+  import type { SpinHistoryEntry } from '$lib/spinHistory'
 
   let characters = $state<any[]>([])
   let loading = $state(true)
+  let spinHistory = $state<SpinHistoryEntry[]>([])
+
+  function formatDate(iso: string) {
+    try {
+      const d = new Date(iso)
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    } catch { return '—' }
+  }
 
   onMount(async () => {
+    // Load local spin history immediately (no auth needed)
+    spinHistory = loadSpinHistory()
+
     if (!auth.loggedIn && !auth.loading) { goto('/login'); return }
     // Wait for auth to settle
     await new Promise<void>(res => {
@@ -22,6 +35,19 @@
     }
     loading = false
   })
+
+  // Stats derived from local history
+  let totalSpins = $derived(spinHistory.reduce((s, e) => s + e.spinCount, 0))
+  let bestTier = $derived(spinHistory.length
+    ? spinHistory.reduce((best, e) => e.overallScore > best.overallScore ? e : best, spinHistory[0]).overallTier
+    : null)
+  function calcMostCommonRace(history: SpinHistoryEntry[]): string | null {
+    if (!history.length) return null
+    const counts: Record<string, number> = {}
+    for (const e of history) counts[e.race] = (counts[e.race] ?? 0) + 1
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+  }
+  let mostCommonRace = $derived(calcMostCommonRace(spinHistory))
 
   const TIER_COLORS: Record<string, string> = {
     'F-':'#555','F':'#666','F+':'#777','E-':'#6b7280','E':'#9ca3af','E+':'#d1d5db',
@@ -75,7 +101,7 @@
       </div>
 
       <!-- Characters -->
-      <div>
+      <div class="mb-8">
         <h2 class="text-xs tracking-[0.2em] uppercase mb-4" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Your Characters</h2>
         {#if characters.length === 0}
           <p class="text-sm text-center py-8" style="color: #4e4635; font-style: italic;">No saved characters yet — finish a spin session to save one.</p>
@@ -98,6 +124,67 @@
           {/each}
         </div>
       </div>
+
+      <!-- ─── Spin History ─────────────────────────────────────────────── -->
+      {#if spinHistory.length > 0}
+        <div>
+          <!-- Header + lifetime stats -->
+          <div class="flex items-baseline gap-3 mb-4">
+            <h2 class="text-xs tracking-[0.2em] uppercase" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Spin History</h2>
+            <span class="text-[10px]" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">{spinHistory.length} session{spinHistory.length === 1 ? '' : 's'} · {totalSpins} total spins</span>
+          </div>
+
+          <!-- Lifetime summary chips -->
+          <div class="flex flex-wrap gap-2 mb-5">
+            {#if bestTier}
+              {@const tc = TIER_COLORS[bestTier] ?? '#9a907b'}
+              <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style="background: {tc}18; border: 1px solid {tc}44;">
+                <span class="material-symbols-outlined text-xs" style="color: {tc}; font-variation-settings: 'FILL' 1; font-size: 13px;">emoji_events</span>
+                <span class="text-[10px] tracking-[0.12em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: {tc};">Best: {bestTier}</span>
+              </div>
+            {/if}
+            {#if mostCommonRace}
+              <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style="background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.2);">
+                <span class="material-symbols-outlined text-xs" style="color: #f0c040; font-variation-settings: 'FILL' 1; font-size: 13px;">diversity_3</span>
+                <span class="text-[10px] tracking-[0.12em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Fav race: <span style="color: #ffdf96;">{mostCommonRace}</span></span>
+              </div>
+            {/if}
+          </div>
+
+          <!-- History list -->
+          <div class="flex flex-col gap-2">
+            {#each spinHistory as entry}
+              {@const tc = TIER_COLORS[entry.overallTier] ?? '#9a907b'}
+              <div
+                class="flex items-center gap-3 px-4 py-3 rounded-xl"
+                style="background: #0a0a12; border: 1px solid rgba(255,255,255,0.04);"
+              >
+                <!-- Tier badge -->
+                <div class="shrink-0 px-2 py-1 rounded text-[11px] font-black" style="background: {tc}18; border: 1px solid {tc}44; color: {tc}; min-width: 2.5rem; text-align: center; font-family: 'JetBrains Mono', monospace;">
+                  {entry.overallTier}
+                </div>
+
+                <!-- Name + race/archetype -->
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold truncate" style="color: #e4e1ee; font-family: 'Cinzel', serif;">{entry.name}</p>
+                  <p class="text-[11px] truncate mt-0.5" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">{entry.race} · {entry.archetype}</p>
+                </div>
+
+                <!-- Spin count + date -->
+                <div class="shrink-0 text-right">
+                  <p class="text-[11px]" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">{entry.spinCount} spins</p>
+                  <p class="text-[10px] mt-0.5" style="color: #2a2a38; font-family: 'JetBrains Mono', monospace;">{formatDate(entry.completedAt)}</p>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {:else if !loading}
+        <div>
+          <h2 class="text-xs tracking-[0.2em] uppercase mb-4" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Spin History</h2>
+          <p class="text-sm text-center py-6" style="color: #4e4635; font-style: italic;">Complete a spin session to start tracking your history.</p>
+        </div>
+      {/if}
     {/if}
 
   </div>
