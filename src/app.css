@@ -63,7 +63,12 @@
 }
 
 @layer base {
+  html {
+    overflow-x: hidden;
+  }
+
   body {
+    overflow-x: hidden;
     background-color: var(--bg-void);
     background-image:
       radial-gradient(circle at 50% -20%, rgba(240, 192, 64, 0.15) 0%, transparent 50%),

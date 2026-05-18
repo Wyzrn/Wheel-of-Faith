@@ -194,7 +194,7 @@
   }
 </script>
 
-<div class="w-full max-w-3xl flex flex-col gap-5" style="animation: slideUp 0.4s ease-out forwards;">
+<div class="w-full max-w-xl flex flex-col gap-5" style="animation: slideUp 0.4s ease-out forwards;">
 
   <!-- Hero banner: grade + name + identity -->
   <div class="rounded-xl p-6 relative overflow-hidden"
@@ -275,7 +275,7 @@
   <!-- Stats grid -->
   <div>
     <p class="text-xs tracking-[0.18em] uppercase mb-3" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Stats</p>
-    <div class="grid grid-cols-2 gap-1.5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
       {#each stats as stat}
         {#if stat.label !== '—'}
           <div class="obsidian-slab rounded-lg px-3 py-2 flex items-center gap-2"
@@ -295,7 +295,7 @@
   </div>
 
   <!-- Abilities -->
-  <div class="grid grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     {#if racialAbilities.length > 0}
       <div>
         <p class="text-xs tracking-[0.15em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Racial Abilities</p>

@@ -1833,7 +1833,7 @@
 
   <!-- Character card screen -->
   {#if showCard}
-    <div class="flex justify-center pt-20 pb-8 px-4">
+    <div class="flex justify-center pt-20 pb-24 px-4">
       <CharacterCard {results} name={characterName} startedAt={currentSession.startedAt} onNewCharacter={handleNewCharacter} onBackToMenu={handleBackToMenu} />
     </div>
   {/if}

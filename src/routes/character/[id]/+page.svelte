@@ -26,7 +26,7 @@
     <div style="min-width: 80px;"></div>
   </nav>
 
-  <div class="flex justify-center pt-20 pb-8 px-4">
+  <div class="flex justify-center pt-20 pb-24 px-4">
     <CharacterCard
       results={data.character.spins}
       name={data.character.name}

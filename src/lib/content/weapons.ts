@@ -502,6 +502,11 @@ export const weapons: SimpleItem[] = [
   { label: 'Flashbang (Camera Flash)', weight: 1, element: 'Light', grade: 'F' },
   { label: 'Stun Gun (Novelty)', weight: 1, element: 'Lightning', grade: 'F' },
   { label: 'Cattle Prod (Repurposed)', weight: 1, element: 'Lightning', grade: 'F' },
+  { label: 'Spork of Destiny', weight: 1, element: 'Neutral', grade: 'F' },
+  { label: 'Couch Cushion Buckler', weight: 1, element: 'Neutral', grade: 'F' },
+  { label: 'Frozen Baguette', weight: 1, element: 'Ice', grade: 'F' },
+  { label: 'Pool Noodle (Enchanted)', weight: 1, element: 'Water', grade: 'F' },
+  { label: 'The Infinite Clipboard', weight: 1, element: 'Neutral', grade: 'F' },
 ]
 
 // ── Categorized pools — used when weaponType is resolved ──────────────────────

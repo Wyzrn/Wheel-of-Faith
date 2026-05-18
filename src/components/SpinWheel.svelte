@@ -422,7 +422,7 @@
       <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 3}  fill="none" stroke="#ffdf96" stroke-width="0.5" opacity="0.3" />
 
       <!-- Rotating wheel group -->
-      <g bind:this={wheelGroupEl}>
+      <g bind:this={wheelGroupEl} style="will-change: transform;">
         {#each segmentAngles as seg, i}
           {@const isDimmed = segments[i]?.dimmed === true}
           {@const segWeight = isDimmed ? 1 : (segments[i]?.weight ?? 1)}
