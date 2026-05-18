@@ -67,6 +67,8 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
     const shareId = nanoid(10)
 
     const userId = (request as any).userId
+    if (!userId) return reply.code(401).send({ error: 'Login required to save characters' })
+
     const character = await Character.create({
       shareId,
       name: body.name,
@@ -138,13 +140,20 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
         .sort(sortSpec)
         .skip(skip)
         .limit(limit as number)
-        .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins')
+        .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins userId')
+        .populate('userId', 'username')
         .lean(),
       Character.countDocuments(filter),
     ])
 
+    const shaped = characters.map(c => ({
+      ...c,
+      creatorUsername: (c.userId as any)?.username ?? null,
+      userId: undefined,
+    }))
+
     return reply.send({
-      characters,
+      characters: shaped,
       total,
       page,
       hasMore: skip + characters.length < (total as number),

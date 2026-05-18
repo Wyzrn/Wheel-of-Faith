@@ -98,6 +98,16 @@ export async function authRoutes(app: FastifyInstance) {
     })
   })
 
+  // ── Leaderboard — top 50 users by rivals wins ────────────────────────────
+  app.get('/leaderboard', async (req, reply) => {
+    const users = await User.find({ rivalsWins: { $gt: 0 } })
+      .sort({ rivalsWins: -1 })
+      .limit(50)
+      .select('username rivalsWins rivalsLosses gamesPlayed')
+      .lean()
+    reply.send({ users })
+  })
+
   // ── Update rivals stats after battle ─────────────────────────────────────
   app.post('/auth/rivals-result', async (req, reply) => {
     if (!req.userId) return reply.status(401).send({ error: 'not authenticated' })

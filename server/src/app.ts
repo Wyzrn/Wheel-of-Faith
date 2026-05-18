@@ -8,6 +8,7 @@ import { mongoosePlugin } from './plugins/mongoose.js'
 import { characterRoutes } from './routes/characters.js'
 import { authRoutes } from './routes/auth.js'
 import { rivalsWsRoutes } from './routes/rivals-ws.js'
+import { friendRoutes } from './routes/friends.js'
 
 export async function createApp() {
   const app = Fastify({
@@ -46,6 +47,7 @@ export async function createApp() {
   await app.register(characterRoutes, { prefix: '/api' })
   await app.register(authRoutes, { prefix: '/api' })
   await app.register(rivalsWsRoutes, { prefix: '/api' })
+  await app.register(friendRoutes, { prefix: '/api' })
 
   if (process.env.NODE_ENV === 'production') {
     const handlerPath = new URL('../../build/handler.js', import.meta.url).href

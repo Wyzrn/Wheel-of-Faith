@@ -8,6 +8,7 @@
   import { ITEM_GRADE_INFO, ELEMENT_COLORS, ELEMENT_ICONS, highestGrade } from '$lib/content/elements'
   import type { ItemGrade } from '$lib/content/types'
   import { onMount, onDestroy } from 'svelte'
+  import { auth } from '$lib/stores/auth.svelte'
 
   let { results, name = '', startedAt, readonly = false, rivalsWins = 0, onNewCharacter, onBackToMenu }: {
     results: SpinResult[]
@@ -130,11 +131,16 @@
   let canSave = $derived(sessionAgeSec >= 90 && sessionAgeSec < 86400)
 
   async function handleSaveAndShare() {
+    if (!auth.loggedIn) {
+      saveError = 'login_required'
+      return
+    }
     saving = true
     saveError = null
     try {
       const res = await fetch('/api/characters', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: displayName,
@@ -569,7 +575,15 @@
       {/if}
 
       <!-- Error state -->
-      {#if saveError}
+      {#if saveError === 'login_required'}
+        <div class="text-center">
+          <p class="text-xs mb-2" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">Login required to save your character.</p>
+          <a href="/login" class="text-xs tracking-[0.12em] uppercase font-bold px-4 py-2 rounded-lg"
+            style="font-family: 'Cinzel', serif; color: #f0c040; background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.3); text-decoration: none; display: inline-block;">
+            Log In / Register
+          </a>
+        </div>
+      {:else if saveError}
         <p class="text-xs text-center" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">
           {saveError}
         </p>

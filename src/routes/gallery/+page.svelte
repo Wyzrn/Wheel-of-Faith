@@ -10,6 +10,7 @@
     overall_score: number
     rivals_wins: number
     created_at: string
+    creatorUsername: string | null
     spins: Array<{ category: string; resultLabel: string }>
   }
 
@@ -147,11 +148,58 @@
   let activeSortOption = $derived(SORT_OPTIONS.find(o => o.value === sortBy)!)
 
   // ── Challenge flow ────────────────────────────────────────────────────────
-  type MyChar = { shareId: string; name: string; race: string; overall_tier: string; overall_score: number }
+  type MyChar = {
+    shareId: string; name: string; race: string; archetype: string
+    overall_tier: string; overall_score: number; rivals_wins: number; created_at: string
+  }
 
-  let challengeTarget  = $state<GalleryChar | null>(null)
-  let myChars          = $state<MyChar[]>([])
-  let myCharsLoading   = $state(false)
+  type MyCharSort = 'score' | 'tier' | 'name' | 'race' | 'archetype' | 'rivals' | 'date'
+
+  const MY_SORT_OPTIONS: { value: MyCharSort; label: string }[] = [
+    { value: 'score',     label: 'Score'    },
+    { value: 'tier',      label: 'Tier'     },
+    { value: 'rivals',    label: 'Wins'     },
+    { value: 'name',      label: 'Name'     },
+    { value: 'race',      label: 'Race'     },
+    { value: 'archetype', label: 'Class'    },
+    { value: 'date',      label: 'Newest'   },
+  ]
+
+  const TIER_RANK: Record<string, number> = {
+    'F-':1,'F':2,'F+':3,'E-':4,'E':5,'E+':6,'D-':7,'D':8,'D+':9,
+    'C-':10,'C':11,'C+':12,'B-':13,'B':14,'B+':15,'A-':16,'A':17,'A+':18,
+    'S-':19,'S':20,'S+':21,'SS-':22,'SS':23,'SS+':24,'SSS-':25,'SSS':26,'SSS+':27,
+    'Z-':28,'Z':29,'Z+':30,'ZZ-':31,'ZZ':32,'ZZ+':33,'ZZZ-':34,'ZZZ':35,'ZZZ+':36,
+    'Celestial-':37,'Celestial':38,'Celestial+':39,'Godly-':40,'Godly':41,'Primordial':42,
+  }
+
+  let challengeTarget   = $state<GalleryChar | null>(null)
+  let myChars           = $state<MyChar[]>([])
+  let myCharsLoading    = $state(false)
+  let myCharsSortBy     = $state<MyCharSort>('score')
+  let myCharsSortDir    = $state<'desc' | 'asc'>('desc')
+
+  let sortedMyChars = $derived((() => {
+    const arr = [...myChars]
+    const dir = myCharsSortDir === 'desc' ? -1 : 1
+    arr.sort((a, b) => {
+      switch (myCharsSortBy) {
+        case 'score':     return dir * (a.overall_score - b.overall_score)
+        case 'tier':      return dir * ((TIER_RANK[a.overall_tier] ?? 0) - (TIER_RANK[b.overall_tier] ?? 0))
+        case 'rivals':    return dir * (a.rivals_wins - b.rivals_wins)
+        case 'name':      return dir * a.name.localeCompare(b.name)
+        case 'race':      return dir * a.race.localeCompare(b.race)
+        case 'archetype': return dir * a.archetype.localeCompare(b.archetype)
+        case 'date':      return dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      }
+    })
+    return arr
+  })())
+
+  function toggleMySort(field: MyCharSort) {
+    if (field === myCharsSortBy) myCharsSortDir = myCharsSortDir === 'desc' ? 'asc' : 'desc'
+    else { myCharsSortBy = field; myCharsSortDir = 'desc' }
+  }
 
   async function openChallenge(char: GalleryChar) {
     challengeTarget = char
@@ -170,6 +218,12 @@
     )
     myChars = results.filter(Boolean) as MyChar[]
     myCharsLoading = false
+  }
+
+  function randomChallenge() {
+    if (chars.length === 0) return
+    const pick = chars[Math.floor(Math.random() * chars.length)]
+    openChallenge(pick)
   }
 
   function closeChallenge() {
@@ -267,6 +321,20 @@
       {/if}
     </div>
 
+    <!-- Random challenge button -->
+    {#if !loading && !error && chars.length > 0}
+      <div class="mb-5">
+        <button
+          onclick={randomChallenge}
+          class="w-full flex items-center justify-center gap-2 py-3 rounded-xl transition-all active:scale-[0.98] hover:brightness-110"
+          style="background: linear-gradient(135deg, rgba(244,63,94,0.08) 0%, rgba(167,139,250,0.06) 100%); border: 1px solid rgba(244,63,94,0.25); cursor: pointer;"
+        >
+          <span class="material-symbols-outlined" style="font-size: 18px; color: #f43f5e; font-variation-settings: 'FILL' 1;">casino</span>
+          <span style="font-family: 'Cinzel', serif; font-size: 0.8rem; font-weight: 700; color: #f43f5e; letter-spacing: 0.15em; text-transform: uppercase;">Challenge a Random Fate</span>
+        </button>
+      </div>
+    {/if}
+
     <!-- Loading skeleton -->
     {#if loading}
       <div class="flex flex-col gap-3">
@@ -343,6 +411,9 @@
                   <p class="text-xs truncate" style="color: #9a907b;">{char.race} · {char.archetype}</p>
                   <p class="shrink-0 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">{timeAgo(char.created_at)}</p>
                 </div>
+                {#if char.creatorUsername}
+                  <p class="text-xs mt-0.5" style="font-family: 'JetBrains Mono', monospace; color: #6047a0; letter-spacing: 0.04em;">@{char.creatorUsername}</p>
+                {/if}
               </div>
 
               <!-- Score -->
@@ -414,7 +485,33 @@
         <p style="font-family: 'Cinzel', serif; font-size: 0.95rem; color: #ffdf96;">
           vs <span style="color: #f43f5e;">{challengeTarget.name}</span>
         </p>
-        <p class="text-xs mt-0.5" style="color: #6b7280;">Pick your fighter</p>
+        <div class="flex items-center justify-between mt-1.5">
+          <p class="text-xs" style="color: #6b7280;">Pick your fighter</p>
+          {#if myChars.length > 1}
+            <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">{myChars.length} characters</p>
+          {/if}
+        </div>
+
+        <!-- Sort pills for picker -->
+        {#if myChars.length > 1}
+          <div class="flex gap-1.5 mt-3 flex-wrap">
+            {#each MY_SORT_OPTIONS as opt}
+              {@const active = myCharsSortBy === opt.value}
+              <button
+                onclick={() => toggleMySort(opt.value)}
+                class="flex items-center gap-0.5 px-2.5 py-1 rounded-full text-xs font-bold tracking-[0.06em] uppercase transition-all active:scale-95"
+                style="font-family: 'Cinzel', serif; font-size: 10px; background: {active ? 'rgba(244,63,94,0.12)' : 'rgba(255,255,255,0.03)'}; border: 1px solid {active ? 'rgba(244,63,94,0.45)' : 'rgba(255,255,255,0.08)'}; color: {active ? '#f87171' : '#4e4635'}; cursor: pointer;"
+              >
+                {opt.label}
+                {#if active}
+                  <span class="material-symbols-outlined" style="font-size: 10px;">
+                    {myCharsSortDir === 'desc' ? 'arrow_downward' : 'arrow_upward'}
+                  </span>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
 
       <!-- Character list -->
@@ -438,7 +535,7 @@
           </div>
 
         {:else}
-          {#each myChars as mine}
+          {#each sortedMyChars as mine}
             {@const myTierColor = TIER_COLORS[mine.overall_tier] ?? '#6b7280'}
             <button
               onclick={() => startBattle(mine.shareId)}
@@ -453,7 +550,15 @@
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{mine.name}</p>
-                <p class="text-xs truncate" style="color: #6b7280;">{mine.race}</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <p class="text-xs truncate" style="color: #6b7280;">{mine.race} · {mine.archetype}</p>
+                  {#if mine.rivals_wins > 0}
+                    <span class="shrink-0 flex items-center gap-0.5 text-xs" style="color: #f0c040;">
+                      <span class="material-symbols-outlined" style="font-size: 10px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+                      {mine.rivals_wins}
+                    </span>
+                  {/if}
+                </div>
               </div>
               <div class="shrink-0 flex items-center gap-1" style="color: #f43f5e;">
                 <span class="text-xs font-bold" style="font-family: 'JetBrains Mono', monospace;">{mine.overall_score}</span>
