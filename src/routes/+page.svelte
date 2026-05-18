@@ -24,6 +24,9 @@
   import { weaponMasteryLabels } from '$lib/content/weapon-mastery-labels'
   import { settings } from '$lib/settings.svelte'
   import { menuSignal } from '$lib/menuState.svelte'
+  import { powers as powersPool } from '$lib/content/powers'
+  import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
+  const _powerLookup = new Map(powersPool.map(p => [p.label, p]))
   // Derives weakness count from race's probability modifier when no explicit count is set
   function archetypeTypeFor(label: string): string {
     return archetypes.find(a => a.label === label)?.archetypeType ?? ''
@@ -334,6 +337,13 @@
       const raceResult = results.find(r => r.category === 'race')
       const race = races.find(r => r.label === raceResult?.resultLabel)
       if (race?.customHeightPool) return race.customHeightPool
+    }
+
+    // Use race custom gender pool when available (genderless races, specific-gender races)
+    if (def.category === 'gender') {
+      const raceResult = results.find(r => r.category === 'race')
+      const race = races.find(r => r.label === raceResult?.resultLabel)
+      if (race?.customGenderPool) return race.customGenderPool
     }
 
     // statBonus/statPenalty: use tier-shift segments from spinQueue defaults
@@ -1956,6 +1966,29 @@
                       {last.displayLabel ?? last.tier}
                     </span>
                   </div>
+                {/if}
+
+                <!-- Power: element + grade badge -->
+                {#if last?.category === 'power'}
+                  {@const pwrItem = _powerLookup.get(last.resultLabel ?? '')}
+                  {#if pwrItem?.element || pwrItem?.grade}
+                    {@const elColor = pwrItem.element ? ELEMENT_COLORS[pwrItem.element] : '#9a907b'}
+                    {@const gradeInfo = pwrItem.grade ? ITEM_GRADE_INFO[pwrItem.grade] : null}
+                    <div class="flex items-center gap-2 flex-wrap justify-center">
+                      {#if pwrItem.element}
+                        <span class="px-2 py-0.5 rounded text-xs font-bold"
+                          style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
+                          {ELEMENT_ICONS[pwrItem.element]} {pwrItem.element}
+                        </span>
+                      {/if}
+                      {#if gradeInfo}
+                        <span class="px-2 py-0.5 rounded text-xs font-bold"
+                          style="background: {gradeInfo.color}22; border: 1px solid {gradeInfo.color}55; color: {gradeInfo.color}; font-family: 'JetBrains Mono', monospace; box-shadow: 0 0 8px {gradeInfo.glow}; letter-spacing: 0.05em;">
+                          {pwrItem.grade} · {gradeInfo.label}
+                        </span>
+                      {/if}
+                    </div>
+                  {/if}
                 {/if}
 
                 <!-- Result label -->

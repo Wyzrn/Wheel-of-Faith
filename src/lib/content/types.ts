@@ -32,7 +32,8 @@ export interface Race {
   statModifiers?: Record<string, number>  // multiplier per stat category; >1 boosts higher tiers, <1 pushes lower
   extraPowerSpins?: number                // additional power category spins spliced after race lands
   minStatTier?: TierGrade                 // lowest stat tier grade that can be rolled; tiers below this are excluded
-  customHeightPool?: { label: string; weight: number }[]  // overrides default height labels for this race
+  customHeightPool?: { label: string; weight: number }[]
+  customGenderPool?: { label: string; weight: number }[]  // overrides default height labels for this race
   // Multipliers applied to base weaponType/armorType segment weights for this race.
   // Keys match segment labels (e.g. 'Melee', 'None'). Missing keys default to ×1.
   weaponTypeBias?: Record<string, number>

@@ -10,15 +10,22 @@ export const races: Race[] = [
     description: 'Resilient, adaptable, and infuriatingly average.',
     // Humans use all weapon and armor types — no bias (balanced baseline)
     classPool: [
-      { label: 'Knight',    weight: 4, element: 'Light', grade: 'D', abilities: [{ label: 'Shield Wall', weight: 2 }, { label: 'Tactical Formation', weight: 2 }, { label: 'Mounted Prowess', weight: 2 }, { label: 'Iron Resolve', weight: 2 }, { label: 'Honor Guard', weight: 2 }, { label: 'Battle Banner', weight: 1 }], powerPool: [{ label: 'Divine Smite', weight: 3 }, { label: 'Holy Strike', weight: 3 }, { label: 'Shield Slam', weight: 2 }, { label: 'Aura of Retribution', weight: 2 }, { label: 'Lay on Hands', weight: 2 }, { label: 'Consecrated Ground', weight: 1 }, { label: 'Counter-Strike Reflex', weight: 2 }] },
-      { label: 'Wizard',    weight: 3, element: 'Arcane', grade: 'C', abilities: [{ label: 'Arcane Memory', weight: 2 }, { label: 'Spell Slot Efficiency', weight: 2 }, { label: 'Scroll Mastery', weight: 2 }, { label: 'Magical Attunement', weight: 2 }, { label: 'Concentration Focus', weight: 2 }, { label: 'Ritual Circle', weight: 1 }], powerPool: [{ label: 'Arcane Barrage', weight: 3 }, { label: 'Counterspell', weight: 3 }, { label: 'Arcane Mastery', weight: 2 }, { label: 'Spell Steal', weight: 2 }, { label: 'Prismatic Spray', weight: 2 }, { label: 'Arcane Torrent', weight: 1 }, { label: 'Mana Drain', weight: 2 }] },
+      { label: 'Knight',    weight: 4, element: 'Light', grade: 'D', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Shield Wall', weight: 2 }, { label: 'Tactical Formation', weight: 2 }, { label: 'Mounted Prowess', weight: 2 }, { label: 'Iron Resolve', weight: 2 }, { label: 'Honor Guard', weight: 2 }, { label: 'Battle Banner', weight: 1 }], powerPool: [{ label: 'Divine Smite', weight: 3 }, { label: 'Holy Strike', weight: 3 }, { label: 'Shield Slam', weight: 2 }, { label: 'Aura of Retribution', weight: 2 }, { label: 'Lay on Hands', weight: 2 }, { label: 'Consecrated Ground', weight: 1 }, { label: 'Counter-Strike Reflex', weight: 2 }] },
+      { label: 'Wizard',    weight: 3, element: 'Arcane', grade: 'C', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Arcane Memory', weight: 2 }, { label: 'Spell Slot Efficiency', weight: 2 }, { label: 'Scroll Mastery', weight: 2 }, { label: 'Magical Attunement', weight: 2 }, { label: 'Concentration Focus', weight: 2 }, { label: 'Ritual Circle', weight: 1 }], powerPool: [{ label: 'Arcane Barrage', weight: 3 }, { label: 'Counterspell', weight: 3 }, { label: 'Arcane Mastery', weight: 2 }, { label: 'Spell Steal', weight: 2 }, { label: 'Prismatic Spray', weight: 2 }, { label: 'Arcane Torrent', weight: 1 }, { label: 'Mana Drain', weight: 2 }] },
       { label: 'Rogue',     weight: 4, element: 'Shadow', grade: 'D', abilities: [{ label: 'Evasion', weight: 2 }, { label: 'Cunning Action', weight: 2 }, { label: 'Uncanny Dodge', weight: 2 }, { label: 'Trap Sense', weight: 2 }, { label: 'Quick Draw', weight: 2 }, { label: "Opportunist's Edge", weight: 1 }], powerPool: [{ label: 'Backstab', weight: 3 }, { label: 'Sneak Attack', weight: 3 }, { label: 'Vanishing Act', weight: 2 }, { label: 'Poison Blade', weight: 2 }, { label: 'Smoke Bomb', weight: 2 }, { label: 'Invisibility', weight: 2 }, { label: 'Shadow Step', weight: 1 }] },
-      { label: 'Ranger',    weight: 3, element: 'Nature', grade: 'C', abilities: [{ label: 'Favored Enemy', weight: 2 }, { label: 'Wilderness Expert', weight: 2 }, { label: 'Animal Empathy', weight: 2 }, { label: 'Natural Tracker', weight: 2 }, { label: 'Ambush Setup', weight: 2 }, { label: 'Beast Whisper', weight: 1 }], powerPool: [{ label: "Hunter's Mark", weight: 3 }, { label: 'Volley Shot', weight: 3 }, { label: 'Beast Bond', weight: 2 }, { label: 'Terrain Mastery', weight: 2 }, { label: 'Predator Stance', weight: 2 }, { label: 'Precognition', weight: 1 }] },
-      { label: 'Cleric',    weight: 3, element: 'Light', grade: 'C', abilities: [{ label: 'Channel Divinity', weight: 2 }, { label: 'Divine Shield', weight: 2 }, { label: 'Sacred Ground Aura', weight: 2 }, { label: 'Blessed Form', weight: 2 }, { label: 'Holy Resilience', weight: 2 }, { label: 'Turn Undead (Passive)', weight: 1 }], powerPool: [{ label: 'Sacred Heal', weight: 3 }, { label: 'Turn Undead', weight: 3 }, { label: 'Radiant Strike', weight: 2 }, { label: 'Channel Divinity', weight: 2 }, { label: 'Healing Factor', weight: 2 }, { label: 'Courage Aura', weight: 1 }] },
-      { label: 'Barbarian', weight: 4, element: 'Fire', grade: 'D', abilities: [{ label: 'Rage Sense', weight: 2 }, { label: 'Pain Push', weight: 2 }, { label: 'Danger Sense', weight: 2 }, { label: 'Primal Instinct', weight: 2 }, { label: 'Iron Gut', weight: 2 }, { label: 'Relentless Stand', weight: 1 }], powerPool: [{ label: 'Berserker Frenzy', weight: 3 }, { label: 'Reckless Attack', weight: 3 }, { label: 'Indomitable Rage', weight: 2 }, { label: 'Super Strength', weight: 2 }, { label: 'Battle Precognition', weight: 2 }, { label: 'Warrior Trance', weight: 1 }] },
-      { label: 'Bard',      weight: 2, element: 'Sound', grade: 'B', abilities: [{ label: 'Inspire Courage', weight: 2 }, { label: 'Bardic Lore', weight: 2 }, { label: 'Countercharm', weight: 2 }, { label: 'Silver Tongue', weight: 2 }, { label: 'Story Hook', weight: 2 }, { label: 'Crowd Reading', weight: 1 }], powerPool: [{ label: 'Inspire Greatness', weight: 3 }, { label: 'Heroic Tale', weight: 3 }, { label: 'Cutting Words', weight: 2 }, { label: 'Song of Victory', weight: 2 }, { label: 'Enchantment Mastery', weight: 2 }, { label: 'Sound Shaping', weight: 1 }] },
-      { label: 'Shaman',    weight: 2, element: 'Nature', grade: 'B', abilities: [{ label: 'Spirit Sight', weight: 2 }, { label: 'Totem Ward', weight: 2 }, { label: "Nature's Memory", weight: 2 }, { label: 'Ancestor Guidance', weight: 2 }, { label: 'Ritual Mastery', weight: 2 }, { label: 'Earth Communion', weight: 1 }], powerPool: [{ label: 'Druidic Wild Shape', weight: 3 }, { label: 'Spirit Guide', weight: 3 }, { label: "Nature's Grasp", weight: 2 }, { label: 'Storm Circle', weight: 2 }, { label: 'Ancestor Spirit', weight: 2 }, { label: 'Weather Dominion', weight: 1 }] },
+      { label: 'Ranger',    weight: 3, element: 'Nature', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Favored Enemy', weight: 2 }, { label: 'Wilderness Expert', weight: 2 }, { label: 'Animal Empathy', weight: 2 }, { label: 'Natural Tracker', weight: 2 }, { label: 'Ambush Setup', weight: 2 }, { label: 'Beast Whisper', weight: 1 }], powerPool: [{ label: "Hunter's Mark", weight: 3 }, { label: 'Volley Shot', weight: 3 }, { label: 'Beast Bond', weight: 2 }, { label: 'Terrain Mastery', weight: 2 }, { label: 'Predator Stance', weight: 2 }, { label: 'Precognition', weight: 1 }] },
+      { label: 'Cleric',    weight: 3, element: 'Light', grade: 'C', statBonusGrants: { potential: 'statBonus' }, abilities: [{ label: 'Channel Divinity', weight: 2 }, { label: 'Divine Shield', weight: 2 }, { label: 'Sacred Ground Aura', weight: 2 }, { label: 'Blessed Form', weight: 2 }, { label: 'Holy Resilience', weight: 2 }, { label: 'Turn Undead (Passive)', weight: 1 }], powerPool: [{ label: 'Sacred Heal', weight: 3 }, { label: 'Turn Undead', weight: 3 }, { label: 'Radiant Strike', weight: 2 }, { label: 'Channel Divinity', weight: 2 }, { label: 'Healing Factor', weight: 2 }, { label: 'Courage Aura', weight: 1 }] },
+      { label: 'Barbarian', weight: 4, element: 'Fire', grade: 'D', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Rage Sense', weight: 2 }, { label: 'Pain Push', weight: 2 }, { label: 'Danger Sense', weight: 2 }, { label: 'Primal Instinct', weight: 2 }, { label: 'Iron Gut', weight: 2 }, { label: 'Relentless Stand', weight: 1 }], powerPool: [{ label: 'Berserker Frenzy', weight: 3 }, { label: 'Reckless Attack', weight: 3 }, { label: 'Indomitable Rage', weight: 2 }, { label: 'Super Strength', weight: 2 }, { label: 'Battle Precognition', weight: 2 }, { label: 'Warrior Trance', weight: 1 }] },
+      { label: 'Bard',      weight: 2, element: 'Sound', grade: 'B', statBonusGrants: { charisma: 'statBonus' }, abilities: [{ label: 'Inspire Courage', weight: 2 }, { label: 'Bardic Lore', weight: 2 }, { label: 'Countercharm', weight: 2 }, { label: 'Silver Tongue', weight: 2 }, { label: 'Story Hook', weight: 2 }, { label: 'Crowd Reading', weight: 1 }], powerPool: [{ label: 'Inspire Greatness', weight: 3 }, { label: 'Heroic Tale', weight: 3 }, { label: 'Cutting Words', weight: 2 }, { label: 'Song of Victory', weight: 2 }, { label: 'Enchantment Mastery', weight: 2 }, { label: 'Sound Shaping', weight: 1 }] },
+      { label: 'Shaman',    weight: 2, element: 'Nature', grade: 'B', statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Spirit Sight', weight: 2 }, { label: 'Totem Ward', weight: 2 }, { label: "Nature's Memory", weight: 2 }, { label: 'Ancestor Guidance', weight: 2 }, { label: 'Ritual Mastery', weight: 2 }, { label: 'Earth Communion', weight: 1 }], powerPool: [{ label: 'Druidic Wild Shape', weight: 3 }, { label: 'Spirit Guide', weight: 3 }, { label: "Nature's Grasp", weight: 2 }, { label: 'Storm Circle', weight: 2 }, { label: 'Ancestor Spirit', weight: 2 }, { label: 'Weather Dominion', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'0\"", weight: 2 }, { label: "5'2\"", weight: 4 }, { label: "5'4\"", weight: 6 },
+      { label: "5'6\"", weight: 7 }, { label: "5'8\"", weight: 8 }, { label: "5'10\"", weight: 8 },
+      { label: "6'0\"", weight: 7 }, { label: "6'2\"", weight: 5 }, { label: "6'4\"", weight: 3 },
+      { label: "6'6\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Jack of All Trades', weight: 3 },
       { label: 'Iron Will', weight: 3 },
@@ -41,11 +48,18 @@ export const races: Race[] = [
     armorTypeBias:  { 'Full-Suit': 2.5, 'Half-Suit': 1.5, 'Ancient': 2.0, 'Helmet Only': 0.5, 'Exotic': 0.7, 'None': 0.1 },
     classPool: [
       { label: 'Warchief',   weight: 2, element: 'Earth', grade: 'A', statBonusGrants: { strength: 'statBonus', charisma: 'statBonus' }, abilities: [{ label: 'Command Presence', weight: 2 }, { label: 'Battle Tactics', weight: 2 }, { label: 'Rally Cry', weight: 2 }, { label: 'Fear Aura (Minor)', weight: 2 }, { label: 'War Drums', weight: 2 }, { label: 'Tactical Read', weight: 1 }], powerPool: [{ label: 'Warchief Rally', weight: 3 }, { label: 'Battle Cry', weight: 3 }, { label: 'Indomitable Rage', weight: 2 }, { label: 'Ancestral Weapon', weight: 2 }, { label: 'Aura of Retribution', weight: 1 }] },
-      { label: 'Berserker',  weight: 4, element: 'Fire', grade: 'D', abilities: [{ label: 'Bloodlust', weight: 2 }, { label: 'Pain Immunity', weight: 2 }, { label: 'Savage Fortitude', weight: 2 }, { label: 'Reckless Abandon', weight: 2 }, { label: 'Carnage Sense', weight: 2 }, { label: 'Berserker Scar', weight: 1 }], powerPool: [{ label: 'Berserker Frenzy', weight: 3 }, { label: 'Reckless Attack', weight: 3 }, { label: 'Super Strength', weight: 2 }, { label: 'Indomitable Rage', weight: 2 }, { label: 'Battle Precognition', weight: 1 }] },
+      { label: 'Berserker',  weight: 4, element: 'Fire', grade: 'D', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Bloodlust', weight: 2 }, { label: 'Pain Immunity', weight: 2 }, { label: 'Savage Fortitude', weight: 2 }, { label: 'Reckless Abandon', weight: 2 }, { label: 'Carnage Sense', weight: 2 }, { label: 'Berserker Scar', weight: 1 }], powerPool: [{ label: 'Berserker Frenzy', weight: 3 }, { label: 'Reckless Attack', weight: 3 }, { label: 'Super Strength', weight: 2 }, { label: 'Indomitable Rage', weight: 2 }, { label: 'Battle Precognition', weight: 1 }] },
       { label: 'Shaman',     weight: 3, element: 'Nature', grade: 'B', abilities: [{ label: "Ancestor's Favor", weight: 2 }, { label: 'Tribal Blessing', weight: 2 }, { label: 'Curse Sense', weight: 2 }, { label: 'War Paint', weight: 2 }, { label: 'Earth Communion', weight: 2 }, { label: 'Spirit Guidance', weight: 1 }], powerPool: [{ label: 'Spirit Walk', weight: 3 }, { label: 'Spirit Guide', weight: 3 }, { label: 'Ancestor Spirit', weight: 2 }, { label: "Nature's Wrath", weight: 2 }, { label: 'Ancestral Weapon', weight: 2 }] },
-      { label: 'Warrior',    weight: 5, element: 'Earth', grade: 'D', abilities: [{ label: 'Iron Discipline', weight: 2 }, { label: 'Shield Block', weight: 2 }, { label: "Veteran's Edge", weight: 2 }, { label: 'Combat Hardening', weight: 2 }, { label: 'Battlefield Awareness', weight: 2 }, { label: 'Iron Gut', weight: 1 }], powerPool: [{ label: 'Ancestral Weapon', weight: 3 }, { label: 'Shield Slam', weight: 3 }, { label: 'Combat Flow State', weight: 2 }, { label: 'Warrior Trance', weight: 2 }, { label: 'Battle Precognition', weight: 1 }] },
-      { label: 'Gladiator',  weight: 3, element: 'Neutral', grade: 'D', abilities: [{ label: 'Crowd Reading', weight: 2 }, { label: 'Pain as Fuel', weight: 2 }, { label: 'Performance Combat', weight: 2 }, { label: "Champion's Presence", weight: 2 }, { label: 'Bloody Momentum', weight: 2 }, { label: 'Ring Mastery', weight: 1 }], powerPool: [{ label: 'Combat Flow State', weight: 3 }, { label: 'Reckless Attack', weight: 3 }, { label: 'Perfect Parry', weight: 2 }, { label: 'Counter-Strike Reflex', weight: 2 }, { label: 'Warrior Trance', weight: 1 }] },
+      { label: 'Warrior',    weight: 5, element: 'Earth', grade: 'D', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Iron Discipline', weight: 2 }, { label: 'Shield Block', weight: 2 }, { label: "Veteran's Edge", weight: 2 }, { label: 'Combat Hardening', weight: 2 }, { label: 'Battlefield Awareness', weight: 2 }, { label: 'Iron Gut', weight: 1 }], powerPool: [{ label: 'Ancestral Weapon', weight: 3 }, { label: 'Shield Slam', weight: 3 }, { label: 'Combat Flow State', weight: 2 }, { label: 'Warrior Trance', weight: 2 }, { label: 'Battle Precognition', weight: 1 }] },
+      { label: 'Gladiator',  weight: 3, element: 'Neutral', grade: 'D', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Crowd Reading', weight: 2 }, { label: 'Pain as Fuel', weight: 2 }, { label: 'Performance Combat', weight: 2 }, { label: "Champion's Presence", weight: 2 }, { label: 'Bloody Momentum', weight: 2 }, { label: 'Ring Mastery', weight: 1 }], powerPool: [{ label: 'Combat Flow State', weight: 3 }, { label: 'Reckless Attack', weight: 3 }, { label: 'Perfect Parry', weight: 2 }, { label: 'Counter-Strike Reflex', weight: 2 }, { label: 'Warrior Trance', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "6'0\"", weight: 2 }, { label: "6'2\"", weight: 3 }, { label: "6'4\"", weight: 4 },
+      { label: "6'6\"", weight: 5 }, { label: "6'8\"", weight: 5 }, { label: "6'10\"", weight: 4 },
+      { label: "7'0\"", weight: 3 }, { label: "7'2\"", weight: 2 }, { label: "7'6\"", weight: 1 },
+      { label: "8'0\" (Giant-Blooded)", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Battle Cry', weight: 3 },
       { label: 'Bloodlust', weight: 2 },
@@ -69,7 +83,7 @@ export const races: Race[] = [
     classPool: [
       { label: 'Rogue',       weight: 4, element: 'Shadow', grade: 'D', abilities: [{ label: 'Small Target', weight: 2 }, { label: 'Nimble Escape', weight: 2 }, { label: 'Trap Intuition', weight: 2 }, { label: 'Quick Fingers', weight: 2 }, { label: 'Social Invisible', weight: 2 }, { label: 'Acrobatic Defense', weight: 1 }], powerPool: [{ label: 'Backstab', weight: 3 }, { label: 'Vanishing Act', weight: 3 }, { label: 'Smoke Bomb', weight: 2 }, { label: 'Sneak Attack', weight: 2 }, { label: 'Shadow Step', weight: 2 }, { label: 'Poison Blade', weight: 1 }] },
       { label: 'Bard',        weight: 3, element: 'Sound', grade: 'B', abilities: [{ label: 'Natural Performer', weight: 2 }, { label: 'Halfling Charm', weight: 2 }, { label: 'Tale Spinner', weight: 2 }, { label: 'Lucky Lore', weight: 2 }, { label: 'Crowd Pleaser', weight: 2 }, { label: 'Emotional Strings', weight: 1 }], powerPool: [{ label: 'Inspire Greatness', weight: 3 }, { label: 'Heroic Tale', weight: 3 }, { label: 'Cutting Words', weight: 2 }, { label: 'Enchantment Mastery', weight: 2 }, { label: 'Song of Victory', weight: 1 }] },
-      { label: 'Scout',       weight: 4, element: 'Nature', grade: 'C', abilities: [{ label: 'Keen Ear', weight: 2 }, { label: 'Light Step', weight: 2 }, { label: 'Path Memory', weight: 2 }, { label: 'Quick Intel', weight: 2 }, { label: 'Escape Artist', weight: 2 }, { label: "Nature's Camouflage", weight: 1 }], powerPool: [{ label: "Hunter's Mark", weight: 3 }, { label: 'Terrain Mastery', weight: 3 }, { label: 'Predator Stance', weight: 2 }, { label: 'Vanishing Act', weight: 2 }, { label: 'Beast Bond', weight: 1 }] },
+      { label: 'Scout',       weight: 4, element: 'Nature', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Keen Ear', weight: 2 }, { label: 'Light Step', weight: 2 }, { label: 'Path Memory', weight: 2 }, { label: 'Quick Intel', weight: 2 }, { label: 'Escape Artist', weight: 2 }, { label: "Nature's Camouflage", weight: 1 }], powerPool: [{ label: "Hunter's Mark", weight: 3 }, { label: 'Terrain Mastery', weight: 3 }, { label: 'Predator Stance', weight: 2 }, { label: 'Vanishing Act', weight: 2 }, { label: 'Beast Bond', weight: 1 }] },
       { label: 'Lucky Merchant', weight: 2, element: 'Chaos', grade: 'B', abilities: [{ label: 'Bargain Sense', weight: 2 }, { label: 'Lucky Deal', weight: 2 }, { label: 'Trade Instinct', weight: 2 }, { label: 'Value Sight', weight: 2 }, { label: 'Risk Assessment', weight: 2 }, { label: 'Sixth Coin Sense', weight: 1 }], powerPool: [{ label: 'Probability Manipulation', weight: 3 }, { label: 'Trickster Gambit', weight: 3 }, { label: 'Murphy\'s Law Reversal', weight: 2 }, { label: 'Deception Detection', weight: 2 }, { label: 'Perfect Bluff', weight: 1 }] },
     ],
     customHeightPool: [
@@ -133,12 +147,19 @@ export const races: Race[] = [
     weaponTypeBias: { 'Melee': 1.5, 'Ranged': 1.3, 'Exotic': 2.0, 'Cursed': 2.5, 'None': 1.5, 'Magical': 0.7, 'Ancient': 0.3 },
     armorTypeBias:  { 'None': 2.5, 'Helmet Only': 1.5, 'Cursed': 2.0, 'Exotic': 1.2, 'Half-Suit': 0.7, 'Full-Suit': 0.2, 'Ancient': 0.3 },
     classPool: [
-      { label: 'Alchemist',   weight: 3, element: 'Poison', grade: 'C', abilities: [{ label: 'Toxin Resistance', weight: 2 }, { label: 'Chemical Intuition', weight: 2 }, { label: 'Fume Sense', weight: 2 }, { label: 'Improvised Brew', weight: 2 }, { label: 'Reagent Sense', weight: 2 }, { label: 'Explosive Tinkering', weight: 1 }], powerPool: [{ label: 'Bomb Toss', weight: 3 }, { label: 'Scavenge Protocol', weight: 3 }, { label: 'Smoke Bomb', weight: 2 }, { label: 'Poison Blade', weight: 2 }, { label: 'Pathogen Generation', weight: 1 }] },
+      { label: 'Alchemist',   weight: 3, element: 'Poison', grade: 'C', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Toxin Resistance', weight: 2 }, { label: 'Chemical Intuition', weight: 2 }, { label: 'Fume Sense', weight: 2 }, { label: 'Improvised Brew', weight: 2 }, { label: 'Reagent Sense', weight: 2 }, { label: 'Explosive Tinkering', weight: 1 }], powerPool: [{ label: 'Bomb Toss', weight: 3 }, { label: 'Scavenge Protocol', weight: 3 }, { label: 'Smoke Bomb', weight: 2 }, { label: 'Poison Blade', weight: 2 }, { label: 'Pathogen Generation', weight: 1 }] },
       { label: 'Assassin',    weight: 3, element: 'Shadow', grade: 'C', abilities: [{ label: 'Death from Below', weight: 2 }, { label: 'Target Exploit', weight: 2 }, { label: 'Execution Rush', weight: 2 }, { label: 'Silent Footfall', weight: 2 }, { label: 'Weakness Read', weight: 2 }, { label: 'Escape Protocol', weight: 1 }], powerPool: [{ label: 'Backstab', weight: 3 }, { label: 'Vanishing Act', weight: 3 }, { label: 'Poison Blade', weight: 2 }, { label: 'Smoke Bomb', weight: 2 }, { label: 'Shadow Step', weight: 1 }] },
-      { label: 'Tinkerer',    weight: 3, element: 'Metal', grade: 'B', abilities: [{ label: 'Device Intuition', weight: 2 }, { label: 'Jury Rigging', weight: 2 }, { label: 'Blueprint Memory', weight: 2 }, { label: 'Mechanism Sense', weight: 2 }, { label: 'Gadget Affinity', weight: 2 }, { label: 'Overclock Reflex', weight: 1 }], powerPool: [{ label: 'Gadget Deploy', weight: 3 }, { label: 'Bomb Toss', weight: 3 }, { label: 'Scavenge Protocol', weight: 2 }, { label: 'Illusory Decoy', weight: 2 }, { label: 'Tinkered Familiar', weight: 1 }] },
+      { label: 'Tinkerer',    weight: 3, element: 'Metal', grade: 'B', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Device Intuition', weight: 2 }, { label: 'Jury Rigging', weight: 2 }, { label: 'Blueprint Memory', weight: 2 }, { label: 'Mechanism Sense', weight: 2 }, { label: 'Gadget Affinity', weight: 2 }, { label: 'Overclock Reflex', weight: 1 }], powerPool: [{ label: 'Gadget Deploy', weight: 3 }, { label: 'Bomb Toss', weight: 3 }, { label: 'Scavenge Protocol', weight: 2 }, { label: 'Illusory Decoy', weight: 2 }, { label: 'Tinkered Familiar', weight: 1 }] },
       { label: 'Warlock',     weight: 2, element: 'Shadow', grade: 'B', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Dark Bargain', weight: 2 }, { label: 'Patron Bond', weight: 2 }, { label: 'Eldritch Sight', weight: 2 }, { label: 'Corruption Sense', weight: 2 }, { label: 'Infernal Ear', weight: 2 }, { label: 'Warped Instinct', weight: 1 }], powerPool: [{ label: 'Hex Curse', weight: 3 }, { label: 'Eldritch Blast (Advanced)', weight: 3 }, { label: 'Darkness Veil', weight: 2 }, { label: 'Devil Sight', weight: 2 }, { label: 'Infernal Contract', weight: 1 }] },
       { label: 'Gang Boss',   weight: 4, element: 'Neutral', grade: 'D', abilities: [{ label: 'Mob Loyalty', weight: 2 }, { label: 'Street Savvy', weight: 2 }, { label: 'Fear Authority', weight: 2 }, { label: 'Underworld Ties', weight: 2 }, { label: 'Criminal Network', weight: 2 }, { label: 'Pack Discipline', weight: 1 }], powerPool: [{ label: 'Warchief Rally', weight: 3 }, { label: 'Smoke Bomb', weight: 3 }, { label: 'Fear Projection', weight: 2 }, { label: 'Bomb Toss', weight: 2 }, { label: 'Trickster Gambit', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "3'2\"", weight: 2 }, { label: "3'4\"", weight: 3 }, { label: "3'6\"", weight: 5 },
+      { label: "3'8\"", weight: 6 }, { label: "3'10\"", weight: 6 }, { label: "4'0\"", weight: 5 },
+      { label: "4'2\"", weight: 3 }, { label: "4'4\"", weight: 2 }, { label: "4'6\"", weight: 1 },
+      { label: 'Suspiciously Small', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Pack Tactics', weight: 3 },
       { label: 'Opportunistic Strike', weight: 3 },
@@ -161,10 +182,16 @@ export const races: Race[] = [
     armorTypeBias:  { 'Half-Suit': 1.5, 'Helmet Only': 1.2, 'Exotic': 1.2, 'Full-Suit': 0.6, 'None': 1.0 },
     subTypePool: [
       { label: 'Wood Elf Heritage',  weight: 4, element: 'Nature', grade: 'D', abilities: [{ label: 'Forest Instinct', weight: 2 }, { label: 'Elven Agility', weight: 2 }, { label: 'Nature Bond', weight: 2 }, { label: 'Beast Empathy', weight: 2 }, { label: 'Wild Blood', weight: 2 }, { label: 'Camouflage Sense', weight: 1 }], powerPool: [{ label: 'Forest Meld', weight: 3 }, { label: 'Beast Bond', weight: 3 }, { label: "Nature's Grasp", weight: 2 }, { label: 'Terrain Mastery', weight: 2 }, { label: 'Predator Stance', weight: 1 }] },
-      { label: 'High Elf Heritage',  weight: 4, element: 'Arcane', grade: 'C', abilities: [{ label: 'Arcane Curiosity', weight: 2 }, { label: 'Elven Clarity', weight: 2 }, { label: 'Spell Touch', weight: 2 }, { label: 'Ancient Lineage', weight: 2 }, { label: 'Magic Affinity', weight: 2 }, { label: 'Trance Meditation', weight: 1 }], powerPool: [{ label: 'Arcane Mastery', weight: 3 }, { label: 'Arcane Barrage', weight: 3 }, { label: 'Elven Star Shot', weight: 2 }, { label: 'Counterspell', weight: 2 }, { label: 'Moonwell Draw', weight: 1 }] },
+      { label: 'High Elf Heritage',  weight: 4, element: 'Arcane', grade: 'C', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Arcane Curiosity', weight: 2 }, { label: 'Elven Clarity', weight: 2 }, { label: 'Spell Touch', weight: 2 }, { label: 'Ancient Lineage', weight: 2 }, { label: 'Magic Affinity', weight: 2 }, { label: 'Trance Meditation', weight: 1 }], powerPool: [{ label: 'Arcane Mastery', weight: 3 }, { label: 'Arcane Barrage', weight: 3 }, { label: 'Elven Star Shot', weight: 2 }, { label: 'Counterspell', weight: 2 }, { label: 'Moonwell Draw', weight: 1 }] },
       { label: 'Drow Heritage',      weight: 2, element: 'Shadow', grade: 'B', abilities: [{ label: 'Shadow Affinity', weight: 2 }, { label: 'Dual Sight', weight: 2 }, { label: 'Darkness Comfort', weight: 2 }, { label: 'Cunning Mind', weight: 2 }, { label: 'Spell Resistance Shard', weight: 2 }, { label: 'Underground Ease', weight: 1 }], powerPool: [{ label: 'Shadow Veil', weight: 3 }, { label: 'Faerie Fire Curse', weight: 3 }, { label: 'Web Entangle', weight: 2 }, { label: 'Darkness Veil', weight: 2 }, { label: 'Devil Sight', weight: 1 }] },
-      { label: 'Sea Elf Heritage',   weight: 3, element: 'Water', grade: 'C', abilities: [{ label: 'Water Affinity', weight: 2 }, { label: 'Tidal Sense', weight: 2 }, { label: 'Aquatic Heritage', weight: 2 }, { label: 'Salt Skin', weight: 2 }, { label: 'Pressure Adaptation', weight: 2 }, { label: 'Sea Instinct', weight: 1 }], powerPool: [{ label: 'Moonwell Draw', weight: 3 }, { label: 'Hydrokinesis', weight: 3 }, { label: 'Aqua Form', weight: 2 }, { label: 'Tidal Burst', weight: 2 }, { label: 'Elven Star Shot', weight: 1 }] },
+      { label: 'Sea Elf Heritage',   weight: 3, element: 'Water', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Water Affinity', weight: 2 }, { label: 'Tidal Sense', weight: 2 }, { label: 'Aquatic Heritage', weight: 2 }, { label: 'Salt Skin', weight: 2 }, { label: 'Pressure Adaptation', weight: 2 }, { label: 'Sea Instinct', weight: 1 }], powerPool: [{ label: 'Moonwell Draw', weight: 3 }, { label: 'Hydrokinesis', weight: 3 }, { label: 'Aqua Form', weight: 2 }, { label: 'Tidal Burst', weight: 2 }, { label: 'Elven Star Shot', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'4\"", weight: 3 }, { label: "5'6\"", weight: 5 }, { label: "5'8\"", weight: 7 },
+      { label: "5'10\"", weight: 8 }, { label: "6'0\"", weight: 7 }, { label: "6'2\"", weight: 5 },
+      { label: "6'4\"", weight: 3 }, { label: "6'6\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Cultural Fluency', weight: 3 },
       { label: 'Dual Heritage', weight: 2 },
@@ -186,11 +213,17 @@ export const races: Race[] = [
     weaponTypeBias: { 'Melee': 2.2, 'Ancient': 1.3, 'Ranged': 0.6, 'Magical': 0.6, 'None': 0.4 },
     armorTypeBias:  { 'Full-Suit': 1.8, 'Half-Suit': 2.0, 'Ancient': 1.3, 'None': 0.3, 'Exotic': 0.8 },
     classPool: [
-      { label: 'Berserker', weight: 4, element: 'Fire', grade: 'D', abilities: [{ label: 'Half-Blood Fury', weight: 2 }, { label: 'Relentless Rage', weight: 2 }, { label: 'Pain Push', weight: 2 }, { label: 'Orcish Endurance', weight: 2 }, { label: 'Savage Surge', weight: 2 }, { label: 'Scar Hardened', weight: 1 }], powerPool: [{ label: 'Berserker Frenzy', weight: 3 }, { label: 'Reckless Attack', weight: 3 }, { label: 'Indomitable Rage', weight: 2 }, { label: 'Super Strength', weight: 2 }, { label: 'Warrior Trance', weight: 1 }] },
-      { label: 'Fighter',   weight: 5, element: 'Neutral', grade: 'D', abilities: [{ label: 'Combat Instinct', weight: 2 }, { label: 'Tactical Reflex', weight: 2 }, { label: 'Iron Stand', weight: 2 }, { label: 'Weapon Affinity', weight: 2 }, { label: 'Battle Awareness', weight: 2 }, { label: 'Second Skin Armor', weight: 1 }], powerPool: [{ label: 'Combat Flow State', weight: 3 }, { label: 'Ancestral Weapon', weight: 3 }, { label: 'Perfect Parry', weight: 2 }, { label: 'Counter-Strike Reflex', weight: 2 }, { label: 'Battle Precognition', weight: 1 }] },
+      { label: 'Berserker', weight: 4, element: 'Fire', grade: 'D', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Half-Blood Fury', weight: 2 }, { label: 'Relentless Rage', weight: 2 }, { label: 'Pain Push', weight: 2 }, { label: 'Orcish Endurance', weight: 2 }, { label: 'Savage Surge', weight: 2 }, { label: 'Scar Hardened', weight: 1 }], powerPool: [{ label: 'Berserker Frenzy', weight: 3 }, { label: 'Reckless Attack', weight: 3 }, { label: 'Indomitable Rage', weight: 2 }, { label: 'Super Strength', weight: 2 }, { label: 'Warrior Trance', weight: 1 }] },
+      { label: 'Fighter',   weight: 5, element: 'Neutral', grade: 'D', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Combat Instinct', weight: 2 }, { label: 'Tactical Reflex', weight: 2 }, { label: 'Iron Stand', weight: 2 }, { label: 'Weapon Affinity', weight: 2 }, { label: 'Battle Awareness', weight: 2 }, { label: 'Second Skin Armor', weight: 1 }], powerPool: [{ label: 'Combat Flow State', weight: 3 }, { label: 'Ancestral Weapon', weight: 3 }, { label: 'Perfect Parry', weight: 2 }, { label: 'Counter-Strike Reflex', weight: 2 }, { label: 'Battle Precognition', weight: 1 }] },
       { label: 'Scout',     weight: 3, element: 'Nature', grade: 'C', abilities: [{ label: 'Wilderness Sense', weight: 2 }, { label: 'Predator Eye', weight: 2 }, { label: 'Survival Mastery', weight: 2 }, { label: 'Tracking Instinct', weight: 2 }, { label: 'Ambush Positioning', weight: 2 }, { label: 'Terrain Read', weight: 1 }], powerPool: [{ label: 'Predator Stance', weight: 3 }, { label: "Hunter's Mark", weight: 3 }, { label: 'Terrain Mastery', weight: 2 }, { label: 'Beast Bond', weight: 2 }, { label: 'Vanishing Act', weight: 1 }] },
       { label: 'Warlord',   weight: 2, element: 'Earth', grade: 'A', statBonusGrants: { charisma: 'statBonus' }, abilities: [{ label: 'Battlefield Command', weight: 2 }, { label: 'Tactical Supremacy', weight: 2 }, { label: 'Intimidation Mastery', weight: 2 }, { label: 'Strategic Mind', weight: 2 }, { label: "Leader's Presence", weight: 2 }, { label: 'War Strategy', weight: 1 }], powerPool: [{ label: 'Warchief Rally', weight: 3 }, { label: 'Aura of Retribution', weight: 3 }, { label: 'Battle Cry', weight: 2 }, { label: 'Fear Projection', weight: 2 }, { label: 'Courage Aura', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'10\"", weight: 3 }, { label: "6'0\"", weight: 4 }, { label: "6'2\"", weight: 5 },
+      { label: "6'4\"", weight: 6 }, { label: "6'6\"", weight: 5 }, { label: "6'8\"", weight: 4 },
+      { label: "6'10\"", weight: 3 }, { label: "7'0\"", weight: 2 }, { label: "7'2\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Relentless Endurance', weight: 3 },
       { label: 'Savage Fury', weight: 2 },
@@ -212,8 +245,8 @@ export const races: Race[] = [
     armorTypeBias:  { 'Exotic': 2.0, 'None': 1.5, 'Half-Suit': 1.0, 'Helmet Only': 0.8, 'Full-Suit': 0.3, 'Ancient': 0.5 },
     subTypePool: [
       { label: 'Forest Gnome',    weight: 4, element: 'Nature', grade: 'D', abilities: [{ label: 'Nature Chat', weight: 2 }, { label: 'Beast Friend', weight: 2 }, { label: 'Illusion Instinct', weight: 2 }, { label: 'Berry Wisdom', weight: 2 }, { label: 'Sprout Camouflage', weight: 2 }, { label: 'Root Magic', weight: 1 }], powerPool: [{ label: 'Illusory Decoy', weight: 3 }, { label: 'Beast Bond', weight: 3 }, { label: 'Forest Meld', weight: 2 }, { label: "Nature's Grasp", weight: 2 }, { label: 'Tinkered Familiar', weight: 1 }] },
-      { label: 'Rock Gnome',      weight: 5, element: 'Metal', grade: 'D', abilities: [{ label: 'Tinker Mastery', weight: 2 }, { label: 'Clockwork Sense', weight: 2 }, { label: 'Blueprint Memory', weight: 2 }, { label: 'Mechanism Intuition', weight: 2 }, { label: 'Cog Mind', weight: 2 }, { label: 'Gadget Jury-Rig', weight: 1 }], powerPool: [{ label: 'Gadget Deploy', weight: 3 }, { label: 'Tinkered Familiar', weight: 3 }, { label: 'Arcane Infusion', weight: 2 }, { label: 'Illusory Decoy', weight: 2 }, { label: 'Crystal Armor', weight: 1 }] },
-      { label: 'Deep Gnome',      weight: 3, element: 'Earth', grade: 'C', abilities: [{ label: 'Stone Sight', weight: 2 }, { label: 'Gem Assessment', weight: 2 }, { label: 'Depth Adaptation', weight: 2 }, { label: 'Tunnel Master', weight: 2 }, { label: 'Silence Walk', weight: 2 }, { label: 'Stonecunning', weight: 1 }], powerPool: [{ label: 'Tremor Sense', weight: 3 }, { label: 'Invisibility', weight: 3 }, { label: 'Stone Call', weight: 2 }, { label: 'Darkness Veil', weight: 2 }, { label: 'Illusory Decoy', weight: 1 }] },
+      { label: 'Rock Gnome',      weight: 5, element: 'Metal', grade: 'D', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Tinker Mastery', weight: 2 }, { label: 'Clockwork Sense', weight: 2 }, { label: 'Blueprint Memory', weight: 2 }, { label: 'Mechanism Intuition', weight: 2 }, { label: 'Cog Mind', weight: 2 }, { label: 'Gadget Jury-Rig', weight: 1 }], powerPool: [{ label: 'Gadget Deploy', weight: 3 }, { label: 'Tinkered Familiar', weight: 3 }, { label: 'Arcane Infusion', weight: 2 }, { label: 'Illusory Decoy', weight: 2 }, { label: 'Crystal Armor', weight: 1 }] },
+      { label: 'Deep Gnome',      weight: 3, element: 'Earth', grade: 'C', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Stone Sight', weight: 2 }, { label: 'Gem Assessment', weight: 2 }, { label: 'Depth Adaptation', weight: 2 }, { label: 'Tunnel Master', weight: 2 }, { label: 'Silence Walk', weight: 2 }, { label: 'Stonecunning', weight: 1 }], powerPool: [{ label: 'Tremor Sense', weight: 3 }, { label: 'Invisibility', weight: 3 }, { label: 'Stone Call', weight: 2 }, { label: 'Darkness Veil', weight: 2 }, { label: 'Illusory Decoy', weight: 1 }] },
       { label: 'Tinker Gnome',    weight: 3, element: 'Arcane', grade: 'A', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Invention Burst', weight: 2 }, { label: 'Overclock Mind', weight: 2 }, { label: 'Blueprint Vision', weight: 2 }, { label: 'Innovation Instinct', weight: 2 }, { label: 'Prototype Reflex', weight: 2 }, { label: 'Spark of Genius', weight: 1 }], powerPool: [{ label: 'Gadget Deploy', weight: 3 }, { label: 'Arcane Infusion', weight: 3 }, { label: 'Tinkered Familiar', weight: 2 }, { label: 'Arcane Barrage', weight: 2 }, { label: 'Counterspell', weight: 1 }] },
     ],
     customHeightPool: [
@@ -263,6 +296,16 @@ export const races: Race[] = [
         abilities: [{ label: 'True Sentience', weight: 1 }, { label: 'Emotional Core Online', weight: 2 }, { label: 'Infinite Processing', weight: 2 }, { label: 'Self-Determined', weight: 2 }, { label: 'Soul in the Machine', weight: 2 }],
       },
     ],
+    customHeightPool: [
+      { label: "5'0\" (Compact Unit)", weight: 2 }, { label: "5'6\"", weight: 4 }, { label: "6'0\"", weight: 5 },
+      { label: "6'4\"", weight: 4 }, { label: "6'8\"", weight: 3 }, { label: "7'0\"", weight: 3 },
+      { label: "7'6\" (Heavy Unit)", weight: 2 }, { label: "8'0\" (Siege Frame)", weight: 1 },
+    ],
+
+    customGenderPool: [
+      { label: 'Genderless (Unit)', weight: 4 }, { label: 'Male-Presenting', weight: 2 }, { label: 'Female-Presenting', weight: 2 },
+    ],
+
     abilities: [
       { label: 'Internal Clock (Never Late)', weight: 3 },
       { label: 'Battery Operated (Recharge Required)', weight: 2 },
@@ -285,11 +328,17 @@ export const races: Race[] = [
     statModifiers: { speed: 1.4, agility: 1.4, charisma: 1.2, durability: 0.8 },
     subTypePool: [
       { label: 'High Elf',  weight: 4, element: 'Arcane', grade: 'B', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Arcane Affinity', weight: 2 }, { label: 'Ancient Spellcraft', weight: 2 }, { label: 'Trance Memory', weight: 2 }, { label: 'Mana Attunement', weight: 2 }, { label: 'Elven Spell Precision', weight: 2 }, { label: 'Ley Sense', weight: 1 }], powerPool: [{ label: 'Arcane Mastery', weight: 3 }, { label: 'Arcane Barrage', weight: 3 }, { label: 'Counterspell', weight: 2 }, { label: 'Elven Star Shot', weight: 2 }, { label: 'Moonwell Draw', weight: 1 }] },
-      { label: 'Wood Elf',  weight: 5, element: 'Nature', grade: 'D', abilities: [{ label: 'Fleet Foot', weight: 2 }, { label: 'Woodland Camouflage', weight: 2 }, { label: 'Mask of the Wild', weight: 2 }, { label: 'Natural Stride', weight: 2 }, { label: 'Forest Sight', weight: 2 }, { label: 'Beast Kin', weight: 1 }], powerPool: [{ label: 'Forest Meld', weight: 3 }, { label: 'Beast Bond', weight: 3 }, { label: "Nature's Grasp", weight: 2 }, { label: 'Terrain Mastery', weight: 2 }, { label: 'Predator Stance', weight: 1 }] },
+      { label: 'Wood Elf',  weight: 5, element: 'Nature', grade: 'D', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Fleet Foot', weight: 2 }, { label: 'Woodland Camouflage', weight: 2 }, { label: 'Mask of the Wild', weight: 2 }, { label: 'Natural Stride', weight: 2 }, { label: 'Forest Sight', weight: 2 }, { label: 'Beast Kin', weight: 1 }], powerPool: [{ label: 'Forest Meld', weight: 3 }, { label: 'Beast Bond', weight: 3 }, { label: "Nature's Grasp", weight: 2 }, { label: 'Terrain Mastery', weight: 2 }, { label: 'Predator Stance', weight: 1 }] },
       { label: 'Drow',      weight: 3, element: 'Shadow', grade: 'B', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Sunblind Awareness', weight: 2 }, { label: 'Drow Magic Innate', weight: 2 }, { label: 'Spider Silk Sense', weight: 2 }, { label: 'Darkness Master', weight: 2 }, { label: 'Underground Expert', weight: 2 }, { label: 'Faerie Fire Touch', weight: 1 }], powerPool: [{ label: 'Faerie Fire Curse', weight: 3 }, { label: 'Web Entangle', weight: 3 }, { label: 'Shadow Veil', weight: 2 }, { label: 'Darkness Veil', weight: 2 }, { label: 'Devil Sight', weight: 1 }] },
-      { label: 'Sea Elf',   weight: 3, element: 'Water', grade: 'C', abilities: [{ label: 'Aquatic Adaptation', weight: 2 }, { label: 'Tidal Awareness', weight: 2 }, { label: 'Pressure Immunity', weight: 2 }, { label: 'Aqua Communication', weight: 2 }, { label: 'Underwater Speed', weight: 2 }, { label: 'Brine Touch', weight: 1 }], powerPool: [{ label: 'Hydrokinesis', weight: 3 }, { label: 'Moonwell Draw', weight: 3 }, { label: 'Aqua Form', weight: 2 }, { label: 'Tidal Burst', weight: 2 }, { label: 'Elven Star Shot', weight: 1 }] },
+      { label: 'Sea Elf',   weight: 3, element: 'Water', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Aquatic Adaptation', weight: 2 }, { label: 'Tidal Awareness', weight: 2 }, { label: 'Pressure Immunity', weight: 2 }, { label: 'Aqua Communication', weight: 2 }, { label: 'Underwater Speed', weight: 2 }, { label: 'Brine Touch', weight: 1 }], powerPool: [{ label: 'Hydrokinesis', weight: 3 }, { label: 'Moonwell Draw', weight: 3 }, { label: 'Aqua Form', weight: 2 }, { label: 'Tidal Burst', weight: 2 }, { label: 'Elven Star Shot', weight: 1 }] },
       { label: 'Eladrin',   weight: 2, element: 'Chaos', grade: 'S', statBonusGrants: { potential: 'statBonus' }, abilities: [{ label: 'Seasonal Shift', weight: 2 }, { label: 'Fey Step Mastery', weight: 2 }, { label: 'Enchantment Affinity', weight: 2 }, { label: 'Emotion Reading', weight: 2 }, { label: 'Feywild Sight', weight: 2 }, { label: 'Seasonal Blessing', weight: 1 }], powerPool: [{ label: 'Teleportation', weight: 3 }, { label: 'Moonwell Draw', weight: 3 }, { label: 'Elven Star Shot', weight: 2 }, { label: 'Arcane Mastery', weight: 2 }, { label: 'Reality Warping', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'6\"", weight: 2 }, { label: "5'8\"", weight: 4 }, { label: "5'10\"", weight: 6 },
+      { label: "6'0\"", weight: 7 }, { label: "6'2\"", weight: 7 }, { label: "6'4\"", weight: 5 },
+      { label: "6'6\"", weight: 3 }, { label: "6'8\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Arrow of the Ancient Forest', weight: 2 },
       { label: 'Fey Step', weight: 2 },
@@ -323,6 +372,13 @@ export const races: Race[] = [
       { label: 'Hellborn Unleashed',      weight: 2, element: 'Fire', grade: 'A', statBonus: 1.6 },
       { label: 'True Fiend Ascendant',    weight: 1, element: 'Fire', grade: 'SS', statBonus: 2.0 },
     ],
+    customHeightPool: [
+      { label: "5'2\"", weight: 2 }, { label: "5'4\"", weight: 4 }, { label: "5'6\"", weight: 6 },
+      { label: "5'8\"", weight: 7 }, { label: "5'10\"", weight: 7 }, { label: "6'0\"", weight: 5 },
+      { label: "6'2\"", weight: 3 }, { label: "6'4\"", weight: 1 },
+      { label: 'Horns Not Included in Height', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Hellfire Breath', weight: 2 },
       { label: 'Infernal Charm', weight: 2 },
@@ -343,15 +399,21 @@ export const races: Race[] = [
     description: 'Draconic bloodline, breath weapon included, no refunds.',
     statModifiers: { strength: 1.4, charisma: 1.3, durability: 1.2 },
     subTypePool: [
-      { label: 'Red Dragonborn (Fire)',         weight: 3, element: 'Fire', grade: 'D', abilities: [{ label: 'Fire Resistance', weight: 2 }, { label: 'Thermal Vision', weight: 2 }, { label: 'Flame Affinity', weight: 2 }, { label: 'Smoke Immunity', weight: 2 }, { label: 'Char Touch', weight: 2 }, { label: 'Heat Sense', weight: 1 }], grantedPowers: ['Fire Breath'] },
-      { label: 'Blue Dragonborn (Lightning)',   weight: 3, element: 'Lightning', grade: 'D', abilities: [{ label: 'Static Field', weight: 2 }, { label: 'Thunder Immunity', weight: 2 }, { label: 'Storm Sense', weight: 2 }, { label: 'Electric Touch', weight: 2 }, { label: 'Charge Aura', weight: 2 }, { label: 'Storm Awareness', weight: 1 }], grantedPowers: ['Lightning Breath'] },
-      { label: 'Green Dragonborn (Poison)',     weight: 2, element: 'Poison', grade: 'C', abilities: [{ label: 'Toxin Immunity', weight: 2 }, { label: 'Poison Sense', weight: 2 }, { label: 'Venom Blood', weight: 2 }, { label: 'Plague Resistance', weight: 2 }, { label: 'Corrosive Aura', weight: 2 }, { label: 'Jungle Instinct', weight: 1 }], grantedPowers: ['Poison Breath'] },
-      { label: 'Black Dragonborn (Acid)',       weight: 2, element: 'Poison', grade: 'C', abilities: [{ label: 'Acid Immunity', weight: 2 }, { label: 'Corrosive Touch', weight: 2 }, { label: 'Decay Sense', weight: 2 }, { label: 'Swamp Adaptation', weight: 2 }, { label: 'Dissolution Aura', weight: 2 }, { label: 'Rust Sight', weight: 1 }], grantedPowers: ['Acid Spray'] },
-      { label: 'White Dragonborn (Ice)',        weight: 2, element: 'Ice', grade: 'D', abilities: [{ label: 'Cold Immunity', weight: 2 }, { label: 'Arctic Adaptation', weight: 2 }, { label: 'Blizzard Sense', weight: 2 }, { label: 'Freeze Touch', weight: 2 }, { label: 'Glacial Blood', weight: 2 }, { label: 'Snow Tracking', weight: 1 }], grantedPowers: ['Frost Breath'] },
+      { label: 'Red Dragonborn (Fire)',         weight: 3, element: 'Fire', grade: 'D', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Fire Resistance', weight: 2 }, { label: 'Thermal Vision', weight: 2 }, { label: 'Flame Affinity', weight: 2 }, { label: 'Smoke Immunity', weight: 2 }, { label: 'Char Touch', weight: 2 }, { label: 'Heat Sense', weight: 1 }], grantedPowers: ['Fire Breath'] },
+      { label: 'Blue Dragonborn (Lightning)',   weight: 3, element: 'Lightning', grade: 'D', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Static Field', weight: 2 }, { label: 'Thunder Immunity', weight: 2 }, { label: 'Storm Sense', weight: 2 }, { label: 'Electric Touch', weight: 2 }, { label: 'Charge Aura', weight: 2 }, { label: 'Storm Awareness', weight: 1 }], grantedPowers: ['Lightning Breath'] },
+      { label: 'Green Dragonborn (Poison)',     weight: 2, element: 'Poison', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Toxin Immunity', weight: 2 }, { label: 'Poison Sense', weight: 2 }, { label: 'Venom Blood', weight: 2 }, { label: 'Plague Resistance', weight: 2 }, { label: 'Corrosive Aura', weight: 2 }, { label: 'Jungle Instinct', weight: 1 }], grantedPowers: ['Poison Breath'] },
+      { label: 'Black Dragonborn (Acid)',       weight: 2, element: 'Poison', grade: 'C', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Acid Immunity', weight: 2 }, { label: 'Corrosive Touch', weight: 2 }, { label: 'Decay Sense', weight: 2 }, { label: 'Swamp Adaptation', weight: 2 }, { label: 'Dissolution Aura', weight: 2 }, { label: 'Rust Sight', weight: 1 }], grantedPowers: ['Acid Spray'] },
+      { label: 'White Dragonborn (Ice)',        weight: 2, element: 'Ice', grade: 'D', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Cold Immunity', weight: 2 }, { label: 'Arctic Adaptation', weight: 2 }, { label: 'Blizzard Sense', weight: 2 }, { label: 'Freeze Touch', weight: 2 }, { label: 'Glacial Blood', weight: 2 }, { label: 'Snow Tracking', weight: 1 }], grantedPowers: ['Frost Breath'] },
       { label: 'Gold Dragonborn (Fire)',        weight: 1, element: 'Fire', grade: 'A', abilities: [{ label: 'Sunfire Affinity', weight: 2 }, { label: 'Sacred Flame Resistance', weight: 2 }, { label: 'Light Body', weight: 2 }, { label: 'Holy Warmth', weight: 2 }, { label: 'Honorable Bearing', weight: 2 }, { label: 'Solar Sense', weight: 1 }], grantedPowers: ['Fire Breath', 'Sunfire Aura'] },
       { label: 'Silver Dragonborn (Ice)',       weight: 1, element: 'Ice', grade: 'A', abilities: [{ label: 'Moon Ice Affinity', weight: 2 }, { label: 'Celestial Cold', weight: 2 }, { label: 'Sacred Resistance', weight: 2 }, { label: 'Truth Sense', weight: 2 }, { label: 'Silvery Aura', weight: 2 }, { label: 'Mist Walk', weight: 1 }], grantedPowers: ['Frost Breath', 'Blizzard Call'] },
       { label: 'Bronze Dragonborn (Lightning)', weight: 1, element: 'Lightning', grade: 'A', abilities: [{ label: 'Storm Bond', weight: 2 }, { label: 'Thunder Voice', weight: 2 }, { label: 'Lightning Immunity', weight: 2 }, { label: 'Maritime Affinity', weight: 2 }, { label: 'Current Sense', weight: 2 }, { label: 'Sea Storm Adaptation', weight: 1 }], grantedPowers: ['Lightning Breath', 'Thunder Clap'] },
     ],
+    customHeightPool: [
+      { label: "6'0\"", weight: 2 }, { label: "6'2\"", weight: 4 }, { label: "6'4\"", weight: 6 },
+      { label: "6'6\"", weight: 7 }, { label: "6'8\"", weight: 6 }, { label: "6'10\"", weight: 4 },
+      { label: "7'0\"", weight: 3 }, { label: "7'2\"", weight: 2 }, { label: "7'4\"", weight: 1 },
+    ],
+
     abilities: [
       { label: "Dragon's Breath", weight: 2 },
       { label: 'Scale Armor', weight: 2 },
@@ -372,7 +434,7 @@ export const races: Race[] = [
     description: 'Touched by the divine. Painfully aware of it.',
     statModifiers: { charisma: 1.5, potential: 1.3, fightingSkill: 1.2 },
     subTypePool: [
-      { label: 'Protector Aasimar', weight: 4, element: 'Light', grade: 'D', abilities: [{ label: 'Radiant Healing Touch', weight: 2 }, { label: 'Guardian Wings (Minor)', weight: 2 }, { label: 'Holy Barrier', weight: 2 }, { label: 'Light of Dawn', weight: 2 }, { label: 'Empathic Healing', weight: 2 }, { label: 'Celestial Shield', weight: 1 }], powerPool: [{ label: 'Radiant Soul', weight: 3 }, { label: 'Angelic Wings', weight: 3 }, { label: 'Sacred Heal', weight: 2 }, { label: 'Courage Aura', weight: 2 }, { label: 'Aura of Retribution', weight: 1 }] },
+      { label: 'Protector Aasimar', weight: 4, element: 'Light', grade: 'D', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Radiant Healing Touch', weight: 2 }, { label: 'Guardian Wings (Minor)', weight: 2 }, { label: 'Holy Barrier', weight: 2 }, { label: 'Light of Dawn', weight: 2 }, { label: 'Empathic Healing', weight: 2 }, { label: 'Celestial Shield', weight: 1 }], powerPool: [{ label: 'Radiant Soul', weight: 3 }, { label: 'Angelic Wings', weight: 3 }, { label: 'Sacred Heal', weight: 2 }, { label: 'Courage Aura', weight: 2 }, { label: 'Aura of Retribution', weight: 1 }] },
       { label: 'Scourge Aasimar',   weight: 3, element: 'Light', grade: 'A', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Radiant Detonation', weight: 2 }, { label: 'Channel Holy Wrath', weight: 2 }, { label: 'Searing Burst', weight: 2 }, { label: 'Pain Endurance', weight: 2 }, { label: 'Consecrated Rage', weight: 2 }, { label: 'Scourge Mark', weight: 1 }], powerPool: [{ label: 'Scourge Burst', weight: 3 }, { label: 'Radiant Soul', weight: 3 }, { label: 'Radiant Strike', weight: 2 }, { label: 'Channel Divinity', weight: 2 }, { label: 'Consecrated Ground', weight: 1 }] },
       { label: 'Fallen Aasimar',    weight: 2, element: 'Shadow', grade: 'A', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Necrotic Shroud', weight: 2 }, { label: 'Fear Aura (Passive)', weight: 2 }, { label: 'Dark Resilience', weight: 2 }, { label: 'Fallen Grasp', weight: 2 }, { label: 'Shadow Corruption Aura', weight: 2 }, { label: 'Hellish Rebuke', weight: 1 }], powerPool: [{ label: 'Fallen Angel Strike', weight: 3 }, { label: 'Darkness Veil', weight: 3 }, { label: 'Fear Projection', weight: 2 }, { label: 'Shadow Veil', weight: 2 }, { label: 'Soul Absorption', weight: 1 }] },
     ],
@@ -383,6 +445,12 @@ export const races: Race[] = [
       { label: 'Radiant Champion',      weight: 2, element: 'Light', grade: 'A', statBonus: 1.8 },
       { label: 'Celestial Avatar',      weight: 1, element: 'Light', grade: 'SS', statBonus: 2.2, statBonusGrants: { charisma: 'statBonus', potential: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'6\"", weight: 2 }, { label: "5'8\"", weight: 4 }, { label: "5'10\"", weight: 6 },
+      { label: "6'0\"", weight: 7 }, { label: "6'2\"", weight: 6 }, { label: "6'4\"", weight: 4 },
+      { label: "6'6\"", weight: 2 }, { label: '(Halo Radiates Upward)', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Celestial Radiance', weight: 2 },
       { label: 'Healing Touch', weight: 2 },
@@ -402,15 +470,21 @@ export const races: Race[] = [
     description: 'Cold-blooded in every sense of the phrase.',
     statModifiers: { durability: 1.4, strength: 1.2 },
     subTypePool: [
-      { label: 'Komodo Lizardfolk', weight: 2, element: 'Earth', grade: 'C' },
-      { label: 'Gecko Lizardfolk', weight: 3, element: 'Nature', grade: 'C' },
-      { label: 'Chameleon Lizardfolk', weight: 2, element: 'Shadow', grade: 'C' },
-      { label: 'Basilisk Lizardfolk', weight: 1, element: 'Earth', grade: 'C' },
-      { label: 'Crocodilian Lizardfolk', weight: 2, element: 'Earth', grade: 'C' },
-      { label: 'Sea Serpent Lizardfolk', weight: 1, element: 'Water', grade: 'C' },
-      { label: 'Frilled Dragon Lizardfolk', weight: 2, element: 'Nature', grade: 'C' },
-      { label: 'Skink Lizardfolk', weight: 3, element: 'Nature', grade: 'C' },
+      { label: 'Komodo Lizardfolk', weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus' } },
+      { label: 'Gecko Lizardfolk', weight: 3, element: 'Nature', grade: 'C', statBonusGrants: { agility: 'statBonus' } },
+      { label: 'Chameleon Lizardfolk', weight: 2, element: 'Shadow', grade: 'C', statBonusGrants: { agility: 'statBonus', speed: 'statBonus' } },
+      { label: 'Basilisk Lizardfolk', weight: 1, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
+      { label: 'Crocodilian Lizardfolk', weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus' } },
+      { label: 'Sea Serpent Lizardfolk', weight: 1, element: 'Water', grade: 'C', statBonusGrants: { agility: 'statBonus' } },
+      { label: 'Frilled Dragon Lizardfolk', weight: 2, element: 'Nature', grade: 'C', statBonusGrants: { strength: 'statBonus' } },
+      { label: 'Skink Lizardfolk', weight: 3, element: 'Nature', grade: 'C', statBonusGrants: { speed: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'8\"", weight: 3 }, { label: "6'0\"", weight: 5 }, { label: "6'2\"", weight: 6 },
+      { label: "6'4\"", weight: 6 }, { label: "6'6\"", weight: 5 }, { label: "6'8\"", weight: 4 },
+      { label: "7'0\"", weight: 2 }, { label: "7'4\" (Tail Counted)", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Natural Armor', weight: 3 },
       { label: 'Bite Attack', weight: 3 },
@@ -430,11 +504,18 @@ export const races: Race[] = [
     description: 'Cat person. Speedrunner. Easily distracted by shiny objects.',
     statModifiers: { speed: 1.6, agility: 1.5, strength: 0.8 },
     classPool: [
-      { label: 'Hunter',         weight: 4, element: 'Nature', grade: 'D', abilities: [{ label: 'Track by Scent', weight: 2 }, { label: 'Kill Zone Awareness', weight: 2 }, { label: 'Ambush Trigger', weight: 2 }, { label: 'Prey Memory', weight: 2 }, { label: 'Sprint Burst Activation', weight: 2 }, { label: 'Pounce Calculation', weight: 1 }], powerPool: [{ label: 'Pounce Strike', weight: 3 }, { label: "Hunter's Mark", weight: 3 }, { label: 'Predator Stance', weight: 2 }, { label: 'Beast Bond', weight: 2 }, { label: 'Terrain Mastery', weight: 1 }] },
-      { label: 'Shadow Dancer',  weight: 3, element: 'Shadow', grade: 'C', abilities: [{ label: 'Darkness Melding', weight: 2 }, { label: 'Silent Landing', weight: 2 }, { label: 'Blur Form', weight: 2 }, { label: 'Umbral Step', weight: 2 }, { label: 'Shadow Disguise', weight: 2 }, { label: 'Void Pounce', weight: 1 }], powerPool: [{ label: 'Shadow Stalk', weight: 3 }, { label: 'Acrobatic Assault', weight: 3 }, { label: 'Vanishing Act', weight: 2 }, { label: 'Shadow Step', weight: 2 }, { label: 'Pounce Strike', weight: 1 }] },
+      { label: 'Hunter',         weight: 4, element: 'Nature', grade: 'D', statBonusGrants: { speed: 'statBonus' }, abilities: [{ label: 'Track by Scent', weight: 2 }, { label: 'Kill Zone Awareness', weight: 2 }, { label: 'Ambush Trigger', weight: 2 }, { label: 'Prey Memory', weight: 2 }, { label: 'Sprint Burst Activation', weight: 2 }, { label: 'Pounce Calculation', weight: 1 }], powerPool: [{ label: 'Pounce Strike', weight: 3 }, { label: "Hunter's Mark", weight: 3 }, { label: 'Predator Stance', weight: 2 }, { label: 'Beast Bond', weight: 2 }, { label: 'Terrain Mastery', weight: 1 }] },
+      { label: 'Shadow Dancer',  weight: 3, element: 'Shadow', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Darkness Melding', weight: 2 }, { label: 'Silent Landing', weight: 2 }, { label: 'Blur Form', weight: 2 }, { label: 'Umbral Step', weight: 2 }, { label: 'Shadow Disguise', weight: 2 }, { label: 'Void Pounce', weight: 1 }], powerPool: [{ label: 'Shadow Stalk', weight: 3 }, { label: 'Acrobatic Assault', weight: 3 }, { label: 'Vanishing Act', weight: 2 }, { label: 'Shadow Step', weight: 2 }, { label: 'Pounce Strike', weight: 1 }] },
       { label: 'Arcane Stalker', weight: 2, element: 'Arcane', grade: 'A', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Mana Scent', weight: 2 }, { label: 'Arcane Silence', weight: 2 }, { label: 'Spell Disruption', weight: 2 }, { label: 'Magic Trace Detection', weight: 2 }, { label: 'Arcane Camouflage', weight: 2 }, { label: 'Spellbane Pounce', weight: 1 }], powerPool: [{ label: 'Arcane Infusion', weight: 3 }, { label: 'Shadow Stalk', weight: 3 }, { label: 'Illusory Decoy', weight: 2 }, { label: 'Predator Stance', weight: 2 }, { label: 'Pounce Strike', weight: 1 }] },
       { label: 'Treasure Seeker', weight: 3, element: 'Chaos', grade: 'B', abilities: [{ label: 'Relic Sense', weight: 2 }, { label: 'Trap Immunity (Experienced)', weight: 2 }, { label: 'Appraisal Touch', weight: 2 }, { label: 'Lucky Find', weight: 2 }, { label: 'Danger Premonition', weight: 2 }, { label: 'Treasure Map Divination', weight: 1 }], powerPool: [{ label: 'Trickster Gambit', weight: 3 }, { label: 'Acrobatic Assault', weight: 3 }, { label: 'Terrain Mastery', weight: 2 }, { label: 'Probability Manipulation', weight: 2 }, { label: 'Perfect Bluff', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'8\"", weight: 3 }, { label: "5'10\"", weight: 5 }, { label: "6'0\"", weight: 6 },
+      { label: "6'2\"", weight: 6 }, { label: "6'4\"", weight: 5 }, { label: "6'6\"", weight: 4 },
+      { label: "6'8\"", weight: 2 }, { label: "7'0\"", weight: 1 },
+      { label: '(Tail Not Included)', weight: 1 },
+    ],
+
     abilities: [
       { label: "Cat's Claws", weight: 3 },
       { label: 'Feline Grace', weight: 2 },
@@ -486,10 +567,16 @@ export const races: Race[] = [
     description: 'Born of elemental fire. Perpetually warm to the touch.',
     statModifiers: { energyLevel: 1.6, powerMastery: 1.3 },
     classPool: [
-      { label: 'Flamecaller',  weight: 4, element: 'Fire', grade: 'C', abilities: [{ label: 'Ignition Control', weight: 2 }, { label: 'Fire Shape', weight: 2 }, { label: 'Heat Sense', weight: 2 }, { label: 'Smoke Immunity', weight: 2 }, { label: 'Ash Form', weight: 2 }, { label: 'Wildfire Instinct', weight: 1 }], powerPool: [{ label: 'Pyrokinesis', weight: 3 }, { label: 'Fire Breath', weight: 3 }, { label: 'Cinder Surge', weight: 2 }, { label: 'Lava Control', weight: 2 }, { label: 'Lava Shield', weight: 1 }] },
-      { label: 'Emberwarden',  weight: 3, element: 'Fire', grade: 'C', abilities: [{ label: 'Ember Shield', weight: 2 }, { label: 'Slow Burn', weight: 2 }, { label: 'Fire Suppression', weight: 2 }, { label: 'Heat Absorption', weight: 2 }, { label: 'Smoldering Core', weight: 2 }, { label: 'Cinder Armor', weight: 1 }], powerPool: [{ label: 'Lava Shield', weight: 3 }, { label: 'Fire Breath', weight: 3 }, { label: 'Pyrokinesis', weight: 2 }, { label: 'Sunfire Aura', weight: 2 }, { label: 'Consecrated Ground', weight: 1 }] },
+      { label: 'Flamecaller',  weight: 4, element: 'Fire', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Ignition Control', weight: 2 }, { label: 'Fire Shape', weight: 2 }, { label: 'Heat Sense', weight: 2 }, { label: 'Smoke Immunity', weight: 2 }, { label: 'Ash Form', weight: 2 }, { label: 'Wildfire Instinct', weight: 1 }], powerPool: [{ label: 'Pyrokinesis', weight: 3 }, { label: 'Fire Breath', weight: 3 }, { label: 'Cinder Surge', weight: 2 }, { label: 'Lava Control', weight: 2 }, { label: 'Lava Shield', weight: 1 }] },
+      { label: 'Emberwarden',  weight: 3, element: 'Fire', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Ember Shield', weight: 2 }, { label: 'Slow Burn', weight: 2 }, { label: 'Fire Suppression', weight: 2 }, { label: 'Heat Absorption', weight: 2 }, { label: 'Smoldering Core', weight: 2 }, { label: 'Cinder Armor', weight: 1 }], powerPool: [{ label: 'Lava Shield', weight: 3 }, { label: 'Fire Breath', weight: 3 }, { label: 'Pyrokinesis', weight: 2 }, { label: 'Sunfire Aura', weight: 2 }, { label: 'Consecrated Ground', weight: 1 }] },
       { label: 'Magma Shaper', weight: 3, element: 'Fire', grade: 'B', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Lava Touch', weight: 2 }, { label: 'Rock Melt', weight: 2 }, { label: 'Tectonic Sense', weight: 2 }, { label: 'Earthen Heat', weight: 2 }, { label: 'Lava Pool', weight: 2 }, { label: 'Volcanic Barrier', weight: 1 }], powerPool: [{ label: 'Lava Control', weight: 3 }, { label: 'Lava Shield', weight: 3 }, { label: 'Cinder Surge', weight: 2 }, { label: 'Fire Breath', weight: 2 }, { label: 'Tremor Sense', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'2\"", weight: 3 }, { label: "5'4\"", weight: 5 }, { label: "5'6\"", weight: 7 },
+      { label: "5'8\"", weight: 7 }, { label: "5'10\"", weight: 6 }, { label: "6'0\"", weight: 4 },
+      { label: "6'2\"", weight: 2 }, { label: "6'4\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Fire Immunity', weight: 2 },
       { label: 'Flame Burst', weight: 2 },
@@ -509,10 +596,16 @@ export const races: Race[] = [
     description: 'Born of elemental water. Great swimmer. Bad hair day, always.',
     statModifiers: { potential: 1.3, agility: 1.2 },
     classPool: [
-      { label: 'Tidecaller',  weight: 4, element: 'Water', grade: 'C', abilities: [{ label: 'Current Read', weight: 2 }, { label: 'Water Shaping', weight: 2 }, { label: 'Tide Sense', weight: 2 }, { label: 'Flow Control', weight: 2 }, { label: 'Aqua Whip', weight: 2 }, { label: 'Wave Mastery', weight: 1 }], powerPool: [{ label: 'Hydrokinesis', weight: 3 }, { label: 'Tidal Burst', weight: 3 }, { label: 'Aqua Form', weight: 2 }, { label: 'Cryokinesis', weight: 2 }, { label: 'Moonwell Draw', weight: 1 }] },
-      { label: 'Frostweaver', weight: 3, element: 'Ice', grade: 'C', abilities: [{ label: 'Freeze Sense', weight: 2 }, { label: 'Ice Formation', weight: 2 }, { label: 'Cold Immunity', weight: 2 }, { label: 'Frost Trail', weight: 2 }, { label: 'Blizzard Conjure (Minor)', weight: 2 }, { label: 'Permafrost Touch', weight: 1 }], powerPool: [{ label: 'Cryokinesis', weight: 3 }, { label: 'Frost Breath', weight: 3 }, { label: 'Blizzard Call', weight: 2 }, { label: 'Aqua Form', weight: 2 }, { label: 'Hydrokinesis', weight: 1 }] },
+      { label: 'Tidecaller',  weight: 4, element: 'Water', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Current Read', weight: 2 }, { label: 'Water Shaping', weight: 2 }, { label: 'Tide Sense', weight: 2 }, { label: 'Flow Control', weight: 2 }, { label: 'Aqua Whip', weight: 2 }, { label: 'Wave Mastery', weight: 1 }], powerPool: [{ label: 'Hydrokinesis', weight: 3 }, { label: 'Tidal Burst', weight: 3 }, { label: 'Aqua Form', weight: 2 }, { label: 'Cryokinesis', weight: 2 }, { label: 'Moonwell Draw', weight: 1 }] },
+      { label: 'Frostweaver', weight: 3, element: 'Ice', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Freeze Sense', weight: 2 }, { label: 'Ice Formation', weight: 2 }, { label: 'Cold Immunity', weight: 2 }, { label: 'Frost Trail', weight: 2 }, { label: 'Blizzard Conjure (Minor)', weight: 2 }, { label: 'Permafrost Touch', weight: 1 }], powerPool: [{ label: 'Cryokinesis', weight: 3 }, { label: 'Frost Breath', weight: 3 }, { label: 'Blizzard Call', weight: 2 }, { label: 'Aqua Form', weight: 2 }, { label: 'Hydrokinesis', weight: 1 }] },
       { label: 'Stormborn',   weight: 3, element: 'Lightning', grade: 'B', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Static Immunity', weight: 2 }, { label: 'Storm Sense', weight: 2 }, { label: 'Charge Buildup', weight: 2 }, { label: 'Lightning Rod', weight: 2 }, { label: 'Thunder Stride', weight: 2 }, { label: 'Eye of the Storm', weight: 1 }], powerPool: [{ label: 'Lightning Generation', weight: 3 }, { label: 'Storm Surge', weight: 3 }, { label: 'Hydrokinesis', weight: 2 }, { label: 'Thunder Clap', weight: 2 }, { label: 'Tidal Burst', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 5 }, { label: "5'4\"", weight: 7 },
+      { label: "5'6\"", weight: 7 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 4 },
+      { label: "6'0\"", weight: 2 }, { label: "6'2\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Amphibious', weight: 3 },
       { label: 'Water Control', weight: 2 },
@@ -533,10 +626,16 @@ export const races: Race[] = [
     description: 'Born of elemental air. Technically never has a bad smell.',
     statModifiers: { speed: 1.7, agility: 1.5, durability: 0.7 },
     classPool: [
-      { label: 'Stormcaller', weight: 4, element: 'Wind', grade: 'C', abilities: [{ label: 'Storm Sense', weight: 2 }, { label: 'Thunder Anticipation', weight: 2 }, { label: 'Gale Force', weight: 2 }, { label: 'Electrical Attunement', weight: 2 }, { label: 'Cyclone Formation', weight: 2 }, { label: 'Tempest Roar', weight: 1 }], powerPool: [{ label: 'Storm Surge', weight: 3 }, { label: 'Lightning Generation', weight: 3 }, { label: 'Thunder Clap', weight: 2 }, { label: 'Storm Circle', weight: 2 }, { label: 'Aerokinesis', weight: 1 }] },
-      { label: 'Windrunner',  weight: 4, element: 'Wind', grade: 'C', abilities: [{ label: 'Slipstream Step', weight: 2 }, { label: 'Draft Riding', weight: 2 }, { label: 'Burst Speed', weight: 2 }, { label: 'Altitude Adaptation', weight: 2 }, { label: 'Wind Walk', weight: 2 }, { label: 'Vacuum Pocket', weight: 1 }], powerPool: [{ label: 'Aerokinesis', weight: 3 }, { label: 'Wind Shear', weight: 3 }, { label: 'Super Speed', weight: 2 }, { label: 'Flight', weight: 2 }, { label: 'Storm Surge', weight: 1 }] },
+      { label: 'Stormcaller', weight: 4, element: 'Wind', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Storm Sense', weight: 2 }, { label: 'Thunder Anticipation', weight: 2 }, { label: 'Gale Force', weight: 2 }, { label: 'Electrical Attunement', weight: 2 }, { label: 'Cyclone Formation', weight: 2 }, { label: 'Tempest Roar', weight: 1 }], powerPool: [{ label: 'Storm Surge', weight: 3 }, { label: 'Lightning Generation', weight: 3 }, { label: 'Thunder Clap', weight: 2 }, { label: 'Storm Circle', weight: 2 }, { label: 'Aerokinesis', weight: 1 }] },
+      { label: 'Windrunner',  weight: 4, element: 'Wind', grade: 'C', statBonusGrants: { speed: 'statBonus' }, abilities: [{ label: 'Slipstream Step', weight: 2 }, { label: 'Draft Riding', weight: 2 }, { label: 'Burst Speed', weight: 2 }, { label: 'Altitude Adaptation', weight: 2 }, { label: 'Wind Walk', weight: 2 }, { label: 'Vacuum Pocket', weight: 1 }], powerPool: [{ label: 'Aerokinesis', weight: 3 }, { label: 'Wind Shear', weight: 3 }, { label: 'Super Speed', weight: 2 }, { label: 'Flight', weight: 2 }, { label: 'Storm Surge', weight: 1 }] },
       { label: 'Tempest Born', weight: 3, element: 'Wind', grade: 'B', statBonusGrants: { speed: 'statBonus' }, abilities: [{ label: 'Pressure Immunity', weight: 2 }, { label: 'Sonic Burst (Passive)', weight: 2 }, { label: 'Atmospheric Control', weight: 2 }, { label: 'Static Field', weight: 2 }, { label: 'Wind Shield', weight: 2 }, { label: 'Hurricane Channel', weight: 1 }], powerPool: [{ label: 'Wind Shear', weight: 3 }, { label: 'Storm Born', weight: 3 }, { label: 'Aerokinesis', weight: 2 }, { label: 'Thunder Clap', weight: 2 }, { label: 'Lightning Generation', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 5 }, { label: "5'4\"", weight: 7 },
+      { label: "5'6\"", weight: 7 }, { label: "5'8\"", weight: 5 }, { label: "5'10\"", weight: 3 },
+      { label: "6'0\"", weight: 2 }, { label: '(Technically Weightless)', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Wind Step', weight: 3 },
       { label: 'Breathless', weight: 2 },
@@ -556,10 +655,16 @@ export const races: Race[] = [
     description: 'Born of elemental earth. Grounded. Literally.',
     statModifiers: { durability: 1.7, strength: 1.5, speed: 0.5, agility: 0.5 },
     classPool: [
-      { label: 'Stonebinder',   weight: 4, element: 'Earth', grade: 'C', abilities: [{ label: 'Mineral Sense', weight: 2 }, { label: 'Binding Earth', weight: 2 }, { label: 'Stone Call (Passive)', weight: 2 }, { label: 'Deep Vibration', weight: 2 }, { label: 'Rock Formation', weight: 2 }, { label: 'Petrify Touch', weight: 1 }], powerPool: [{ label: 'Geokinesis', weight: 3 }, { label: 'Tremor Sense', weight: 3 }, { label: 'Stone Call', weight: 2 }, { label: 'Crystal Armor', weight: 2 }, { label: 'Terrakinesis', weight: 1 }] },
-      { label: 'Quake Walker',  weight: 4, element: 'Earth', grade: 'C', abilities: [{ label: 'Seismic Step', weight: 2 }, { label: 'Shock Wave Emit', weight: 2 }, { label: 'Ground Split', weight: 2 }, { label: 'Fault Line Read', weight: 2 }, { label: 'Quake Anticipation', weight: 2 }, { label: 'Tectonic Stomp', weight: 1 }], powerPool: [{ label: 'Seismic Command', weight: 3 }, { label: 'Geokinesis', weight: 3 }, { label: 'Mountain Crash', weight: 2 }, { label: 'Tremor Sense', weight: 2 }, { label: 'Stone Call', weight: 1 }] },
+      { label: 'Stonebinder',   weight: 4, element: 'Earth', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Mineral Sense', weight: 2 }, { label: 'Binding Earth', weight: 2 }, { label: 'Stone Call (Passive)', weight: 2 }, { label: 'Deep Vibration', weight: 2 }, { label: 'Rock Formation', weight: 2 }, { label: 'Petrify Touch', weight: 1 }], powerPool: [{ label: 'Geokinesis', weight: 3 }, { label: 'Tremor Sense', weight: 3 }, { label: 'Stone Call', weight: 2 }, { label: 'Crystal Armor', weight: 2 }, { label: 'Terrakinesis', weight: 1 }] },
+      { label: 'Quake Walker',  weight: 4, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Seismic Step', weight: 2 }, { label: 'Shock Wave Emit', weight: 2 }, { label: 'Ground Split', weight: 2 }, { label: 'Fault Line Read', weight: 2 }, { label: 'Quake Anticipation', weight: 2 }, { label: 'Tectonic Stomp', weight: 1 }], powerPool: [{ label: 'Seismic Command', weight: 3 }, { label: 'Geokinesis', weight: 3 }, { label: 'Mountain Crash', weight: 2 }, { label: 'Tremor Sense', weight: 2 }, { label: 'Stone Call', weight: 1 }] },
       { label: 'Crystal Shaper', weight: 3, element: 'Earth', grade: 'B', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Gem Formation', weight: 2 }, { label: 'Prismatic Defense', weight: 2 }, { label: 'Crystal Lattice Sense', weight: 2 }, { label: 'Refraction Control', weight: 2 }, { label: 'Shard Burst', weight: 2 }, { label: 'Diamond Hard Skin', weight: 1 }], powerPool: [{ label: 'Crystal Armor', weight: 3 }, { label: 'Geokinesis', weight: 3 }, { label: 'Runic Ward', weight: 2 }, { label: 'Terrakinesis', weight: 2 }, { label: 'Stone Call', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'4\"", weight: 3 }, { label: "5'6\"", weight: 5 }, { label: "5'8\"", weight: 6 },
+      { label: "5'10\"", weight: 6 }, { label: "6'0\"", weight: 5 }, { label: "6'2\"", weight: 4 },
+      { label: "6'4\"", weight: 3 }, { label: "6'6\"", weight: 2 }, { label: "6'8\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Stone Form', weight: 2 },
       { label: 'Tremorsense', weight: 2 },
@@ -579,15 +684,25 @@ export const races: Race[] = [
     description: 'Constructed for war, now grappling with purpose and carpal tunnel.',
     statModifiers: { durability: 1.5, strength: 1.3, charisma: 0.6 },
     subTypePool: [
-      { label: 'Battle Chassis',              weight: 3, element: 'Metal', grade: 'D' },
-      { label: 'Scout Unit',                  weight: 3, element: 'Metal', grade: 'D' },
-      { label: 'Infiltrator Frame',           weight: 2, element: 'Metal', grade: 'C' },
-      { label: 'Labor-Class Construct',       weight: 3, element: 'Metal', grade: 'D' },
-      { label: 'Experimental Prototype',      weight: 1, element: 'Arcane', grade: 'B' },
-      { label: 'Siege Platform',              weight: 1, element: 'Metal', grade: 'C' },
-      { label: 'Medic Unit',                  weight: 2, element: 'Metal', grade: 'C' },
-      { label: 'Diplomatic Envoy Model',      weight: 1, element: 'Neutral', grade: 'C' },
+      { label: 'Battle Chassis',              weight: 3, element: 'Metal', grade: 'D', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
+      { label: 'Scout Unit',                  weight: 3, element: 'Metal', grade: 'D', statBonusGrants: { speed: 'statBonus', agility: 'statBonus' } },
+      { label: 'Infiltrator Frame',           weight: 2, element: 'Metal', grade: 'C', statBonusGrants: { agility: 'statBonus', speed: 'statBonus' } },
+      { label: 'Labor-Class Construct',       weight: 3, element: 'Metal', grade: 'D', statBonusGrants: { strength: 'statBonus' } },
+      { label: 'Experimental Prototype',      weight: 1, element: 'Arcane', grade: 'B', statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Siege Platform',              weight: 1, element: 'Metal', grade: 'C', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
+      { label: 'Medic Unit',                  weight: 2, element: 'Metal', grade: 'C', statBonusGrants: { durability: 'statBonus' } },
+      { label: 'Diplomatic Envoy Model',      weight: 1, element: 'Neutral', grade: 'C', statBonusGrants: { charisma: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'8\" (Scout)", weight: 3 }, { label: "6'0\"", weight: 5 }, { label: "6'2\"", weight: 6 },
+      { label: "6'4\"", weight: 6 }, { label: "6'6\"", weight: 5 }, { label: "6'8\"", weight: 4 },
+      { label: "7'0\" (Battle Chassis)", weight: 2 }, { label: "7'4\" (Siege Unit)", weight: 1 },
+    ],
+
+    customGenderPool: [
+      { label: 'Genderless (Construct)', weight: 5 }, { label: 'Male-Presenting', weight: 2 }, { label: 'Female-Presenting', weight: 2 },
+    ],
+
     abilities: [
       { label: 'Integrated Protection', weight: 3 },
       { label: 'Constructed Resilience', weight: 3 },
@@ -615,6 +730,13 @@ export const races: Race[] = [
       { label: 'Medical Cyborg',                  weight: 2, element: 'Metal', grade: 'B', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Nanite Repair', weight: 2 }, { label: 'Pain Override', weight: 2 }, { label: 'Adrenaline Injection', weight: 2 }, { label: 'Organ Backup', weight: 2 }, { label: 'Stimulant Release', weight: 2 }, { label: 'Death Deferral', weight: 1 }], powerPool: [{ label: 'Healing Factor', weight: 3 }, { label: 'Invulnerability', weight: 3 }, { label: 'Runic Ward', weight: 2 }, { label: 'Stone Endurance', weight: 2 }, { label: 'Regeneration Burst', weight: 1 }] },
       { label: 'Full Conversion (90% Machine)',   weight: 1, element: 'Metal', grade: 'A', statBonusGrants: { durability: 'statBonus', strength: 'statBonus', iq: 'statBonus' }, abilities: [{ label: 'Near-Total Immunity', weight: 2 }, { label: 'Machine Logic Absolute', weight: 2 }, { label: 'No Biological Weakness', weight: 2 }, { label: 'Integrated Arsenal', weight: 2 }, { label: 'Full System Override', weight: 2 }, { label: 'Posthuman Transcendence', weight: 1 }], powerPool: [{ label: 'Digital Omniscience', weight: 3 }, { label: 'Invulnerability', weight: 3 }, { label: 'Probability Override', weight: 2 }, { label: 'Reality Calculation Engine', weight: 2 }, { label: 'Machine God Protocol', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'6\"", weight: 3 }, { label: "5'8\"", weight: 4 }, { label: "6'0\"", weight: 6 },
+      { label: "6'2\"", weight: 6 }, { label: "6'4\"", weight: 5 }, { label: "6'6\"", weight: 4 },
+      { label: "6'8\"", weight: 3 }, { label: "7'0\" (Full Conversion)", weight: 2 },
+      { label: "7'6\" (Siege Frame)", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Integrated Weapons System', weight: 3 },
       { label: 'EMP Resistance', weight: 2 },
@@ -636,16 +758,22 @@ export const races: Race[] = [
     description: 'Manipulates one of the four elements through spiritual discipline and martial arts.',
     statModifiers: { energyLevel: 1.5, fightingSkill: 1.4, potential: 1.3 },
     subTypePool: [
-      { label: 'Waterbender',        weight: 4, element: 'Water', grade: 'C', abilities: [{ label: 'Healing Water', weight: 2 }, { label: 'Blood Sense (Passive)', weight: 2 }, { label: 'Current Riding', weight: 2 }, { label: 'Ice Formation (Quick)', weight: 2 }, { label: 'Tidal Push', weight: 2 }, { label: 'Moon Empowerment', weight: 1 }], grantedPowers: ['Hydrokinesis'] },
-      { label: 'Earthbender',        weight: 4, element: 'Earth', grade: 'C', abilities: [{ label: 'Seismic Sense', weight: 2 }, { label: 'Metalbending Trace', weight: 2 }, { label: 'Stone Riding', weight: 2 }, { label: 'Crystal Sight', weight: 2 }, { label: 'Rock Form', weight: 2 }, { label: 'Lavabend Partial', weight: 1 }], grantedPowers: ['Geokinesis'] },
-      { label: 'Firebender',         weight: 4, element: 'Fire', grade: 'C', abilities: [{ label: 'Lightning Generation (Passive)', weight: 2 }, { label: 'Combustion Point', weight: 2 }, { label: 'Heat Immunity', weight: 2 }, { label: 'Dragon Breathing', weight: 2 }, { label: 'Flame Whip', weight: 2 }, { label: 'Inner Flame', weight: 1 }], grantedPowers: ['Pyrokinesis'] },
-      { label: 'Airbender',          weight: 3, element: 'Wind', grade: 'C', abilities: [{ label: 'Air Step', weight: 2 }, { label: 'Vacuole Punch', weight: 2 }, { label: 'Deflection Sphere', weight: 2 }, { label: 'Sound Amplification', weight: 2 }, { label: 'Pressure Wave', weight: 2 }, { label: 'Spirit World Sense', weight: 1 }], grantedPowers: ['Aerokinesis'] },
-      { label: 'Metalbender',        weight: 2, element: 'Metal', grade: 'B', abilities: [{ label: 'Magnetic Sensitivity', weight: 2 }, { label: 'Metal Armor Strip', weight: 2 }, { label: 'Ore Detection', weight: 2 }, { label: 'Cable Control', weight: 2 }, { label: 'Metal Wall', weight: 2 }, { label: 'Precision Wire', weight: 1 }], grantedPowers: ['Metallokinesis'] },
-      { label: 'Lavabender',         weight: 1, element: 'Fire', grade: 'B', abilities: [{ label: 'Rock Melt', weight: 2 }, { label: 'Lava Pool', weight: 2 }, { label: 'Seismic Heat Sense', weight: 2 }, { label: 'Volcanic Eruption (Minor)', weight: 2 }, { label: 'Magma Shield', weight: 2 }, { label: 'Crust Disruption', weight: 1 }], grantedPowers: ['Lava Control'] },
-      { label: 'Bloodbender',        weight: 1, element: 'Blood', grade: 'B', abilities: [{ label: 'Biological Override', weight: 2 }, { label: 'Pain Induction', weight: 2 }, { label: 'Puppet Control (Brief)', weight: 2 }, { label: 'Blood Barrier', weight: 2 }, { label: 'Forced Stillness', weight: 2 }, { label: 'Full Moon Surge', weight: 1 }], grantedPowers: ['Bloodbending'] },
-      { label: 'Lightning Bender',   weight: 1, element: 'Lightning', grade: 'B', abilities: [{ label: 'Arc Control', weight: 2 }, { label: 'Voltage Modulation', weight: 2 }, { label: 'Static Immunity', weight: 2 }, { label: 'Lightning Redirect', weight: 2 }, { label: 'Capacitor Store', weight: 2 }, { label: 'Thunder Armor', weight: 1 }], grantedPowers: ['Lightning Generation'] },
+      { label: 'Waterbender',        weight: 4, element: 'Water', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Healing Water', weight: 2 }, { label: 'Blood Sense (Passive)', weight: 2 }, { label: 'Current Riding', weight: 2 }, { label: 'Ice Formation (Quick)', weight: 2 }, { label: 'Tidal Push', weight: 2 }, { label: 'Moon Empowerment', weight: 1 }], grantedPowers: ['Hydrokinesis'] },
+      { label: 'Earthbender',        weight: 4, element: 'Earth', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Seismic Sense', weight: 2 }, { label: 'Metalbending Trace', weight: 2 }, { label: 'Stone Riding', weight: 2 }, { label: 'Crystal Sight', weight: 2 }, { label: 'Rock Form', weight: 2 }, { label: 'Lavabend Partial', weight: 1 }], grantedPowers: ['Geokinesis'] },
+      { label: 'Firebender',         weight: 4, element: 'Fire', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Lightning Generation (Passive)', weight: 2 }, { label: 'Combustion Point', weight: 2 }, { label: 'Heat Immunity', weight: 2 }, { label: 'Dragon Breathing', weight: 2 }, { label: 'Flame Whip', weight: 2 }, { label: 'Inner Flame', weight: 1 }], grantedPowers: ['Pyrokinesis'] },
+      { label: 'Airbender',          weight: 3, element: 'Wind', grade: 'C', statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, abilities: [{ label: 'Air Step', weight: 2 }, { label: 'Vacuole Punch', weight: 2 }, { label: 'Deflection Sphere', weight: 2 }, { label: 'Sound Amplification', weight: 2 }, { label: 'Pressure Wave', weight: 2 }, { label: 'Spirit World Sense', weight: 1 }], grantedPowers: ['Aerokinesis'] },
+      { label: 'Metalbender',        weight: 2, element: 'Metal', grade: 'B', statBonusGrants: { strength: 'statBonus', iq: 'statBonus' }, abilities: [{ label: 'Magnetic Sensitivity', weight: 2 }, { label: 'Metal Armor Strip', weight: 2 }, { label: 'Ore Detection', weight: 2 }, { label: 'Cable Control', weight: 2 }, { label: 'Metal Wall', weight: 2 }, { label: 'Precision Wire', weight: 1 }], grantedPowers: ['Metallokinesis'] },
+      { label: 'Lavabender',         weight: 1, element: 'Fire', grade: 'B', statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, abilities: [{ label: 'Rock Melt', weight: 2 }, { label: 'Lava Pool', weight: 2 }, { label: 'Seismic Heat Sense', weight: 2 }, { label: 'Volcanic Eruption (Minor)', weight: 2 }, { label: 'Magma Shield', weight: 2 }, { label: 'Crust Disruption', weight: 1 }], grantedPowers: ['Lava Control'] },
+      { label: 'Bloodbender',        weight: 1, element: 'Blood', grade: 'B', statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Biological Override', weight: 2 }, { label: 'Pain Induction', weight: 2 }, { label: 'Puppet Control (Brief)', weight: 2 }, { label: 'Blood Barrier', weight: 2 }, { label: 'Forced Stillness', weight: 2 }, { label: 'Full Moon Surge', weight: 1 }], grantedPowers: ['Bloodbending'] },
+      { label: 'Lightning Bender',   weight: 1, element: 'Lightning', grade: 'B', statBonusGrants: { energyLevel: 'statBonus', speed: 'statBonus' }, abilities: [{ label: 'Arc Control', weight: 2 }, { label: 'Voltage Modulation', weight: 2 }, { label: 'Static Immunity', weight: 2 }, { label: 'Lightning Redirect', weight: 2 }, { label: 'Capacitor Store', weight: 2 }, { label: 'Thunder Armor', weight: 1 }], grantedPowers: ['Lightning Generation'] },
       { label: 'Avatar (All Elements)', weight: 1, element: 'Cosmic', grade: 'S', statBonusGrants: { energyLevel: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'All Elements Touch', weight: 2 }, { label: 'Spiritual Projection', weight: 2 }, { label: 'Past Life Echo', weight: 2 }, { label: 'Avatar State (Partial)', weight: 2 }, { label: 'Harmonic Convergence', weight: 2 }, { label: 'World Axis Bond', weight: 1 }], grantedPowers: ['All Elements Mastery'] },
     ],
+    customHeightPool: [
+      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 5 }, { label: "5'4\"", weight: 7 },
+      { label: "5'6\"", weight: 7 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 5 },
+      { label: "6'0\"", weight: 3 }, { label: "6'2\"", weight: 2 }, { label: "6'4\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Elemental Mastery', weight: 3 },
       { label: 'Chi Blocking Resistance', weight: 2 },
@@ -668,19 +796,19 @@ export const races: Race[] = [
     description: 'A ninja trained in chakra manipulation, ninjutsu, and the art of sneaking dramatically.',
     statModifiers: { agility: 1.5, speed: 1.4, fightingSkill: 1.3 },
     subTypePool: [
-      { label: 'Konohagakure Shinobi (Hidden Leaf)', weight: 4, element: 'Nature', grade: 'C', abilities: [{ label: 'Will of Fire', weight: 2 }, { label: 'Team Tactics', weight: 2 }, { label: 'Leaf Village Jutsu Library', weight: 2 }, { label: 'Taijutsu Foundation', weight: 2 }, { label: 'Sensei Bond', weight: 2 }, { label: 'Hidden Leaf Loyalty', weight: 1 }] },
-      { label: 'Sunagakure Shinobi (Hidden Sand)', weight: 2, element: 'Earth', grade: 'C', abilities: [{ label: 'Desert Camouflage', weight: 2 }, { label: 'Sand Sense', weight: 2 }, { label: 'Puppet Training Foundation', weight: 2 }, { label: 'Conserve Chakra', weight: 2 }, { label: 'Wind Affinity', weight: 2 }, { label: "Gaara's Sand Echo", weight: 1 }] },
-      { label: 'Kirigakure Shinobi (Hidden Mist)', weight: 2, element: 'Water', grade: 'C', abilities: [{ label: 'Mist Concealment', weight: 2 }, { label: 'Silent Kill Foundation', weight: 2 }, { label: 'Water Affinity', weight: 2 }, { label: 'Blood Mist Aura (Passive)', weight: 2 }, { label: 'Seven Swords Style Trace', weight: 2 }, { label: 'Hidden Mist Discipline', weight: 1 }] },
-      { label: 'Kumogakure Shinobi (Hidden Cloud)', weight: 2, element: 'Lightning', grade: 'C', abilities: [{ label: 'Lightning Affinity', weight: 2 }, { label: 'Raikage Speed Echo', weight: 2 }, { label: 'Cloud Taijutsu', weight: 2 }, { label: 'Lightning Armor (Minor)', weight: 2 }, { label: 'Iron Claw Foundation', weight: 2 }, { label: 'Thunderclap Step', weight: 1 }] },
-      { label: 'Missing-Nin (Rogue)', weight: 3, element: 'Shadow', grade: 'C', abilities: [{ label: 'Off-Grid Survival', weight: 2 }, { label: 'Forbidden Jutsu Access', weight: 2 }, { label: 'Unregistered Chakra', weight: 2 }, { label: 'Rogue Combat', weight: 2 }, { label: 'Mercenary Tactical Mind', weight: 2 }, { label: 'Wanted Status (Intimidation)', weight: 1 }] },
-      { label: 'Akatsuki Member', weight: 1, element: 'Shadow', grade: 'B', abilities: [{ label: 'S-Rank Jutsu Foundation', weight: 2 }, { label: 'Pain Path Awareness', weight: 2 }, { label: 'Ring of Judgment', weight: 2 }, { label: 'Bijuu Extraction Resist', weight: 2 }, { label: 'Akatsuki Cloak', weight: 2 }, { label: 'Infamy Aura', weight: 1 }] },
-      { label: 'ANBU Black Ops', weight: 1, element: 'Shadow', grade: 'B', abilities: [{ label: 'Assassination Protocol', weight: 2 }, { label: 'Memory Seal', weight: 2 }, { label: 'ANBU Mask Disguise', weight: 2 }, { label: 'Double Agent Shift', weight: 2 }, { label: 'Forbidden Archive Access', weight: 2 }, { label: 'Root Conditioning', weight: 1 }] },
+      { label: 'Konohagakure Shinobi (Hidden Leaf)', weight: 4, element: 'Nature', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Will of Fire', weight: 2 }, { label: 'Team Tactics', weight: 2 }, { label: 'Leaf Village Jutsu Library', weight: 2 }, { label: 'Taijutsu Foundation', weight: 2 }, { label: 'Sensei Bond', weight: 2 }, { label: 'Hidden Leaf Loyalty', weight: 1 }] },
+      { label: 'Sunagakure Shinobi (Hidden Sand)', weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Desert Camouflage', weight: 2 }, { label: 'Sand Sense', weight: 2 }, { label: 'Puppet Training Foundation', weight: 2 }, { label: 'Conserve Chakra', weight: 2 }, { label: 'Wind Affinity', weight: 2 }, { label: "Gaara's Sand Echo", weight: 1 }] },
+      { label: 'Kirigakure Shinobi (Hidden Mist)', weight: 2, element: 'Water', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Mist Concealment', weight: 2 }, { label: 'Silent Kill Foundation', weight: 2 }, { label: 'Water Affinity', weight: 2 }, { label: 'Blood Mist Aura (Passive)', weight: 2 }, { label: 'Seven Swords Style Trace', weight: 2 }, { label: 'Hidden Mist Discipline', weight: 1 }] },
+      { label: 'Kumogakure Shinobi (Hidden Cloud)', weight: 2, element: 'Lightning', grade: 'C', statBonusGrants: { speed: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Lightning Affinity', weight: 2 }, { label: 'Raikage Speed Echo', weight: 2 }, { label: 'Cloud Taijutsu', weight: 2 }, { label: 'Lightning Armor (Minor)', weight: 2 }, { label: 'Iron Claw Foundation', weight: 2 }, { label: 'Thunderclap Step', weight: 1 }] },
+      { label: 'Missing-Nin (Rogue)', weight: 3, element: 'Shadow', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus', agility: 'statBonus' }, abilities: [{ label: 'Off-Grid Survival', weight: 2 }, { label: 'Forbidden Jutsu Access', weight: 2 }, { label: 'Unregistered Chakra', weight: 2 }, { label: 'Rogue Combat', weight: 2 }, { label: 'Mercenary Tactical Mind', weight: 2 }, { label: 'Wanted Status (Intimidation)', weight: 1 }] },
+      { label: 'Akatsuki Member', weight: 1, element: 'Shadow', grade: 'B', statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'S-Rank Jutsu Foundation', weight: 2 }, { label: 'Pain Path Awareness', weight: 2 }, { label: 'Ring of Judgment', weight: 2 }, { label: 'Bijuu Extraction Resist', weight: 2 }, { label: 'Akatsuki Cloak', weight: 2 }, { label: 'Infamy Aura', weight: 1 }] },
+      { label: 'ANBU Black Ops', weight: 1, element: 'Shadow', grade: 'B', statBonusGrants: { fightingSkill: 'statBonus', agility: 'statBonus', speed: 'statBonus' }, abilities: [{ label: 'Assassination Protocol', weight: 2 }, { label: 'Memory Seal', weight: 2 }, { label: 'ANBU Mask Disguise', weight: 2 }, { label: 'Double Agent Shift', weight: 2 }, { label: 'Forbidden Archive Access', weight: 2 }, { label: 'Root Conditioning', weight: 1 }] },
     ],
     classPool: [
-      { label: 'Academy Student (Genin Potential)', weight: 4, element: 'Neutral', grade: 'D', abilities: [{ label: 'Basic Ninjutsu', weight: 2 }, { label: 'Three Jutsu Mastery', weight: 2 }, { label: 'Team Tactics (Beginner)', weight: 2 }, { label: 'Chakra Shaping (Early)', weight: 2 }, { label: 'Kunai Precision', weight: 2 }, { label: 'Academy Resilience', weight: 1 }] },
-      { label: 'Chunin', weight: 4, element: 'Neutral', grade: 'C', abilities: [{ label: 'Exam Hardened', weight: 2 }, { label: 'Chakra Reserve Growth', weight: 2 }, { label: 'Tactical Leadership Basics', weight: 2 }, { label: 'Mid-Range Jutsu', weight: 2 }, { label: 'Trap Awareness', weight: 2 }, { label: 'Chunin Exam Scar', weight: 1 }] },
-      { label: 'Jonin', weight: 3, element: 'Neutral', grade: 'B', abilities: [{ label: 'High-Rank Jutsu Access', weight: 2 }, { label: 'Combat Intuition', weight: 2 }, { label: 'Battlefield Command', weight: 2 }, { label: 'Advanced Chakra Nature', weight: 2 }, { label: 'Sensor Level', weight: 2 }, { label: 'S-Rank Resistance', weight: 1 }] },
-      { label: 'Jonin Commander', weight: 2, element: 'Neutral', grade: 'B', abilities: [{ label: 'Strategic Oversight', weight: 2 }, { label: 'Multi-Team Coordination', weight: 2 }, { label: 'War-Veteran Reflex', weight: 2 }, { label: 'Chakra Efficiency Mastery', weight: 2 }, { label: 'Command Presence', weight: 2 }, { label: 'Iron Discipline', weight: 1 }] },
+      { label: 'Academy Student (Genin Potential)', weight: 4, element: 'Neutral', grade: 'D', statBonusGrants: { fightingSkill: 'statPenalty' }, abilities: [{ label: 'Basic Ninjutsu', weight: 2 }, { label: 'Three Jutsu Mastery', weight: 2 }, { label: 'Team Tactics (Beginner)', weight: 2 }, { label: 'Chakra Shaping (Early)', weight: 2 }, { label: 'Kunai Precision', weight: 2 }, { label: 'Academy Resilience', weight: 1 }] },
+      { label: 'Chunin', weight: 4, element: 'Neutral', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Exam Hardened', weight: 2 }, { label: 'Chakra Reserve Growth', weight: 2 }, { label: 'Tactical Leadership Basics', weight: 2 }, { label: 'Mid-Range Jutsu', weight: 2 }, { label: 'Trap Awareness', weight: 2 }, { label: 'Chunin Exam Scar', weight: 1 }] },
+      { label: 'Jonin', weight: 3, element: 'Neutral', grade: 'B', statBonusGrants: { fightingSkill: 'statBonus', speed: 'statBonus' }, abilities: [{ label: 'High-Rank Jutsu Access', weight: 2 }, { label: 'Combat Intuition', weight: 2 }, { label: 'Battlefield Command', weight: 2 }, { label: 'Advanced Chakra Nature', weight: 2 }, { label: 'Sensor Level', weight: 2 }, { label: 'S-Rank Resistance', weight: 1 }] },
+      { label: 'Jonin Commander', weight: 2, element: 'Neutral', grade: 'B', statBonusGrants: { fightingSkill: 'statBonus', iq: 'statBonus' }, abilities: [{ label: 'Strategic Oversight', weight: 2 }, { label: 'Multi-Team Coordination', weight: 2 }, { label: 'War-Veteran Reflex', weight: 2 }, { label: 'Chakra Efficiency Mastery', weight: 2 }, { label: 'Command Presence', weight: 2 }, { label: 'Iron Discipline', weight: 1 }] },
       { label: 'Kage-Level', weight: 1, element: 'Arcane', grade: 'S', statBonusGrants: { fightingSkill: 'statBonus', energyLevel: 'statBonus' }, abilities: [{ label: 'Unmatched Chakra Reserves', weight: 2 }, { label: 'Forbidden Arts Access', weight: 2 }, { label: 'Bijuu Knowledge', weight: 2 }, { label: "Kage's Will Aura", weight: 2 }, { label: 'Country-Level Threat', weight: 2 }, { label: 'Shadow Clone Mastery', weight: 1 }] },
     ],
     transformationPool: [
@@ -690,6 +818,12 @@ export const races: Race[] = [
       { label: 'Tailed Beast Chakra Cloak', weight: 2, element: 'Nature', grade: 'A', statBonus: 1.8 },
       { label: 'Six Paths Sage Mode', weight: 1, element: 'Cosmic', grade: 'SS', statBonus: 2.4, statBonusGrants: { fightingSkill: 'statBonus', agility: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 6 }, { label: "5'4\"", weight: 8 },
+      { label: "5'6\"", weight: 8 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 4 },
+      { label: "6'0\"", weight: 2 }, { label: "6'2\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Sharingan / Dojutsu (Rare)', weight: 1 },
       { label: 'Shadow Clone Jutsu', weight: 3 },
@@ -712,11 +846,18 @@ export const races: Race[] = [
     description: 'A homo superior with a genetic X-gene mutation — feared and misunderstood everywhere.',
     statModifiers: { potential: 1.6, powerMastery: 1.4 },
     classPool: [
-      { label: 'Gamma Level Mutant', weight: 5, element: 'Psychic', grade: 'C', abilities: [{ label: 'Power Stabilization', weight: 2 }, { label: 'Secondary Mutation Active', weight: 2 }, { label: 'Combat Training (Xavier)', weight: 2 }, { label: 'Adaptive Defense', weight: 2 }, { label: 'Mutant Bond Network', weight: 2 }, { label: 'Controlled Release', weight: 1 }], powerPool: [{ label: 'Power Copying', weight: 3 }, { label: 'Adaptive Power Expression', weight: 3 }, { label: 'Shapeshifting', weight: 2 }, { label: 'Healing Factor', weight: 2 }, { label: 'Telekinesis', weight: 1 }] },
-      { label: 'Beta Level Mutant',  weight: 4, element: 'Psychic', grade: 'B', abilities: [{ label: 'Passive Field Generation', weight: 2 }, { label: 'Enhanced Durability (Mutation)', weight: 2 }, { label: 'Instinctive Power Use', weight: 2 }, { label: 'Power Synergy', weight: 2 }, { label: 'Mutation Surge (Stress)', weight: 2 }, { label: 'Tactical X-Gene', weight: 1 }], powerPool: [{ label: 'Adaptive Power Expression', weight: 3 }, { label: 'Power Copying', weight: 3 }, { label: 'Telekinesis', weight: 2 }, { label: 'Telepathy', weight: 2 }, { label: 'Elemental Mastery', weight: 1 }] },
+      { label: 'Gamma Level Mutant', weight: 5, element: 'Psychic', grade: 'C', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Power Stabilization', weight: 2 }, { label: 'Secondary Mutation Active', weight: 2 }, { label: 'Combat Training (Xavier)', weight: 2 }, { label: 'Adaptive Defense', weight: 2 }, { label: 'Mutant Bond Network', weight: 2 }, { label: 'Controlled Release', weight: 1 }], powerPool: [{ label: 'Power Copying', weight: 3 }, { label: 'Adaptive Power Expression', weight: 3 }, { label: 'Shapeshifting', weight: 2 }, { label: 'Healing Factor', weight: 2 }, { label: 'Telekinesis', weight: 1 }] },
+      { label: 'Beta Level Mutant',  weight: 4, element: 'Psychic', grade: 'B', statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Passive Field Generation', weight: 2 }, { label: 'Enhanced Durability (Mutation)', weight: 2 }, { label: 'Instinctive Power Use', weight: 2 }, { label: 'Power Synergy', weight: 2 }, { label: 'Mutation Surge (Stress)', weight: 2 }, { label: 'Tactical X-Gene', weight: 1 }], powerPool: [{ label: 'Adaptive Power Expression', weight: 3 }, { label: 'Power Copying', weight: 3 }, { label: 'Telekinesis', weight: 2 }, { label: 'Telepathy', weight: 2 }, { label: 'Elemental Mastery', weight: 1 }] },
       { label: 'Alpha Level Mutant', weight: 3, element: 'Psychic', grade: 'A', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Power Pinnacle Form', weight: 2 }, { label: 'Omega Trace Access', weight: 2 }, { label: 'Alpha Resilience', weight: 2 }, { label: 'Energy Absorption (Partial)', weight: 2 }, { label: 'Natural Counter', weight: 2 }, { label: 'Mutation Mastery', weight: 1 }], powerPool: [{ label: 'Elemental Mastery', weight: 3 }, { label: 'Telepathy', weight: 3 }, { label: 'Telekinesis', weight: 2 }, { label: 'Reality Warping', weight: 2 }, { label: 'Adaptive Power Expression', weight: 1 }] },
       { label: 'Omega Level Mutant', weight: 1, element: 'Psychic', grade: 'S', statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Unlimited Potential Cap', weight: 2 }, { label: 'Reality Interface Trace', weight: 2 }, { label: 'Psychic Fortress', weight: 2 }, { label: 'Omni-Adaptation', weight: 2 }, { label: 'Existential Threat Aura', weight: 2 }, { label: 'Omega Event Horizon', weight: 1 }], powerPool: [{ label: 'Reality Warping', weight: 3 }, { label: 'Elemental Mastery', weight: 3 }, { label: 'Psychic Dominion', weight: 2 }, { label: 'Matter Disintegration', weight: 2 }, { label: 'Omnipotence (Weekend Only)', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "4'6\" (Mutation Stunted)", weight: 1 }, { label: "5'0\"", weight: 3 }, { label: "5'4\"", weight: 5 },
+      { label: "5'8\"", weight: 7 }, { label: "6'0\"", weight: 7 }, { label: "6'4\"", weight: 5 },
+      { label: "6'8\"", weight: 3 }, { label: "7'0\"", weight: 2 }, { label: "7'6\"", weight: 1 },
+      { label: "8'0\" (Omega Growth Mutation)", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Adaptive Power Expression', weight: 3 },
       { label: 'X-Gene Surge', weight: 2 },
@@ -747,12 +888,18 @@ export const races: Race[] = [
       { label: 'Specialist',  weight: 1, element: 'Chaos', grade: 'S', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Undefined Power Form', weight: 2 }, { label: 'Rule-Breaking Aptitude', weight: 2 }, { label: 'Foreign Nen Reading', weight: 2 }, { label: 'Cross-Type Borrowing', weight: 2 }, { label: 'Luck Nen', weight: 2 }, { label: 'Singularity Event', weight: 1 }], powerPool: [{ label: 'Reality Warping', weight: 3 }, { label: 'Probability Manipulation', weight: 3 }, { label: 'Omnipotence (Weekend Only)', weight: 2 }, { label: 'Fate Threading', weight: 2 }, { label: 'Causality Violation', weight: 1 }] },
     ],
     transformationPool: [
-      { label: 'Nen Awakening (Basic)', weight: 5, element: 'Neutral', grade: 'D', statBonus: 0.9 },
-      { label: 'Nen Refined', weight: 4, element: 'Neutral', grade: 'C', statBonus: 1.1 },
-      { label: 'Zetsu / Gyo Mastery', weight: 3, element: 'Neutral', grade: 'B', statBonus: 1.3 },
-      { label: 'Hatsu Developed', weight: 3, element: 'Arcane', grade: 'B', statBonus: 1.5 },
+      { label: 'Nen Awakening (Basic)', weight: 5, element: 'Neutral', grade: 'D', statBonusGrants: { energyLevel: 'statPenalty' }, statBonus: 0.9 },
+      { label: 'Nen Refined', weight: 4, element: 'Neutral', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, statBonus: 1.1 },
+      { label: 'Zetsu / Gyo Mastery', weight: 3, element: 'Neutral', grade: 'B', statBonusGrants: { energyLevel: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.3 },
+      { label: 'Hatsu Developed', weight: 3, element: 'Arcane', grade: 'B', statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.5 },
       { label: 'Nen Genius / Post-NDE Upgrade', weight: 1, element: 'Arcane', grade: 'SS', statBonus: 2.2, statBonusGrants: { energyLevel: 'statBonus', fightingSkill: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 5 }, { label: "5'4\"", weight: 7 },
+      { label: "5'6\"", weight: 7 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 5 },
+      { label: "6'0\"", weight: 3 }, { label: "6'2\"", weight: 2 }, { label: "6'4\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Ten (Life Aura Coating)', weight: 3 },
       { label: 'Ren (Aura Amplification)', weight: 3 },
@@ -773,10 +920,21 @@ export const races: Race[] = [
     description: 'Green warriors from Planet Namek. They can regenerate limbs and create Dragon Balls, which is cheating.',
     statModifiers: { potential: 1.5, iq: 1.3, durability: 1.2 },
     subTypePool: [
-      { label: 'Warrior-Type Namekian', weight: 4, element: 'Earth', grade: 'C' },
-      { label: 'Dragon Clan Namekian', weight: 4, element: 'Nature', grade: 'C' },
+      { label: 'Warrior-Type Namekian', weight: 4, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
+      { label: 'Dragon Clan Namekian', weight: 4, element: 'Nature', grade: 'C', statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus' } },
       { label: 'Super Namekian', weight: 2, element: 'Earth', grade: 'A', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "6'8\"", weight: 2 }, { label: "7'0\"", weight: 4 }, { label: "7'4\"", weight: 6 },
+      { label: "7'8\"", weight: 6 }, { label: "8'0\"", weight: 5 }, { label: "8'4\"", weight: 4 },
+      { label: "8'8\"", weight: 2 }, { label: "9'0\" (Elder)", weight: 1 },
+      { label: 'Giant Form (30+)', weight: 1 },
+    ],
+
+    customGenderPool: [
+      { label: 'Genderless (Asexual Species)', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Limb Regeneration', weight: 3 },
       { label: 'Dragon Ball Sensing', weight: 2 },
@@ -798,12 +956,12 @@ export const races: Race[] = [
     description: 'A human who can transform into a massive Titan at will. Subject to 13-year curse. Great at breaking walls.',
     statModifiers: { strength: 1.9, durability: 1.6, fightingSkill: 1.5, speed: 1.3 },
     subTypePool: [
-      { label: 'Attack Titan',    weight: 3, element: 'Earth', grade: 'B', abilities: [{ label: 'Future Memory Access', weight: 2 }, { label: 'Rage Titan Surge', weight: 2 }, { label: 'Path Bond', weight: 2 }, { label: 'Shifter Will', weight: 2 }, { label: 'Coordinate Sensitivity', weight: 2 }, { label: "Eren's Legacy Echo", weight: 1 }], grantedPowers: ['Titan Shift'] },
-      { label: 'Armored Titan',   weight: 2, element: 'Earth', grade: 'B', abilities: [{ label: 'Hardening Mastery', weight: 2 }, { label: 'Armor Formation Speed', weight: 2 }, { label: 'Full Body Hardening', weight: 2 }, { label: 'Plate Recovery', weight: 2 }, { label: 'Tank-Mode Shift', weight: 2 }, { label: 'Armored Will', weight: 1 }], grantedPowers: ['Titan Shift', 'Hardening'] },
-      { label: 'Female Titan',    weight: 2, element: 'Earth', grade: 'C', abilities: [{ label: 'Crystal Hardening', weight: 2 }, { label: 'Shifter Scream (Attract Pure Titans)', weight: 2 }, { label: 'Endurance Body', weight: 2 }, { label: 'Flexible Combat', weight: 2 }, { label: 'Titan Copy', weight: 2 }, { label: 'Adaptive Mimicry', weight: 1 }], grantedPowers: ['Titan Shift'] },
-      { label: 'Jaw Titan',       weight: 2, element: 'Earth', grade: 'C', abilities: [{ label: 'Jaw Shatter Force', weight: 2 }, { label: 'Speed Shift', weight: 2 }, { label: 'Ultra Fast Transformation', weight: 2 }, { label: "Ymir's Mark", weight: 2 }, { label: 'Tendon Strength', weight: 2 }, { label: 'Crystal Breaker', weight: 1 }], grantedPowers: ['Titan Shift', 'Jaw Titan Bite'] },
-      { label: 'Cart Titan',      weight: 2, element: 'Earth', grade: 'C', abilities: [{ label: 'Long-Range Endurance', weight: 2 }, { label: 'Carrier Form', weight: 2 }, { label: 'Quadrupedal Speed', weight: 2 }, { label: 'Logistical Bond', weight: 2 }, { label: 'Endurance Mode', weight: 2 }, { label: 'Pack Carrier', weight: 1 }], grantedPowers: ['Titan Shift'] },
-      { label: 'Beast Titan',     weight: 2, element: 'Nature', grade: 'C', abilities: [{ label: 'Projectile Launch (Full Body)', weight: 2 }, { label: "Ymir's Curse Adaptation", weight: 2 }, { label: 'Beast Form Intelligence', weight: 2 }, { label: 'Ape Combat', weight: 2 }, { label: 'Throwing Precision', weight: 2 }, { label: 'Animal Horde Command', weight: 1 }], grantedPowers: ['Titan Shift'] },
+      { label: 'Attack Titan',    weight: 3, element: 'Earth', grade: 'B', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Future Memory Access', weight: 2 }, { label: 'Rage Titan Surge', weight: 2 }, { label: 'Path Bond', weight: 2 }, { label: 'Shifter Will', weight: 2 }, { label: 'Coordinate Sensitivity', weight: 2 }, { label: "Eren's Legacy Echo", weight: 1 }], grantedPowers: ['Titan Shift'] },
+      { label: 'Armored Titan',   weight: 2, element: 'Earth', grade: 'B', statBonusGrants: { durability: 'statBonus', strength: 'statBonus' }, abilities: [{ label: 'Hardening Mastery', weight: 2 }, { label: 'Armor Formation Speed', weight: 2 }, { label: 'Full Body Hardening', weight: 2 }, { label: 'Plate Recovery', weight: 2 }, { label: 'Tank-Mode Shift', weight: 2 }, { label: 'Armored Will', weight: 1 }], grantedPowers: ['Titan Shift', 'Hardening'] },
+      { label: 'Female Titan',    weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { agility: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Crystal Hardening', weight: 2 }, { label: 'Shifter Scream (Attract Pure Titans)', weight: 2 }, { label: 'Endurance Body', weight: 2 }, { label: 'Flexible Combat', weight: 2 }, { label: 'Titan Copy', weight: 2 }, { label: 'Adaptive Mimicry', weight: 1 }], grantedPowers: ['Titan Shift'] },
+      { label: 'Jaw Titan',       weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, abilities: [{ label: 'Jaw Shatter Force', weight: 2 }, { label: 'Speed Shift', weight: 2 }, { label: 'Ultra Fast Transformation', weight: 2 }, { label: "Ymir's Mark", weight: 2 }, { label: 'Tendon Strength', weight: 2 }, { label: 'Crystal Breaker', weight: 1 }], grantedPowers: ['Titan Shift', 'Jaw Titan Bite'] },
+      { label: 'Cart Titan',      weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Long-Range Endurance', weight: 2 }, { label: 'Carrier Form', weight: 2 }, { label: 'Quadrupedal Speed', weight: 2 }, { label: 'Logistical Bond', weight: 2 }, { label: 'Endurance Mode', weight: 2 }, { label: 'Pack Carrier', weight: 1 }], grantedPowers: ['Titan Shift'] },
+      { label: 'Beast Titan',     weight: 2, element: 'Nature', grade: 'C', statBonusGrants: { strength: 'statBonus', iq: 'statBonus' }, abilities: [{ label: 'Projectile Launch (Full Body)', weight: 2 }, { label: "Ymir's Curse Adaptation", weight: 2 }, { label: 'Beast Form Intelligence', weight: 2 }, { label: 'Ape Combat', weight: 2 }, { label: 'Throwing Precision', weight: 2 }, { label: 'Animal Horde Command', weight: 1 }], grantedPowers: ['Titan Shift'] },
       { label: 'Colossal Titan',  weight: 1, element: 'Fire', grade: 'A', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Heat Wave Aura', weight: 2 }, { label: 'Massive Form Shift', weight: 2 }, { label: 'Steam Defense', weight: 2 }, { label: 'Structural Collapse', weight: 2 }, { label: 'Blast Entry', weight: 2 }, { label: 'Citywall Presence', weight: 1 }], grantedPowers: ['Titan Shift', 'Steam Explosion'] },
       { label: 'War Hammer Titan', weight: 1, element: 'Earth', grade: 'A', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Construct Memory', weight: 2 }, { label: 'Spike Formation Speed', weight: 2 }, { label: 'Terrain Control', weight: 2 }, { label: 'Distance Creation', weight: 2 }, { label: 'Hardening Art', weight: 2 }, { label: 'Living Weapon', weight: 1 }], grantedPowers: ['Titan Shift', 'Hardening'] },
       { label: 'Founding Titan',  weight: 1, element: 'Soul', grade: 'S', statBonusGrants: { strength: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Coordinate Activation', weight: 2 }, { label: 'Titan Command (Broad)', weight: 2 }, { label: 'Memory Alteration (Partial)', weight: 2 }, { label: 'Subjects of Ymir Bond', weight: 2 }, { label: 'Ancient Power Echo', weight: 2 }, { label: 'World-Memory Access', weight: 1 }], grantedPowers: ['Titan Shift'] },
@@ -815,6 +973,12 @@ export const races: Race[] = [
       { label: 'Coordinate Awakened',       weight: 2, element: 'Soul', grade: 'A', statBonus: 1.8 },
       { label: 'Founder\'s Power Unleashed', weight: 1, element: 'Neutral', grade: 'C', statBonus: 2.5, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 5 }, { label: "5'4\"", weight: 7 },
+      { label: "5'6\"", weight: 7 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 4 },
+      { label: "6'0\"", weight: 2 }, { label: '(Titan Form: 4m–60m)', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Titan Transformation', weight: 2 },
       { label: 'Regeneration (Human Form)', weight: 3 },
@@ -837,12 +1001,18 @@ export const races: Race[] = [
     description: 'Immortal, elegant, dramatically inconvenienced by sunlight.',
     statModifiers: { charisma: 1.7, speed: 1.3, agility: 1.3, energyLevel: 0.6 },
     transformationPool: [
-      { label: 'Newly Turned',       weight: 5, element: 'Blood', grade: 'D', statBonus: 0.8 },
-      { label: 'Young Vampire',      weight: 4, element: 'Blood', grade: 'C', statBonus: 1.0, grantedPowers: ['Vampiric Drain'] },
-      { label: 'Ancient',            weight: 3, element: 'Blood', grade: 'B', statBonus: 1.3, grantedPowers: ['Vampiric Drain', 'Bat Form'] },
-      { label: 'Elder',              weight: 2, element: 'Blood', grade: 'A', statBonus: 1.6, grantedPowers: ['Vampiric Drain', 'Bat Form', 'Mind Fog'] },
+      { label: 'Newly Turned',       weight: 5, element: 'Blood', grade: 'D', statBonusGrants: { speed: 'statPenalty', strength: 'statPenalty' }, statBonus: 0.8 },
+      { label: 'Young Vampire',      weight: 4, element: 'Blood', grade: 'C', statBonusGrants: { charisma: 'statBonus' }, statBonus: 1.0, grantedPowers: ['Vampiric Drain'] },
+      { label: 'Ancient',            weight: 3, element: 'Blood', grade: 'B', statBonusGrants: { charisma: 'statBonus', speed: 'statBonus' }, statBonus: 1.3, grantedPowers: ['Vampiric Drain', 'Bat Form'] },
+      { label: 'Elder',              weight: 2, element: 'Blood', grade: 'A', statBonusGrants: { charisma: 'statBonus', speed: 'statBonus', strength: 'statBonus' }, statBonus: 1.6, grantedPowers: ['Vampiric Drain', 'Bat Form', 'Mind Fog'] },
       { label: 'True Progenitor',    weight: 1, element: 'Blood', grade: 'SS', statBonus: 2.0, statBonusGrants: { charisma: 'statBonus', speed: 'statBonus' }, grantedPowers: ['Vampiric Drain', 'Bat Form', 'Mind Fog', 'Blood Control'] },
     ],
+    customHeightPool: [
+      { label: "5'4\"", weight: 2 }, { label: "5'6\"", weight: 4 }, { label: "5'8\"", weight: 6 },
+      { label: "5'10\"", weight: 7 }, { label: "6'0\"", weight: 7 }, { label: "6'2\"", weight: 5 },
+      { label: "6'4\"", weight: 3 }, { label: "6'6\"", weight: 2 }, { label: '(Preserved From Death)', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Blood Drain', weight: 2 },
       { label: 'Shadow Meld', weight: 2 },
@@ -864,11 +1034,17 @@ export const races: Race[] = [
     statModifiers: { strength: 1.7, speed: 1.4, fightingSkill: 1.5 },
     transformationPool: [
       { label: 'New Moon (Suppressed)',               weight: 4, element: 'Blood', grade: 'D', statBonus: 0.7, statBonusGrants: { strength: 'statPenalty' } },
-      { label: 'Half Moon',                           weight: 4, element: 'Blood', grade: 'C', statBonus: 1.0 },
-      { label: 'Full Moon',                           weight: 3, element: 'Blood', grade: 'B', statBonus: 1.4 },
-      { label: 'Blood Moon',                          weight: 2, element: 'Blood', grade: 'A', statBonus: 1.8 },
+      { label: 'Half Moon',                           weight: 4, element: 'Blood', grade: 'C', statBonusGrants: { strength: 'statBonus' }, statBonus: 1.0 },
+      { label: 'Full Moon',                           weight: 3, element: 'Blood', grade: 'B', statBonusGrants: { strength: 'statBonus', speed: 'statBonus' }, statBonus: 1.4 },
+      { label: 'Blood Moon',                          weight: 2, element: 'Blood', grade: 'A', statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.8 },
       { label: 'Eternal Night (Always Full Moon)',    weight: 1, element: 'Blood', grade: 'SS', statBonus: 2.2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'8\" (Human Form)", weight: 3 }, { label: "5'10\"", weight: 5 }, { label: "6'0\"", weight: 6 },
+      { label: "6'2\"", weight: 6 }, { label: "6'4\"", weight: 5 }, { label: "6'6\"", weight: 3 },
+      { label: "6'8\"", weight: 2 }, { label: '7\'0\" (War Form: 8-9\')', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Full Moon Fury', weight: 2 },
       { label: 'Pack Bond', weight: 2 },
@@ -889,12 +1065,18 @@ export const races: Race[] = [
     description: 'Died once. Refused to stay that way. Now furious.',
     statModifiers: { durability: 1.4, strength: 1.2, charisma: 0.5 },
     transformationPool: [
-      { label: 'Recently Deceased',          weight: 5, element: 'Soul', grade: 'D', statBonus: 0.8 },
-      { label: 'Decades Dead',               weight: 4, element: 'Soul', grade: 'C', statBonus: 1.0 },
-      { label: 'Centuries Old',              weight: 3, element: 'Soul', grade: 'B', statBonus: 1.3 },
-      { label: 'Ancient Revenant',           weight: 2, element: 'Soul', grade: 'A', statBonus: 1.6 },
+      { label: 'Recently Deceased',          weight: 5, element: 'Soul', grade: 'D', statBonusGrants: { durability: 'statPenalty' }, statBonus: 0.8 },
+      { label: 'Decades Dead',               weight: 4, element: 'Soul', grade: 'C', statBonusGrants: { durability: 'statBonus' }, statBonus: 1.0 },
+      { label: 'Centuries Old',              weight: 3, element: 'Soul', grade: 'B', statBonusGrants: { durability: 'statBonus', strength: 'statBonus' }, statBonus: 1.3 },
+      { label: 'Ancient Revenant',           weight: 2, element: 'Soul', grade: 'A', statBonusGrants: { durability: 'statBonus', strength: 'statBonus', potential: 'statBonus' }, statBonus: 1.6 },
       { label: 'Death Itself, Personified',  weight: 1, element: 'Soul', grade: 'SS', statBonus: 2.0, statBonusGrants: { durability: 'statBonus', strength: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'0\"", weight: 2 }, { label: "5'4\"", weight: 4 }, { label: "5'6\"", weight: 6 },
+      { label: "5'8\"", weight: 7 }, { label: "5'10\"", weight: 7 }, { label: "6'0\"", weight: 5 },
+      { label: "6'2\"", weight: 3 }, { label: "6'4\"", weight: 2 }, { label: '(As in Life)', weight: 1 },
+    ],
+
     abilities: [
       { label: "Death's Refusal", weight: 2 },
       { label: 'Spectral Touch', weight: 2 },
@@ -917,7 +1099,7 @@ export const races: Race[] = [
     statModifiers: { strength: 2.0, durability: 2.0, powerMastery: 1.7, charisma: 1.3 },
     transformationPool: [
       { label: 'Hatchling Power',    weight: 4, element: 'Fire', grade: 'D', statBonus: 0.8,  statBonusGrants: { strength: 'statPenalty', durability: 'statPenalty' } },
-      { label: 'Young Dragon',       weight: 3, element: 'Fire', grade: 'C', statBonus: 1.0 },
+      { label: 'Young Dragon',       weight: 3, element: 'Fire', grade: 'C', statBonusGrants: { strength: 'statBonus' }, statBonus: 1.0 },
       { label: 'Adult Dragon',       weight: 3, element: 'Fire', grade: 'B', statBonus: 1.3,  statBonusGrants: { strength: 'statBonus' } },
       { label: 'Elder Dragon',       weight: 2, element: 'Fire', grade: 'A', statBonus: 1.7,  statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
       { label: 'Ancient Dragon',     weight: 1, element: 'Fire', grade: 'S', statBonus: 2.1,  statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' } },
@@ -957,9 +1139,15 @@ export const races: Race[] = [
     subTypePool: [
       { label: 'Androsphinx',   weight: 3, element: 'Light', grade: 'B', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Legendary Roar (Passive)', weight: 2 }, { label: 'Claw Combat Mastery', weight: 2 }, { label: 'Lair Sense', weight: 2 }, { label: 'Fear Immunity', weight: 2 }, { label: "Champion's Presence", weight: 2 }, { label: 'Solar Bond', weight: 1 }], powerPool: [{ label: 'Androsphinx Roar', weight: 3 }, { label: 'Riddle Binding', weight: 3 }, { label: 'Fear Projection', weight: 2 }, { label: 'Precognition', weight: 2 }, { label: 'Ancient Dominion', weight: 1 }] },
       { label: 'Gynosphinx',    weight: 3, element: 'Arcane', grade: 'B', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Riddle Mastery', weight: 2 }, { label: 'Future Thread Sight', weight: 2 }, { label: 'Ancient Library', weight: 2 }, { label: 'Divination Focus', weight: 2 }, { label: 'Ward Permanence', weight: 2 }, { label: 'Knowledge Lock', weight: 1 }], powerPool: [{ label: 'Riddle Binding', weight: 3 }, { label: 'Divination', weight: 3 }, { label: 'Prophetic Wing', weight: 2 }, { label: 'Precognition', weight: 2 }, { label: 'Tome of All Knowledge', weight: 1 }] },
-      { label: 'Hieracosphinx', weight: 2, element: 'Wind', grade: 'C', abilities: [{ label: 'Raptor Strike', weight: 2 }, { label: 'Aerial Predator', weight: 2 }, { label: 'Eyesight Precision', weight: 2 }, { label: 'Dive Attack', weight: 2 }, { label: 'Talon Lock', weight: 2 }, { label: 'Hunting Hymn', weight: 1 }], powerPool: [{ label: 'Predator Stance', weight: 3 }, { label: 'Pounce Strike', weight: 3 }, { label: 'Androsphinx Roar', weight: 2 }, { label: 'Flight', weight: 2 }, { label: 'Hunter\'s Mark', weight: 1 }] },
-      { label: 'Criosphinx',    weight: 2, element: 'Earth', grade: 'C', abilities: [{ label: 'Ram Aura', weight: 2 }, { label: 'Force of Will', weight: 2 }, { label: 'Grounded Stance', weight: 2 }, { label: 'Charge Sense', weight: 2 }, { label: 'Territorial Roar', weight: 2 }, { label: 'Petrify Gaze (Passive)', weight: 1 }], powerPool: [{ label: 'Gaze of Stone', weight: 3 }, { label: 'Prophetic Wing', weight: 3 }, { label: 'Riddle Binding', weight: 2 }, { label: 'Fear Projection', weight: 2 }, { label: 'Petrification Touch', weight: 1 }] },
+      { label: 'Hieracosphinx', weight: 2, element: 'Wind', grade: 'C', statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, abilities: [{ label: 'Raptor Strike', weight: 2 }, { label: 'Aerial Predator', weight: 2 }, { label: 'Eyesight Precision', weight: 2 }, { label: 'Dive Attack', weight: 2 }, { label: 'Talon Lock', weight: 2 }, { label: 'Hunting Hymn', weight: 1 }], powerPool: [{ label: 'Predator Stance', weight: 3 }, { label: 'Pounce Strike', weight: 3 }, { label: 'Androsphinx Roar', weight: 2 }, { label: 'Flight', weight: 2 }, { label: 'Hunter\'s Mark', weight: 1 }] },
+      { label: 'Criosphinx',    weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Ram Aura', weight: 2 }, { label: 'Force of Will', weight: 2 }, { label: 'Grounded Stance', weight: 2 }, { label: 'Charge Sense', weight: 2 }, { label: 'Territorial Roar', weight: 2 }, { label: 'Petrify Gaze (Passive)', weight: 1 }], powerPool: [{ label: 'Gaze of Stone', weight: 3 }, { label: 'Prophetic Wing', weight: 3 }, { label: 'Riddle Binding', weight: 2 }, { label: 'Fear Projection', weight: 2 }, { label: 'Petrification Touch', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "12' (Shoulder)", weight: 3 }, { label: "15' (Shoulder)", weight: 5 },
+      { label: "18' (Shoulder)", weight: 5 }, { label: "20' (Shoulder)", weight: 4 },
+      { label: "25' (Shoulder)", weight: 2 }, { label: "30' (Ancient)", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Riddle Compulsion', weight: 2 },
       { label: 'Clairvoyance', weight: 2 },
@@ -980,8 +1168,8 @@ export const races: Race[] = [
     description: 'Elite warrior race from Planet Vegeta. Gets dramatically stronger every time they nearly die.',
     statModifiers: { strength: 1.9, speed: 1.7, fightingSkill: 1.9, durability: 1.5 },
     classPool: [
-      { label: 'Low-Class Warrior',  weight: 5, element: 'Fire', grade: 'D', abilities: [{ label: 'Battle Instinct', weight: 2 }, { label: 'Ki Control Foundation', weight: 2 }, { label: 'Combat Grit', weight: 2 }, { label: 'Underdog Push', weight: 2 }, { label: 'Hardened by Loss', weight: 2 }, { label: 'Street-Level Combat', weight: 1 }], powerPool: [{ label: 'Ki Blast', weight: 3 }, { label: 'Flight (Saiyan)', weight: 3 }, { label: 'Zenkai Surge', weight: 2 }, { label: 'Combat Flow State', weight: 2 }, { label: 'Battle Precognition', weight: 1 }] },
-      { label: 'Mid-Class Warrior',  weight: 3, element: 'Fire', grade: 'C', abilities: [{ label: 'Tactical Combat', weight: 2 }, { label: 'Efficient Ki Use', weight: 2 }, { label: 'Squad Coordination', weight: 2 }, { label: 'Combat Speed Increase', weight: 2 }, { label: 'Veteran Endurance', weight: 2 }, { label: 'Mid-Tier Surge', weight: 1 }], powerPool: [{ label: 'Ki Blast', weight: 3 }, { label: 'Flight (Saiyan)', weight: 3 }, { label: 'Zenkai Surge', weight: 2 }, { label: 'Warrior Trance', weight: 2 }, { label: 'Super Strength', weight: 1 }] },
+      { label: 'Low-Class Warrior',  weight: 5, element: 'Fire', grade: 'D', statBonusGrants: { fightingSkill: 'statPenalty' }, abilities: [{ label: 'Battle Instinct', weight: 2 }, { label: 'Ki Control Foundation', weight: 2 }, { label: 'Combat Grit', weight: 2 }, { label: 'Underdog Push', weight: 2 }, { label: 'Hardened by Loss', weight: 2 }, { label: 'Street-Level Combat', weight: 1 }], powerPool: [{ label: 'Ki Blast', weight: 3 }, { label: 'Flight (Saiyan)', weight: 3 }, { label: 'Zenkai Surge', weight: 2 }, { label: 'Combat Flow State', weight: 2 }, { label: 'Battle Precognition', weight: 1 }] },
+      { label: 'Mid-Class Warrior',  weight: 3, element: 'Fire', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Tactical Combat', weight: 2 }, { label: 'Efficient Ki Use', weight: 2 }, { label: 'Squad Coordination', weight: 2 }, { label: 'Combat Speed Increase', weight: 2 }, { label: 'Veteran Endurance', weight: 2 }, { label: 'Mid-Tier Surge', weight: 1 }], powerPool: [{ label: 'Ki Blast', weight: 3 }, { label: 'Flight (Saiyan)', weight: 3 }, { label: 'Zenkai Surge', weight: 2 }, { label: 'Warrior Trance', weight: 2 }, { label: 'Super Strength', weight: 1 }] },
       { label: 'Elite Warrior',      weight: 2, element: 'Fire', grade: 'B', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Superior Battle Sense', weight: 2 }, { label: 'High Ki Capacity', weight: 2 }, { label: 'Elite Reflex', weight: 2 }, { label: 'Pride of the Elite', weight: 2 }, { label: 'Advanced Ki Technique', weight: 2 }, { label: "Warrior's Inheritance", weight: 1 }], powerPool: [{ label: 'Ki Blast', weight: 3 }, { label: 'Flight (Saiyan)', weight: 3 }, { label: 'Zenkai Surge', weight: 2 }, { label: 'Hakai (Destruction)', weight: 2 }, { label: 'Super Strength', weight: 1 }] },
       { label: 'Royal Blood (Prince / King Lineage)', weight: 1, element: 'Fire', grade: 'A', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', speed: 'statBonus' }, abilities: [{ label: 'Royal Ki Aura', weight: 2 }, { label: 'Command Presence', weight: 2 }, { label: 'Legendary Battle Potential', weight: 2 }, { label: 'Ruling Combat Style', weight: 2 }, { label: 'Pride Amplification', weight: 2 }, { label: 'Bloodline Awakening', weight: 1 }], powerPool: [{ label: 'Hakai (Destruction)', weight: 3 }, { label: 'Ki Blast', weight: 3 }, { label: 'Flight (Saiyan)', weight: 2 }, { label: 'Zenkai Surge', weight: 2 }, { label: 'Omnipotence (Weekend Only)', weight: 1 }] },
     ],
@@ -994,6 +1182,12 @@ export const races: Race[] = [
       { label: 'Super Saiyan Blue',       weight: 1, element: 'Cosmic', grade: 'SS', statBonus: 2.7,  statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus', agility: 'statBonus' }, grantedPowers: ['Ki Blast', 'Flight (Saiyan)', 'Zenkai Surge'] },
       { label: 'Ultra Instinct',          weight: 1, element: 'Cosmic', grade: 'SSS', statBonus: 3.0,  statBonusGrants: { agility: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus', strength: 'statBonus', durability: 'statBonus' }, grantedPowers: ['Ki Blast', 'Flight (Saiyan)', 'Zenkai Surge', 'Hakai (Destruction)'] },
     ],
+    customHeightPool: [
+      { label: "5'2\"", weight: 3 }, { label: "5'4\"", weight: 6 }, { label: "5'6\"", weight: 7 },
+      { label: "5'8\"", weight: 7 }, { label: "5'10\"", weight: 6 }, { label: "6'0\"", weight: 4 },
+      { label: "6'2\"", weight: 2 }, { label: "6'4\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Zenkai Surge', weight: 2 },
       { label: 'Ki Blast', weight: 3 },
@@ -1014,10 +1208,16 @@ export const races: Race[] = [
     description: 'Astral plane warriors who find your dimension deeply underwhelming.',
     statModifiers: { fightingSkill: 1.6, iq: 1.4 },
     classPool: [
-      { label: 'Gith Warrior',       weight: 4, element: 'Psychic', grade: 'C', abilities: [{ label: 'Psionic Blade Form', weight: 2 }, { label: 'Astral Discipline', weight: 2 }, { label: 'Silver Sword Bond', weight: 2 }, { label: 'Spatial Awareness', weight: 2 }, { label: 'Gith Battle Art', weight: 2 }, { label: 'Planar Strike', weight: 1 }], powerPool: [{ label: 'Astral Strike', weight: 3 }, { label: 'Mind Blade Conjuration', weight: 3 }, { label: 'Silver Sword Throw', weight: 2 }, { label: 'Combat Flow State', weight: 2 }, { label: 'Psionic Leap', weight: 1 }] },
+      { label: 'Gith Warrior',       weight: 4, element: 'Psychic', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Psionic Blade Form', weight: 2 }, { label: 'Astral Discipline', weight: 2 }, { label: 'Silver Sword Bond', weight: 2 }, { label: 'Spatial Awareness', weight: 2 }, { label: 'Gith Battle Art', weight: 2 }, { label: 'Planar Strike', weight: 1 }], powerPool: [{ label: 'Astral Strike', weight: 3 }, { label: 'Mind Blade Conjuration', weight: 3 }, { label: 'Silver Sword Throw', weight: 2 }, { label: 'Combat Flow State', weight: 2 }, { label: 'Psionic Leap', weight: 1 }] },
       { label: 'Gish (Warrior-Mage)', weight: 3, element: 'Psychic', grade: 'B', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Spell-Blade Integration', weight: 2 }, { label: 'Battle Counterspell', weight: 2 }, { label: 'Arcane Combat Flow', weight: 2 }, { label: 'Psionic Spell Blend', weight: 2 }, { label: 'Runic Weapon', weight: 2 }, { label: 'Mind-Edge Technique', weight: 1 }], powerPool: [{ label: 'Astral Strike', weight: 3 }, { label: 'Arcane Barrage', weight: 3 }, { label: 'Mind Blade Conjuration', weight: 2 }, { label: 'Counterspell', weight: 2 }, { label: 'Psionic Leap', weight: 1 }] },
       { label: 'Psionic Adept',      weight: 2, element: 'Psychic', grade: 'A', statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Psionic Precision', weight: 2 }, { label: 'Empathic Shield', weight: 2 }, { label: 'Thought Projection', weight: 2 }, { label: 'Mind Probe', weight: 2 }, { label: 'Psychic Field', weight: 2 }, { label: 'Psi-Resonance', weight: 1 }], powerPool: [{ label: 'Telepathy', weight: 3 }, { label: 'Telekinesis', weight: 3 }, { label: 'Psionic Leap', weight: 2 }, { label: 'Neural Hijack', weight: 2 }, { label: 'Mind Shatter', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'8\"", weight: 3 }, { label: "5'10\"", weight: 5 }, { label: "6'0\"", weight: 6 },
+      { label: "6'2\"", weight: 6 }, { label: "6'4\"", weight: 5 }, { label: "6'6\"", weight: 3 },
+      { label: "6'8\"", weight: 2 }, { label: "7'0\" (Psionic Brute)", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Psionic Blade', weight: 2 },
       { label: 'Astral Projection', weight: 2 },
@@ -1038,18 +1238,28 @@ export const races: Race[] = [
     description: 'Eldritch intelligence. Does not respect your personal space.',
     statModifiers: { iq: 2.0, potential: 1.8, strength: 0.5, charisma: 0.4 },
     subTypePool: [
-      { label: 'Standard Mindflayer',          weight: 4, element: 'Psychic', grade: 'C', abilities: [{ label: 'Tentacle Probe', weight: 2 }, { label: 'Neural Feed', weight: 2 }, { label: 'Psionic Ping', weight: 2 }, { label: 'Memory Siphon', weight: 2 }, { label: 'Mind Screech', weight: 2 }, { label: 'Psychic Lock', weight: 1 }], powerPool: [{ label: 'Neural Hijack', weight: 3 }, { label: 'Telepathy', weight: 3 }, { label: 'Mind Shatter', weight: 2 }, { label: 'Tentacle Barrage', weight: 2 }, { label: 'Psychic Shield', weight: 1 }] },
+      { label: 'Standard Mindflayer',          weight: 4, element: 'Psychic', grade: 'C', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Tentacle Probe', weight: 2 }, { label: 'Neural Feed', weight: 2 }, { label: 'Psionic Ping', weight: 2 }, { label: 'Memory Siphon', weight: 2 }, { label: 'Mind Screech', weight: 2 }, { label: 'Psychic Lock', weight: 1 }], powerPool: [{ label: 'Neural Hijack', weight: 3 }, { label: 'Telepathy', weight: 3 }, { label: 'Mind Shatter', weight: 2 }, { label: 'Tentacle Barrage', weight: 2 }, { label: 'Psychic Shield', weight: 1 }] },
       { label: 'Elder Brain Fragment',          weight: 3, element: 'Psychic', grade: 'B', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Hivemind Trace', weight: 2 }, { label: 'Elder Directive', weight: 2 }, { label: 'Collective Knowledge', weight: 2 }, { label: 'Brain Parasite Resistance', weight: 2 }, { label: 'Psionic Relay', weight: 2 }, { label: 'Vast Memory Pool', weight: 1 }], powerPool: [{ label: 'Elder Brain Link', weight: 3 }, { label: 'Psychic Consumption', weight: 3 }, { label: 'Neural Hijack', weight: 2 }, { label: 'Mind Shatter', weight: 2 }, { label: 'Hivemind Creation', weight: 1 }] },
       { label: 'Ulitharid (Noble Strain)',      weight: 2, element: 'Psychic', grade: 'A', statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Noble Psi', weight: 2 }, { label: 'Command Aura', weight: 2 }, { label: 'Elevated Psyche', weight: 2 }, { label: 'Crown Presence', weight: 2 }, { label: 'Glyph of Domination', weight: 2 }, { label: 'Psychic Immunity (Partial)', weight: 1 }], powerPool: [{ label: 'Elder Brain Link', weight: 3 }, { label: 'Psychic Dominion', weight: 3 }, { label: 'Mind Shatter', weight: 2 }, { label: 'Psychic Consumption', weight: 2 }, { label: 'Hivemind Creation', weight: 1 }] },
-      { label: 'Rogue Mindflayer',              weight: 3, element: 'Psychic', grade: 'C', abilities: [{ label: 'Independent Thought', weight: 2 }, { label: 'Survival Psi', weight: 2 }, { label: 'Loner Tactics', weight: 2 }, { label: 'Unpredictable Feed', weight: 2 }, { label: 'Feral Mind Blast', weight: 2 }, { label: 'Self-Optimization', weight: 1 }], powerPool: [{ label: 'Tentacle Barrage', weight: 3 }, { label: 'Neural Hijack', weight: 3 }, { label: 'Telepathy', weight: 2 }, { label: 'Mind Shatter', weight: 2 }, { label: 'Shadow Step', weight: 1 }] },
+      { label: 'Rogue Mindflayer',              weight: 3, element: 'Psychic', grade: 'C', statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Independent Thought', weight: 2 }, { label: 'Survival Psi', weight: 2 }, { label: 'Loner Tactics', weight: 2 }, { label: 'Unpredictable Feed', weight: 2 }, { label: 'Feral Mind Blast', weight: 2 }, { label: 'Self-Optimization', weight: 1 }], powerPool: [{ label: 'Tentacle Barrage', weight: 3 }, { label: 'Neural Hijack', weight: 3 }, { label: 'Telepathy', weight: 2 }, { label: 'Mind Shatter', weight: 2 }, { label: 'Shadow Step', weight: 1 }] },
     ],
     transformationPool: [
-      { label: 'Isolated Psionic',       weight: 5, element: 'Psychic', grade: 'C', statBonus: 1.0 },
-      { label: 'Networked Mind',         weight: 4, element: 'Psychic', grade: 'B', statBonus: 1.2 },
-      { label: 'Hivemind Node',          weight: 3, element: 'Psychic', grade: 'A', statBonus: 1.5 },
-      { label: 'Elder Brain Vessel',     weight: 2, element: 'Psychic', grade: 'S', statBonus: 1.8 },
+      { label: 'Isolated Psionic',       weight: 5, element: 'Psychic', grade: 'C', statBonusGrants: { iq: 'statBonus' }, statBonus: 1.0 },
+      { label: 'Networked Mind',         weight: 4, element: 'Psychic', grade: 'B', statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, statBonus: 1.2 },
+      { label: 'Hivemind Node',          weight: 3, element: 'Psychic', grade: 'A', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', powerMastery: 'statBonus' }, statBonus: 1.5 },
+      { label: 'Elder Brain Vessel',     weight: 2, element: 'Psychic', grade: 'S', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' }, statBonus: 1.8 },
       { label: 'Absolute Psionic',       weight: 1, element: 'Psychic', grade: 'SS', statBonus: 2.3, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'6\"", weight: 3 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 8 },
+      { label: "6'0\"", weight: 7 }, { label: "6'2\"", weight: 5 }, { label: "6'4\"", weight: 3 },
+      { label: '(Tentacles Not Included)', weight: 1 },
+    ],
+
+    customGenderPool: [
+      { label: 'Genderless (Colony Organism)', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Mind Blast', weight: 2 },
       { label: 'Tentacle Grab', weight: 2 },
@@ -1079,12 +1289,17 @@ export const races: Race[] = [
       { label: 'Knull-Blessed (King in Black Fragment)', weight: 1, element: 'Void', grade: 'S', statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, abilities: [{ label: 'Necrosymbiosis', weight: 2 }, { label: 'Dark Construct', weight: 2 }, { label: 'Void Blade', weight: 2 }, { label: 'Shadow Corruption (Passive)', weight: 2 }, { label: 'King in Black Trace', weight: 2 }, { label: 'Absolute Darkness', weight: 1 }], grantedPowers: ['Shadow Corruption'] },
     ],
     transformationPool: [
-      { label: 'Partial Bond',             weight: 5, element: 'Void', grade: 'D', statBonus: 0.8 },
-      { label: 'Stable Bond',              weight: 4, element: 'Void', grade: 'C', statBonus: 1.0 },
-      { label: 'Deep Merge',               weight: 3, element: 'Void', grade: 'B', statBonus: 1.4 },
-      { label: 'Perfect Symbiosis',        weight: 2, element: 'Void', grade: 'A', statBonus: 1.8 },
+      { label: 'Partial Bond',             weight: 5, element: 'Void', grade: 'D', statBonusGrants: { strength: 'statPenalty' }, statBonus: 0.8 },
+      { label: 'Stable Bond',              weight: 4, element: 'Void', grade: 'C', statBonusGrants: { strength: 'statBonus' }, statBonus: 1.0 },
+      { label: 'Deep Merge',               weight: 3, element: 'Void', grade: 'B', statBonusGrants: { strength: 'statBonus', agility: 'statBonus' }, statBonus: 1.4 },
+      { label: 'Perfect Symbiosis',        weight: 2, element: 'Void', grade: 'A', statBonusGrants: { strength: 'statBonus', agility: 'statBonus', durability: 'statBonus' }, statBonus: 1.8 },
       { label: 'Hive-Aware (Full Klyntar)', weight: 1, element: 'Void', grade: 'SS', statBonus: 2.2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: 'Host-Dependent', weight: 6 }, { label: 'Host +6" (Bonded Mass)', weight: 4 },
+      { label: 'Host +1\' (Full Form)', weight: 3 }, { label: 'Variable (Terrifying)', weight: 2 },
+    ],
+
     abilities: [
       { label: 'Symbiote Tendrils', weight: 3 },
       { label: 'Shapeshifting Armor', weight: 3 },
@@ -1106,18 +1321,25 @@ export const races: Race[] = [
     description: 'A corrupted soul with a hole in its chest and an axe to grind. Arrancar have removed their mask for more human form and power.',
     statModifiers: { energyLevel: 1.7, strength: 1.5, fightingSkill: 1.4 },
     classPool: [
-      { label: 'Gillian (menos grande)', weight: 4, element: 'Shadow', grade: 'D', abilities: [{ label: 'Cero Burst (Basic)', weight: 2 }, { label: 'Mass Hollow Presence', weight: 2 }, { label: 'Spiritual Pressure (Low)', weight: 2 }, { label: 'Hollow Armor', weight: 2 }, { label: 'Instinct Combat', weight: 2 }, { label: 'Mindless Stampede', weight: 1 }], grantedPowers: ['Cero Blast'] },
-      { label: 'Adjuchas',              weight: 3, element: 'Shadow', grade: 'C', abilities: [{ label: 'Enhanced Cero', weight: 2 }, { label: 'Vasto Potential', weight: 2 }, { label: 'Partial Regeneration', weight: 2 }, { label: 'Predator Mode', weight: 2 }, { label: 'Mask Strength', weight: 2 }, { label: 'Hollow Evolution Trace', weight: 1 }], grantedPowers: ['Cero Blast'] },
+      { label: 'Gillian (menos grande)', weight: 4, element: 'Shadow', grade: 'D', statBonusGrants: { energyLevel: 'statPenalty', iq: 'statPenalty' }, abilities: [{ label: 'Cero Burst (Basic)', weight: 2 }, { label: 'Mass Hollow Presence', weight: 2 }, { label: 'Spiritual Pressure (Low)', weight: 2 }, { label: 'Hollow Armor', weight: 2 }, { label: 'Instinct Combat', weight: 2 }, { label: 'Mindless Stampede', weight: 1 }], grantedPowers: ['Cero Blast'] },
+      { label: 'Adjuchas',              weight: 3, element: 'Shadow', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Enhanced Cero', weight: 2 }, { label: 'Vasto Potential', weight: 2 }, { label: 'Partial Regeneration', weight: 2 }, { label: 'Predator Mode', weight: 2 }, { label: 'Mask Strength', weight: 2 }, { label: 'Hollow Evolution Trace', weight: 1 }], grantedPowers: ['Cero Blast'] },
       { label: 'Vasto Lorde',           weight: 2, element: 'Shadow', grade: 'B', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Spiritual Perfection', weight: 2 }, { label: 'Cero Mastery', weight: 2 }, { label: 'Humanoid Hollow Form', weight: 2 }, { label: 'Combat Genius (Instinct)', weight: 2 }, { label: 'Power Resonance', weight: 2 }, { label: "King's Pressure", weight: 1 }], grantedPowers: ['Cero Blast', 'Sonido Flash Step'] },
       { label: 'Arrancar',              weight: 3, element: 'Shadow', grade: 'B', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Resurreccion Trace', weight: 2 }, { label: 'Sword Form', weight: 2 }, { label: 'Hierro Mastery', weight: 2 }, { label: 'Sonido Reflex', weight: 2 }, { label: 'Hollow Hole Power', weight: 2 }, { label: 'Aspect of Death', weight: 1 }], grantedPowers: ['Bone Manipulation'] },
       { label: 'Espada (Top 10)',       weight: 1, element: 'Shadow', grade: 'A', statBonusGrants: { energyLevel: 'statBonus', strength: 'statBonus' }, abilities: [{ label: 'Number Carved Power', weight: 2 }, { label: 'Aspect of Death Mastery', weight: 2 }, { label: 'Army Command', weight: 2 }, { label: 'Res Stage Unlock', weight: 2 }, { label: 'Terror Aura', weight: 2 }, { label: 'Espada Rivalry Bond', weight: 1 }], grantedPowers: ['Cero Blast', 'Bone Manipulation', 'Sonido Flash Step'] },
     ],
     transformationPool: [
-      { label: 'Suppressed Reiatsu',    weight: 4, element: 'Shadow', grade: 'D', statBonus: 0.8 },
-      { label: 'Base Form',             weight: 5, element: 'Shadow', grade: 'C', statBonus: 1.0 },
-      { label: 'Resurreccion',          weight: 3, element: 'Shadow', grade: 'A', statBonus: 1.6 },
+      { label: 'Suppressed Reiatsu',    weight: 4, element: 'Shadow', grade: 'D', statBonusGrants: { energyLevel: 'statPenalty', strength: 'statPenalty' }, statBonus: 0.8 },
+      { label: 'Base Form',             weight: 5, element: 'Shadow', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, statBonus: 1.0 },
+      { label: 'Resurreccion',          weight: 3, element: 'Shadow', grade: 'A', statBonusGrants: { energyLevel: 'statBonus', strength: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.6 },
       { label: 'Segunda Etapa',         weight: 1, element: 'Shadow', grade: 'SS', statBonus: 2.4, statBonusGrants: { energyLevel: 'statBonus', strength: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'4\"", weight: 3 }, { label: "5'6\"", weight: 4 }, { label: "5'8\"", weight: 6 },
+      { label: "5'10\"", weight: 7 }, { label: "6'0\"", weight: 6 }, { label: "6'2\"", weight: 5 },
+      { label: "6'4\"", weight: 3 }, { label: "6'6\"", weight: 2 }, { label: "6'8\"", weight: 1 },
+      { label: '(Gillian: 20m+)', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Cero (Spiritual Beam)', weight: 3 },
       { label: 'Hierro (Iron Skin)', weight: 3 },
@@ -1148,12 +1370,18 @@ export const races: Race[] = [
       { label: 'Awakened Devil Fruit',            weight: 1, element: 'Chaos', grade: 'S', statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Environmental Broadcast', weight: 2 }, { label: 'World-Bending Reach', weight: 2 }, { label: 'Awakening Pulse', weight: 2 }, { label: 'Reality Saturation', weight: 2 }, { label: 'Fruit God Mode (Brief)', weight: 2 }, { label: 'Awakened Instinct', weight: 1 }], powerPool: [{ label: 'Reality Warping', weight: 3 }, { label: 'Elemental Mastery', weight: 3 }, { label: 'Matter Disintegration', weight: 2 }, { label: 'Environmental Control', weight: 2 }, { label: 'Omnipotence (Weekend Only)', weight: 1 }] },
     ],
     transformationPool: [
-      { label: 'Fruit Newbie (Still Learning)', weight: 4, element: 'Neutral', grade: 'D', statBonus: 0.8 },
+      { label: 'Fruit Newbie (Still Learning)', weight: 4, element: 'Neutral', grade: 'D', statBonusGrants: { powerMastery: 'statPenalty' }, statBonus: 0.8 },
       { label: 'Competent User', weight: 4, element: 'Neutral', grade: 'C', statBonus: 1.1 },
-      { label: 'Haki-Augmented', weight: 3, element: 'Neutral', grade: 'B', statBonus: 1.4 },
-      { label: 'Mastered Fruit', weight: 2, element: 'Neutral', grade: 'A', statBonus: 1.7 },
+      { label: 'Haki-Augmented', weight: 3, element: 'Neutral', grade: 'B', statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.4 },
+      { label: 'Mastered Fruit', weight: 2, element: 'Neutral', grade: 'A', statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus', potential: 'statBonus' }, statBonus: 1.7 },
       { label: 'Awakened (Reality Bending)', weight: 1, element: 'Chaos', grade: 'SS', statBonus: 2.3, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 5 }, { label: "5'4\"", weight: 7 },
+      { label: "5'6\"", weight: 8 }, { label: "5'8\"", weight: 7 }, { label: "5'10\"", weight: 5 },
+      { label: "6'0\"", weight: 3 }, { label: "6'2\"", weight: 2 }, { label: "7'0\" (Giant Fruit)", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Haki (Armament)', weight: 3 },
       { label: 'Haki (Observation)', weight: 3 },
@@ -1175,11 +1403,11 @@ export const races: Race[] = [
     description: 'Born or transformed into a being of supernatural evil. Varies from "slightly ominous" to "literal apocalypse engine".',
     statModifiers: { strength: 1.7, speed: 1.5, durability: 1.4, charisma: 0.7 },
     subTypePool: [
-      { label: 'Lesser Demon',    weight: 5, element: 'Fire', grade: 'D', abilities: [{ label: 'Demon Resistance (Basic)', weight: 2 }, { label: 'Corrupting Touch', weight: 2 }, { label: 'Night Vision', weight: 2 }, { label: 'Infernal Tenacity', weight: 2 }, { label: 'Demonic Fear (Minor)', weight: 2 }, { label: 'Hunger Drive', weight: 1 }] },
-      { label: 'Greater Demon',   weight: 4, element: 'Fire', grade: 'C', abilities: [{ label: 'Commanding Presence', weight: 2 }, { label: 'Nether Flame Control', weight: 2 }, { label: 'Infernal Durability', weight: 2 }, { label: 'Curse Aura', weight: 2 }, { label: 'Demonic Resilience', weight: 2 }, { label: 'Fear Projection', weight: 1 }], grantedPowers: ['Nether Flame'] },
-      { label: 'Demon King Lineage', weight: 2, element: 'Fire', grade: 'B', abilities: [{ label: 'Royal Demon Blood', weight: 2 }, { label: 'Lineage Power Boost', weight: 2 }, { label: 'Blood Demon Command', weight: 2 }, { label: 'Infernal Crown Aura', weight: 2 }, { label: 'Domination Field', weight: 2 }, { label: 'Demon King Echo', weight: 1 }], grantedPowers: ['Nether Flame', 'Soul Corruption'] },
+      { label: 'Lesser Demon',    weight: 5, element: 'Fire', grade: 'D', statBonusGrants: { strength: 'statPenalty' }, abilities: [{ label: 'Demon Resistance (Basic)', weight: 2 }, { label: 'Corrupting Touch', weight: 2 }, { label: 'Night Vision', weight: 2 }, { label: 'Infernal Tenacity', weight: 2 }, { label: 'Demonic Fear (Minor)', weight: 2 }, { label: 'Hunger Drive', weight: 1 }] },
+      { label: 'Greater Demon',   weight: 4, element: 'Fire', grade: 'C', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Commanding Presence', weight: 2 }, { label: 'Nether Flame Control', weight: 2 }, { label: 'Infernal Durability', weight: 2 }, { label: 'Curse Aura', weight: 2 }, { label: 'Demonic Resilience', weight: 2 }, { label: 'Fear Projection', weight: 1 }], grantedPowers: ['Nether Flame'] },
+      { label: 'Demon King Lineage', weight: 2, element: 'Fire', grade: 'B', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', charisma: 'statBonus' }, abilities: [{ label: 'Royal Demon Blood', weight: 2 }, { label: 'Lineage Power Boost', weight: 2 }, { label: 'Blood Demon Command', weight: 2 }, { label: 'Infernal Crown Aura', weight: 2 }, { label: 'Domination Field', weight: 2 }, { label: 'Demon King Echo', weight: 1 }], grantedPowers: ['Nether Flame', 'Soul Corruption'] },
       { label: 'Blood Demon Art User (Kibutsuji Clan)', weight: 2, element: 'Blood', grade: 'B', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Art Awakening', weight: 2 }, { label: 'Blood Art Precision', weight: 2 }, { label: 'Technique Evolution', weight: 2 }, { label: 'Regeneration Speed', weight: 2 }, { label: 'Combat Art', weight: 2 }, { label: 'Blood Memory', weight: 1 }] },
-      { label: 'Half-Demon',      weight: 3, element: 'Fire', grade: 'C', abilities: [{ label: 'Dual Nature', weight: 2 }, { label: 'Human Emotion Boost', weight: 2 }, { label: 'Demon Power Burst', weight: 2 }, { label: 'Balance Mastery', weight: 2 }, { label: 'Cross-Blood Adaptation', weight: 2 }, { label: 'Crisis Surge', weight: 1 }] },
+      { label: 'Half-Demon',      weight: 3, element: 'Fire', grade: 'C', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Dual Nature', weight: 2 }, { label: 'Human Emotion Boost', weight: 2 }, { label: 'Demon Power Burst', weight: 2 }, { label: 'Balance Mastery', weight: 2 }, { label: 'Cross-Blood Adaptation', weight: 2 }, { label: 'Crisis Surge', weight: 1 }] },
       { label: 'Demon of Tartarus (True Form)', weight: 1, element: 'Fire', grade: 'S', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'True Form Fragment', weight: 2 }, { label: 'Tartarus Pressure', weight: 2 }, { label: 'Primordial Inferno', weight: 2 }, { label: 'Ancient Grudge', weight: 2 }, { label: 'World-End Aura', weight: 2 }, { label: 'Chaos Incarnate', weight: 1 }], grantedPowers: ['Nether Flame', 'Soul Corruption', 'Infernal Contract'] },
     ],
     transformationPool: [
@@ -1189,6 +1417,13 @@ export const races: Race[] = [
       { label: 'Blood Art Mastery',     weight: 2, element: 'Blood', grade: 'A', statBonus: 1.8 },
       { label: 'Demon Lord Ascension',  weight: 1, element: 'Fire', grade: 'SS', statBonus: 2.4, statBonusGrants: { strength: 'statBonus', speed: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'4\" (Suppressed Form)", weight: 3 }, { label: "5'8\"", weight: 4 }, { label: "6'0\"", weight: 5 },
+      { label: "6'4\"", weight: 5 }, { label: "6'8\"", weight: 4 }, { label: "7'0\"", weight: 3 },
+      { label: "7'6\"", weight: 2 }, { label: "8'0\" (True Form)", weight: 2 },
+      { label: "9'0\" (Demon Lord)", weight: 1 }, { label: '(True Form: Immeasurable)', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Demonic Regeneration', weight: 3 },
       { label: 'Blood Art Technique', weight: 2 },
@@ -1210,10 +1445,16 @@ export const races: Race[] = [
     description: 'One draconic parent, one mortal parent. The dragon parent had opinions about this.',
     statModifiers: { strength: 1.6, durability: 1.5, charisma: 1.3 },
     subTypePool: [
-      { label: 'Chromatic Heritage (Evil)',                       weight: 4, element: 'Fire', grade: 'C', abilities: [{ label: 'Elemental Resistance', weight: 2 }, { label: 'Predatory Instinct', weight: 2 }, { label: 'Scale Toughening', weight: 2 }, { label: 'Dominance Aura', weight: 2 }, { label: 'Territorial Rage', weight: 2 }, { label: 'Wyrm Blood', weight: 1 }], powerPool: [{ label: 'Dragon Fear Aura', weight: 3 }, { label: 'Legendary Breath Weapon', weight: 3 }, { label: 'Chromatic Resistance', weight: 2 }, { label: 'Berserker Frenzy', weight: 2 }, { label: 'Scale Armor', weight: 1 }] },
+      { label: 'Chromatic Heritage (Evil)',                       weight: 4, element: 'Fire', grade: 'C', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Elemental Resistance', weight: 2 }, { label: 'Predatory Instinct', weight: 2 }, { label: 'Scale Toughening', weight: 2 }, { label: 'Dominance Aura', weight: 2 }, { label: 'Territorial Rage', weight: 2 }, { label: 'Wyrm Blood', weight: 1 }], powerPool: [{ label: 'Dragon Fear Aura', weight: 3 }, { label: 'Legendary Breath Weapon', weight: 3 }, { label: 'Chromatic Resistance', weight: 2 }, { label: 'Berserker Frenzy', weight: 2 }, { label: 'Scale Armor', weight: 1 }] },
       { label: 'Metallic Heritage (Noble)',                       weight: 4, element: 'Light', grade: 'B', statBonusGrants: { charisma: 'statBonus' }, abilities: [{ label: 'Honor Bloodline', weight: 2 }, { label: 'Elemental Breath (Noble)', weight: 2 }, { label: 'Draconic Grace', weight: 2 }, { label: 'Ancient Wisdom Echo', weight: 2 }, { label: 'Noble Scale', weight: 2 }, { label: 'Metallic Presence', weight: 1 }], powerPool: [{ label: 'Radiant Soul', weight: 3 }, { label: 'Legendary Breath Weapon', weight: 3 }, { label: 'Courage Aura', weight: 2 }, { label: 'Ancient Cunning', weight: 2 }, { label: 'Dragon Fear Aura', weight: 1 }] },
       { label: 'Draconic Awakening (True Dragon Blood Surfaces)', weight: 2, element: 'Fire', grade: 'A', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' }, abilities: [{ label: 'Full Dragon Fear', weight: 2 }, { label: 'Wing Emergence', weight: 2 }, { label: 'True Breath Weapon', weight: 2 }, { label: 'Ancient Dragon Echo', weight: 2 }, { label: 'Scale Hardening (Full)', weight: 2 }, { label: 'Draconic Transcendence', weight: 1 }], powerPool: [{ label: 'Dragon Form', weight: 3 }, { label: 'Legendary Breath Weapon', weight: 3 }, { label: 'Dragon Fear Aura', weight: 2 }, { label: 'Ancient Dominion', weight: 2 }, { label: 'Flight', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "6'0\"", weight: 3 }, { label: "6'2\"", weight: 5 }, { label: "6'4\"", weight: 6 },
+      { label: "6'6\"", weight: 6 }, { label: "6'8\"", weight: 5 }, { label: "6'10\"", weight: 4 },
+      { label: "7'0\"", weight: 3 }, { label: "7'4\"", weight: 2 }, { label: "7'8\"", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Breath Weapon (Partial)', weight: 3 },
       { label: 'Scale Skin', weight: 3 },
@@ -1242,11 +1483,22 @@ export const races: Race[] = [
       { label: 'Fallen Angel',    weight: 1, element: 'Shadow', grade: 'S', statBonusGrants: { strength: 'statBonus', speed: 'statBonus' }, abilities: [{ label: 'Dark Wings', weight: 2 }, { label: 'Corrupted Grace', weight: 2 }, { label: 'Shadow-Light', weight: 2 }, { label: 'Fallen Authority', weight: 2 }, { label: 'Forbidden Knowledge', weight: 2 }, { label: 'Sin Domain', weight: 1 }], powerPool: [{ label: 'Shadow Corruption', weight: 3 }, { label: 'Fallen Angel Strike', weight: 3 }, { label: 'Darkness Veil', weight: 2 }, { label: 'Fear Projection', weight: 2 }, { label: 'Soul Corruption', weight: 1 }] },
     ],
     transformationPool: [
-      { label: 'Mortal Vessel',           weight: 4, element: 'Light', grade: 'C', statBonus: 1.0 },
-      { label: 'Wings Manifested',        weight: 3, element: 'Light', grade: 'B', statBonus: 1.3 },
-      { label: 'Full Divine Form',        weight: 3, element: 'Light', grade: 'A', statBonus: 1.7 },
+      { label: 'Mortal Vessel',           weight: 4, element: 'Light', grade: 'C', statBonusGrants: { charisma: 'statPenalty' }, statBonus: 1.0 },
+      { label: 'Wings Manifested',        weight: 3, element: 'Light', grade: 'B', statBonusGrants: { charisma: 'statBonus', speed: 'statBonus' }, statBonus: 1.3 },
+      { label: 'Full Divine Form',        weight: 3, element: 'Light', grade: 'A', statBonusGrants: { charisma: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.7 },
       { label: 'Throne-Level (Ophanim)', weight: 1, element: 'Light', grade: 'SS', statBonus: 2.5, statBonusGrants: { charisma: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "6'0\"", weight: 3 }, { label: "6'2\"", weight: 5 }, { label: "6'4\"", weight: 7 },
+      { label: "6'6\"", weight: 7 }, { label: "6'8\"", weight: 5 }, { label: "7'0\"", weight: 4 },
+      { label: "7'4\"", weight: 2 }, { label: "7'8\"", weight: 1 }, { label: '(Seraphim: Variable)', weight: 1 },
+      { label: '(Wings Not Included)', weight: 1 },
+    ],
+
+    customGenderPool: [
+      { label: 'Male', weight: 3 }, { label: 'Female', weight: 3 }, { label: 'Androgynous', weight: 2 },
+    ],
+
     abilities: [
       { label: 'Celestial Wings', weight: 3 },
       { label: 'Holy Smite', weight: 2 },
@@ -1268,12 +1520,19 @@ export const races: Race[] = [
     description: 'A powerful creature of the natural world. Possibly the apex predator. Possibly much more.',
     statModifiers: { strength: 1.6, speed: 1.5, agility: 1.4, iq: 0.7, charisma: 0.5 },
     subTypePool: [
-      { label: 'Great Cat',                                     weight: 3, element: 'Nature', grade: 'C', abilities: [{ label: 'Predator Sprint', weight: 2 }, { label: 'Pack Instinct', weight: 2 }, { label: 'Ambush Trigger', weight: 2 }, { label: 'Pride Bond', weight: 2 }, { label: 'Stealth Hunter', weight: 2 }, { label: 'Claw Mastery', weight: 1 }], powerPool: [{ label: 'Pounce Strike', weight: 3 }, { label: "Hunter's Mark", weight: 3 }, { label: 'Predator Stance', weight: 2 }, { label: 'Beast Bond', weight: 2 }, { label: 'Super Speed', weight: 1 }] },
+      { label: 'Great Cat',                                     weight: 3, element: 'Nature', grade: 'C', statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, abilities: [{ label: 'Predator Sprint', weight: 2 }, { label: 'Pack Instinct', weight: 2 }, { label: 'Ambush Trigger', weight: 2 }, { label: 'Pride Bond', weight: 2 }, { label: 'Stealth Hunter', weight: 2 }, { label: 'Claw Mastery', weight: 1 }], powerPool: [{ label: 'Pounce Strike', weight: 3 }, { label: "Hunter's Mark", weight: 3 }, { label: 'Predator Stance', weight: 2 }, { label: 'Beast Bond', weight: 2 }, { label: 'Super Speed', weight: 1 }] },
       { label: 'Great Ape',                                     weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Primal Strength', weight: 2 }, { label: 'Tool Use', weight: 2 }, { label: 'Social Hierarchy', weight: 2 }, { label: 'Terrain Climbing', weight: 2 }, { label: 'Intimidating Display', weight: 2 }, { label: 'Knuckle Walk', weight: 1 }], powerPool: [{ label: 'Super Strength', weight: 3 }, { label: 'Titan Grip', weight: 3 }, { label: 'Mountain Crash', weight: 2 }, { label: 'Berserker Frenzy', weight: 2 }, { label: 'Indomitable Rage', weight: 1 }] },
       { label: 'Sea Monster',                                   weight: 2, element: 'Water', grade: 'B', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Aquatic Supremacy', weight: 2 }, { label: 'Pressure Immunity', weight: 2 }, { label: 'Deep Sea Terror', weight: 2 }, { label: 'Echolocation', weight: 2 }, { label: 'Crushing Grip', weight: 2 }, { label: 'Ancient Sea Memory', weight: 1 }], powerPool: [{ label: 'Hydrokinesis', weight: 3 }, { label: 'Tidal Burst', weight: 3 }, { label: 'Aqua Form', weight: 2 }, { label: 'Stone Endurance', weight: 2 }, { label: 'Tentacle Barrage', weight: 1 }] },
       // ~10% chance: Mythical Beast — fully upgrades to Mythological Creature power level
       { label: 'Mythical Beast → Mythological Creature',        weight: 1, element: 'Cosmic', grade: 'S', statBonusGrants: { strength: 'statBonus', potential: 'statBonus', powerMastery: 'statBonus' }, abilities: [{ label: 'Mythic Presence', weight: 2 }, { label: 'Legend-Tier Power', weight: 2 }, { label: 'Reality-Adjacent', weight: 2 }, { label: 'Apex of Apex', weight: 2 }, { label: 'Mythic Aura', weight: 2 }, { label: 'Transcendent Beast', weight: 1 }], powerPool: [{ label: 'Phoenix Rebirth', weight: 3 }, { label: 'Dragon Form', weight: 3 }, { label: 'Reality Warping', weight: 2 }, { label: 'Ancient Dominion', weight: 2 }, { label: 'Legendary Breath Weapon', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "4' (Small Beast)", weight: 3 }, { label: "6' (Medium Beast)", weight: 5 },
+      { label: "8' (Large Beast)", weight: 5 }, { label: "10' (Great Beast)", weight: 4 },
+      { label: "12' (Apex)", weight: 3 }, { label: "15' (Sea Monster)", weight: 2 },
+      { label: "20'+ (Mythical Scale)", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Natural Weapons (Claws/Fangs/Horns)', weight: 3 },
       { label: 'Predator Instinct', weight: 3 },
@@ -1302,11 +1561,21 @@ export const races: Race[] = [
       { label: 'Lovecraftian Horror (True Form)',      weight: 1, element: 'Void', grade: 'SS', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', powerMastery: 'statBonus' }, abilities: [{ label: 'Absolute Cosmic Horror', weight: 2 }, { label: 'Reality Is Wrong Here', weight: 2 }, { label: 'Indescribable', weight: 2 }, { label: 'Geometry-Defying', weight: 2 }, { label: 'Exists Wrongly', weight: 2 }, { label: 'Cannot Be Perceived Accurately', weight: 1 }], powerPool: [{ label: 'Reality Warping', weight: 3 }, { label: 'Causality Violation', weight: 3 }, { label: 'Omniscience (Partial)', weight: 2 }, { label: 'Psychic Consumption', weight: 2 }, { label: 'Omnipotence (Weekend Only)', weight: 1 }] },
     ],
     transformationPool: [
-      { label: 'Mostly Comprehensible',  weight: 4, element: 'Void', grade: 'D', statBonus: 0.9 },
-      { label: 'Eldritch Awakening',     weight: 3, element: 'Void', grade: 'B', statBonus: 1.3 },
-      { label: 'True Nature Surfaces',   weight: 2, element: 'Void', grade: 'A', statBonus: 1.8 },
+      { label: 'Mostly Comprehensible',  weight: 4, element: 'Void', grade: 'D', statBonusGrants: { iq: 'statPenalty' }, statBonus: 0.9 },
+      { label: 'Eldritch Awakening',     weight: 3, element: 'Void', grade: 'B', statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, statBonus: 1.3 },
+      { label: 'True Nature Surfaces',   weight: 2, element: 'Void', grade: 'A', statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, statBonus: 1.8 },
       { label: 'Full Manifestation',     weight: 1, element: 'Void', grade: 'SS', statBonus: 2.5, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: 'Approximately Human', weight: 3 }, { label: 'Something Larger', weight: 3 },
+      { label: 'Fills the Room', weight: 3 }, { label: 'Non-Euclidean', weight: 3 },
+      { label: 'City-Block Entity', weight: 1 }, { label: 'Incomprehensible Scale', weight: 1 },
+    ],
+
+    customGenderPool: [
+      { label: 'Concept Does Not Apply', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Sanity Drain Aura', weight: 2 },
       { label: 'Eldritch Sight', weight: 2 },
@@ -1336,11 +1605,17 @@ export const races: Race[] = [
       { label: 'Behemoth',  weight: 2, element: 'Earth', grade: 'A', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Immovable Force', weight: 2 }, { label: 'Mountain Step', weight: 2 }, { label: 'Existence-Level Presence', weight: 2 }, { label: 'Ancient Being', weight: 2 }, { label: 'Elemental Integration', weight: 2 }, { label: 'World-Shaker', weight: 1 }], powerPool: [{ label: 'Stone Endurance', weight: 3 }, { label: 'Mountain Crash', weight: 3 }, { label: 'Geokinesis', weight: 2 }, { label: 'Titan Form', weight: 2 }, { label: 'Ancient Dominion', weight: 1 }] },
     ],
     transformationPool: [
-      { label: 'Myth Dormant',    weight: 4, element: 'Neutral', grade: 'C', statBonus: 1.0 },
-      { label: 'Legend Awakened', weight: 3, element: 'Neutral', grade: 'A', statBonus: 1.4 },
-      { label: 'Mythic Form',     weight: 2, element: 'Cosmic', grade: 'S', statBonus: 1.9 },
+      { label: 'Myth Dormant',    weight: 4, element: 'Neutral', grade: 'C', statBonusGrants: { strength: 'statPenalty', powerMastery: 'statPenalty' }, statBonus: 1.0 },
+      { label: 'Legend Awakened', weight: 3, element: 'Neutral', grade: 'A', statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, statBonus: 1.4 },
+      { label: 'Mythic Form',     weight: 2, element: 'Cosmic', grade: 'S', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' }, statBonus: 1.9 },
       { label: 'Living Legend',   weight: 1, element: 'Cosmic', grade: 'SS', statBonus: 2.8, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: '3\' (Fairy-Sized)', weight: 1 }, { label: "5' (Unicorn)", weight: 2 },
+      { label: "15' (Phoenix)", weight: 3 }, { label: "30' (Behemoth)", weight: 3 },
+      { label: '100\' (Leviathan Class)', weight: 2 }, { label: 'Ocean-Spanning', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Mythic Presence Aura', weight: 2 },
       { label: 'Legendary Resilience', weight: 2 },
@@ -1370,10 +1645,10 @@ export const races: Race[] = [
       { label: 'Grand Regent',     weight: 1, element: 'Neutral', grade: 'S', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', speed: 'statBonus' }, abilities: [{ label: 'Apex Combat Mastery', weight: 2 }, { label: "Empire's Will", weight: 2 }, { label: 'Sovereignty Aura', weight: 2 }, { label: 'Planetary Submission', weight: 2 }, { label: 'Viltrum Legend', weight: 2 }, { label: "Conquerer's Birthright", weight: 1 }], powerPool: [{ label: 'Solar Flare', weight: 3 }, { label: 'Kryptonian Martial Arts', weight: 3 }, { label: 'Invulnerability', weight: 2 }, { label: 'War God Strike', weight: 2 }, { label: 'Omnipotence (Weekend Only)', weight: 1 }] },
     ],
     transformationPool: [
-      { label: 'Pure-Blood (Full Viltrum)',      weight: 4, element: 'Neutral', grade: 'B', statBonus: 1.2 },
-      { label: 'Half-Viltrumite',               weight: 5, element: 'Neutral', grade: 'C', statBonus: 1.0 },
-      { label: 'Battle-Hardened',               weight: 3, element: 'Neutral', grade: 'B', statBonus: 1.5 },
-      { label: 'Conquerer-Ranked',              weight: 2, element: 'Neutral', grade: 'A', statBonus: 1.8 },
+      { label: 'Pure-Blood (Full Viltrum)',      weight: 4, element: 'Neutral', grade: 'B', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, statBonus: 1.2 },
+      { label: 'Half-Viltrumite',               weight: 5, element: 'Neutral', grade: 'C', statBonusGrants: { strength: 'statPenalty', durability: 'statPenalty' }, statBonus: 1.0 },
+      { label: 'Battle-Hardened',               weight: 3, element: 'Neutral', grade: 'B', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.5 },
+      { label: 'Conquerer-Ranked',              weight: 2, element: 'Neutral', grade: 'A', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', speed: 'statBonus' }, statBonus: 1.8 },
       { label: 'Omni-Man Level / Invincible Level', weight: 1, element: 'Neutral', grade: 'SS', statBonus: 2.5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus' } },
     ],
     customHeightPool: [
@@ -1410,11 +1685,17 @@ export const races: Race[] = [
     ],
     transformationPool: [
       { label: 'Mortal Vessel',        weight: 4, element: 'Light', grade: 'C', statBonus: 1.0 },
-      { label: 'Battle-Ready Form',    weight: 3, element: 'Light', grade: 'B', statBonus: 1.3 },
-      { label: "Warrior's Peak",       weight: 3, statBonus: 1.6 },
+      { label: 'Battle-Ready Form',    weight: 3, element: 'Light', grade: 'B', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, statBonus: 1.3 },
+      { label: "Warrior's Peak",       weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.6 },
       { label: 'Warrior Reborn',       weight: 2, element: 'Light', grade: 'S', statBonus: 2.0 },
       { label: 'God of [Chosen Domain]', weight: 1, element: 'Light', grade: 'SS', statBonus: 2.5, statBonusGrants: { strength: 'statBonus', charisma: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'10\"", weight: 2 }, { label: "6'0\"", weight: 4 }, { label: "6'2\"", weight: 6 },
+      { label: "6'4\"", weight: 6 }, { label: "6'6\"", weight: 5 }, { label: "6'8\"", weight: 4 },
+      { label: "7'0\"", weight: 2 }, { label: "7'4\" (Jotun Heritage)", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Asgardian Might', weight: 2 },
       { label: 'Bifrost Access', weight: 1 },
@@ -1443,10 +1724,16 @@ export const races: Race[] = [
     ],
     transformationPool: [
       { label: 'Under Red Sun (Depowered)',    weight: 3, element: 'Fire', grade: 'D', statBonus: 0.6, statBonusGrants: { strength: 'statPenalty', durability: 'statPenalty' } },
-      { label: 'Under Yellow Sun',            weight: 4, element: 'Light', grade: 'A', statBonus: 1.5 },
+      { label: 'Under Yellow Sun',            weight: 4, element: 'Light', grade: 'A', statBonusGrants: { strength: 'statBonus', speed: 'statBonus', durability: 'statBonus' }, statBonus: 1.5 },
       { label: 'Under Blue Sun (Amplified)',  weight: 2, element: 'Cosmic', grade: 'SS', statBonus: 2.2, statBonusGrants: { strength: 'statBonus', speed: 'statBonus' } },
       { label: 'White Sun Overcharge',        weight: 1, element: 'Cosmic', grade: 'SSS', statBonus: 3.0, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'6\"", weight: 3 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 7 },
+      { label: "6'0\"", weight: 7 }, { label: "6'2\"", weight: 6 }, { label: "6'4\"", weight: 4 },
+      { label: "6'6\"", weight: 2 },
+    ],
+
     abilities: [
       { label: 'Heat Vision', weight: 2 },
       { label: 'Super Speed', weight: 2 },
@@ -1489,6 +1776,10 @@ export const races: Race[] = [
       { label: 'Mothra-Type (Divine)',        weight: 1, element: 'Light', grade: 'S' },
       { label: 'King Ghidorah-Type (Alien)',  weight: 1, element: 'Cosmic', grade: 'S' },
     ],
+    customGenderPool: [
+      { label: 'Male', weight: 3 }, { label: 'Female', weight: 3 }, { label: 'N/A (Apex Organism)', weight: 2 },
+    ],
+
     abilities: [
       { label: 'Atomic Breath', weight: 2 },
       { label: 'Regeneration Factor', weight: 2 },
@@ -1513,16 +1804,22 @@ export const races: Race[] = [
     classPool: [
       { label: 'Renegade',       weight: 4, element: 'Time', grade: 'B', abilities: [{ label: 'Maverick Initiative', weight: 2 }, { label: 'Rule-Break Protocol', weight: 2 }, { label: 'Temporal Exploit', weight: 2 }, { label: 'Free Agent Status', weight: 2 }, { label: 'Renegade Regeneration', weight: 2 }, { label: 'Lone Variable', weight: 1 }], powerPool: [{ label: 'TARDIS Pocket Space', weight: 3 }, { label: 'Time Stop', weight: 3 }, { label: 'Trickster Gambit', weight: 2 }, { label: 'Temporal Paradox', weight: 2 }, { label: 'Regeneration Burst', weight: 1 }] },
       { label: 'Warrior',        weight: 3, element: 'Earth', grade: 'D', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'War-Form Regeneration', weight: 2 }, { label: 'Battle-Hardened Time Sense', weight: 2 }, { label: 'Temporal Strike', weight: 2 }, { label: 'Combat Regeneration', weight: 2 }, { label: 'War Doctor Precision', weight: 2 }, { label: 'Zero-Point Combat', weight: 1 }], powerPool: [{ label: 'Regeneration Burst', weight: 3 }, { label: 'Time Scream', weight: 3 }, { label: 'Temporal Stasis', weight: 2 }, { label: 'Time Stop', weight: 2 }, { label: 'Temporal Paradox', weight: 1 }] },
-      { label: 'Guardian',       weight: 3, element: 'Time', grade: 'B', abilities: [{ label: 'Temporal Ward', weight: 2 }, { label: 'Protected Timeline', weight: 2 }, { label: 'Fixed Point Awareness', weight: 2 }, { label: "Guardian's Mark", weight: 2 }, { label: 'Timeless Stand', weight: 2 }, { label: 'Paradox Shield', weight: 1 }], powerPool: [{ label: 'Temporal Stasis', weight: 3 }, { label: 'Chronolock', weight: 3 }, { label: 'TARDIS Pocket Space', weight: 2 }, { label: 'Regeneration Burst', weight: 2 }, { label: 'Timeline Navigation', weight: 1 }] },
+      { label: 'Guardian',       weight: 3, element: 'Time', grade: 'B', statBonusGrants: { potential: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Temporal Ward', weight: 2 }, { label: 'Protected Timeline', weight: 2 }, { label: 'Fixed Point Awareness', weight: 2 }, { label: "Guardian's Mark", weight: 2 }, { label: 'Timeless Stand', weight: 2 }, { label: 'Paradox Shield', weight: 1 }], powerPool: [{ label: 'Temporal Stasis', weight: 3 }, { label: 'Chronolock', weight: 3 }, { label: 'TARDIS Pocket Space', weight: 2 }, { label: 'Regeneration Burst', weight: 2 }, { label: 'Timeline Navigation', weight: 1 }] },
       { label: 'Scholar',        weight: 2, element: 'Time', grade: 'A', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Gallifreyan Archive Access', weight: 2 }, { label: 'Temporal Theory Combat', weight: 2 }, { label: 'Multi-Timeline Computation', weight: 2 }, { label: 'Academic Combat', weight: 2 }, { label: 'Time Equation Solve', weight: 2 }, { label: 'Historical Pattern Read', weight: 1 }], powerPool: [{ label: "Odin's Wisdom", weight: 3 }, { label: 'Tome of All Knowledge', weight: 3 }, { label: 'Precognition', weight: 2 }, { label: 'Temporal Paradox', weight: 2 }, { label: 'Omniscience (Partial)', weight: 1 }] },
     ],
     transformationPool: [
-      { label: 'First Regeneration Cycle',      weight: 4, element: 'Time', grade: 'C', statBonus: 1.0 },
-      { label: 'Mid-Cycle (Experienced)',       weight: 3, element: 'Time', grade: 'B', statBonus: 1.3 },
-      { label: 'Late Cycle (Ancient Wisdom)',   weight: 3, element: 'Time', grade: 'A', statBonus: 1.6 },
-      { label: 'War Doctor (Battle-Hardened)',  weight: 2, element: 'Time', grade: 'S', statBonus: 1.9 },
+      { label: 'First Regeneration Cycle',      weight: 4, element: 'Time', grade: 'C', statBonusGrants: { iq: 'statPenalty' }, statBonus: 1.0 },
+      { label: 'Mid-Cycle (Experienced)',       weight: 3, element: 'Time', grade: 'B', statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, statBonus: 1.3 },
+      { label: 'Late Cycle (Ancient Wisdom)',   weight: 3, element: 'Time', grade: 'A', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, statBonus: 1.6 },
+      { label: 'War Doctor (Battle-Hardened)',  weight: 2, element: 'Time', grade: 'S', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.9 },
       { label: 'Timeless Child (No Limit)',     weight: 1, element: 'Time', grade: 'SS', statBonus: 2.8, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: "5'2\"", weight: 2 }, { label: "5'4\"", weight: 4 }, { label: "5'6\"", weight: 6 },
+      { label: "5'8\"", weight: 7 }, { label: "5'10\"", weight: 7 }, { label: "6'0\"", weight: 5 },
+      { label: "6'2\"", weight: 3 }, { label: "6'4\"", weight: 2 }, { label: '(Regenerates to New Height)', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Regeneration (Body Reset)', weight: 3 },
       { label: 'Time Sense (Accurate to Milliseconds)', weight: 2 },
@@ -1546,10 +1843,17 @@ export const races: Race[] = [
     classPool: [
       { label: 'God of War (Partial)',       weight: 3, element: 'Fire', grade: 'B', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Battle Domain Echo', weight: 2 }, { label: 'War Aura', weight: 2 }, { label: 'Martial Divinity', weight: 2 }, { label: 'Conflict Born', weight: 2 }, { label: 'Half-Blooded Wrath', weight: 2 }, { label: "Demi's War Cry", weight: 1 }], powerPool: [{ label: 'War God Strike', weight: 3 }, { label: 'Berserker Frenzy', weight: 3 }, { label: 'Aura of Retribution', weight: 2 }, { label: 'Divine Smite', weight: 2 }, { label: 'Super Strength', weight: 1 }] },
       { label: 'God of Knowledge (Partial)', weight: 3, element: 'Arcane', grade: 'B', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Library Echo', weight: 2 }, { label: 'Partial Omniscience', weight: 2 }, { label: 'Revelation Burst', weight: 2 }, { label: 'Pattern Sight', weight: 2 }, { label: 'Inherited Prophecy', weight: 2 }, { label: 'Half-Seen Truth', weight: 1 }], powerPool: [{ label: 'Tome of All Knowledge', weight: 3 }, { label: "Odin's Wisdom", weight: 3 }, { label: 'Precognition', weight: 2 }, { label: 'Omniscience (Partial)', weight: 2 }, { label: 'Divination', weight: 1 }] },
-      { label: 'God of Trickery (Partial)',  weight: 3, element: 'Chaos', grade: 'B', abilities: [{ label: 'Illusion Echo', weight: 2 }, { label: 'Inherited Mischief', weight: 2 }, { label: 'Misdirection', weight: 2 }, { label: 'Mortal Gambit', weight: 2 }, { label: 'Probability Nudge', weight: 2 }, { label: 'Divine Prank', weight: 1 }], powerPool: [{ label: 'Trickster Gambit', weight: 3 }, { label: 'Illusion Mastery', weight: 3 }, { label: 'Probability Manipulation', weight: 2 }, { label: 'Reality Warping', weight: 2 }, { label: 'Perfect Bluff', weight: 1 }] },
+      { label: 'God of Trickery (Partial)',  weight: 3, element: 'Chaos', grade: 'B', statBonusGrants: { iq: 'statBonus', charisma: 'statBonus' }, abilities: [{ label: 'Illusion Echo', weight: 2 }, { label: 'Inherited Mischief', weight: 2 }, { label: 'Misdirection', weight: 2 }, { label: 'Mortal Gambit', weight: 2 }, { label: 'Probability Nudge', weight: 2 }, { label: 'Divine Prank', weight: 1 }], powerPool: [{ label: 'Trickster Gambit', weight: 3 }, { label: 'Illusion Mastery', weight: 3 }, { label: 'Probability Manipulation', weight: 2 }, { label: 'Reality Warping', weight: 2 }, { label: 'Perfect Bluff', weight: 1 }] },
       { label: 'God of Nature (Partial)',    weight: 2, element: 'Nature', grade: 'B', statBonusGrants: { potential: 'statBonus' }, abilities: [{ label: 'Nature Bond', weight: 2 }, { label: 'Elemental Echo', weight: 2 }, { label: 'Life Sense', weight: 2 }, { label: 'Seasonal Attunement', weight: 2 }, { label: 'Animal Bond (Partial)', weight: 2 }, { label: 'Domain Flicker', weight: 1 }], powerPool: [{ label: "Nature's Wrath", weight: 3 }, { label: 'Druidic Wild Shape', weight: 3 }, { label: 'Weather Dominion', weight: 2 }, { label: 'Elemental Mastery', weight: 2 }, { label: 'Storm Circle', weight: 1 }] },
       { label: 'God of Death (Partial)',     weight: 1, element: 'Soul', grade: 'A', statBonusGrants: { potential: 'statBonus', charisma: 'statBonus' }, abilities: [{ label: 'Death Sense', weight: 2 }, { label: 'Soul Weight (Partial)', weight: 2 }, { label: 'Judgment Touch', weight: 2 }, { label: 'Death Resistance', weight: 2 }, { label: 'Grim Clarity', weight: 2 }, { label: 'Half-Claim', weight: 1 }], powerPool: [{ label: 'Death Mark', weight: 3 }, { label: 'Soul Absorption', weight: 3 }, { label: 'Life Force Drain', weight: 2 }, { label: 'Necromancy', weight: 2 }, { label: 'Death Defiance', weight: 1 }] },
     ],
+    customHeightPool: [
+      { label: "5'6\"", weight: 2 }, { label: "5'8\"", weight: 4 }, { label: "5'10\"", weight: 5 },
+      { label: "6'0\"", weight: 6 }, { label: "6'2\"", weight: 6 }, { label: "6'4\"", weight: 5 },
+      { label: "6'6\"", weight: 3 }, { label: "6'8\"", weight: 2 }, { label: "7'0\"", weight: 1 },
+      { label: "7'4\" (Divine Surge)", weight: 1 },
+    ],
+
     abilities: [
       { label: 'Divine Heritage', weight: 3 },
       { label: 'Mortal Anchor', weight: 3 },
@@ -1579,11 +1883,22 @@ export const races: Race[] = [
       { label: 'God of Death',       weight: 1, element: 'Soul', grade: 'S', statBonusGrants: { potential: 'statBonus', charisma: 'statBonus' }, abilities: [{ label: 'Death Domain Absolute', weight: 2 }, { label: 'True Soul Weight', weight: 2 }, { label: 'Final Judgment', weight: 2 }, { label: 'Death Immunity', weight: 2 }, { label: 'Inevitable Claim', weight: 2 }, { label: 'Reaper Absolute', weight: 1 }], powerPool: [{ label: 'Death Mark', weight: 3 }, { label: 'Soul Absorption', weight: 3 }, { label: 'Life Force Drain', weight: 2 }, { label: 'Necromancy', weight: 2 }, { label: 'Causality Violation', weight: 1 }] },
     ],
     transformationPool: [
-      { label: 'Manifested Avatar',   weight: 4, element: 'Light', grade: 'B', statBonus: 1.0 },
-      { label: 'Partial Incarnation', weight: 3, element: 'Light', grade: 'A', statBonus: 1.5 },
-      { label: 'Full Incarnation',    weight: 2, element: 'Light', grade: 'S', statBonus: 2.0 },
+      { label: 'Manifested Avatar',   weight: 4, element: 'Light', grade: 'B', statBonusGrants: { strength: 'statPenalty', charisma: 'statPenalty', powerMastery: 'statPenalty' }, statBonus: 1.0 },
+      { label: 'Partial Incarnation', weight: 3, element: 'Light', grade: 'A', statBonusGrants: { strength: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus' }, statBonus: 1.5 },
+      { label: 'Full Incarnation',    weight: 2, element: 'Light', grade: 'S', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, statBonus: 2.0 },
       { label: 'True Divine Form',    weight: 1, element: 'Light', grade: 'SSS', statBonus: 3.0, statBonusGrants: { strength: 'statBonus', potential: 'statBonus', powerMastery: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: '5\'10\" (Mortal Vessel)', weight: 4 }, { label: '6\'4\" (Preferred Form)', weight: 5 },
+      { label: '7\'0\" (Divine Presence)', weight: 4 }, { label: '8\'0\" (Full Manifestation)', weight: 3 },
+      { label: 'Building-Sized', weight: 1 }, { label: 'Variable (Chooses)', weight: 2 },
+      { label: 'Immeasurable', weight: 1 },
+    ],
+
+    customGenderPool: [
+      { label: 'Male', weight: 3 }, { label: 'Female', weight: 3 }, { label: 'Genderless (Divine)', weight: 2 },
+    ],
+
     abilities: [
       { label: 'Omnipotence (Domain)', weight: 2 },
       { label: 'Divine Will', weight: 3 },
@@ -1613,11 +1928,21 @@ export const races: Race[] = [
       { label: 'Primordial of Time',   weight: 1, element: 'Time', grade: 'SS', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' }, abilities: [{ label: 'Temporal Absolute', weight: 2 }, { label: 'All-Moments Sight', weight: 2 }, { label: 'Causality Master', weight: 2 }, { label: 'Timeline Authority', weight: 2 }, { label: 'Pre-Existence Memory', weight: 2 }, { label: 'The First Tick', weight: 1 }], powerPool: [{ label: 'Time Stop', weight: 3 }, { label: 'Temporal Paradox', weight: 3 }, { label: 'Chronolock', weight: 2 }, { label: 'Causality Violation', weight: 2 }, { label: 'Fate Threading', weight: 1 }] },
     ],
     transformationPool: [
-      { label: 'Diminished Form',     weight: 4, element: 'Cosmic', grade: 'B', statBonus: 1.0 },
-      { label: 'Stirring',            weight: 3, element: 'Cosmic', grade: 'A', statBonus: 1.5 },
-      { label: 'Partially Woken',     weight: 2, element: 'Cosmic', grade: 'S', statBonus: 2.0 },
+      { label: 'Diminished Form',     weight: 4, element: 'Cosmic', grade: 'B', statBonusGrants: { strength: 'statPenalty', energyLevel: 'statPenalty', powerMastery: 'statPenalty' }, statBonus: 1.0 },
+      { label: 'Stirring',            weight: 3, element: 'Cosmic', grade: 'A', statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus', powerMastery: 'statBonus' }, statBonus: 1.5 },
+      { label: 'Partially Woken',     weight: 2, element: 'Cosmic', grade: 'S', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', energyLevel: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, statBonus: 2.0 },
       { label: 'Fully Manifested',    weight: 1, element: 'Cosmic', grade: 'SSS', statBonus: 3.0, statBonusGrants: { strength: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: 'Planet-Sized', weight: 3 }, { label: 'Star-Sized', weight: 3 },
+      { label: 'Galaxy-Spanning', weight: 2 }, { label: 'Fills a Dimension', weight: 2 },
+      { label: 'Beyond Measurement', weight: 2 }, { label: 'All Sizes Simultaneously', weight: 1 },
+    ],
+
+    customGenderPool: [
+      { label: 'Beyond Gender', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Pre-Cosmic Existence', weight: 2 },
       { label: 'Concept Manipulation', weight: 2 },
@@ -1640,11 +1965,20 @@ export const races: Race[] = [
     description: 'The one who made everything. Still occasionally surprised by the results.',
     statModifiers: { strength: 3.0, durability: 3.0, iq: 3.0, potential: 3.0, charisma: 3.0, powerMastery: 3.0, energyLevel: 3.0 },
     transformationPool: [
-      { label: 'Observer Mode',       weight: 4, element: 'Cosmic', grade: 'A', statBonus: 1.0 },
-      { label: 'Active Participant',  weight: 3, element: 'Cosmic', grade: 'SS', statBonus: 2.0 },
-      { label: 'Full Creative Mode',  weight: 2, element: 'Cosmic', grade: 'SSS', statBonus: 3.0 },
+      { label: 'Observer Mode',       weight: 4, element: 'Cosmic', grade: 'A', statBonusGrants: { strength: 'statPenalty', powerMastery: 'statPenalty', energyLevel: 'statPenalty' }, statBonus: 1.0 },
+      { label: 'Active Participant',  weight: 3, element: 'Cosmic', grade: 'SS', statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', iq: 'statBonus' }, statBonus: 2.0 },
+      { label: 'Full Creative Mode',  weight: 2, element: 'Cosmic', grade: 'SSS', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', iq: 'statBonus', potential: 'statBonus' }, statBonus: 3.0 },
       { label: 'True Omnipotence',    weight: 1, element: 'Cosmic', grade: 'SSS', statBonus: 5.0, statBonusGrants: { strength: 'statBonus', potential: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' } },
     ],
+    customHeightPool: [
+      { label: 'All Sizes', weight: 3 }, { label: 'No Size', weight: 3 },
+      { label: 'The Concept of Size', weight: 2 }, { label: 'Pre-dates the concept of height', weight: 2 },
+    ],
+
+    customGenderPool: [
+      { label: 'All / None', weight: 1 },
+    ],
+
     abilities: [
       { label: 'Omnipotence', weight: 2 },
       { label: 'Omniscience', weight: 2 },
