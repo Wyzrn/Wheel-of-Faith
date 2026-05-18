@@ -26,7 +26,51 @@
   import { menuSignal } from '$lib/menuState.svelte'
   import { powers as powersPool } from '$lib/content/powers'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
+  import type { ElementType, ItemGrade } from '$lib/content/types'
   const _powerLookup = new Map(powersPool.map(p => [p.label, p]))
+
+  // Lookup for race subType/class/transformation pool entries (have element+grade)
+  const _racePoolLookup = new Map<string, { element?: ElementType; grade?: ItemGrade }>()
+  for (const race of races) {
+    for (const entry of [
+      ...(race.subTypePool ?? []),
+      ...(race.classPool ?? []),
+      ...(race.transformationPool ?? []),
+    ]) {
+      if (entry.element || entry.grade) {
+        _racePoolLookup.set(entry.label, { element: entry.element, grade: entry.grade })
+      }
+    }
+  }
+
+  // Keyword-based element inference for ability labels (no element field in ability data)
+  const _ABILITY_ELEMENT_KEYWORDS: Array<[ElementType, RegExp]> = [
+    ['Shadow',   /shadow|dark(?:ness)?|night(?:shade)?|void step|umbra/i],
+    ['Fire',     /fire|flame|burn|blaze|inferno|ember|scorch|ignite/i],
+    ['Ice',      /ice|frost|frozen|cold|cryo|glacial|winter|blizzard/i],
+    ['Lightning',/lightning|thunder|electric|volt|shock|spark/i],
+    ['Light',    /\blight\b|divine|holy|sacred|blessed|radiant|luminous/i],
+    ['Water',    /water|aqua|tidal|flood|wave|ocean|sea(?:born)?/i],
+    ['Arcane',   /arcane|magic|mana|spell|rune|mystic|sorcery|ether/i],
+    ['Blood',    /blood|hemato|crimson|sanguine/i],
+    ['Poison',   /poison|venom|toxic|acid|corros/i],
+    ['Psychic',  /psychic|\bmental\b|\bmind\b|telepat|telekin|psion|thought/i],
+    ['Time',     /\btime\b|temporal|chrono|haste|stasis|rewind/i],
+    ['Wind',     /wind|gust|breeze|tempest|cyclone/i],
+    ['Nature',   /nature|plant|vine|forest|feral|wild(?!card)|growth|root|bark|regen/i],
+    ['Earth',    /earth|stone|ground|rock|quake|mountain/i],
+    ['Soul',     /soul|spirit(?:ual)?|death(?:mark)?|undead|necro|ghost|spectral/i],
+    ['Metal',    /\bmetal\b|iron(?!\b.*will)|steel|alloy|forge/i],
+    ['Void',     /\bvoid\b|abyss|nothingness/i],
+    ['Gravity',  /gravit|weight(?:less)?|mass|pull|crush/i],
+    ['Chaos',    /chaos|berserk|rampage/i],
+  ]
+  function inferAbilityElement(label: string): ElementType | null {
+    for (const [el, re] of _ABILITY_ELEMENT_KEYWORDS) {
+      if (re.test(label)) return el
+    }
+    return null
+  }
   // Derives weakness count from race's probability modifier when no explicit count is set
   function archetypeTypeFor(label: string): string {
     return archetypes.find(a => a.label === label)?.archetypeType ?? ''
@@ -1968,7 +2012,7 @@
                   </div>
                 {/if}
 
-                <!-- Power: element + grade badge -->
+                <!-- Power / weapon / armor: element + grade badge -->
                 {#if last?.category === 'power'}
                   {@const pwrItem = _powerLookup.get(last.resultLabel ?? '')}
                   {#if pwrItem?.element || pwrItem?.grade}
@@ -1987,6 +2031,43 @@
                           {pwrItem.grade} · {gradeInfo.label}
                         </span>
                       {/if}
+                    </div>
+                  {/if}
+                {/if}
+
+                <!-- Race subType / class / transformation: element + grade badge -->
+                {#if last?.category === 'raceSubType' || last?.category === 'raceClass' || last?.category === 'raceTransformation'}
+                  {@const poolMeta = _racePoolLookup.get(last.resultLabel ?? '')}
+                  {#if poolMeta?.element || poolMeta?.grade}
+                    {@const elColor = poolMeta.element ? ELEMENT_COLORS[poolMeta.element] : '#9a907b'}
+                    {@const gradeInfo = poolMeta.grade ? ITEM_GRADE_INFO[poolMeta.grade] : null}
+                    <div class="flex items-center gap-2 flex-wrap justify-center">
+                      {#if poolMeta.element}
+                        <span class="px-2 py-0.5 rounded text-xs font-bold"
+                          style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
+                          {ELEMENT_ICONS[poolMeta.element]} {poolMeta.element}
+                        </span>
+                      {/if}
+                      {#if gradeInfo}
+                        <span class="px-2 py-0.5 rounded text-xs font-bold"
+                          style="background: {gradeInfo.color}22; border: 1px solid {gradeInfo.color}55; color: {gradeInfo.color}; font-family: 'JetBrains Mono', monospace; box-shadow: 0 0 8px {gradeInfo.glow}; letter-spacing: 0.05em;">
+                          {poolMeta.grade} · {gradeInfo.label}
+                        </span>
+                      {/if}
+                    </div>
+                  {/if}
+                {/if}
+
+                <!-- Racial / archetype ability: inferred element badge -->
+                {#if last?.category === 'racialAbility' || last?.category === 'archetypeAbility'}
+                  {@const inferredEl = inferAbilityElement(last.resultLabel ?? '')}
+                  {#if inferredEl}
+                    {@const elColor = ELEMENT_COLORS[inferredEl]}
+                    <div class="flex items-center gap-2 flex-wrap justify-center">
+                      <span class="px-2 py-0.5 rounded text-xs font-bold"
+                        style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
+                        {ELEMENT_ICONS[inferredEl]} {inferredEl}
+                      </span>
                     </div>
                   {/if}
                 {/if}
