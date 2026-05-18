@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { goto } from '$app/navigation'
   import SpinWheel from '../components/SpinWheel.svelte'
   import TierBadge from '../components/TierBadge.svelte'
   import CharacterCard from '../components/CharacterCard.svelte'
@@ -1684,7 +1685,7 @@
           ✦ Public Gallery
         </a>
         <button
-          onclick={() => { rivalMode = true; p1StartedAt = currentSession.startedAt; showMenu = false }}
+          onclick={() => { showMenu = false; goto('/rivals') }}
           class="metal-stamp-crimson w-full py-4 rounded-lg relative"
           style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; color: #ffdad6;"
         >

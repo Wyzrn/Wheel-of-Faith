@@ -92,8 +92,8 @@ export const STAT_WEIGHTS: Record<string, number> = {
   weaponMastery: 0.07,
 }
 
-// Maps a numeric score [1–130] to the corresponding TierGrade.
-// Clamped to [1, 130] before lookup. Falls back to 'F-' (unreachable safety valve).
+// Maps a numeric score to the corresponding TierGrade.
+// Scores ≤ 0 (extended min −20) map to 'F-'; scores ≥ 128 (extended max 150) map to 'Primordial'.
 export function scoreTier(score: number): TierGrade {
   const clamped = Math.max(1, Math.min(130, score))
   for (const t of TIER_THRESHOLDS) {
