@@ -4,6 +4,7 @@
   import type { BattleCharacter, BattleRound } from '$lib/game/battle'
   import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
   import type { SpinResult } from '$lib/session/types'
+  import AttackFX from './AttackFX.svelte'
 
   interface Props {
     p1Results: SpinResult[]
@@ -43,6 +44,51 @@
 
   let logEl = $state<HTMLDivElement | null>(null)
   let timeoutId: ReturnType<typeof setTimeout> | null = null
+  let animTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+  type AnimDir = 'ltr' | 'rtl' | 'center'
+  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir } | null>(null)
+  let animKey = 0
+
+  function showAnim(type: string, color: string, direction: AnimDir = 'center') {
+    if (animTimeoutId) clearTimeout(animTimeoutId)
+    activeAnim = { type, color, key: ++animKey, direction }
+    animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
+  }
+
+  function detectAnim(line: string): { type: string; color: string; direction: AnimDir } | null {
+    const hasAction = line.includes('damage!') || line.includes('restores') ||
+      line.includes('recovers') || line.includes('barrier') || line.includes('defensive') ||
+      /BERSERK|combo finisher|follow-up/i.test(line)
+    if (!hasAction) return null
+
+    const direction: AnimDir =
+      (p1Char && line.startsWith(p1Char.name)) ? 'ltr' :
+      (p2Char && line.startsWith(p2Char.name)) ? 'rtl' :
+      'center'
+
+    if (/CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)) return { type: 'crit', color: '#fde047', direction }
+    if (/berserk|frenzy/i.test(line)) return { type: 'berserker', color: '#ef4444', direction }
+    if (/combo finisher|follow-up/i.test(line)) return { type: 'combo', color: '#f59e0b', direction }
+    if (/barrier forms|defensive stance|protective shell|bracing/i.test(line)) return { type: 'shield', color: '#93c5fd', direction: 'center' }
+    if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction: 'center' }
+    if (/fire|flame|blaze|inferno|burn|ember|magma|lava|heat/i.test(line)) return { type: 'fire', color: '#f97316', direction }
+    if (/shadow|void|abyss|soul drain|leech/i.test(line)) return { type: 'shadow', color: '#8b5cf6', direction }
+    if (/blood|crimson/i.test(line)) return { type: 'blood', color: '#dc2626', direction }
+    if (/curse/i.test(line)) return { type: 'cursed', color: '#7c3aed', direction }
+    if (/lightning|thunder|electric|storm|volt|spark|shock|arc/i.test(line)) return { type: 'lightning', color: '#fbbf24', direction }
+    if (/ice|frost|freeze|cryo|blizzard|snow|cold|glacier/i.test(line)) return { type: 'ice', color: '#7dd3fc', direction }
+    if (/divine|holy|celestial|angel|sacred|radiant|blessed/i.test(line)) return { type: 'holy', color: '#fde68a', direction }
+    if (/time|temporal|chrono|rewind|haste|blink|phase/i.test(line)) return { type: 'time', color: '#a78bfa', direction }
+    if (/psychic|mind|telepathy|mental|chaos|reality|warp|phantom/i.test(line)) return { type: 'psychic', color: '#e879f9', direction }
+    if (/poison|acid|toxic|venom|plague|rot/i.test(line)) return { type: 'poison', color: '#84cc16', direction }
+    if (/gravity|black hole|collapse|crush|singularity|weight/i.test(line)) return { type: 'gravity', color: '#6366f1', direction }
+    if (/wind|gust|tornado|vortex|cyclone|whirlwind/i.test(line)) return { type: 'wind', color: '#e2e8f0', direction }
+    if (/earth|rock|stone|ground|quake|mountain|boulder/i.test(line)) return { type: 'earth', color: '#a16207', direction }
+    if (/energy|power|force|blast|surge|beam/i.test(line)) return { type: 'energy', color: '#60a5fa', direction }
+    if (line.includes('damage!')) return { type: 'slash', color: '#f87171', direction }
+    return null
+  }
 
   let p1HpPct = $derived(p1Char ? Math.max(0, p1DisplayHp / p1Char.maxHp) : 1)
   let p2HpPct = $derived(p2Char ? Math.max(0, p2DisplayHp / p2Char.maxHp) : 1)
@@ -63,7 +109,8 @@
     const [head, ...rest] = lines
     logLines = [...logLines, head]
     scrollLog()
-    // Round headers get a short beat; action lines breathe longer
+    const anim = detectAnim(head)
+    if (anim) showAnim(anim.type, anim.color, anim.direction)
     const delay = head.startsWith('──') ? 550 : 1600
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
   }
@@ -78,19 +125,19 @@
 
     const round = rounds[roundIdx]
     roundIdx++
-    // HP bars drop at round start — creates suspense before the lines explain why
-    p1DisplayHp = round.p1Hp
-    p2DisplayHp = round.p2Hp
 
     const lines = [`── Round ${round.roundNum} ──`, ...round.lines]
 
     playLines(lines, () => {
+      // HP bars update after all round lines have played — so the log explains the damage first
+      p1DisplayHp = round.p1Hp
+      p2DisplayHp = round.p2Hp
+
       if (round.winner !== undefined) {
         phase  = 'result'
         winner = round.winner
         afterBattle()
       } else {
-        // Brief pause between rounds before the next exchange
         timeoutId = setTimeout(playRound, 900)
       }
     })
@@ -185,6 +232,7 @@
 
   onDestroy(() => {
     if (timeoutId) clearTimeout(timeoutId)
+    if (animTimeoutId) clearTimeout(animTimeoutId)
   })
 </script>
 
@@ -196,9 +244,10 @@
     <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.6rem, 6vw, 2.4rem); font-weight: 900; color: #ffdf96; letter-spacing: 0.15em;">RIVALS BATTLE</h1>
   </div>
 
-  <!-- Character panels -->
+  <!-- Character panels + attack animation overlay -->
   {#if p1Char && p2Char}
-    <div class="w-full grid grid-cols-2 gap-2 sm:gap-4 mb-6">
+    <div class="w-full relative mb-6" style="overflow:visible;">
+    <div class="grid grid-cols-2 gap-2 sm:gap-4">
 
       <!-- P1 panel -->
       <div class="rounded-xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-2"
@@ -251,6 +300,20 @@
           {/each}
         </div>
       </div>
+
+    </div>
+
+    <!-- Attack FX overlay: absolutely positioned over the panels, flies from attacker to defender -->
+    {#if phase === 'battle' && activeAnim}
+      {#key activeAnim.key}
+        <div style="position:absolute;top:50%;transform:translateY(-50%);
+                    {activeAnim.direction === 'rtl' ? 'right:8%' : 'left:8%'};
+                    z-index:20;pointer-events:none;">
+          <AttackFX type={activeAnim.type} color={activeAnim.color}
+                    direction={activeAnim.direction} size={76}/>
+        </div>
+      {/key}
+    {/if}
 
     </div>
   {/if}

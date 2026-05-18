@@ -5,6 +5,7 @@
   import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
   import { settings } from '$lib/settings.svelte'
   import type { SpinResult } from '$lib/session/types'
+  import AttackFX from './AttackFX.svelte'
 
   interface TeamMember {
     results: SpinResult[]
@@ -39,6 +40,50 @@
 
   let logEl: HTMLDivElement | null = $state(null)
   let timeoutId: ReturnType<typeof setTimeout> | null = null
+  let animTimeoutId: ReturnType<typeof setTimeout> | null = null
+  type AnimDir = 'ltr' | 'rtl' | 'center'
+  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir } | null>(null)
+  let animKey = 0
+
+  function showAnim(type: string, color: string, direction: AnimDir = 'center') {
+    if (animTimeoutId) clearTimeout(animTimeoutId)
+    activeAnim = { type, color, key: ++animKey, direction }
+    animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
+  }
+
+  function detectAnim(line: string): { type: string; color: string; direction: AnimDir } | null {
+    const hasAction = line.includes('damage!') || line.includes('restores') ||
+      line.includes('recovers') || line.includes('barrier') || line.includes('defensive') ||
+      /BERSERK|combo finisher|follow-up/i.test(line)
+    if (!hasAction) return null
+
+    const direction: AnimDir =
+      [...t1Names].some(n => line.startsWith(n)) ? 'ltr' :
+      [...t2Names].some(n => line.startsWith(n)) ? 'rtl' :
+      'center'
+
+    if (/CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)) return { type: 'crit', color: '#fde047', direction }
+    if (/berserk|frenzy/i.test(line)) return { type: 'berserker', color: '#ef4444', direction }
+    if (/combo finisher|follow-up/i.test(line)) return { type: 'combo', color: '#f59e0b', direction }
+    if (/barrier forms|defensive stance|protective shell|bracing/i.test(line)) return { type: 'shield', color: '#93c5fd', direction: 'center' }
+    if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction: 'center' }
+    if (/fire|flame|blaze|inferno|burn|ember|magma|lava|heat/i.test(line)) return { type: 'fire', color: '#f97316', direction }
+    if (/shadow|void|abyss|soul drain|leech/i.test(line)) return { type: 'shadow', color: '#8b5cf6', direction }
+    if (/blood|crimson/i.test(line)) return { type: 'blood', color: '#dc2626', direction }
+    if (/curse/i.test(line)) return { type: 'cursed', color: '#7c3aed', direction }
+    if (/lightning|thunder|electric|storm|volt|spark|shock|arc/i.test(line)) return { type: 'lightning', color: '#fbbf24', direction }
+    if (/ice|frost|freeze|cryo|blizzard|snow|cold|glacier/i.test(line)) return { type: 'ice', color: '#7dd3fc', direction }
+    if (/divine|holy|celestial|angel|sacred|radiant|blessed/i.test(line)) return { type: 'holy', color: '#fde68a', direction }
+    if (/time|temporal|chrono|rewind|haste|blink|phase/i.test(line)) return { type: 'time', color: '#a78bfa', direction }
+    if (/psychic|mind|telepathy|mental|chaos|reality|warp|phantom/i.test(line)) return { type: 'psychic', color: '#e879f9', direction }
+    if (/poison|acid|toxic|venom|plague|rot/i.test(line)) return { type: 'poison', color: '#84cc16', direction }
+    if (/gravity|black hole|collapse|crush|singularity|weight/i.test(line)) return { type: 'gravity', color: '#6366f1', direction }
+    if (/wind|gust|tornado|vortex|cyclone|whirlwind/i.test(line)) return { type: 'wind', color: '#e2e8f0', direction }
+    if (/earth|rock|stone|ground|quake|mountain|boulder/i.test(line)) return { type: 'earth', color: '#a16207', direction }
+    if (/energy|power|force|blast|surge|beam/i.test(line)) return { type: 'energy', color: '#60a5fa', direction }
+    if (line.includes('damage!')) return { type: 'slash', color: '#f87171', direction }
+    return null
+  }
 
   // ─── DOM refs for effects ─────────────────────────────────────────────────────
   let wrapperEl:    HTMLDivElement | null = $state(null)
@@ -396,6 +441,8 @@
     logLines = [...logLines, head]
     scrollLog()
     triggerLineEffect(head)
+    const anim = detectAnim(head)
+    if (anim) showAnim(anim.type, anim.color, anim.direction)
     const base = head.startsWith('──') ? 550 : 1600
     timeoutId = setTimeout(() => playLines(rest, onDone), speedDelay(base))
   }
@@ -410,9 +457,6 @@
     const round = rounds[roundIdx]
     roundIdx++
 
-    t1DispHp = [...round.t1Hp]
-    t2DispHp = [...round.t2Hp]
-
     if (settings.battleSpeed < 99) {
       roundBanner = `ROUND ${round.roundNum}`
       setTimeout(() => { roundBanner = null }, 800)
@@ -420,6 +464,10 @@
 
     const lines = [`── Round ${round.roundNum} ──`, ...round.lines]
     playLines(lines, () => {
+      // HP bars update after all lines have played — log explains the damage first
+      t1DispHp = [...round.t1Hp]
+      t2DispHp = [...round.t2Hp]
+
       if (round.winner !== undefined) {
         phase  = 'result'
         winner = round.winner
@@ -485,6 +533,7 @@
 
   onDestroy(() => {
     if (timeoutId) clearTimeout(timeoutId)
+    if (animTimeoutId) clearTimeout(animTimeoutId)
     if (ambientInterval) clearInterval(ambientInterval)
     audioCtx?.close()
   })
@@ -553,7 +602,19 @@
   </div>
 
   <!-- 3-column battle arena -->
-  <div class="battle-grid" style="padding:0 0.75rem 1rem;">
+  <div class="battle-grid" style="padding:0 0.75rem 1rem;position:relative;overflow:visible;">
+
+    <!-- Attack FX overlay: flies from T1 (left) to T2 (right) or vice versa -->
+    {#if phase === 'battle' && activeAnim}
+      {#key activeAnim.key}
+        <div style="position:absolute;top:35%;transform:translateY(-50%);
+                    {activeAnim.direction === 'rtl' ? 'right:3%' : 'left:3%'};
+                    z-index:30;pointer-events:none;">
+          <AttackFX type={activeAnim.type} color={activeAnim.color}
+                    direction={activeAnim.direction} size={68}/>
+        </div>
+      {/key}
+    {/if}
 
     <!-- ── Team 1 (left) ── -->
     <div bind:this={t1PanelEl} class="team-col">
