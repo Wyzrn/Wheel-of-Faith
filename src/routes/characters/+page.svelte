@@ -13,12 +13,24 @@
     inGallery: boolean
     error: boolean
   }
+  type AuthUser = { id: string; username: string }
 
-  let chars    = $state<CharInfo[]>([])
-  let loading  = $state(true)
-  let sortDir  = $state<'desc' | 'asc'>('desc')
-  // Battle selection — click once for Team 1, twice for Team 2, thrice to deselect
-  let teamMap = $state<Map<string, 1 | 2>>(new Map())
+  let chars         = $state<CharInfo[]>([])
+  let loading       = $state(true)
+  let sortDir       = $state<'desc' | 'asc'>('desc')
+  let teamMap       = $state<Map<string, 1 | 2>>(new Map())
+
+  // Auth state
+  let user           = $state<AuthUser | null>(null)
+  let authLoading    = $state(true)
+  let showLoginForm  = $state(false)
+  let showRegister   = $state(false)
+  let loginUsername  = $state('')
+  let loginPassword  = $state('')
+  let loginSubmitting = $state(false)
+  let authError      = $state('')
+  let claimCount     = $state(0)
+  let claimStatus    = $state<'idle' | 'claiming' | 'done'>('idle')
 
   function toggleSelect(id: string) {
     const next = new Map(teamMap)
@@ -42,17 +54,46 @@
   }
 
   onMount(async () => {
+    // 1. Load local shareIds
     let ids: string[]
-    try {
-      ids = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
-    } catch {
-      ids = []
-    }
+    try { ids = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]') } catch { ids = [] }
 
-    if (ids.length === 0) {
-      loading = false
-      return
-    }
+    // 2. Hidden set (chars the user explicitly removed)
+    let hidden: Set<string>
+    try { hidden = new Set(JSON.parse(localStorage.getItem('wof_hidden_chars') ?? '[]')) } catch { hidden = new Set() }
+
+    // 3. Check auth + load server chars
+    try {
+      const meRes = await fetch('/api/auth/me', { credentials: 'include' })
+      if (meRes.ok) {
+        const { user: u } = await meRes.json() as { user: AuthUser }
+        user = { id: u.id, username: u.username }
+
+        const mineRes = await fetch('/api/characters/mine', { credentials: 'include' })
+        if (mineRes.ok) {
+          const { characters: serverChars } = await mineRes.json() as { characters: { shareId: string }[] }
+          const serverIds = serverChars.map(c => c.shareId)
+          const localSet  = new Set(ids)
+          const serverSet = new Set(serverIds)
+
+          // Add server chars not already in localStorage (and not hidden)
+          const toAdd = serverIds.filter(id => !localSet.has(id) && !hidden.has(id))
+          if (toAdd.length > 0) {
+            ids = [...ids, ...toAdd]
+            try { localStorage.setItem('wof_saved_chars', JSON.stringify(ids.slice(0, 50))) } catch {}
+          }
+
+          // Count local chars not yet linked to the account (eligible to claim)
+          claimCount = ids.filter(id => !serverSet.has(id) && !hidden.has(id)).length
+        }
+      }
+    } catch {}
+    authLoading = false
+
+    // 4. Filter hidden from display list
+    ids = ids.filter(id => !hidden.has(id))
+
+    if (ids.length === 0) { loading = false; return }
 
     const settled = await Promise.allSettled(
       ids.map(id => fetch(`/api/characters/${id}`).then(r => r.ok ? r.json() : Promise.reject()))
@@ -81,11 +122,56 @@
     loading = false
   })
 
+  async function login() {
+    loginSubmitting = true; authError = ''
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+      })
+      if (!res.ok) { const d = await res.json(); authError = d.error ?? 'Login failed' }
+      else window.location.reload()
+    } catch { authError = 'Network error' }
+    loginSubmitting = false
+  }
+
+  async function register() {
+    loginSubmitting = true; authError = ''
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+      })
+      if (!res.ok) { const d = await res.json(); authError = d.error ?? 'Registration failed' }
+      else window.location.reload()
+    } catch { authError = 'Network error' }
+    loginSubmitting = false
+  }
+
+  async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    window.location.reload()
+  }
+
+  async function claimLocalChars() {
+    if (!user || claimCount === 0 || claimStatus !== 'idle') return
+    claimStatus = 'claiming'
+    let localIds: string[]
+    try { localIds = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]') } catch { localIds = [] }
+    await Promise.allSettled(
+      localIds.map(id => fetch(`/api/characters/${id}/claim`, { method: 'PATCH', credentials: 'include' }))
+    )
+    claimCount = 0
+    claimStatus = 'done'
+    setTimeout(() => { claimStatus = 'idle' }, 2000)
+  }
+
   async function toggleGallery(id: string) {
     const char = chars.find(c => c.id === id)
     if (!char || char.error) return
     const next = !char.inGallery
-    // Optimistic update
     chars = chars.map(c => c.id === id ? { ...c, inGallery: next } : c)
     try {
       const res = await fetch(`/api/characters/${id}/gallery`, {
@@ -95,7 +181,6 @@
       })
       if (!res.ok) throw new Error()
     } catch {
-      // Revert on failure
       chars = chars.map(c => c.id === id ? { ...c, inGallery: !next } : c)
     }
   }
@@ -107,6 +192,9 @@
     try {
       const existing: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
       localStorage.setItem('wof_saved_chars', JSON.stringify(existing.filter(i => i !== id)))
+      // Track as hidden so server-linked chars don't reappear on next load
+      const hidden: string[] = JSON.parse(localStorage.getItem('wof_hidden_chars') ?? '[]')
+      if (!hidden.includes(id)) localStorage.setItem('wof_hidden_chars', JSON.stringify([...hidden, id].slice(0, 100)))
     } catch {}
   }
 
@@ -161,6 +249,95 @@
         </p>
       {/if}
     </div>
+
+    <!-- Auth / sync banner -->
+    {#if !authLoading}
+      {#if user}
+        <div class="mb-4 flex items-center gap-3 px-3 py-2.5 rounded-lg"
+          style="background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2);">
+          <span class="material-symbols-outlined" style="font-size:15px;color:#34d399;font-variation-settings:'FILL' 1;">sync</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs" style="font-family:'JetBrains Mono',monospace;color:#34d399;letter-spacing:0.1em;">
+              Synced as <span style="color:#ffdf96;">{user.username}</span>
+            </p>
+            {#if claimCount > 0}
+              <p class="text-xs mt-0.5" style="color:#9a907b;">
+                {claimCount} local character{claimCount > 1 ? 's' : ''} not yet linked to account
+              </p>
+            {/if}
+          </div>
+          {#if claimCount > 0}
+            <button
+              onclick={claimLocalChars}
+              disabled={claimStatus !== 'idle'}
+              class="text-xs px-3 py-1.5 rounded-md transition-all active:scale-95"
+              style="font-family:'Cinzel',serif;background:rgba(240,192,64,0.10);border:1px solid rgba(240,192,64,0.3);color:#f0c040;cursor:pointer;"
+            >{claimStatus === 'claiming' ? '…' : claimStatus === 'done' ? '✓ Linked' : 'Link All'}</button>
+          {/if}
+          <button
+            onclick={logout}
+            class="text-xs px-2 py-1.5 rounded-md transition-all hover:opacity-70 active:scale-95"
+            style="background:none;border:1px solid rgba(255,255,255,0.08);color:#4e4635;cursor:pointer;font-family:'JetBrains Mono',monospace;"
+          >Sign out</button>
+        </div>
+      {:else}
+        <div class="mb-4 rounded-lg overflow-hidden" style="border:1px solid rgba(240,192,64,0.12);background:rgba(255,255,255,0.015);">
+          <button
+            class="w-full flex items-center gap-2 px-3 py-2.5 text-left transition-all hover:opacity-80 active:scale-[0.99]"
+            style="background:none;border:none;cursor:pointer;"
+            onclick={() => { showLoginForm = !showLoginForm; authError = '' }}
+          >
+            <span class="material-symbols-outlined" style="font-size:15px;color:#9a907b;">person</span>
+            <p class="text-xs flex-1" style="font-family:'JetBrains Mono',monospace;color:#9a907b;">
+              Sign in to sync characters across devices
+            </p>
+            <span class="material-symbols-outlined" style="font-size:15px;color:#4e4635;transition:transform 0.2s;transform:rotate({showLoginForm ? 180 : 0}deg);">expand_more</span>
+          </button>
+
+          {#if showLoginForm}
+            <div class="px-3 pb-3 flex flex-col gap-2 border-t" style="border-color:rgba(240,192,64,0.08);">
+              <div class="flex gap-1.5 mt-2">
+                <button
+                  onclick={() => { showRegister = false; authError = '' }}
+                  class="flex-1 py-1.5 rounded text-xs transition-all"
+                  style="background:{!showRegister ? 'rgba(240,192,64,0.10)' : 'none'};border:1px solid {!showRegister ? 'rgba(240,192,64,0.3)' : 'rgba(255,255,255,0.07)'};color:{!showRegister ? '#f0c040' : '#4e4635'};cursor:pointer;font-family:'JetBrains Mono',monospace;"
+                >Sign In</button>
+                <button
+                  onclick={() => { showRegister = true; authError = '' }}
+                  class="flex-1 py-1.5 rounded text-xs transition-all"
+                  style="background:{showRegister ? 'rgba(240,192,64,0.10)' : 'none'};border:1px solid {showRegister ? 'rgba(240,192,64,0.3)' : 'rgba(255,255,255,0.07)'};color:{showRegister ? '#f0c040' : '#4e4635'};cursor:pointer;font-family:'JetBrains Mono',monospace;"
+                >Register</button>
+              </div>
+              <input
+                bind:value={loginUsername}
+                placeholder="Username"
+                autocomplete="username"
+                class="w-full px-3 py-2 rounded-md outline-none"
+                style="background:rgba(255,255,255,0.04);border:1px solid rgba(240,192,64,0.15);color:#e4e1ee;font-family:'JetBrains Mono',monospace;font-size:0.78rem;"
+              />
+              <input
+                bind:value={loginPassword}
+                type="password"
+                placeholder="Password"
+                autocomplete={showRegister ? 'new-password' : 'current-password'}
+                class="w-full px-3 py-2 rounded-md outline-none"
+                style="background:rgba(255,255,255,0.04);border:1px solid rgba(240,192,64,0.15);color:#e4e1ee;font-family:'JetBrains Mono',monospace;font-size:0.78rem;"
+                onkeydown={(e) => { if (e.key === 'Enter') showRegister ? register() : login() }}
+              />
+              {#if authError}
+                <p class="text-xs" style="color:#f87171;font-family:'JetBrains Mono',monospace;">{authError}</p>
+              {/if}
+              <button
+                onclick={showRegister ? register : login}
+                disabled={loginSubmitting || !loginUsername || !loginPassword}
+                class="w-full py-2.5 rounded-md text-xs font-bold uppercase tracking-[0.12em] transition-all active:scale-95"
+                style="font-family:'Cinzel',serif;background:rgba(240,192,64,0.12);border:1px solid rgba(240,192,64,0.35);color:{(!loginUsername || !loginPassword) ? '#4e4635' : '#f0c040'};cursor:{(!loginUsername || !loginPassword) ? 'not-allowed' : 'pointer'};"
+              >{loginSubmitting ? '…' : showRegister ? 'Create Account' : 'Sign In'}</button>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    {/if}
 
     <!-- Sort controls -->
     {#if !loading && chars.length >= 2}
@@ -302,7 +479,8 @@
       </div>
 
       <p class="mt-6 text-center text-xs" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">
-        {chars.length} fate{chars.length === 1 ? '' : 's'} recorded on this device
+        {chars.length} fate{chars.length === 1 ? '' : 's'} recorded
+        {user ? `· synced to ${user.username}` : '· sign in to sync across devices'}
       </p>
     {/if}
 

@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid'
+import mongoose from 'mongoose'
 import { Character } from '../models/Character.js'
 import type { FastifyPluginAsync } from 'fastify'
 
@@ -65,6 +66,7 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
 
     const shareId = nanoid(10)
 
+    const userId = (request as any).userId
     const character = await Character.create({
       shareId,
       name: body.name,
@@ -75,6 +77,7 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       spins: body.spins,
       session_started_at: new Date(body.session_started_at),
       share_in_gallery: body.share_in_gallery ?? false,
+      ...(userId ? { userId: new mongoose.Types.ObjectId(userId) } : {}),
     })
 
     return reply.code(201).send({
@@ -189,6 +192,39 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     return reply.send({ share_in_gallery: character.share_in_gallery })
+  })
+
+  // GET /characters/mine — all characters for the authenticated user
+  fastify.get('/characters/mine', {
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const userId = (request as any).userId
+    if (!userId) return reply.code(401).send({ error: 'not authenticated' })
+
+    const characters = await Character.find({ userId: new mongoose.Types.ObjectId(userId) })
+      .sort({ created_at: -1 })
+      .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins share_in_gallery')
+      .lean()
+
+    return reply.send({ characters })
+  })
+
+  // PATCH /characters/:shareId/claim — link an unclaimed character to the authenticated user
+  fastify.patch('/characters/:shareId/claim', {
+    config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const userId = (request as any).userId
+    if (!userId) return reply.code(401).send({ error: 'not authenticated' })
+
+    const { shareId } = request.params as { shareId: string }
+    const character = await Character.findOneAndUpdate(
+      { shareId, userId: { $exists: false } },
+      { userId: new mongoose.Types.ObjectId(userId) },
+      { new: true }
+    ).lean()
+
+    if (!character) return reply.code(404).send({ error: 'Character not found or already claimed' })
+    return reply.send({ ok: true, shareId })
   })
 
   // PATCH /characters/:shareId/rivals-win — increment rivals_wins by 1

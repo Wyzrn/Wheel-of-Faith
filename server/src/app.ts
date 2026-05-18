@@ -31,6 +31,16 @@ export async function createApp() {
     cookie: { cookieName: 'wof_token', signed: false },
   })
 
+  // Parse JWT on every request — non-throwing so unauthenticated routes work fine
+  app.addHook('preHandler', async (req) => {
+    try {
+      const payload = await (req as any).jwtVerify()
+      ;(req as any).userId = (payload as any).id
+    } catch {
+      // unauthenticated — req.userId stays undefined
+    }
+  })
+
   await app.register(websocket)
   await app.register(mongoosePlugin)
   await app.register(characterRoutes, { prefix: '/api' })
