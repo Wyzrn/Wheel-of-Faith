@@ -204,7 +204,7 @@
   }
 
   let currentCategoryHue = $derived(CATEGORY_HUES[currentDef?.category ?? ''])
-  let reversedResults = $derived(reversedResults)
+  let reversedResults = $derived([...results].reverse())
 
   // ── Segment resolver: handles race/archetype ability pools + modifiers ────
   let currentSegments = $derived.by(() => {
