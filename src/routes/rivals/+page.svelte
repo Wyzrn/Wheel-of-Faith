@@ -312,6 +312,21 @@
         </button>
       </div>
 
+      <!-- Leaderboard link -->
+      <div class="mt-5">
+        <a href="/leaderboard"
+          class="flex items-center gap-3 w-full px-5 py-3.5 rounded-xl transition-all hover:brightness-110 active:scale-[0.98]"
+          style="background: rgba(240,192,64,0.05); border: 1px solid rgba(240,192,64,0.2); text-decoration: none; box-shadow: inset 1px 1px 0 rgba(255,223,150,0.04);"
+        >
+          <span class="material-symbols-outlined" style="color: #f0c040; font-size: 20px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+          <div class="flex-1">
+            <p class="text-sm font-bold" style="font-family: 'Cinzel', serif; color: #ffdf96; letter-spacing: 0.08em;">Leaderboard</p>
+            <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Top rivals by win count</p>
+          </div>
+          <span class="material-symbols-outlined" style="color: #4e4635; font-size: 18px;">chevron_right</span>
+        </a>
+      </div>
+
       <!-- Pending friend challenges -->
       {#if pendingChallenges.length > 0}
         <div class="mt-6">
