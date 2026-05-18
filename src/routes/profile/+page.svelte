@@ -45,14 +45,10 @@
     {:else if auth.user}
       <!-- Avatar + Name -->
       <div class="flex items-center gap-4 mb-8">
-        {#if auth.user.avatarUrl}
-          <img src={auth.user.avatarUrl} alt="avatar" class="w-16 h-16 rounded-full" style="border: 2px solid rgba(240,192,64,0.4);" />
-        {:else}
-          <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black"
-            style="background: #1e1e2e; border: 2px solid rgba(240,192,64,0.3); color: #f0c040; font-family: 'Cinzel', serif;">
-            {auth.user.username[0].toUpperCase()}
-          </div>
-        {/if}
+        <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black"
+          style="background: #1e1e2e; border: 2px solid rgba(240,192,64,0.3); color: #f0c040; font-family: 'Cinzel', serif;">
+          {auth.user.username[0].toUpperCase()}
+        </div>
         <div>
           <h1 style="font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 700; color: #ffdf96;">
             {auth.user.username}

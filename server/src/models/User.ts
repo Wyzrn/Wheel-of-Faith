@@ -5,8 +5,6 @@ export interface IUser extends Document {
   username: string
   email?: string
   passwordHash?: string
-  googleId?: string
-  avatarUrl?: string
   rivalsWins: number
   rivalsLosses: number
   gamesPlayed: number
@@ -18,8 +16,6 @@ const UserSchema = new Schema<IUser>({
   username:     { type: String, required: true, unique: true, trim: true, minlength: 3, maxlength: 24 },
   email:        { type: String, unique: true, sparse: true, lowercase: true, trim: true },
   passwordHash: { type: String },
-  googleId:     { type: String, unique: true, sparse: true },
-  avatarUrl:    { type: String },
   rivalsWins:   { type: Number, default: 0 },
   rivalsLosses: { type: Number, default: 0 },
   gamesPlayed:  { type: Number, default: 0 },

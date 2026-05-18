@@ -53,7 +53,7 @@ export async function authRoutes(app: FastifyInstance) {
     const token = (app as any).jwt.sign({ id: user._id.toString(), username: user.username }, { expiresIn: '30d' })
     reply
       .setCookie('wof_token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
-      .send({ user: { id: user._id, username: user.username, rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed, avatarUrl: user.avatarUrl } })
+      .send({ user: { id: user._id, username: user.username, rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed } })
   })
 
   // ── Logout ────────────────────────────────────────────────────────────────
@@ -66,73 +66,7 @@ export async function authRoutes(app: FastifyInstance) {
     if (!req.userId) return reply.status(401).send({ error: 'not authenticated' })
     const user = await User.findById(req.userId).lean()
     if (!user) return reply.status(404).send({ error: 'user not found' })
-    reply.send({ user: { id: user._id, username: user.username, rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed, avatarUrl: user.avatarUrl, email: user.email } })
-  })
-
-  // ── Auth config (tells frontend which providers are enabled) ─────────────
-  app.get('/auth/config', async (req, reply) => {
-    reply.send({ googleEnabled: !!process.env.GOOGLE_CLIENT_ID })
-  })
-
-  // ── Google OAuth start ────────────────────────────────────────────────────
-  // Redirect to Google's OAuth consent screen
-  app.get('/auth/google', async (req, reply) => {
-    const clientId = process.env.GOOGLE_CLIENT_ID
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI ?? `${process.env.FRONTEND_URL}/api/auth/google/callback`
-    if (!clientId) return reply.status(503).send({ error: 'Google OAuth not configured' })
-    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
-    url.searchParams.set('client_id', clientId)
-    url.searchParams.set('redirect_uri', redirectUri)
-    url.searchParams.set('response_type', 'code')
-    url.searchParams.set('scope', 'openid email profile')
-    url.searchParams.set('state', 'wof')
-    reply.redirect(url.toString())
-  })
-
-  // ── Google OAuth callback ─────────────────────────────────────────────────
-  app.get('/auth/google/callback', async (req, reply) => {
-    const { code } = req.query as { code?: string }
-    if (!code) return reply.redirect('/?auth_error=no_code')
-
-    const clientId = process.env.GOOGLE_CLIENT_ID!
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET!
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI ?? `${process.env.FRONTEND_URL}/api/auth/google/callback`
-
-    // Exchange code for tokens
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
-    })
-    const tokens = await tokenRes.json() as { id_token?: string; error?: string }
-    if (tokens.error) return reply.redirect('/?auth_error=token_exchange_failed')
-
-    // Decode id_token (base64 JWT payload — no sig verify needed here, Google signs it)
-    const payload = JSON.parse(Buffer.from(tokens.id_token!.split('.')[1], 'base64url').toString())
-    const { sub: googleId, email, name, picture } = payload
-
-    // Upsert user
-    let user = await User.findOne({ googleId })
-    if (!user) {
-      // Check if email matches an existing user (account linking)
-      user = await User.findOne({ email }) ?? null
-      if (user) {
-        user.googleId = googleId
-        user.avatarUrl = picture
-        await user.save()
-      } else {
-        // Create new user — derive username from Google name, ensure unique
-        let username = (name ?? email?.split('@')[0] ?? 'player').replace(/\s+/g, '').slice(0, 20)
-        const existing = await User.findOne({ username })
-        if (existing) username = username + Math.floor(Math.random() * 9000 + 1000)
-        user = await User.create({ username, email, googleId, avatarUrl: picture })
-      }
-    }
-
-    const jwtToken = (app as any).jwt.sign({ id: user._id.toString(), username: user.username }, { expiresIn: '30d' })
-    reply
-      .setCookie('wof_token', jwtToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
-      .redirect('/?auth=google_ok')
+    reply.send({ user: { id: user._id, username: user.username, rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed, email: user.email } })
   })
 
   // ── Get user profile (public) ─────────────────────────────────────────────
@@ -147,7 +81,6 @@ export async function authRoutes(app: FastifyInstance) {
     reply.send({
       user: {
         username: user.username,
-        avatarUrl: user.avatarUrl,
         rivalsWins: user.rivalsWins,
         rivalsLosses: user.rivalsLosses,
         gamesPlayed: user.gamesPlayed,

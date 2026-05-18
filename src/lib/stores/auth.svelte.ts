@@ -4,7 +4,6 @@ export interface AuthUser {
   id: string
   username: string
   email?: string
-  avatarUrl?: string
   rivalsWins: number
   rivalsLosses: number
   gamesPlayed: number
@@ -59,10 +58,6 @@ export const auth = {
   async logout() {
     await fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' })
     _user = null
-  },
-
-  loginWithGoogle() {
-    window.location.href = `${API}/auth/google`
   },
 
   async recordBattleResult(won: boolean) {

@@ -59,11 +59,7 @@
     <span class="nav-label">Rivals</span>
   </a>
   <a href={auth.loggedIn ? '/profile' : '/login'} class="nav-tab" class:active={activeTab === 'profile'}>
-    {#if auth.user?.avatarUrl}
-      <img src={auth.user.avatarUrl} alt="avatar" class="nav-icon rounded-full object-cover" style="width:22px;height:22px;" />
-    {:else}
-      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'profile' ? 1 : 0};">{auth.loggedIn ? 'account_circle' : 'login'}</span>
-    {/if}
+    <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'profile' ? 1 : 0};">{auth.loggedIn ? 'account_circle' : 'login'}</span>
     <span class="nav-label">{auth.loggedIn ? auth.user?.username?.slice(0,8) ?? 'Profile' : 'Login'}</span>
   </a>
   <button onclick={() => showSettings = !showSettings} class="nav-tab" class:active={showSettings}>
