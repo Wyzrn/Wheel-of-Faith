@@ -1,17 +1,23 @@
 <script lang="ts">
   import '../app.css'
+  import { onMount } from 'svelte'
   import SettingsPanel from '../components/SettingsPanel.svelte'
   import { page } from '$app/stores'
   import { goto, onNavigate } from '$app/navigation'
   import { triggerMenu } from '$lib/menuState.svelte'
+  import { auth } from '$lib/stores/auth.svelte'
 
   let { children } = $props()
   let showSettings = $state(false)
+
+  onMount(() => { auth.init() })
 
   let activeTab = $derived(
     $page.url.pathname === '/' ? 'home' :
     $page.url.pathname.startsWith('/character') ? 'characters' :
     $page.url.pathname.startsWith('/gallery') ? 'gallery' :
+    $page.url.pathname.startsWith('/rivals') ? 'rivals' :
+    $page.url.pathname.startsWith('/profile') ? 'profile' :
     $page.url.pathname.startsWith('/battle') ? 'battle' :
     'home'
   )
@@ -46,7 +52,19 @@
   </button>
   <a href="/characters" class="nav-tab" class:active={activeTab === 'characters'}>
     <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'characters' ? 1 : 0};">group</span>
-    <span class="nav-label">Characters</span>
+    <span class="nav-label">Fighters</span>
+  </a>
+  <a href="/rivals" class="nav-tab" class:active={activeTab === 'rivals'}>
+    <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'rivals' ? 1 : 0};">swords</span>
+    <span class="nav-label">Rivals</span>
+  </a>
+  <a href={auth.loggedIn ? '/profile' : '/login'} class="nav-tab" class:active={activeTab === 'profile'}>
+    {#if auth.user?.avatarUrl}
+      <img src={auth.user.avatarUrl} alt="avatar" class="nav-icon rounded-full object-cover" style="width:22px;height:22px;" />
+    {:else}
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'profile' ? 1 : 0};">{auth.loggedIn ? 'account_circle' : 'login'}</span>
+    {/if}
+    <span class="nav-label">{auth.loggedIn ? auth.user?.username?.slice(0,8) ?? 'Profile' : 'Login'}</span>
   </a>
   <button onclick={() => showSettings = !showSettings} class="nav-tab" class:active={showSettings}>
     <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {showSettings ? 1 : 0};">settings</span>

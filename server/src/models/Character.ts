@@ -1,7 +1,8 @@
-import mongoose, { Schema, type Document, type Query } from 'mongoose'
+import mongoose, { Schema, type Document, type Query, type Types } from 'mongoose'
 
 export interface ICharacter extends Document {
   shareId: string
+  userId?: mongoose.Types.ObjectId  // linked user (optional — anonymous saves allowed)
   name: string
   race: string
   archetype: string
@@ -17,6 +18,7 @@ export interface ICharacter extends Document {
 
 const CharacterSchema = new Schema<ICharacter>({
   shareId:             { type: String, required: true, unique: true, index: true },
+  userId:              { type: Schema.Types.ObjectId, ref: 'User', index: true, sparse: true },
   name:                { type: String, required: true },
   race:                { type: String, required: true, index: true },
   archetype:           { type: String, required: true, index: true },

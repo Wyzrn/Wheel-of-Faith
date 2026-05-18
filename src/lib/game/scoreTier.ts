@@ -2,6 +2,15 @@
 // Single source of truth for tier grades per CLAUDE.md rule 4.
 // No imports from other project files. No default export. Pure functions only.
 
+// Stats that cannot have negative scores (health/damage archetypes)
+export const NO_NEGATIVE_STATS = new Set([
+  'durability', 'armorStrength', 'strength', 'fightingSkill'
+])
+
+// Extended score boundaries: spinnable range is 1–130, bonus range is -20 to 150
+export const SCORE_EXTENDED_MIN = -20
+export const SCORE_EXTENDED_MAX = 150
+
 export type TierGrade =
   | 'F-' | 'F' | 'F+'
   | 'E-' | 'E' | 'E+'
@@ -103,11 +112,11 @@ export function gradeToScore(grade: TierGrade): number {
 
 // Computes the overall character score as a weighted average of stat scores.
 // Non-stat spins (Race, Archetype, Powers, Weapons) are excluded from this computation.
-// Returns a value in [1, 130], clamped and rounded.
+// Returns a value in [SCORE_EXTENDED_MIN, SCORE_EXTENDED_MAX], clamped and rounded.
 export function computeOverallScore(statResults: Record<string, number>): number {
   let weighted = 0
   for (const [stat, weight] of Object.entries(STAT_WEIGHTS)) {
     weighted += (statResults[stat] ?? 0) * weight
   }
-  return Math.round(Math.max(1, Math.min(130, weighted)))
+  return Math.round(Math.max(SCORE_EXTENDED_MIN, Math.min(SCORE_EXTENDED_MAX, weighted)))
 }

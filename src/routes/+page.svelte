@@ -9,7 +9,7 @@
   import type { SessionState, SpinResult } from '$lib/session/types'
   import { buildInitialQueue, getSegmentsForCategory } from '$lib/game/spinQueue'
   import type { SpinDefinition, SpinCategory } from '$lib/game/spinQueue'
-  import { computeOverallScore, scoreTier, gradeToScore, TIER_THRESHOLDS } from '$lib/game/scoreTier'
+  import { computeOverallScore, scoreTier, gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
   import type { TierGrade } from '$lib/game/scoreTier'
   import { redemptionProbability } from '$lib/game/redemption'
   import { races } from '$lib/content/races'
@@ -130,6 +130,49 @@
 
   // ── Ordered tier grades for tier-shift calculations ──────────────────────
   const TIER_ORDER = TIER_THRESHOLDS.map(t => t.grade)
+
+  // ── Virtual tier index helpers for extended score range ───────────────────
+  // Returns the current virtual tier index for a result, accounting for any
+  // existing out-of-range displayLabel (e.g. "F- -5" → vti = -5).
+  function getVirtualTierIdx(result: SpinResult): number {
+    if (result.displayLabel) {
+      if (result.displayLabel.startsWith('F- -')) return -parseInt(result.displayLabel.slice(4))
+      if (result.displayLabel.startsWith('Primordial+')) return TIER_ORDER.length - 1 + parseInt(result.displayLabel.slice(11))
+    }
+    return result.tier ? TIER_ORDER.indexOf(result.tier as TierGrade) : 0
+  }
+
+  // Applies a tier shift to a stat result and returns updated fields.
+  // Allows going -20 below F- and +20 above Primordial via bonuses.
+  // Health/damage stats (NO_NEGATIVE_STATS) are floored at 0 (F-).
+  function applyStatShift(result: SpinResult, tierShift: number, statCategory: string): Pick<SpinResult, 'tier' | 'score' | 'displayLabel'> {
+    const currentVti = getVirtualTierIdx(result)
+    const rawVti = currentVti + tierShift
+    const minVti = NO_NEGATIVE_STATS.has(statCategory) ? 0 : -20
+    const maxVti = TIER_ORDER.length - 1 + 20
+    const vti = Math.max(minVti, Math.min(maxVti, rawVti))
+
+    if (vti < 0) {
+      return {
+        tier: 'F-' as TierGrade,
+        score: Math.max(-19, 1 + vti),
+        displayLabel: `F- -${Math.abs(vti)}`,
+      }
+    }
+    if (vti >= TIER_ORDER.length) {
+      const above = vti - (TIER_ORDER.length - 1)
+      return {
+        tier: 'Primordial' as TierGrade,
+        score: Math.min(150, 130 + above),
+        displayLabel: `Primordial+${above}`,
+      }
+    }
+    return {
+      tier: TIER_ORDER[vti],
+      score: gradeToScore(TIER_ORDER[vti]),
+      displayLabel: undefined,
+    }
+  }
 
   // ── Stat grants applied when possessionStrength lands ────────────────────
   const POSSESSION_GRANTS: Record<string, Record<string, 'statBonus' | 'statPenalty'>> = {
@@ -925,25 +968,23 @@
         showAnnouncement = 'The fates grant you a second chance!'
       }
     } else if (def.category === 'statBonus' || def.category === 'statPenalty') {
-      // Apply tier shift to the target stat result
-      const tierShift = parseInt(resultLabel) // "+5" → 5, "-3" → -3 (parseInt handles the sign)
+      // Apply tier shift to the target stat result — supports extended range via applyStatShift
+      const tierShift = parseInt(resultLabel) // "+5" → 5, "-3" → -3
       if (def.targetStat) {
         let targetIdx = -1
         for (let i = results.length - 1; i >= 0; i--) {
           if (results[i].category === def.targetStat) { targetIdx = i; break }
         }
         if (targetIdx !== -1 && results[targetIdx].tier) {
-          const currentIdx = TIER_ORDER.indexOf(results[targetIdx].tier as TierGrade)
-          const newIdx = Math.max(0, Math.min(TIER_ORDER.length - 1, currentIdx + tierShift))
-          const newGrade = TIER_ORDER[newIdx]
-          const newScore = gradeToScore(newGrade)
-          // Look up the matching flavor label for the new tier so description stays accurate
+          const { tier: newGrade, score: newScore, displayLabel: newDisplayLabel } =
+            applyStatShift(results[targetIdx], tierShift, def.targetStat)
+          // For in-range shifts, look up the matching flavor label so description stays accurate
           const statSegs = getSegmentsForCategory(def.targetStat as SpinCategory)
-          const newLabel = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === newGrade)?.label
-            ?? results[targetIdx].resultLabel
-          // Index-based replacement triggers Svelte 5 reactivity correctly
-          results[targetIdx] = { ...results[targetIdx], tier: newGrade, score: newScore, resultLabel: newLabel }
-          // Track cumulative shift so rerolls can re-apply bonuses
+          const newLabel = newDisplayLabel
+            ? results[targetIdx].resultLabel  // out-of-range: keep existing label
+            : (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === newGrade)?.label
+              ?? results[targetIdx].resultLabel
+          results[targetIdx] = { ...results[targetIdx], tier: newGrade, score: newScore, resultLabel: newLabel, displayLabel: newDisplayLabel }
           statBonusOffsets[def.targetStat] = (statBonusOffsets[def.targetStat] ?? 0) + tierShift
         }
       }
@@ -968,12 +1009,10 @@
         for (const cat of STAT_CATS) {
           const idx = results.findIndex(r => r.category === cat)
           if (idx !== -1 && results[idx].tier) {
-            const curIdx = TIER_ORDER.indexOf(results[idx].tier as TierGrade)
-            const newIdx = Math.min(TIER_ORDER.length - 1, curIdx + 1)
-            const newGrade = TIER_ORDER[newIdx]
+            const { tier: ng, score: ns, displayLabel: ndl } = applyStatShift(results[idx], 1, cat)
             const statSegs = getSegmentsForCategory(cat as SpinCategory)
-            const newLbl = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === newGrade)?.label ?? results[idx].resultLabel
-            results[idx] = { ...results[idx], tier: newGrade, score: gradeToScore(newGrade), resultLabel: newLbl }
+            const newLbl = ndl ? results[idx].resultLabel : (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === ng)?.label ?? results[idx].resultLabel
+            results[idx] = { ...results[idx], tier: ng, score: ns, resultLabel: newLbl, displayLabel: ndl }
             statBonusOffsets[cat] = (statBonusOffsets[cat] ?? 0) + 1
           }
         }
@@ -982,12 +1021,10 @@
         for (const cat of STAT_CATS) {
           const idx = results.findIndex(r => r.category === cat)
           if (idx !== -1 && results[idx].tier) {
-            const curIdx = TIER_ORDER.indexOf(results[idx].tier as TierGrade)
-            const newIdx = Math.min(TIER_ORDER.length - 1, curIdx + 3)
-            const newGrade = TIER_ORDER[newIdx]
+            const { tier: ng, score: ns, displayLabel: ndl } = applyStatShift(results[idx], 3, cat)
             const statSegs = getSegmentsForCategory(cat as SpinCategory)
-            const newLbl = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === newGrade)?.label ?? results[idx].resultLabel
-            results[idx] = { ...results[idx], tier: newGrade, score: gradeToScore(newGrade), resultLabel: newLbl }
+            const newLbl = ndl ? results[idx].resultLabel : (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === ng)?.label ?? results[idx].resultLabel
+            results[idx] = { ...results[idx], tier: ng, score: ns, resultLabel: newLbl, displayLabel: ndl }
             statBonusOffsets[cat] = (statBonusOffsets[cat] ?? 0) + 3
           }
         }
@@ -1835,7 +1872,7 @@
               {#if result.tier}
                 <span class="text-xs font-bold shrink-0 self-center px-1.5 py-0.5 rounded"
                   style="font-size: 10px; color: {tc ?? '#9a907b'}; background: {tc ?? '#374151'}18; border: 1px solid {tc ?? '#4e4635'}55;">
-                  {result.tier}
+                  {result.displayLabel ?? result.tier}
                 </span>
               {/if}
             </div>
@@ -1854,19 +1891,37 @@
           </div>
         {/if}
 
+        <!-- Mobile-only compact results strip (above wheel, hidden on md+) -->
+        {#if results.length > 0}
+          <div class="md:hidden w-full mb-3" style="max-width: 340px;">
+            <div class="flex gap-2 overflow-x-auto pb-1" style="scrollbar-width: none;">
+              {#each reversedResults.slice(0, 8) as result}
+                {@const tc = TIER_COLORS[result.tier ?? ''] ?? null}
+                <div class="shrink-0 flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg"
+                  style="background: rgba(255,255,255,0.04); border: 1px solid {tc ? tc + '44' : 'rgba(255,255,255,0.08)'}; min-width: 60px; max-width: 80px;">
+                  {#if result.tier && tc}
+                    <span class="text-[9px] font-black" style="color: {tc}; font-family: 'JetBrains Mono', monospace;">{result.displayLabel ?? result.tier}</span>
+                  {/if}
+                  <span class="text-[9px] leading-tight text-center" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; word-break: break-word;">{result.category}</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
         <!-- Category heading (outside overlay so it stays visible) -->
-        <div class="text-center mb-5" style="animation: fadeIn 0.25s ease-out forwards;">
+        <div class="text-center mb-3 md:mb-5" style="animation: fadeIn 0.25s ease-out forwards;">
           <p class="text-xs tracking-[0.22em] uppercase mb-1.5"
             style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">
             {isRevealed ? 'result revealed' : 'spinning for'}
           </p>
-          <h2 style="font-family: 'Cinzel', serif; font-size: clamp(1.15rem, 5vw, 1.55rem); font-weight: 700; color: #ffdf96; letter-spacing: 0.1em;">
+          <h2 style="font-family: 'Cinzel', serif; font-size: clamp(1rem, 4vw, 1.55rem); font-weight: 700; color: #ffdf96; letter-spacing: 0.1em;">
             {(currentDef?.displayName ?? '').toUpperCase()}
           </h2>
         </div>
 
         <!-- Wheel container (relative so overlay can sit on top) -->
-        <div class="relative w-full max-w-lg">
+        <div class="relative w-full max-w-[340px] md:max-w-lg">
 
           <!-- Wheel (remounts each spin to reset IDLE state) -->
           {#key currentSpinIndex}
@@ -1897,7 +1952,7 @@
                   <div class="px-4 py-1.5 rounded-lg"
                     style="background: {tc}18; border: 1px solid {tc}55; box-shadow: 0 0 20px {tc}35;">
                     <span class="font-black" style="font-family: 'Cinzel', serif; font-size: 2rem; color: {tc}; filter: drop-shadow(0 0 8px {tc}66);">
-                      {last.tier}
+                      {last.displayLabel ?? last.tier}
                     </span>
                   </div>
                 {/if}
@@ -1929,38 +1984,6 @@
 
         </div><!-- end wheel container -->
 
-        <!-- Mobile-only results strip (below wheel on small screens) -->
-        {#if results.length > 0}
-          <div class="md:hidden w-full max-w-lg mt-6">
-            <div class="rounded-xl overflow-hidden obsidian-slab" style="border: 1px solid rgba(240,192,64,0.12);">
-              <div class="flex items-center gap-2 px-4 py-2.5"
-                style="border-bottom: 1px solid rgba(240,192,64,0.08);">
-                <span class="material-symbols-outlined" style="font-size: 14px; color: #9a907b; font-variation-settings: 'FILL' 1;">list_alt</span>
-                <p class="text-xs tracking-[0.15em] uppercase"
-                  style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Destiny Log</p>
-              </div>
-              <div class="max-h-48 overflow-y-auto">
-                {#each reversedResults as result}
-                  {@const tc = TIER_COLORS[result.tier ?? ''] ?? null}
-                  <div class="flex items-center gap-3 px-4 py-2.5"
-                    style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                    <span class="material-symbols-outlined shrink-0"
-                      style="font-size: 14px; color: {tc ?? '#4e4635'}; font-variation-settings: 'FILL' 1;">check_circle</span>
-                    <span class="text-xs shrink-0 truncate"
-                      style="font-family: 'JetBrains Mono', monospace; color: #9a907b; width: 5.5rem;">{result.category}</span>
-                    {#if result.tier && tc}
-                      <span class="text-xs font-bold shrink-0 px-1.5 py-0.5 rounded"
-                        style="font-size: 10px; color: {tc}; background: {tc}18; border: 1px solid {tc}55;">{result.tier}</span>
-                    {:else}
-                      <span class="w-10 shrink-0"></span>
-                    {/if}
-                    <span class="text-xs flex-1 truncate" style="color: #e4e1ee;">{result.resultLabel}</span>
-                  </div>
-                {/each}
-              </div>
-            </div>
-          </div>
-        {/if}
 
       </div><!-- end right column -->
 

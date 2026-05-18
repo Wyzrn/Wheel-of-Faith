@@ -295,8 +295,9 @@
       svgOrigin: SVG_CENTER,
       force3D: true,
     })
-    resizeCanvas()
-    const ro = new ResizeObserver(resizeCanvas)
+    // Resize after first paint so the SVG has its final layout dimensions
+    requestAnimationFrame(() => resizeCanvas())
+    const ro = new ResizeObserver(() => requestAnimationFrame(resizeCanvas))
     if (svgEl) ro.observe(svgEl)
     return () => {
       ctx.revert()

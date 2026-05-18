@@ -125,8 +125,8 @@ describe('computeOverallScore', () => {
     expect(computeOverallScore(stats)).toBe(75)
   })
 
-  it('empty stat record returns 1 (all stats missing, weighted sum = 0, clamped to 1)', () => {
-    expect(computeOverallScore({})).toBe(1)
+  it('empty stat record returns 0 (all stats missing, weighted sum = 0)', () => {
+    expect(computeOverallScore({})).toBe(0)
   })
 
   it('any stat scores in [1, 130] returns a value in [1, 130]', () => {

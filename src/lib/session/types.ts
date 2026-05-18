@@ -20,6 +20,9 @@ export interface SpinResult {
   // Phase 2 additions: populated for stat spins; undefined for non-stat (Race, Power, etc.)
   tier?: TierGrade
   score?: number
+  // Set when a bonus pushes a stat beyond the normal 1–130 range.
+  // Examples: "F- -5" (5 tiers below F-), "Primordial+10" (10 tiers above Primordial).
+  displayLabel?: string
 }
 
 export interface SessionState {
