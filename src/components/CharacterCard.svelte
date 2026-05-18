@@ -76,12 +76,10 @@
   let redemptionOutcome = $derived(results.find(r => r.category === 'redemptionOutcome')?.resultLabel)
 
   const statCategories = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','armorStrength','potential','energyLevel'] as const
-  let stats = $derived(statCategories.map(cat => ({
-    cat,
-    label: results.find(r => r.category === cat)?.resultLabel ?? '—',
-    tier: results.find(r => r.category === cat)?.tier,
-    score: results.find(r => r.category === cat)?.score,
-  })))
+  let stats = $derived(statCategories.map(cat => {
+    const r = results.find(r => r.category === cat)
+    return { cat, label: r?.resultLabel ?? '—', tier: r?.tier, score: r?.score, displayLabel: r?.displayLabel }
+  }))
 
   let overallScore = $derived(computeOverallScore(
     Object.fromEntries(statCategories.map(cat => [cat, results.find(r => r.category === cat)?.score ?? 0]))
@@ -279,7 +277,7 @@
             {#if stat.tier}
               <span class="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
                 style="background: {TIER_COLORS[stat.tier] ?? '#374151'}22; color: {TIER_COLORS[stat.tier] ?? '#9a907b'}; border: 1px solid {TIER_COLORS[stat.tier] ?? '#4e4635'}66; box-shadow: 0 0 6px {TIER_COLORS[stat.tier] ?? 'transparent'}33;">
-                {stat.tier}
+                {stat.displayLabel ?? stat.tier}
               </span>
             {/if}
             <span class="text-xs capitalize shrink-0" style="color: #9a907b; width: 5rem;">{stat.cat.replace(/([A-Z])/g, ' $1').trim()}</span>

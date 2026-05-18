@@ -16,8 +16,9 @@
   import { races } from '$lib/content/races'
   import { archetypes } from '$lib/content/archetypes'
   import { DEVIL_FRUIT_POOLS } from '$lib/content/devil-fruits'
-  import { weaponsByCategory } from '$lib/content/weapons'
-  import { armorsByCategory } from '$lib/content/armors'
+  import { weapons as weaponsPool, weaponsByCategory } from '$lib/content/weapons'
+  import { armors as armorsPool, armorsByCategory } from '$lib/content/armors'
+  import { enchantments as enchantmentsPool } from '$lib/content/enchantments'
   import { armorStrengthLabels } from '$lib/content/armor-strength-labels'
   import { backstories } from '$lib/content/backstories'
   import { titles } from '$lib/content/titles'
@@ -27,7 +28,10 @@
   import { powers as powersPool } from '$lib/content/powers'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import type { ElementType, ItemGrade } from '$lib/content/types'
-  const _powerLookup = new Map(powersPool.map(p => [p.label, p]))
+  const _powerLookup      = new Map(powersPool.map(p => [p.label, p]))
+  const _weaponLookup     = new Map(weaponsPool.map(w => [w.label, w]))
+  const _armorLookup      = new Map(armorsPool.map(a => [a.label, a]))
+  const _enchantLookup    = new Map(enchantmentsPool.map(e => [e.label, e]))
 
   // Lookup for race subType/class/transformation pool entries (have element+grade)
   const _racePoolLookup = new Map<string, { element?: ElementType; grade?: ItemGrade }>()
@@ -2005,23 +2009,26 @@
                   </div>
                 {/if}
 
-                <!-- Power / weapon / armor: element + grade badge -->
-                {#if last?.category === 'power'}
-                  {@const pwrItem = _powerLookup.get(last.resultLabel ?? '')}
-                  {#if pwrItem?.element || pwrItem?.grade}
-                    {@const elColor = pwrItem.element ? ELEMENT_COLORS[pwrItem.element] : '#9a907b'}
-                    {@const gradeInfo = pwrItem.grade ? ITEM_GRADE_INFO[pwrItem.grade] : null}
+                <!-- Power / weapon / armor / enchantment: element + grade badge -->
+                {#if last?.category === 'power' || last?.category === 'weapon' || last?.category === 'armor' || last?.category === 'weaponEnchantment' || last?.category === 'armorEnchantment'}
+                  {@const item = last.category === 'power' ? _powerLookup.get(last.resultLabel ?? '')
+                    : last.category === 'weapon' ? _weaponLookup.get(last.resultLabel ?? '')
+                    : last.category === 'armor' ? _armorLookup.get(last.resultLabel ?? '')
+                    : _enchantLookup.get(last.resultLabel ?? '')}
+                  {#if item?.element || item?.grade}
+                    {@const elColor = item.element ? ELEMENT_COLORS[item.element] : '#9a907b'}
+                    {@const gradeInfo = item.grade ? ITEM_GRADE_INFO[item.grade] : null}
                     <div class="flex items-center gap-2 flex-wrap justify-center">
-                      {#if pwrItem.element}
+                      {#if item.element}
                         <span class="px-2 py-0.5 rounded text-xs font-bold"
                           style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
-                          {ELEMENT_ICONS[pwrItem.element]} {pwrItem.element}
+                          {ELEMENT_ICONS[item.element]} {item.element}
                         </span>
                       {/if}
                       {#if gradeInfo}
                         <span class="px-2 py-0.5 rounded text-xs font-bold"
                           style="background: {gradeInfo.color}22; border: 1px solid {gradeInfo.color}55; color: {gradeInfo.color}; font-family: 'JetBrains Mono', monospace; box-shadow: 0 0 8px {gradeInfo.glow}; letter-spacing: 0.05em;">
-                          {pwrItem.grade} · {gradeInfo.label}
+                          {item.grade} · {gradeInfo.label}
                         </span>
                       {/if}
                     </div>
