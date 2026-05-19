@@ -42,5 +42,8 @@ export const durabilityLabels: FlavorLabel[] = [
   { label: 'Exists Beyond the Reach of Any Ruin',      weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Nothing in Any Plane Can Kill Them',        weight: 1, tier: 'Godly-',   score: 125, color: '#c026d3' },
   { label: 'The Universe Tried, It Did Not',           weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Pre-Dates the Concept of Harm',            weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Pre-Dates the Concept of Harm',                  weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'Concept of Destruction Has No Jurisdiction Here', weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Every Plane of Reality Has Agreed: Not Today',    weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'The Void Filed for Exemption and Was Denied',     weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]

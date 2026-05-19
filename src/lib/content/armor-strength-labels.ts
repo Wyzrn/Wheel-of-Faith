@@ -43,5 +43,8 @@ export const armorStrengthLabels: FlavorLabel[] = [
   { label: 'Even Divine Weapons Bounce Off',                weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Armor That Redefines Invulnerable',             weight: 1, tier: 'Godly-',    score: 125, color: '#c026d3' },
   { label: 'Armor Is Now a Fundamental Law of Physics',     weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Worn Before Damage Was Conceptualized',         weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Worn Before Damage Was Conceptualized',           weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'Damage Itself Does Not Have Permission to Apply', weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Invincibility Was Modeled After Them',            weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'Nothing in All of Existence Can Deny Survival',   weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]

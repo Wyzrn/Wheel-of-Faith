@@ -42,5 +42,8 @@ export const fightingSkillLabels: FlavorLabel[] = [
   { label: 'Even Gods Would Rather Not Fight Them',        weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Every Strike Is an Act of Creation',           weight: 1, tier: 'Godly-',    score: 125, color: '#c026d3' },
   { label: 'Violence Concedes',                            weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Fought Before Time Had Rounds',                weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Fought Before Time Had Rounds',                  weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'Combat Style That Predates the Concept of War', weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Martial Arts History References Them as Source', weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'Every Strike Is the First and Last in History', weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]

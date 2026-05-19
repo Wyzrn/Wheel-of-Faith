@@ -42,5 +42,8 @@ export const iqLabels: FlavorLabel[] = [
   { label: 'Even Gods Consult Them',                       weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Understands Things That Gods Do Not',          weight: 1, tier: 'Godly-',    score: 125, color: '#c026d3' },
   { label: 'Became the Answer',                            weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Intelligence Predates Thought Itself',         weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Intelligence Predates Thought Itself',           weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'Solved Every Equation Before Math Was Invented', weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Understands the Architecture Behind All Things', weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'Thought Recognizes Itself in Them',              weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]

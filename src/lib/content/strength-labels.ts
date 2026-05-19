@@ -43,5 +43,8 @@ export const strengthLabels: FlavorLabel[] = [
   { label: 'Even Gods Train to Eventually Resist This',   weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Strength That Rewrites the Rules of Creation',weight: 1, tier: 'Godly-',    score: 125, color: '#c026d3' },
   { label: 'Lifts Reality Itself',                        weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Existed Before the Concept of Force',         weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Existed Before the Concept of Force',            weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'Conceptual Annihilation With Every Strike',      weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Strength Is Just a Name for What They Are',      weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'The Force That Authored the First Law of Physics', weight: 1, tier: 'Absolute', score: 144, color: '#00ffff' },
 ]

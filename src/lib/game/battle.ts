@@ -32,6 +32,10 @@ const HP_TABLE: Record<string, number> = {
   'Celestial-': 780_000, 'Celestial': 1_000_000, 'Celestial+': 1_300_000,
   'Godly-': 1_700_000,   'Godly': 2_200_000,
   'Primordial': 3_000_000,
+  'Primordial+': 4_000_000,
+  'Absolute-': 5_200_000,
+  'Absolute': 6_800_000,
+  'Absolute+': 9_000_000,
 }
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -333,7 +337,7 @@ export function buildBattleCharacter(results: SpinResult[], name: string): Battl
   // Armor: armorStrength rank → base fraction, modulated by armor type + armor grade
   // Cap lowered to 0.62 — even the heaviest armor doesn't make you immune
   const armorTypeLabel = results.find(r => r.category === 'armorType')?.resultLabel ?? 'None'
-  const baseArmor = 0.05 + (armStrRank / 41) * 0.45
+  const baseArmor = 0.05 + (armStrRank / (TIER_THRESHOLDS.length - 1)) * 0.45
   const ARMOR_TYPE_MULT: Record<string, number> = {
     'None': 0, 'Helmet Only': 0.40, 'Half-Suit': 0.70,
     'Full-Suit': 1.0, 'Exotic': 0.85, 'Cursed': 0.75, 'Ancient': 1.15,

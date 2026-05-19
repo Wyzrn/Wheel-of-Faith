@@ -42,5 +42,8 @@ export const agilityLabels: FlavorLabel[] = [
   { label: 'Even Omniscient Beings Lose Track of Them',     weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Evasion That Humiliates Omniscience',           weight: 1, tier: 'Godly-',    score: 125, color: '#c026d3' },
   { label: 'Dodged the Big Bang',                           weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Movement Predates the Laws of Physics',         weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Movement Predates the Laws of Physics',          weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'Untouchable by Anything That Has or Will Exist', weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Positioned Outside Any Attack That Will Exist',  weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'Exists Somewhere Attacks Categorically Cannot',  weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]

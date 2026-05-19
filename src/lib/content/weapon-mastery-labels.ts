@@ -42,5 +42,8 @@ export const weaponMasteryLabels: FlavorLabel[] = [
   { label: 'Even Gods Step Back When the Weapon Is Drawn', weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'A Technique That Changes Everything It Touches',weight: 1, tier: 'Godly-',   score: 125, color: '#c026d3' },
   { label: 'Casually Slices Causality',                    weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Was Wielding Before Weapons Were Invented',    weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Was Wielding Before Weapons Were Invented',      weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'The Weapon Considers Itself Honored to Be Held', weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Weaponry Rewrites Its Definition on Contact',    weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'The Weapon Refuses to Be Held by Anyone Else',  weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]

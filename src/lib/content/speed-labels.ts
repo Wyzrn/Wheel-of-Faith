@@ -42,5 +42,8 @@ export const speedLabels: FlavorLabel[] = [
   { label: 'Even Gods Cannot Track the Movement',       weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Speed That Preceded Time Itself',           weight: 1, tier: 'Godly-',    score: 125, color: '#c026d3' },
   { label: 'The Flash Would Tap Out',                   weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Was There Before Movement Existed',         weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Was There Before Movement Existed',             weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'Outpaces the Concept of Motion Itself',         weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'The Universe Schedules Around Their Arrival',   weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'Was Already There Before Time Had a Direction', weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]

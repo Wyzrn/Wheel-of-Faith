@@ -42,5 +42,8 @@ export const energyLevelLabels: FlavorLabel[] = [
   { label: 'Even Stars Dim in Comparison',                  weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Energy Output That Reshapes Divine Planes',     weight: 1, tier: 'Godly-',    score: 125, color: '#c026d3' },
   { label: 'Existence Itself Is Their Energy Source',       weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Energy That Predates the First Light',          weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Energy That Predates the First Light',           weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'Powers Up — Nearby Universes Dim in Response',  weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Output Has No Upper Reference Point',           weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'The First Spark of Existence Was Theirs',       weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]

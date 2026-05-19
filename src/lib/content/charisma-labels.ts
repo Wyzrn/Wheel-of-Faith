@@ -42,5 +42,8 @@ export const charismaLabels: FlavorLabel[] = [
   { label: 'Celestial Councils Defer to Their Judgment',     weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Persuasion That Bends the Divine Will',          weight: 1, tier: 'Godly-',    score: 125, color: '#c026d3' },
   { label: 'Cannot Be Ignored by Anything That Exists',      weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Was Charming Before Existence Had Ears',         weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Was Charming Before Existence Had Ears',         weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'Every Existing Thing Is Quietly a Fan',         weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Shapes Narrative Arcs by Existing in Them',     weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'All of Existence Would Follow Without Question', weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]

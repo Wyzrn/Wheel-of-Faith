@@ -47,9 +47,13 @@ export function tierToCssVar(grade: TierGrade): string {
     'Celestial-': 'var(--tier-celestial-minus)',
     'Celestial':  'var(--tier-celestial)',
     'Celestial+': 'var(--tier-celestial-plus)',
-    'Godly-':     'var(--tier-godly-minus)',
-    'Godly':      'var(--tier-godly)',
-    'Primordial': 'var(--tier-primordial)',
+    'Godly-':      'var(--tier-godly-minus)',
+    'Godly':       'var(--tier-godly)',
+    'Primordial':  'var(--tier-primordial)',
+    'Primordial+': 'var(--tier-primordial-p)',
+    'Absolute-':   'var(--tier-absolute-m)',
+    'Absolute':    'var(--tier-absolute)',
+    'Absolute+':   'var(--tier-absolute-p)',
   }
   return map[grade] ?? 'var(--tier-f-minus)'
 }

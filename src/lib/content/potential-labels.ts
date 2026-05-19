@@ -42,5 +42,8 @@ export const potentialLabels: FlavorLabel[] = [
   { label: 'Destined to Surpass Even the Celestial',           weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Future Self Causes Gods to Retire Early',          weight: 1, tier: 'Godly-',    score: 125, color: '#c026d3' },
   { label: 'What They Will Become Has No Name',                weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Growth That Predates the First Power',             weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Growth That Predates the First Power',              weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'What They Become Has Not Yet Been Hypothesized',   weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Growth That Predates the Concept of a Limit',      weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'Potential Has No Meaning as a Constraint Anymore', weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]

@@ -42,5 +42,8 @@ export const powerMasteryLabels: FlavorLabel[] = [
   { label: 'Celestial Entities Refuse to Block This',      weight: 1, tier: 'Celestial+',score: 123, color: '#38bdf8' },
   { label: 'Power Mastery Written Into Cosmic Law',        weight: 1, tier: 'Godly-',    score: 125, color: '#c026d3' },
   { label: 'The Source of All Powers',                     weight: 1, tier: 'Godly',     score: 127, color: '#e879f9' },
-  { label: 'Power That Existed Before Powers Were Named',  weight: 1, tier: 'Primordial',score: 130, color: '#ffffff' },
+  { label: 'Power That Existed Before Powers Were Named',    weight: 1, tier: 'Primordial', score: 130, color: '#ffffff' },
+  { label: 'Power Recognizes Them as Its Original Owner',   weight: 1, tier: 'Primordial+',score: 133, color: '#ccffff' },
+  { label: 'Power Itself Defers to Their Decisions',        weight: 1, tier: 'Absolute-',  score: 137, color: '#99ffff' },
+  { label: 'Power and Existence Are the Same Thing in Them',weight: 1, tier: 'Absolute',   score: 144, color: '#00ffff' },
 ]
