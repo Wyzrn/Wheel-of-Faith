@@ -545,7 +545,8 @@
           transformationBonus = transItem?.statBonus ?? 1.0
         }
       }
-      const modifier = baseModifier * transformationBonus
+      // Cap the total modifier including transformation bonus to prevent Absolute from being trivial
+      const modifier = Math.min(3.5, baseModifier * transformationBonus)
 
       // Filter out stat tiers locked by racial tier (minStatTier)
       const minTierIdx = race?.minStatTier != null ? TIER_ORDER.indexOf(race.minStatTier) : -1
@@ -565,7 +566,7 @@
           // Higher score = rarer tier = lower weight; lower score = more common = higher weight
           const rarityWeight = Math.max(0.3, 11 - score * 0.105)
           // Race modifier: >1 shifts toward high scores, <1 shifts toward low scores
-          const finalWeight = Math.max(0.1, rarityWeight * Math.pow(modifier, score / 30))
+          const finalWeight = Math.max(0.1, rarityWeight * Math.pow(modifier, score / 40))
           return { ...seg, weight: finalWeight }
         })
     }
