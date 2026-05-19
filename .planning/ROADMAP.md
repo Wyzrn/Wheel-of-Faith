@@ -104,7 +104,7 @@ Plans:
 **Plans:** 3 plans
 Plans:
 - [x] 07-01-PLAN.md — Story Mode data foundation: types, naming (mulberry32 seeded PRNG), localStorage store with 50-slot cap, shard value lookup + Vitest coverage
-- [ ] 07-02-PLAN.md — Story Mode shell: /story route view state machine (entry / roster / expanded / sell), RosterCard + SellConfirmModal components, atomic sell flow
+- [x] 07-02-PLAN.md — Story Mode shell: /story route view state machine (entry / roster / expanded / sell), RosterCard + SellConfirmModal components, atomic sell flow
 - [ ] 07-03-PLAN.md — Story Mode spin loop integration: StorySpinView component, story_session localStorage, auto-name + addToRoster on completion
 **Success Criteria:**
 1. Navigating to `/story` shows a Story Mode entry screen distinct from the main game; no main-game session state is present or accessible here
