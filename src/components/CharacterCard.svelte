@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { SpinResult } from '$lib/session/types'
-  import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
+  import { computeOverallScore, scoreTier, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import { archetypes } from '$lib/content/archetypes'
   import { powers as powersPool } from '$lib/content/powers'
   import { weapons as weaponsPool } from '$lib/content/weapons'
@@ -32,10 +32,10 @@
     return results.find(r => r.category === category)?.tier
   }
 
-  // Returns displayLabel when set (e.g. "Absolute+5"), else falls back to tier string.
+  // Returns normalized displayLabel (e.g. "Absolute+5"), else falls back to tier string.
   function getTierLabel(category: string): string | undefined {
     const r = results.find(r => r.category === category)
-    return r?.displayLabel ?? r?.tier
+    return normalizeLegacyDisplayLabel(r?.displayLabel) ?? r?.tier
   }
 
   const TIER_COLORS: Record<string, string> = {
@@ -290,7 +290,7 @@
             {#if stat.tier}
               <span class="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
                 style="background: {TIER_COLORS[stat.tier] ?? '#374151'}22; color: {TIER_COLORS[stat.tier] ?? '#9a907b'}; border: 1px solid {TIER_COLORS[stat.tier] ?? '#4e4635'}66; box-shadow: 0 0 6px {TIER_COLORS[stat.tier] ?? 'transparent'}33;">
-                {stat.displayLabel ?? stat.tier}
+                {normalizeLegacyDisplayLabel(stat.displayLabel) ?? stat.tier}
               </span>
             {/if}
             <span class="text-xs capitalize shrink-0" style="color: #9a907b; width: 5rem;">{stat.cat.replace(/([A-Z])/g, ' $1').trim()}</span>

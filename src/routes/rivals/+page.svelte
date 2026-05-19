@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation'
   import { page } from '$app/stores'
   import { auth } from '$lib/stores/auth.svelte'
+  import { normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
 
   // ── Phase state machine ────────────────────────────────────────────────────
   type Phase =
@@ -470,7 +471,7 @@
                     <span class="text-xs w-4 shrink-0" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">{idx+1}</span>
                     <span class="text-xs flex-1 truncate" style="color: #e4e1ee;">{result?.resultLabel ?? '?'}</span>
                     {#if result?.tier}
-                      <span class="text-xs font-bold" style="color: #f0c040; font-family: 'JetBrains Mono', monospace;">{result.displayLabel ?? result.tier}</span>
+                      <span class="text-xs font-bold" style="color: #f0c040; font-family: 'JetBrains Mono', monospace;">{normalizeLegacyDisplayLabel(result.displayLabel) ?? result.tier}</span>
                     {/if}
                   </div>
                 {/each}

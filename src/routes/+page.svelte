@@ -10,7 +10,7 @@
   import type { SessionState, SpinResult } from '$lib/session/types'
   import { buildInitialQueue, getSegmentsForCategory } from '$lib/game/spinQueue'
   import type { SpinDefinition, SpinCategory } from '$lib/game/spinQueue'
-  import { computeOverallScore, scoreTier, gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
+  import { computeOverallScore, scoreTier, gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import type { TierGrade } from '$lib/game/scoreTier'
   import { redemptionProbability } from '$lib/game/redemption'
   import { races } from '$lib/content/races'
@@ -2025,7 +2025,7 @@
               {#if result.tier}
                 <span class="text-xs font-bold shrink-0 self-center px-1.5 py-0.5 rounded"
                   style="font-size: 10px; color: {tc ?? '#9a907b'}; background: {tc ?? '#374151'}18; border: 1px solid {tc ?? '#4e4635'}55;">
-                  {result.displayLabel ?? result.tier}
+                  {normalizeLegacyDisplayLabel(result.displayLabel) ?? result.tier}
                 </span>
               {/if}
             </div>
@@ -2053,7 +2053,7 @@
                 <div class="shrink-0 flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg"
                   style="background: rgba(255,255,255,0.04); border: 1px solid {tc ? tc + '44' : 'rgba(255,255,255,0.08)'}; min-width: 60px; max-width: 80px;">
                   {#if result.tier && tc}
-                    <span class="text-[9px] font-black" style="color: {tc}; font-family: 'JetBrains Mono', monospace;">{result.displayLabel ?? result.tier}</span>
+                    <span class="text-[9px] font-black" style="color: {tc}; font-family: 'JetBrains Mono', monospace;">{normalizeLegacyDisplayLabel(result.displayLabel) ?? result.tier}</span>
                   {/if}
                   <span class="text-[9px] leading-tight text-center" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; word-break: break-word;">{result.category}</span>
                 </div>
@@ -2105,7 +2105,7 @@
                   <div class="px-4 py-1.5 rounded-lg"
                     style="background: {tc}18; border: 1px solid {tc}55; box-shadow: 0 0 20px {tc}35;">
                     <span class="font-black" style="font-family: 'Cinzel', serif; font-size: 2rem; color: {tc}; filter: drop-shadow(0 0 8px {tc}66);">
-                      {last.displayLabel ?? last.tier}
+                      {normalizeLegacyDisplayLabel(last.displayLabel) ?? last.tier}
                     </span>
                   </div>
                 {/if}

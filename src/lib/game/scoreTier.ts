@@ -124,6 +124,14 @@ export function extendedTierFromScore(score: number): string {
   return `Absolute+${Math.min(20, score - 150)}`
 }
 
+// Converts legacy "Primordial+N" display labels to "Absolute+N".
+// Old characters stored these before Absolute tiers were added; the N maps 1:1.
+export function normalizeLegacyDisplayLabel(label: string | undefined): string | undefined {
+  if (!label) return label
+  const m = /^Primordial\+(\d+)$/.exec(label)
+  return m ? `Absolute+${m[1]}` : label
+}
+
 // Computes the overall character score as a weighted average of stat scores.
 // Non-stat spins (Race, Archetype, Powers, Weapons) are excluded from this computation.
 // Returns a value in [SCORE_EXTENDED_MIN, SCORE_EXTENDED_MAX], clamped and rounded.
