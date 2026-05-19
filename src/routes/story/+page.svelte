@@ -1,12 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { loadRoster, saveRoster, loadShards, saveShards, MAX_ROSTER_SIZE } from '$lib/story/store'
+  import { loadRoster, saveRoster, loadShards, saveShards, addToRoster, MAX_ROSTER_SIZE } from '$lib/story/store'
   import { getShardValue } from '$lib/story/shards'
   import type { StoryRosterEntry } from '$lib/story/types'
   import CharacterCard from '../../components/CharacterCard.svelte'
   import TierBadge from '../../components/TierBadge.svelte'
   import RosterCard from '../../components/story/RosterCard.svelte'
   import SellConfirmModal from '../../components/story/SellConfirmModal.svelte'
+  import StorySpinView from '../../components/story/StorySpinView.svelte'
 
   // ── View state machine ─────────────────────────────────────────────────────
   let view = $state<'entry' | 'spin' | 'roster' | 'expanded'>('entry')
@@ -14,6 +15,9 @@
   // ── Roster + shards reactive state ─────────────────────────────────────────
   let roster = $state<StoryRosterEntry[]>([])
   let shards = $state(0)
+
+  // ── Roster cap alert ───────────────────────────────────────────────────────
+  let rosterCapAlert = $state(false)
 
   // ── Sort + dialog state ────────────────────────────────────────────────────
   let sortBy = $state<'tier' | 'race' | 'archetype'>('tier')
@@ -63,6 +67,19 @@
 
   function closeExpanded() {
     expandedId = null
+    view = 'roster'
+  }
+
+  // ── Session complete handler ────────────────────────────────────────────────
+  function handleStoryComplete(entry: StoryRosterEntry) {
+    const updated = addToRoster($state.snapshot(roster), entry)
+    if (updated === null) {
+      // Roster at cap — show inline banner and navigate to roster
+      rosterCapAlert = true
+      view = 'roster'
+      return
+    }
+    roster = updated
     view = 'roster'
   }
 </script>
@@ -126,27 +143,9 @@
   </div>
 {/if}
 
-<!-- ── Spin view (stub — Plan 03 replaces this) ──────────────────────────── -->
+<!-- ── Spin view ───────────────────────────────────────────────────────────── -->
 {#if view === 'spin'}
-  <div class="min-h-screen flex flex-col items-center justify-center px-4">
-    <div class="obsidian-slab w-full max-w-sm rounded-2xl p-8 flex flex-col items-center gap-6 text-center">
-      <h2
-        class="font-bold"
-        style="font-family: var(--font-cinzel); font-size: 20px; color: var(--color-on-surface);"
-      >
-        Story Mode Spin
-      </h2>
-      <p class="font-mono text-sm" style="color: var(--color-on-surface-variant);">
-        Coming in Plan 03.
-      </p>
-      <button
-        class="metal-stamp-gold w-full rounded-xl py-3 font-bold font-mono text-sm"
-        onclick={() => view = 'entry'}
-      >
-        Back
-      </button>
-    </div>
-  </div>
+  <StorySpinView onSessionComplete={handleStoryComplete} onCancel={() => view = 'entry'} />
 {/if}
 
 <!-- ── Roster view ─────────────────────────────────────────────────────────── -->
@@ -208,6 +207,34 @@
 
   <!-- Roster content (with top padding for sticky header) -->
   <div class="pt-20 pb-24 px-4">
+
+    <!-- Roster is full cap alert banner -->
+    {#if rosterCapAlert}
+      <div
+        class="flex items-center justify-between gap-3 rounded-lg px-4 py-3 mb-4 max-w-[960px] mx-auto"
+        style="background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.3);"
+      >
+        <p class="font-mono text-sm" style="color: var(--color-error, #ef4444);">
+          Roster is full — your new character could not be added. Sell a character to free space.
+        </p>
+        <button
+          onclick={() => rosterCapAlert = false}
+          style="
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-outline);
+            font-size: 18px;
+            line-height: 1;
+            flex-shrink: 0;
+          "
+          aria-label="Dismiss"
+        >
+          ×
+        </button>
+      </div>
+    {/if}
+
     {#if roster.length === 0}
       <!-- Empty state -->
       <div class="flex flex-col items-center justify-center gap-4 pt-16 text-center">
