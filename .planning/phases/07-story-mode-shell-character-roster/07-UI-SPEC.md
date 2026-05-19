@@ -72,8 +72,8 @@ All tokens below are already declared in `src/app.css`. Phase 7 uses them as-is.
 | Token | Value | Usage |
 |-------|-------|-------|
 | xs | 4px | Icon-to-label gap inside roster card, badge inner padding |
-| sm | 8px | Roster card internal padding, sort button padding |
-| md | 16px | Roster card outer padding, modal body padding, entry screen content gap |
+| sm | 8px | Roster card internal padding, sort button padding, roster card outer padding (`p-2`) |
+| md | 16px | Modal body padding, entry screen content gap |
 | lg | 24px | Roster grid gap (desktop), entry screen section spacing |
 | xl | 32px | Entry screen card max-width padding, modal outer padding |
 | 2xl | 48px | Entry screen vertical breathing room above/below CTA |
@@ -87,12 +87,16 @@ Exception: touch targets on sell button and sort controls — minimum 44px heigh
 
 Declared sizes and weights. No additional sizes or weights may be introduced in Phase 7 components.
 
+**Exactly 2 font weights are permitted: 400 (regular) and 700 (bold). No other weights.**
+
+**Font role note: The Label role is exclusively JetBrains Mono — Inter is never used at 14px.**
+
 | Role | Size | Weight | Line Height | Font | Usage |
 |------|------|--------|-------------|------|-------|
 | Display | 28px (`text-[28px]`) | 700 (bold) | 1.2 | Cinzel (`font-cinzel`) | "Story Mode" entry screen title |
-| Heading | 20px (`text-xl`) | 600 (semibold) | 1.25 | Cinzel (`font-cinzel`) | Roster section header ("Your Roster"), modal card title (character name in overlay header) |
+| Heading | 20px (`text-xl`) | 700 (bold) | 1.25 | Cinzel (`font-cinzel`) | Roster section header ("Your Roster"), modal card title (character name in overlay header) |
 | Body | 16px (`text-base`) | 400 (regular) | 1.5 | Inter (default) | Sell confirmation body copy, empty state body, shard balance number |
-| Label | 14px (`text-sm`) | 600 (semibold) | 1.4 | JetBrains Mono (`font-mono`) | Roster card character name, race label, archetype label, sort control text, tier badge label (already handled by TierBadge), nav labels |
+| Label | 14px (`text-sm`) | 700 (bold) | 1.4 | JetBrains Mono (`font-mono`) | Roster card character name, race label, archetype label, sort control text, tier badge label (already handled by TierBadge), nav labels |
 
 Source: Existing `nav-label` in layout.svelte uses `font-mono` 9px uppercase for nav — Phase 7 roster cards elevate to 14px for readability. Entry screen title follows CharacterCard title pattern.
 
@@ -117,7 +121,7 @@ Source: Existing `nav-label` in layout.svelte uses `font-mono` 9px uppercase for
 5. Story Mode entry screen title text — `gold-emboss` utility class (already in app.css)
 6. Roster card tier badge border glow — tier-specific color from existing `--tier-*` variables (handled by TierBadge, not new accent usage)
 
-Accent is NOT used on: inactive sort buttons, roster card borders (use `--color-outline-variant`), secondary CTAs, close/cancel buttons.
+Accent is NOT used on: inactive sort buttons, roster card borders (use `--color-outline-variant`), secondary CTAs, close/dismiss buttons.
 
 ---
 
@@ -125,12 +129,14 @@ Accent is NOT used on: inactive sort buttons, roster card borders (use `--color-
 
 ### Screen 1: Story Mode Entry (`/story`, view = 'entry')
 
+**Focal point:** The "Enter Story Mode" gold CTA button is the single visual anchor. Everything above it (title, subtitle, shard balance) builds anticipation; everything below it is secondary. No competing bright elements at the same vertical tier.
+
 **Layout:** Full-page centered column. Body background `--bg-void`. Radial gold glow at top center (same `body` background from app.css is inherited — no new gradient needed).
 
 **Elements (top to bottom):**
 1. Story Mode title — "STORY MODE" — Display/28px/Cinzel/bold — `gold-emboss` utility class
 2. Flavor subtitle — "Build your roster. Survive the Void." — Body/16px/Inter/400 — `--color-on-surface-variant`
-3. Shard balance indicator — crystal/gem icon (Material Symbols: `diamond`) + numeric value — Label/14px/JetBrains Mono/semibold — value in `--gold-bright`, label in `--color-outline`
+3. Shard balance indicator — crystal/gem icon (Material Symbols: `diamond`) + numeric value — Label/14px/JetBrains Mono/bold — value in `--gold-bright`, label in `--color-outline`
 4. Roster count — "N / 50 characters" — Label/14px/JetBrains Mono — `--color-outline`
 5. Primary CTA: "Enter Story Mode" button — `metal-stamp-gold` class — full-width up to 320px max
 6. If roster has characters: secondary link "View Roster" — text-only, `--color-on-surface-variant`, underline on hover
@@ -138,6 +144,8 @@ Accent is NOT used on: inactive sort buttons, roster card borders (use `--color-
 **State: Roster at cap (50/50):** "Generate New Character" button is replaced by: "Roster Full — Sell a character to generate more" — muted text only, no button. Entry screen shows this state.
 
 ### Screen 2: Roster View (`view = 'roster'`)
+
+**Focal point:** The roster grid is the primary visual anchor. The sticky header serves navigation only; no element in the header competes with the card grid for visual weight.
 
 **Layout:** Full-page. Sticky header bar (64px) containing: "ROSTER" heading (Heading/20px/Cinzel), shard balance (Label/14px/Mono), sort controls. Below: scrollable roster card grid.
 
@@ -150,7 +158,7 @@ Accent is NOT used on: inactive sort buttons, roster card borders (use `--color-
 Three toggle buttons: "Tier" | "Race" | "Archetype"
 - Resting: background `--color-surface-container-highest` (#34343e), text `--color-outline`
 - Active: gold underline (2px `#f0c040` bottom border), text `--gold-bright`
-- Font: Label/14px/JetBrains Mono/semibold
+- Font: Label/14px/JetBrains Mono/bold (`font-bold`)
 - Height: 44px min (touch target)
 - Corner radius: 4px (`rounded`)
 
@@ -163,16 +171,16 @@ Three toggle buttons: "Tier" | "Race" | "Archetype"
 - Background: `--color-surface-container-low` (#1b1b24)
 - Border: `1px solid rgba(255,223,150,0.08)` resting; `1px solid rgba(240,192,64,0.25)` on hover
 - Border-radius: 8px (`rounded-lg`)
-- Padding: 12px (between sm and md — use `p-3`)
+- Padding: 8px (`p-2`) — on the 8-point spacing scale
 - Shadow: `0 2px 8px rgba(0,0,0,0.4)` resting; `0 4px 16px rgba(0,0,0,0.6)` hover
 - Cursor: pointer (entire card is clickable for expansion)
 
   **Card content (top to bottom):**
   1. TierBadge (inline variant) — top-right corner, absolute positioned
-  2. Character name — Label/14px/JetBrains Mono/semibold — `--color-on-surface` — single line, `truncate`
+  2. Character name — Label/14px/JetBrains Mono/bold (`font-bold`) — `--color-on-surface` — single line, `truncate`
   3. Race — Label/14px/JetBrains Mono/400 — `--color-on-surface-variant` — single line, `truncate`
   4. Archetype — Label/14px/JetBrains Mono/400 — `--color-outline` — single line, `truncate`
-  5. Sell button — bottom of card — "Sell" label + crystal icon — `metal-stamp-crimson` class — full card width — height 36px — stops click propagation (does not trigger card expand)
+  5. Sell button — bottom of card — "Sell Character" label + crystal icon — `metal-stamp-crimson` class — full card width — height 36px — stops click propagation (does not trigger card expand)
 
   **Card states:**
   - Resting: as above
@@ -204,7 +212,7 @@ The only Story Mode–specific element: a passive header indicator (non-sticky, 
 - Animation: `slideInBottom` keyframe (already defined in app.css) — 200ms
 
 **Panel content:**
-- Header row: character name (Heading/20px/Cinzel) + close button (`×` — Body/20px, `--color-outline`, hover `--color-on-surface`) — 48px height
+- Header row: character name (Heading/20px/Cinzel/bold) + close button (`×` — Body/20px, `--color-outline`, hover `--color-on-surface`, `aria-label="Close character sheet"`) — 48px height
 - Body: `CharacterCard` with `readonly={true}` — renders within the scroll area
 - No footer (close via header button or backdrop click)
 
@@ -224,12 +232,12 @@ Rendered as a modal on top of whatever current view is active.
 
 **Dialog content:**
 1. Icon — Material Symbols: `warning` — 24px — `#ffb4ab` (`--color-error`)
-2. Heading — "Sell [Character Name]?" — Heading/20px/Cinzel/semibold — `--color-on-surface`
+2. Heading — "Sell [Character Name]?" — Heading/20px/Cinzel/bold (`font-bold`) — `--color-on-surface`
 3. Tier note — "[Tier badge inline] [Tier grade]" — Body/16px/Inter — `--color-on-surface-variant`
 4. Shard value — "You will receive [N] Fate Shards" — Body/16px/Inter — value in `--gold-bright`, surrounding text in `--color-on-surface-variant`
 5. Warning line — "This action cannot be undone." — Label/14px/JetBrains Mono — `--color-error` (`#ffb4ab`)
-6. Button row (Cancel | Confirm Sell):
-   - Cancel: ghost style — background transparent, border `1px solid rgba(255,223,150,0.2)`, text `--color-on-surface-variant`, hover border `rgba(255,223,150,0.4)` — width 50% of row
+6. Button row (Keep Character | Confirm Sell):
+   - Keep Character: ghost style — background transparent, border `1px solid rgba(255,223,150,0.2)`, text `--color-on-surface-variant`, hover border `rgba(255,223,150,0.4)` — width 50% of row
    - Confirm Sell: `metal-stamp-crimson` class — width 50% of row
 
 ---
@@ -250,17 +258,17 @@ Rendered as a modal on top of whatever current view is active.
 ## Interaction Contract
 
 ### Roster Card Tap / Click
-- **Trigger:** Click/tap anywhere on the roster card EXCEPT the Sell button
+- **Trigger:** Click/tap anywhere on the roster card EXCEPT the Sell Character button
 - **Result:** `expandedId = entry.id` → character sheet overlay appears
 - **Animation:** `slideInBottom` (app.css keyframe), 200ms
 - **Dismiss:** Click backdrop or close button → `expandedId = null`, overlay exits with `opacity 0` transition 150ms
 
 ### Sell Flow
-1. User clicks Sell button on a roster card
+1. User clicks "Sell Character" button on a roster card
 2. Click is stopPropagated — card expand does NOT trigger
 3. `sellTarget = entry` → `SellConfirmModal` renders with `popIn` animation
 4. User reads: name, tier, shard value, irreversibility warning
-5. Cancel → `sellTarget = null`, dialog closes
+5. "Keep Character" → `sellTarget = null`, dialog closes
 6. Confirm Sell → `handleSell()` runs atomically: removes entry from roster, credits shards, `sellTarget = null`
 7. Roster re-renders reactively (Svelte 5 `$derived` sorted array updates)
 8. Shard balance display updates immediately (same reactive cycle)
@@ -278,7 +286,7 @@ Rendered as a modal on top of whatever current view is active.
 - All interactive elements (roster cards, sell button, sort controls, dialog buttons) must receive focus via Tab
 - Focused state: `outline: 2px solid #f0c040; outline-offset: 2px`
 - Escape key closes overlay or dialog (whichever is open; dialog takes priority)
-- Tab trap inside dialog (Cancel ↔ Confirm Sell loop)
+- Tab trap inside dialog ("Keep Character" ↔ "Confirm Sell" loop)
 
 ### View Transitions
 - Entry → Roster: no SvelteKit view-transition (same-route state change, not a navigation)
@@ -303,17 +311,17 @@ Rendered as a modal on top of whatever current view is active.
 | Roster cap CTA replacement | "Roster Full — Sell a character to generate more" |
 | Roster cap button caption | "Sell a character to free a roster slot" |
 | Sort controls | "Tier" / "Race" / "Archetype" |
-| Sell button label (on roster card) | "Sell" |
+| Sell button label (on roster card) | "Sell Character" |
 | Sell dialog heading | "Sell [Character Name]?" |
 | Sell dialog tier note | "[tier badge] [tier grade]" |
 | Sell dialog shard line | "You will receive [N] Fate Shards" |
 | Sell dialog warning | "This action cannot be undone." |
-| Sell dialog cancel | "Cancel" |
+| Sell dialog dismiss | "Keep Character" |
 | Sell dialog confirm | "Confirm Sell" |
 | Sell success (implicit — no toast) | Roster updates immediately; shard balance increments — no toast copy needed in Phase 7 |
 | Error — localStorage unavailable | "Story Mode requires local storage. Enable it in your browser settings to continue." — shown in place of entry CTA |
 
-**Tone rule:** All Story Mode copy uses the same epic/absurd blend as the main game. Functional labels (Cancel, Sell, Tier) are concise. Flavor copy (subtitle, empty state) leans dramatic. No exclamation points on destructive actions.
+**Tone rule:** All Story Mode copy uses the same epic/absurd blend as the main game. Functional labels (Sell Character, Tier) are concise. Flavor copy (subtitle, empty state) leans dramatic. No exclamation points on destructive actions.
 
 ---
 
