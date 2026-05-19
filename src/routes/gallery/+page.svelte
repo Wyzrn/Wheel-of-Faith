@@ -30,6 +30,7 @@
     'Celestial-':'#075985','Celestial':'#0284c7','Celestial+':'#38bdf8',
     'Godly-':'#c026d3','Godly':'#e879f9',
     'Primordial':'#ffffff',
+    'Primordial+':'#ccffff','Absolute-':'#99ffff','Absolute':'#00ffff','Absolute+':'#00ddff',
   }
 
   type SortField = 'score' | 'rivals' | 'date' | 'name' | 'race' | 'archetype'
@@ -171,6 +172,7 @@
     'S-':19,'S':20,'S+':21,'SS-':22,'SS':23,'SS+':24,'SSS-':25,'SSS':26,'SSS+':27,
     'Z-':28,'Z':29,'Z+':30,'ZZ-':31,'ZZ':32,'ZZ+':33,'ZZZ-':34,'ZZZ':35,'ZZZ+':36,
     'Celestial-':37,'Celestial':38,'Celestial+':39,'Godly-':40,'Godly':41,'Primordial':42,
+    'Primordial+':43,'Absolute-':44,'Absolute':45,'Absolute+':46,
   }
 
   let challengeTarget   = $state<GalleryChar | null>(null)

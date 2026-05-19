@@ -27,9 +27,9 @@ export function loadSpinHistory(): SpinHistoryEntry[] {
 }
 
 const STAT_WEIGHTS: Record<string, number> = {
-  strength: 0.10, speed: 0.10, agility: 0.10, durability: 0.10,
-  iq: 0.08, charisma: 0.07, fightingSkill: 0.12, potential: 0.10,
-  energyLevel: 0.08, powerMastery: 0.08, weaponMastery: 0.07,
+  fightingSkill: 0.16, strength: 0.13, durability: 0.13, speed: 0.11,
+  powerMastery: 0.11, agility: 0.09, energyLevel: 0.09, iq: 0.07,
+  weaponMastery: 0.06, potential: 0.03, charisma: 0.02,
 }
 
 export function appendSpinHistory(results: SpinResult[], name: string, sessionId: string): void {

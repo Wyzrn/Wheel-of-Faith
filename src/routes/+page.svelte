@@ -245,19 +245,20 @@
   function getVirtualTierIdx(result: SpinResult): number {
     if (result.displayLabel) {
       if (result.displayLabel.startsWith('F- -')) return -parseInt(result.displayLabel.slice(4))
-      if (result.displayLabel.startsWith('Primordial+')) return TIER_ORDER.length - 1 + parseInt(result.displayLabel.slice(11))
+      // Legacy: old characters stored "Primordial+N" display labels before new tiers existed
+      if (/^Primordial\+\d/.test(result.displayLabel)) return TIER_ORDER.length - 1 + parseInt(result.displayLabel.slice(11))
     }
     return result.tier ? TIER_ORDER.indexOf(result.tier as TierGrade) : 0
   }
 
   // Applies a tier shift to a stat result and returns updated fields.
-  // Allows going -20 below F- and +20 above Primordial via bonuses.
+  // Tiers now run F- through Absolute+ (score 1–150). Stats cap at Absolute+.
   // Health/damage stats (NO_NEGATIVE_STATS) are floored at 0 (F-).
   function applyStatShift(result: SpinResult, tierShift: number, statCategory: string): Pick<SpinResult, 'tier' | 'score' | 'displayLabel'> {
     const currentVti = getVirtualTierIdx(result)
     const rawVti = currentVti + tierShift
     const minVti = NO_NEGATIVE_STATS.has(statCategory) ? 0 : -20
-    const maxVti = TIER_ORDER.length - 1 + 20
+    const maxVti = TIER_ORDER.length - 1  // caps at Absolute+ (score 150)
     const vti = Math.max(minVti, Math.min(maxVti, rawVti))
 
     if (vti < 0) {
@@ -265,14 +266,6 @@
         tier: 'F-' as TierGrade,
         score: Math.max(-19, 1 + vti),
         displayLabel: `F- -${Math.abs(vti)}`,
-      }
-    }
-    if (vti >= TIER_ORDER.length) {
-      const above = vti - (TIER_ORDER.length - 1)
-      return {
-        tier: 'Primordial' as TierGrade,
-        score: Math.min(150, 130 + above),
-        displayLabel: `Primordial+${above}`,
       }
     }
     return {
@@ -309,6 +302,7 @@
     'Celestial-':'#075985','Celestial':'#0284c7','Celestial+':'#38bdf8',
     'Godly-':'#c026d3','Godly':'#e879f9',
     'Primordial':'#ffffff',
+    'Primordial+':'#ccffff','Absolute-':'#99ffff','Absolute':'#00ffff','Absolute+':'#00ddff',
   }
 
   // ── Category hue map — drives HSL gradient coloring in SpinWheel ─────────

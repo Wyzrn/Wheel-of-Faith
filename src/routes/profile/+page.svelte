@@ -67,7 +67,8 @@
     'SSS-':'#a16207','SSS':'#ca8a04','SSS+':'#eab308','Z-':'#0e7490','Z':'#0891b2','Z+':'#06b6d4',
     'ZZ-':'#1d4ed8','ZZ':'#2563eb','ZZ+':'#60a5fa','ZZZ-':'#6d28d9','ZZZ':'#7c3aed','ZZZ+':'#a855f7',
     'Celestial-':'#be185d','Celestial':'#db2777','Celestial+':'#ec4899',
-    'Godly-':'#9f1239','Godly':'#be123c','Primordial':'#f0c040',
+    'Godly-':'#c026d3','Godly':'#e879f9',
+    'Primordial':'#ffffff','Primordial+':'#ccffff','Absolute-':'#99ffff','Absolute':'#00ffff','Absolute+':'#00ddff',
   }
 </script>
 

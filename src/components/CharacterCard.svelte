@@ -48,6 +48,7 @@
     'Celestial-':'#075985','Celestial':'#0284c7','Celestial+':'#38bdf8',
     'Godly-':'#c026d3','Godly':'#e879f9',
     'Primordial':'#ffffff',
+    'Primordial+':'#ccffff','Absolute-':'#99ffff','Absolute':'#00ffff','Absolute+':'#00ddff',
   }
 
   let displayName       = $derived(name?.trim() || 'The Unnamed')

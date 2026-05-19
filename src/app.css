@@ -59,7 +59,12 @@
   --tier-sss-minus: #ca8a04;
   --tier-sss:       #eab308;
   --tier-sss-plus:  #fde047;
-  --tier-god:      #e879f9;
+  --tier-god:           #e879f9;
+  --tier-primordial:    #ffffff;
+  --tier-primordial-p:  #ccffff;
+  --tier-absolute-m:    #99ffff;
+  --tier-absolute:      #00ffff;
+  --tier-absolute-p:    #00ddff;
 }
 
 @layer base {

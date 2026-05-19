@@ -27,10 +27,12 @@ export type TierGrade =
   | 'Celestial-' | 'Celestial' | 'Celestial+'
   | 'Godly-' | 'Godly'
   | 'Primordial'
+  | 'Primordial+' | 'Absolute-' | 'Absolute' | 'Absolute+'
 
-// 42 tiers across 1–130.
+// 46 tiers across 1–150.
 // F- through SSS+ unchanged at 1–99 from original 28-tier design.
 // Z through Primordial occupy 100–130 in 2-point bands (rarer = tighter range).
+// Primordial+ through Absolute+ occupy 131–150 — only reachable via wildcards / redemption.
 export const TIER_THRESHOLDS: Array<{ min: number; max: number; grade: TierGrade }> = [
   { min:   1, max:   3, grade: 'F-'        },
   { min:   4, max:   6, grade: 'F'         },
@@ -73,29 +75,34 @@ export const TIER_THRESHOLDS: Array<{ min: number; max: number; grade: TierGrade
   { min: 122, max: 123, grade: 'Celestial+'},
   { min: 124, max: 125, grade: 'Godly-'    },
   { min: 126, max: 127, grade: 'Godly'     },
-  { min: 128, max: 130, grade: 'Primordial'},
+  { min: 128, max: 130, grade: 'Primordial'  },
+  { min: 131, max: 134, grade: 'Primordial+' },
+  { min: 135, max: 140, grade: 'Absolute-'   },
+  { min: 141, max: 146, grade: 'Absolute'    },
+  { min: 147, max: 150, grade: 'Absolute+'   },
 ]
 
 // Category weights for overall score aggregation (sum = 1.00).
-// From RESEARCH.md Pattern 9. Combat-central stats (fightingSkill) weight highest.
+// Weighted by combat decisiveness: raw damage + survival + technique dominate.
+// Charisma and Potential barely affect the outcome of an actual fight.
 export const STAT_WEIGHTS: Record<string, number> = {
-  strength:      0.10,
-  speed:         0.10,
-  agility:       0.10,
-  durability:    0.10,
-  iq:            0.08,
-  charisma:      0.07,
-  fightingSkill: 0.12,
-  potential:     0.10,
-  energyLevel:   0.08,
-  powerMastery:  0.08,
-  weaponMastery: 0.07,
+  fightingSkill: 0.16,  // combat technique — highest impact on fight outcome
+  strength:      0.13,  // raw damage output
+  durability:    0.13,  // how long you survive
+  speed:         0.11,  // first strike, evasion
+  powerMastery:  0.11,  // how effectively you weaponize your abilities
+  agility:       0.09,  // positioning and dodge
+  energyLevel:   0.09,  // sustain across a long fight
+  iq:            0.07,  // tactical thinking
+  weaponMastery: 0.06,  // situational weapon usage
+  potential:     0.03,  // future growth — irrelevant mid-fight
+  charisma:      0.02,  // rarely decides a fight
 }
 
 // Maps a numeric score to the corresponding TierGrade.
-// Scores ≤ 0 (extended min −20) map to 'F-'; scores ≥ 128 (extended max 150) map to 'Primordial'.
+// Scores ≤ 0 map to 'F-'; scores ≥ 147 map to 'Absolute+'.
 export function scoreTier(score: number): TierGrade {
-  const clamped = Math.max(1, Math.min(130, score))
+  const clamped = Math.max(1, Math.min(150, score))
   for (const t of TIER_THRESHOLDS) {
     if (clamped >= t.min && clamped <= t.max) return t.grade
   }
