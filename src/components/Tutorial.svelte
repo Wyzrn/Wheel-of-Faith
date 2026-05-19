@@ -245,15 +245,15 @@
   </div>
 {/if}
 
-<!-- ─── Bottom card (steps 1–12) ──────────────────────────────────────────── -->
+<!-- ─── Top-left card (steps 1–12) ────────────────────────────────────────── -->
 {#if card}
   <div
-    class="fixed inset-x-0 z-40 flex justify-center px-3"
-    style="bottom: 0; pointer-events: none; animation: tutSlideUp 0.3s cubic-bezier(0.34,1.3,0.64,1) forwards;"
+    class="fixed z-40 px-3"
+    style="top: 64px; left: 0; width: min(360px, 100vw); pointer-events: none; animation: tutSlideUp 0.3s cubic-bezier(0.34,1.3,0.64,1) forwards;"
   >
     <div
-      class="w-full max-w-lg rounded-t-2xl overflow-hidden"
-      style="pointer-events: all; background: rgba(9,9,15,0.98); backdrop-filter: blur(20px); border: 1px solid rgba(240,192,64,0.18); border-bottom: none; border-top: 2px solid {card.accent}; box-shadow: 0 -8px 48px rgba(0,0,0,0.85), 0 0 0 1px rgba(240,192,64,0.06);"
+      class="w-full rounded-2xl overflow-hidden"
+      style="pointer-events: all; background: rgba(9,9,15,0.98); backdrop-filter: blur(20px); border: 1px solid rgba(240,192,64,0.18); border-top: 2px solid {card.accent}; box-shadow: 0 8px 48px rgba(0,0,0,0.85), 0 0 0 1px rgba(240,192,64,0.06);"
     >
       <!-- Header bar -->
       <div class="flex items-center gap-2 px-4 py-2.5" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
@@ -325,8 +325,8 @@
 
 <style>
   @keyframes tutSlideUp {
-    from { transform: translateY(100%); opacity: 0; }
-    to   { transform: translateY(0);    opacity: 1; }
+    from { transform: translateY(-20px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
   }
   @keyframes tutSlideDown {
     from { transform: translateY(-20px); opacity: 0; }
