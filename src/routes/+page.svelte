@@ -1845,6 +1845,13 @@
           <div class="l-bracket" style="color: rgba(255,180,171,0.4);"></div>
           ⚔ Rivals Mode
         </button>
+        <a
+          href="/story"
+          class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
+          style="font-family: 'Cinzel', serif; color: #6ee7b7; border: 1px solid rgba(52,211,153,0.35); text-decoration: none;"
+        >
+          📖 Story Mode
+        </a>
       </div>
 
       <!-- Bottom flavour -->
