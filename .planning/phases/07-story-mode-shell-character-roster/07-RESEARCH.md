@@ -494,21 +494,16 @@ function handleSell(entry: StoryRosterEntry): void {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Backend writes in Phase 7 or Phase 8?**
-   - What we know: ROADMAP.md says "Story Mode character generation runs a constrained version of the spin loop inline (Phase 8 handles tier gating)" and mentions `story_characters` collection but does not say Phase 7 writes to it.
-   - What's unclear: Whether Phase 7 should write `StoryRosterEntry` objects to the backend or defer entirely to Phase 8.
-   - Recommendation: Defer backend writes to Phase 8. Phase 7 is localStorage-only. This matches the Phase 1/2 pattern (frontend-first, backend added in Phase 4).
+   - RESOLVED: Phase 7 is localStorage-only. Backend writes deferred to Phase 8+. Matches the Phase 1/2 frontend-first pattern. (07-02, 07-03 objectives; Assumption A2)
 
 2. **CharacterCard `onNewCharacter` prop — required or optional in readonly mode?**
-   - What we know: Current `CharacterCard` signature has `onNewCharacter: () => void` as required (from codebase read). Story Mode expansion does not need this callback.
-   - What's unclear: Whether to make it optional in CharacterCard or pass a no-op.
-   - Recommendation: Make `onNewCharacter` optional in `CharacterCard` (default to `undefined`), conditioned by `readonly` prop. This avoids Story Mode passing a meaningless callback.
+   - RESOLVED: Pass `onNewCharacter={() => {}}` as a no-op in the readonly Story Mode overlay. CharacterCard is not modified. (07-02 Task 2 action)
 
 3. **Name adjective/noun word list size — minimum for quality?**
-   - What we know: With 20 adjectives × 20 nouns = 400 unique names; with 80 × 80 = 6,400. Roster max is 50 so collision risk is low even with smaller lists.
-   - Recommendation: 40 adjectives + 40 nouns (1,600 unique combos) is sufficient for Phase 7 quality. Lists can be expanded in Phase 6 polish.
+   - RESOLVED: 40 adjectives + 40 nouns (1,600 unique combos) is the Phase 7 target. (07-01 Task 2 behavior)
 
 ---
 
