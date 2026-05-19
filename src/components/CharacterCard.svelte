@@ -32,6 +32,12 @@
     return results.find(r => r.category === category)?.tier
   }
 
+  // Returns displayLabel when set (e.g. "Absolute+5"), else falls back to tier string.
+  function getTierLabel(category: string): string | undefined {
+    const r = results.find(r => r.category === category)
+    return r?.displayLabel ?? r?.tier
+  }
+
   const TIER_COLORS: Record<string, string> = {
     'F-':'#555','F':'#666','F+':'#777',
     'E-':'#6b7280','E':'#9ca3af','E+':'#d1d5db',
@@ -213,7 +219,7 @@
       <div class="shrink-0">
         <p class="text-xs tracking-[0.2em] uppercase mb-1" style="font-family: 'JetBrains Mono', monospace; color: {TIER_COLORS[overallGrade] ?? '#9a907b'};">Overall Grade</p>
         <p class="leading-none font-black" style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 4.5rem); color: {TIER_COLORS[overallGrade] ?? '#ffdf96'}; filter: drop-shadow(0 0 12px {TIER_COLORS[overallGrade] ?? '#f0c040'}55);">{overallGrade}</p>
-        <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Score {overallScore} / 150</p>
+        <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Score {overallScore} / 170</p>
       </div>
       <!-- Identity column -->
       <div class="text-right min-w-0">
@@ -368,10 +374,11 @@
         {#each weaponEnchs as ench}
           <span class="text-xs" style="color: #f0c040;">✦ {ench}</span>
         {/each}
-        {#if getTier('weaponMastery')}
+        {#if getTierLabel('weaponMastery')}
+          {@const wmTierColor = TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#9a907b'}
           <span class="ml-auto text-xs font-bold px-1.5 py-0.5 rounded"
-            style="background: {TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#374151'}22; color: {TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#9a907b'}; border: 1px solid {TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#4e4635'}66;">
-            {getTier('weaponMastery')}
+            style="background: {wmTierColor}22; color: {wmTierColor}; border: 1px solid {wmTierColor}66;">
+            {getTierLabel('weaponMastery')}
           </span>
         {/if}
       </div>
@@ -402,10 +409,11 @@
         {#each armorEnchs as ench}
           <span class="text-xs" style="color: #fb923c;">✦ {ench}</span>
         {/each}
-        {#if getTier('armorStrength')}
+        {#if getTierLabel('armorStrength')}
+          {@const asTierColor = TIER_COLORS[getTier('armorStrength') ?? ''] ?? '#9a907b'}
           <span class="ml-auto text-xs font-bold px-1.5 py-0.5 rounded"
-            style="background: {TIER_COLORS[getTier('armorStrength') ?? ''] ?? '#374151'}22; color: {TIER_COLORS[getTier('armorStrength') ?? ''] ?? '#9a907b'}; border: 1px solid {TIER_COLORS[getTier('armorStrength') ?? ''] ?? '#4e4635'}66;">
-            {getTier('armorStrength')}
+            style="background: {asTierColor}22; color: {asTierColor}; border: 1px solid {asTierColor}66;">
+            {getTierLabel('armorStrength')}
           </span>
         {/if}
       </div>
