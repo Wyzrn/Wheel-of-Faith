@@ -247,18 +247,20 @@
       if (result.displayLabel.startsWith('F- -')) return -parseInt(result.displayLabel.slice(4))
       // Legacy: old characters stored "Primordial+N" display labels before new tiers existed
       if (/^Primordial\+\d/.test(result.displayLabel)) return TIER_ORDER.length - 1 + parseInt(result.displayLabel.slice(11))
+      // Extended: "Absolute+N" display labels for N tiers above the max (Absolute+)
+      if (/^Absolute\+\d+$/.test(result.displayLabel)) return TIER_ORDER.length - 1 + parseInt(result.displayLabel.slice(9))
     }
     return result.tier ? TIER_ORDER.indexOf(result.tier as TierGrade) : 0
   }
 
   // Applies a tier shift to a stat result and returns updated fields.
-  // Tiers now run F- through Absolute+ (score 1–150). Stats cap at Absolute+.
+  // Tiers run F- through Absolute+ (score 1–150), plus up to Absolute+20 (score 170) via bonuses.
   // Health/damage stats (NO_NEGATIVE_STATS) are floored at 0 (F-).
   function applyStatShift(result: SpinResult, tierShift: number, statCategory: string): Pick<SpinResult, 'tier' | 'score' | 'displayLabel'> {
     const currentVti = getVirtualTierIdx(result)
     const rawVti = currentVti + tierShift
     const minVti = NO_NEGATIVE_STATS.has(statCategory) ? 0 : -20
-    const maxVti = TIER_ORDER.length - 1  // caps at Absolute+ (score 150)
+    const maxVti = TIER_ORDER.length - 1 + 20  // caps at Absolute+20 (score 170)
     const vti = Math.max(minVti, Math.min(maxVti, rawVti))
 
     if (vti < 0) {
@@ -266,6 +268,14 @@
         tier: 'F-' as TierGrade,
         score: Math.max(-19, 1 + vti),
         displayLabel: `F- -${Math.abs(vti)}`,
+      }
+    }
+    if (vti >= TIER_ORDER.length) {
+      const n = vti - (TIER_ORDER.length - 1)  // 1..20
+      return {
+        tier: 'Absolute+' as TierGrade,
+        score: 150 + n,
+        displayLabel: `Absolute+${n}`,
       }
     }
     return {

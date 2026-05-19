@@ -9,7 +9,7 @@ export const NO_NEGATIVE_STATS = new Set([
 
 // Extended score boundaries: spinnable range is 1–130, bonus range is -20 to 150
 export const SCORE_EXTENDED_MIN = -20
-export const SCORE_EXTENDED_MAX = 150
+export const SCORE_EXTENDED_MAX = 170
 
 export type TierGrade =
   | 'F-' | 'F' | 'F+'
@@ -115,6 +115,13 @@ export function gradeToScore(grade: TierGrade): number {
   const entry = TIER_THRESHOLDS.find(t => t.grade === grade)
   if (!entry) return 1
   return Math.round((entry.min + entry.max) / 2)
+}
+
+// Like scoreTier but handles scores above 150 by returning "Absolute+N" strings.
+// N = score − 150, capped at 20. Used by battle.ts for damage/HP tier derivation.
+export function extendedTierFromScore(score: number): string {
+  if (score <= 150) return scoreTier(score)
+  return `Absolute+${Math.min(20, score - 150)}`
 }
 
 // Computes the overall character score as a weighted average of stat scores.

@@ -2,7 +2,7 @@
 // Tier-scaled HP/damage, full stat mechanics. Pure functions only. No default export.
 
 import type { SpinResult } from '$lib/session/types'
-import { TIER_THRESHOLDS, scoreTier } from '$lib/game/scoreTier'
+import { TIER_THRESHOLDS, scoreTier, extendedTierFromScore } from '$lib/game/scoreTier'
 import type { TierGrade } from '$lib/game/scoreTier'
 import { powers as powersPool } from '$lib/content/powers'
 import { weapons as weaponsPool } from '$lib/content/weapons'
@@ -263,13 +263,30 @@ function getTier(results: SpinResult[], category: string): TierGrade {
   return 'F-'
 }
 
-function tierRank(grade: TierGrade): number {
-  const idx = TIER_THRESHOLDS.findIndex(t => t.grade === grade)
-  return idx < 0 ? 0 : idx
+// Returns displayLabel when it's an "Absolute+N" extended grade, else falls back to tier/score.
+function getDisplayTier(results: SpinResult[], category: string): string {
+  const r = results.find(s => s.category === category)
+  if (r?.displayLabel && /^Absolute\+\d+$/.test(r.displayLabel)) return r.displayLabel
+  if (r?.tier) return r.tier
+  if (r?.score !== undefined) return scoreTier(r.score)
+  return 'F-'
 }
 
-function hpForTier(grade: TierGrade): number {
-  return HP_TABLE[grade] ?? 50
+function tierRank(grade: string): number {
+  const idx = TIER_THRESHOLDS.findIndex(t => t.grade === grade)
+  if (idx >= 0) return idx
+  const m = /^Absolute\+(\d+)$/.exec(grade)
+  if (m) return TIER_THRESHOLDS.length - 1 + parseInt(m[1])
+  return 0
+}
+
+function hpForTier(grade: string): number {
+  const val = HP_TABLE[grade as TierGrade]
+  if (val !== undefined) return val
+  // "Absolute+N" (N = 1..20): exponential scale from 9M base at ~18% per step
+  const m = /^Absolute\+(\d+)$/.exec(grade)
+  if (m) return Math.round(9_000_000 * Math.pow(1.18, parseInt(m[1])))
+  return 50
 }
 
 export function formatHp(hp: number): string {
@@ -284,19 +301,19 @@ export function formatHp(hp: number): string {
 // ─── Build ────────────────────────────────────────────────────────────────────
 
 export function buildBattleCharacter(results: SpinResult[], name: string): BattleCharacter {
-  const durTier    = getTier(results, 'durability')
-  const strTier    = getTier(results, 'strength')
-  const elTier     = getTier(results, 'energyLevel')
-  const potTier    = getTier(results, 'potential')
-  const armStrTier = getTier(results, 'armorStrength')
+  const durTier    = getDisplayTier(results, 'durability')
+  const strTier    = getDisplayTier(results, 'strength')
+  const elTier     = getDisplayTier(results, 'energyLevel')
+  const potTier    = getDisplayTier(results, 'potential')
+  const armStrTier = getDisplayTier(results, 'armorStrength')
 
-  const agilityRank       = tierRank(getTier(results, 'agility'))
-  const speedRank         = tierRank(getTier(results, 'speed'))
-  const charismaRank      = tierRank(getTier(results, 'charisma'))
-  const iqRank            = tierRank(getTier(results, 'iq'))
+  const agilityRank       = tierRank(getDisplayTier(results, 'agility'))
+  const speedRank         = tierRank(getDisplayTier(results, 'speed'))
+  const charismaRank      = tierRank(getDisplayTier(results, 'charisma'))
+  const iqRank            = tierRank(getDisplayTier(results, 'iq'))
   const potentialRank     = tierRank(potTier)
   const energyRank        = tierRank(elTier)
-  const fightingSkillRank = tierRank(getTier(results, 'fightingSkill'))
+  const fightingSkillRank = tierRank(getDisplayTier(results, 'fightingSkill'))
   const armStrRank        = tierRank(armStrTier)
 
   // HP: durability 55%, strength 20%, energy 15%, potential 10%
@@ -325,13 +342,13 @@ export function buildBattleCharacter(results: SpinResult[], name: string): Battl
   const strScore = results.find(r => r.category === 'strength')?.score ?? 28
   const fskScore = results.find(r => r.category === 'fightingSkill')?.score ?? 28
   const wmScore  = results.find(r => r.category === 'weaponMastery')?.score ?? 28
-  const physDamageTier = scoreTier(Math.round(strScore * 0.25 + fskScore * 0.55 + wmScore * 0.20))
+  const physDamageTier = extendedTierFromScore(Math.round(strScore * 0.25 + fskScore * 0.55 + wmScore * 0.20))
   const physicalDamage = Math.round(hpForTier(physDamageTier) / 2 * weaponGradeMult)
 
   // Power damage: blended score from power mastery (60%), energy level (40%)
   const pmScore = results.find(r => r.category === 'powerMastery')?.score ?? 28
   const elScore = results.find(r => r.category === 'energyLevel')?.score ?? 28
-  const pwrDamageTier = scoreTier(Math.round(pmScore * 0.60 + elScore * 0.40))
+  const pwrDamageTier = extendedTierFromScore(Math.round(pmScore * 0.60 + elScore * 0.40))
   const powerDamage = Math.round(hpForTier(pwrDamageTier) / 2 * powerGradeMult)
 
   // Armor: armorStrength rank → base fraction, modulated by armor type + armor grade

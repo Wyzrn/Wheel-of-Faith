@@ -24,7 +24,7 @@ export interface SpinResult {
   tier?: TierGrade
   score?: number
   // Set when a bonus pushes a stat beyond the normal 1–130 range.
-  // Examples: "F- -5" (5 tiers below F-), "Primordial+10" (10 tiers above Primordial).
+  // Examples: "F- -5" (5 tiers below F-), "Absolute+10" (10 tiers above Absolute+).
   displayLabel?: string
 }
 
