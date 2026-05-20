@@ -4,9 +4,9 @@
     loadAllSlots, loadSaveSlot, saveSaveSlot, createSaveSlot, deleteSaveSlot,
     addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin,
     buyStatCrystal, getDailyBought, applySpinRefresh, msUntilNextRefresh,
-    upgradeRosterCapacity, rosterUpgradeCost,
+    upgradeRosterCapacity, rosterUpgradeCost, buyFCrystal, buyEndlessKey,
     SHARD_COST_PER_SPIN, STAGE_LABELS, MAX_DAILY_SPINS,
-    STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS,
+    STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, F_CRYSTAL_COST, ENDLESS_KEY_GEM_COST,
     type StorySaveSlot, type SlotId, type StatCrystalType,
   } from '$lib/story/saveSlots'
   import { getShardValue } from '$lib/story/shards'
@@ -22,7 +22,7 @@
   import BattleView from '../../components/story/BattleView.svelte'
 
   // ── View state machine ─────────────────────────────────────────────────────
-  type View = 'saveSlotSelect' | 'hub' | 'spin' | 'roster' | 'expanded' | 'shop' | 'worlds' | 'battle'
+  type View = 'saveSlotSelect' | 'hub' | 'spin' | 'roster' | 'expanded' | 'shop' | 'worlds' | 'battle' | 'inventory'
   let view = $state<View>('saveSlotSelect')
 
   // ── Slot state ─────────────────────────────────────────────────────────────
@@ -72,7 +72,11 @@
   let rosterCapacity = $derived(currentSlot?.rosterCapacity ?? 5)
   let rosterUpgradeCount = $derived(currentSlot?.rosterUpgradeCount ?? 0)
   let nextUpgradeCost = $derived(rosterUpgradeCost(rosterUpgradeCount))
-  let statCrystalInventory = $derived(currentSlot?.inventory?.statCrystals ?? { common: 0, elite: 0, legendary: 0 })
+  let statCrystalInventory  = $derived(currentSlot?.inventory?.statCrystals  ?? { common: 0, elite: 0, legendary: 0 })
+  let powerCrystalInventory = $derived(currentSlot?.inventory?.powerCrystals  ?? { F: 0, E: 0, D: 0, C: 0, B: 0, A: 0, S: 0, SS: 0, SSS: 0, God: 0 })
+  let weaponCrystalInventory= $derived(currentSlot?.inventory?.weaponCrystals ?? { F: 0, E: 0, D: 0, C: 0, B: 0, A: 0, S: 0, SS: 0, SSS: 0, God: 0 })
+  let armorCrystalInventory = $derived(currentSlot?.inventory?.armorCrystals  ?? { F: 0, E: 0, D: 0, C: 0, B: 0, A: 0, S: 0, SS: 0, SSS: 0, God: 0 })
+  let endlessKeys           = $derived(currentSlot?.endlessKeys ?? 0)
 
   let dailyCommon    = $derived(currentSlot ? getDailyBought(currentSlot, 'common')    : 0)
   let dailyElite     = $derived(currentSlot ? getDailyBought(currentSlot, 'elite')     : 0)
@@ -233,6 +237,33 @@
     view = 'worlds'
   }
 
+  // ── Graded crystal purchases ───────────────────────────────────────────────
+  let fCrystalBuyError = $state<string | null>(null)
+
+  function handleBuyFCrystal(type: 'power' | 'weapon' | 'armor') {
+    if (!currentSlot) return
+    const result = buyFCrystal($state.snapshot(currentSlot) as StorySaveSlot, type)
+    if (result === 'insufficient_gems') {
+      fCrystalBuyError = 'Not enough gems.'
+      setTimeout(() => { fCrystalBuyError = null }, 2500)
+      return
+    }
+    currentSlot = result
+  }
+
+  let endlessKeyBuyError = $state<string | null>(null)
+
+  function handleBuyEndlessKey() {
+    if (!currentSlot) return
+    const result = buyEndlessKey($state.snapshot(currentSlot) as StorySaveSlot)
+    if (result === 'insufficient_gems') {
+      endlessKeyBuyError = 'Not enough gems.'
+      setTimeout(() => { endlessKeyBuyError = null }, 2500)
+      return
+    }
+    currentSlot = result
+  }
+
   // ── Shop extras ────────────────────────────────────────────────────────────
   let rosterUpgradeError = $state<string | null>(null)
 
@@ -250,6 +281,13 @@
   function backToHub() {
     view = 'hub'
     rosterCapAlert = false
+  }
+
+  // ── Inventory constants ────────────────────────────────────────────────────
+  const CRYSTAL_GRADES = ['F','E','D','C','B','A','S','SS','SSS','God'] as const
+  const CRYSTAL_GRADE_COLORS: Record<string, string> = {
+    F:'#6b7280', E:'#78716c', D:'#a3a3a3', C:'#4ade80', B:'#60a5fa',
+    A:'#a78bfa', S:'#f59e0b', SS:'#f97316', SSS:'#ef4444', God:'#ffd700',
   }
 </script>
 
@@ -490,6 +528,29 @@
         </button>
       </div>
 
+      <!-- Inventory -->
+      <div class="obsidian-slab rounded-xl overflow-hidden">
+        <button
+          class="w-full px-5 py-5 flex items-center gap-4"
+          style="background: none; border: none; cursor: pointer;"
+          onclick={() => view = 'inventory'}
+        >
+          <div
+            class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+            style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.15);"
+          >
+            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">inventory_2</span>
+          </div>
+          <div class="flex-1 text-left">
+            <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Inventory</div>
+            <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
+              Crystals · keys · items
+            </div>
+          </div>
+          <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
+        </button>
+      </div>
+
     </div>
   </div>
 {/if}
@@ -531,6 +592,18 @@
         {rosterUpgradeError}
       </div>
     {/if}
+    {#if fCrystalBuyError}
+      <div class="w-full rounded-lg px-4 py-2 text-center font-mono text-sm"
+        style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
+        {fCrystalBuyError}
+      </div>
+    {/if}
+    {#if endlessKeyBuyError}
+      <div class="w-full rounded-lg px-4 py-2 text-center font-mono text-sm"
+        style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
+        {endlessKeyBuyError}
+      </div>
+    {/if}
     {#if crystalBuyError}
       <div class="w-full rounded-lg px-4 py-2 text-center font-mono text-sm"
         style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
@@ -556,23 +629,6 @@
         style="{shards < SHARD_COST_PER_SPIN ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
         onclick={buySpin}
         disabled={shards < SHARD_COST_PER_SPIN}
-      >
-        Buy
-      </button>
-    </div>
-
-    <!-- Roster capacity upgrade -->
-    <div class="obsidian-slab w-full rounded-xl px-5 py-5 flex items-center gap-4">
-      <div class="flex-1">
-        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Roster Expansion</p>
-        <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">+5 character slots (now {rosterCapacity})</p>
-        <p class="font-mono text-xs mt-1" style="color: #34d399;">{nextUpgradeCost.toLocaleString()} gems</p>
-      </div>
-      <button
-        class="{canUpgradeRoster ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-4 py-2 font-bold font-mono text-sm"
-        style="{!canUpgradeRoster ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
-        onclick={handleRosterUpgrade}
-        disabled={!canUpgradeRoster}
       >
         Buy
       </button>
@@ -690,6 +746,99 @@
       </button>
     </div>
 
+    <!-- ── Combat Crystals section ─────────────────────────────────────── -->
+    <div class="w-full flex items-center gap-3 mt-2">
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.06);"></div>
+      <p class="font-mono text-xs tracking-widest uppercase" style="color: var(--color-outline);">Combat Crystals</p>
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.06);"></div>
+    </div>
+    <p class="font-mono text-xs text-center" style="color: var(--color-outline); line-height: 1.6; margin-top: -8px;">
+      Used to fuse and upgrade power, weapon, and armor items.
+    </p>
+
+    <!-- Power Crystal (F) -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
+      <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+        style="background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.3);">
+        <span class="material-symbols-outlined" style="font-size: 20px; color: #fb923c; font-variation-settings: 'FILL' 1;">flash_on</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Power Crystal (F)</p>
+        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">Owned: {powerCrystalInventory.F}</p>
+        <span class="font-mono text-xs mt-1 block" style="color: #34d399;">{F_CRYSTAL_COST.toLocaleString()} gems</span>
+      </div>
+      <button
+        class="{gems >= F_CRYSTAL_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
+        style="{gems < F_CRYSTAL_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
+        onclick={() => handleBuyFCrystal('power')}
+        disabled={gems < F_CRYSTAL_COST}
+      >Buy</button>
+    </div>
+
+    <!-- Weapon Crystal (F) -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
+      <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+        style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3);">
+        <span class="material-symbols-outlined" style="font-size: 20px; color: #818cf8; font-variation-settings: 'FILL' 1;">swords</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Weapon Crystal (F)</p>
+        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">Owned: {weaponCrystalInventory.F}</p>
+        <span class="font-mono text-xs mt-1 block" style="color: #34d399;">{F_CRYSTAL_COST.toLocaleString()} gems</span>
+      </div>
+      <button
+        class="{gems >= F_CRYSTAL_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
+        style="{gems < F_CRYSTAL_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
+        onclick={() => handleBuyFCrystal('weapon')}
+        disabled={gems < F_CRYSTAL_COST}
+      >Buy</button>
+    </div>
+
+    <!-- Armor Crystal (F) -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
+      <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+        style="background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3);">
+        <span class="material-symbols-outlined" style="font-size: 20px; color: #2dd4bf; font-variation-settings: 'FILL' 1;">shield</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Armor Crystal (F)</p>
+        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">Owned: {armorCrystalInventory.F}</p>
+        <span class="font-mono text-xs mt-1 block" style="color: #34d399;">{F_CRYSTAL_COST.toLocaleString()} gems</span>
+      </div>
+      <button
+        class="{gems >= F_CRYSTAL_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
+        style="{gems < F_CRYSTAL_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
+        onclick={() => handleBuyFCrystal('armor')}
+        disabled={gems < F_CRYSTAL_COST}
+      >Buy</button>
+    </div>
+
+    <!-- ── Endless Keys (level 3+) ──────────────────────────────────────── -->
+    {#if playerLevel >= 3}
+      <div class="w-full flex items-center gap-3 mt-2">
+        <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.06);"></div>
+        <p class="font-mono text-xs tracking-widest uppercase" style="color: var(--color-outline);">Endless Mode</p>
+        <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.06);"></div>
+      </div>
+      <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
+        <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+          style="background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.3);">
+          <span class="font-mono text-xl">🗝</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Endless Key</p>
+          <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">One Endless Mode run · Owned: {endlessKeys}</p>
+          <span class="font-mono text-xs mt-1 block" style="color: #34d399;">{ENDLESS_KEY_GEM_COST.toLocaleString()} gems</span>
+        </div>
+        <button
+          class="{gems >= ENDLESS_KEY_GEM_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
+          style="{gems < ENDLESS_KEY_GEM_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
+          onclick={handleBuyEndlessKey}
+          disabled={gems < ENDLESS_KEY_GEM_COST}
+        >Buy</button>
+      </div>
+    {/if}
+
     <p class="font-mono text-xs text-center" style="color: var(--color-outline); line-height: 1.6;">
       Sell characters from your Roster to earn Fate Shards.
     </p>
@@ -723,13 +872,25 @@
       <h2 class="font-bold" style="font-family: var(--font-cinzel); font-size: 20px; color: var(--color-on-surface);">
         Roster
       </h2>
+      <span class="font-mono text-xs" style="color: var(--color-outline);">{roster.length}/{rosterCapacity}</span>
     </div>
 
     <div class="flex items-center gap-2">
       <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">diamond</span>
       <span class="font-mono text-sm font-bold" style="color: var(--gold-bright);">{shards}</span>
 
-      <div class="flex gap-1 ml-2">
+      <!-- Roster upgrade inline button -->
+      <button
+        class="font-mono text-xs px-2 py-1 rounded ml-1"
+        style="background: {canUpgradeRoster ? 'rgba(52,211,153,0.12)' : 'transparent'}; border: 1px solid {canUpgradeRoster ? 'rgba(52,211,153,0.35)' : 'rgba(255,255,255,0.08)'}; color: {canUpgradeRoster ? '#34d399' : 'var(--color-outline)'}; cursor: {canUpgradeRoster ? 'pointer' : 'default'}; opacity: {canUpgradeRoster ? 1 : 0.5};"
+        onclick={handleRosterUpgrade}
+        disabled={!canUpgradeRoster}
+        title="+5 slots — {nextUpgradeCost.toLocaleString()} gems"
+      >
+        +5 slots
+      </button>
+
+      <div class="flex gap-1 ml-1">
         {#each ['tier', 'race', 'archetype'] as sortOption}
           <button
             class="font-mono text-sm font-bold rounded px-2"
@@ -742,6 +903,14 @@
       </div>
     </div>
   </header>
+  {#if rosterUpgradeError}
+    <div class="fixed top-16 left-0 right-0 z-20 px-4 pt-2">
+      <div class="max-w-[960px] mx-auto rounded-lg px-4 py-2 text-center font-mono text-sm"
+        style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
+        {rosterUpgradeError}
+      </div>
+    </div>
+  {/if}
 
   <div class="pt-20 pb-24 px-4">
 
@@ -834,6 +1003,101 @@
     onBattleComplete={handleBattleComplete}
     onBack={() => view = 'worlds'}
   />
+{/if}
+
+<!-- ── Inventory view ────────────────────────────────────────────────────────── -->
+{#if view === 'inventory' && currentSlot}
+  <header class="fixed top-0 left-0 right-0 z-30 flex items-center gap-4 px-4"
+    style="height: 64px; background: rgba(7,7,13,0.97); border-bottom: 1px solid rgba(240,192,64,0.15); backdrop-filter: blur(20px);">
+    <button class="font-mono text-sm"
+      style="color: var(--color-outline); background: none; border: none; cursor: pointer;"
+      onclick={backToHub}>←</button>
+    <h2 class="font-bold" style="font-family: var(--font-cinzel); font-size: 18px; color: var(--color-on-surface);">Inventory</h2>
+    <div class="ml-auto flex items-center gap-3">
+      <div class="flex items-center gap-1">
+        <span class="material-symbols-outlined" style="font-size: 14px; color: #34d399; font-variation-settings: 'FILL' 1;">paid</span>
+        <span class="font-mono text-sm font-bold" style="color: #34d399;">{gems.toLocaleString()}</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="pt-20 pb-24 px-4 flex flex-col gap-5 max-w-xs mx-auto w-full">
+
+    <!-- Endless Keys -->
+    <div class="obsidian-slab rounded-xl px-5 py-4">
+      <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: var(--color-outline);">Endless Keys</p>
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🗝</span>
+        <span class="font-bold font-mono text-xl" style="color: var(--gold-bright);">{endlessKeys}</span>
+        <span class="font-mono text-xs" style="color: var(--color-outline);">{endlessKeys === 1 ? 'key' : 'keys'} available</span>
+      </div>
+    </div>
+
+    <!-- Stat Crystals -->
+    <div class="obsidian-slab rounded-xl px-5 py-4">
+      <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: var(--color-outline);">Stat Crystals</p>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-xs" style="color: #9ca3af;">Common</span>
+          <span class="font-mono text-sm font-bold" style="color: #9ca3af;">{statCrystalInventory.common}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-xs" style="color: #8b5cf6;">Elite</span>
+          <span class="font-mono text-sm font-bold" style="color: #8b5cf6;">{statCrystalInventory.elite}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-xs" style="color: #f59e0b;">Legendary</span>
+          <span class="font-mono text-sm font-bold" style="color: #f59e0b;">{statCrystalInventory.legendary}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Power Crystals -->
+    <div class="obsidian-slab rounded-xl px-5 py-4">
+      <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #fb923c;">Power Crystals</p>
+      <div class="grid grid-cols-2 gap-1.5">
+        {#each CRYSTAL_GRADES as g}
+          {@const count = powerCrystalInventory[g] ?? 0}
+          {@const gc = CRYSTAL_GRADE_COLORS[g]}
+          <div class="flex items-center justify-between px-2 py-1 rounded" style="background: rgba(255,255,255,0.03);">
+            <span class="font-mono text-xs" style="color: {gc};">{g}</span>
+            <span class="font-mono text-sm font-bold" style="color: {count > 0 ? gc : 'var(--color-outline)'};">{count}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Weapon Crystals -->
+    <div class="obsidian-slab rounded-xl px-5 py-4">
+      <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #818cf8;">Weapon Crystals</p>
+      <div class="grid grid-cols-2 gap-1.5">
+        {#each CRYSTAL_GRADES as g}
+          {@const count = weaponCrystalInventory[g] ?? 0}
+          {@const gc = CRYSTAL_GRADE_COLORS[g]}
+          <div class="flex items-center justify-between px-2 py-1 rounded" style="background: rgba(255,255,255,0.03);">
+            <span class="font-mono text-xs" style="color: {gc};">{g}</span>
+            <span class="font-mono text-sm font-bold" style="color: {count > 0 ? gc : 'var(--color-outline)'};">{count}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Armor Crystals -->
+    <div class="obsidian-slab rounded-xl px-5 py-4">
+      <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #2dd4bf;">Armor Crystals</p>
+      <div class="grid grid-cols-2 gap-1.5">
+        {#each CRYSTAL_GRADES as g}
+          {@const count = armorCrystalInventory[g] ?? 0}
+          {@const gc = CRYSTAL_GRADE_COLORS[g]}
+          <div class="flex items-center justify-between px-2 py-1 rounded" style="background: rgba(255,255,255,0.03);">
+            <span class="font-mono text-xs" style="color: {gc};">{g}</span>
+            <span class="font-mono text-sm font-bold" style="color: {count > 0 ? gc : 'var(--color-outline)'};">{count}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+
+  </div>
 {/if}
 
 <!-- ── Sell confirmation modal ───────────────────────────────────────────────── -->

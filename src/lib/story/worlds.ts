@@ -59,7 +59,11 @@ export const CHANCE_DROP_RATES = {
   armorCrystal:  0.07,
 } as const
 
-export type ChanceDrop = keyof typeof CHANCE_DROP_RATES
+/** Endless Key drop rate — only applies at player level 3+ (caller must check). */
+export const ENDLESS_KEY_DROP_RATE = 0.08
+
+/** ChanceDrop: regular drops from CHANCE_DROP_RATES. 'endlessKey' is rolled separately by the caller. */
+export type ChanceDrop = keyof typeof CHANCE_DROP_RATES | 'endlessKey'
 
 /** Returns world index (0-based) for a given grade. */
 export function worldIndex(grade: WorldGrade): number {
@@ -105,7 +109,7 @@ export function rollDrops(enemy: Enemy): { gems: number; xp: number; chanceDrops
   const roll = (r: DropRange) => Math.floor((r.min + Math.random() * (r.max - r.min + 1)) * mult)
 
   const chanceDrops: ChanceDrop[] = [];
-  (Object.keys(CHANCE_DROP_RATES) as ChanceDrop[]).forEach(key => {
+  (Object.keys(CHANCE_DROP_RATES) as Array<keyof typeof CHANCE_DROP_RATES>).forEach(key => {
     if (Math.random() < CHANCE_DROP_RATES[key]) chanceDrops.push(key)
   })
 

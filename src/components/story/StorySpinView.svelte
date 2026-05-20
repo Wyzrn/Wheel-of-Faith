@@ -20,6 +20,7 @@
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
   import type { ElementType, ItemGrade } from '$lib/content/types'
+  import { settings } from '$lib/settings.svelte'
 
   // ── Category hue map — mirrors main game so wheel colors match ───────────────
   const CATEGORY_HUES: Record<string, number> = {
@@ -62,7 +63,7 @@
   const STAT_CATEGORIES = new Set([
     'strength', 'speed', 'agility', 'durability', 'iq',
     'charisma', 'fightingSkill', 'potential', 'energyLevel',
-    'powerMastery', 'weaponMastery',
+    'powerMastery', 'weaponMastery', 'armorStrength',
   ])
 
   const TIER_ORDER = TIER_THRESHOLDS.map(t => t.grade)
@@ -404,6 +405,26 @@
 
       results.push(spinResult)
 
+      // ── weaponType: None → skip weapon + weaponMastery spins ────────────
+      if (currentDef.category === 'weaponType' && resultLabel === 'None') {
+        const weaponIdx  = queue.findIndex((s, i) => i > currentIndex && s.category === 'weapon')
+        const masteryIdx = queue.findIndex((s, i) => i > currentIndex && s.category === 'weaponMastery')
+        if (masteryIdx !== -1) queue.splice(masteryIdx, 1)
+        if (weaponIdx  !== -1) queue.splice(weaponIdx, 1)
+        results.push({ step: results.length + 1, category: 'weapon',        resultLabel: 'No Weapon', resultIndex: 0, timestamp: new Date().toISOString() })
+        results.push({ step: results.length + 1, category: 'weaponMastery', resultLabel: 'Unarmed',   resultIndex: 0, timestamp: new Date().toISOString() })
+      }
+
+      // ── armorType: None → skip armor + armorStrength spins ──────────────
+      if (currentDef.category === 'armorType' && resultLabel === 'None') {
+        const armorIdx    = queue.findIndex((s, i) => i > currentIndex && s.category === 'armor')
+        const strengthIdx = queue.findIndex((s, i) => i > currentIndex && s.category === 'armorStrength')
+        if (strengthIdx !== -1) queue.splice(strengthIdx, 1)
+        if (armorIdx    !== -1) queue.splice(armorIdx, 1)
+        results.push({ step: results.length + 1, category: 'armor',         resultLabel: 'No Armor',   resultIndex: 0, timestamp: new Date().toISOString() })
+        results.push({ step: results.length + 1, category: 'armorStrength', resultLabel: 'Unarmored',  resultIndex: 0, timestamp: new Date().toISOString() })
+      }
+
       // Show result popup — user must tap Continue before advancing
       pendingResult = {
         label: resultLabel,
@@ -484,6 +505,9 @@
           segments={currentSegments}
           categoryHue={currentCategoryHue}
           onSpinComplete={handleSpinComplete}
+          soundEnabled={settings.soundEnabled}
+          effectsEnabled={settings.effectsEnabled}
+          spinSpeedMultiplier={settings.spinSpeed}
         />
       {/key}
 

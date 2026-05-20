@@ -43,6 +43,9 @@ export const STAT_CRYSTAL_DAILY_LIMITS = {
   legendary: 1,
 } as const
 
+/** Shop price (gems) for one F-grade power/weapon/armor crystal. */
+export const F_CRYSTAL_COST = 5_000
+
 export type StatCrystalType = 'common' | 'elite' | 'legendary'
 export type CrystalGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'God'
 
@@ -100,6 +103,8 @@ export interface StorySaveSlot {
   spinsRemaining: number
   /** ISO timestamp of last spin refresh check. Used to award spins every 3 hours. */
   spinsLastRefreshedAt: string
+  /** Endless Mode keys — each key grants one Endless Mode run. Unlocked at player level 3. */
+  endlessKeys: number
   inventory: StoryInventory
   dailyCrystalPurchases: DailyCrystalPurchases
   createdAt: string
@@ -159,6 +164,7 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
     shards: 0,
     spinsRemaining: INITIAL_SPIN_CREDITS,
     spinsLastRefreshedAt: new Date().toISOString(),
+    endlessKeys: 0,
     inventory: freshInventory(),
     dailyCrystalPurchases: freshDailyPurchases(),
     createdAt: new Date().toISOString(),
@@ -192,6 +198,7 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     spinsLastRefreshedAt: raw.spinsLastRefreshedAt ?? new Date().toISOString(),
     inventory: migrateInventory(raw.inventory ?? {}),
     dailyCrystalPurchases: raw.dailyCrystalPurchases ?? freshDailyPurchases(),
+    endlessKeys: raw.endlessKeys ?? 0,
     // Migrate roster entries to add xp/level/statBonuses if missing
     roster: (raw.roster ?? []).map(r => ({
       ...r,
@@ -377,6 +384,7 @@ export interface BattleDrops {
  */
 export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops): StorySaveSlot {
   let shards = slot.shards
+  let endlessKeys = slot.endlessKeys
   const inventory = { ...slot.inventory }
 
   for (const drop of drops.chanceDrops) {
@@ -390,10 +398,52 @@ export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops): Story
       inventory.weaponCrystals = { ...inventory.weaponCrystals, F: inventory.weaponCrystals.F + 1 }
     } else if (drop === 'armorCrystal') {
       inventory.armorCrystals = { ...inventory.armorCrystals, F: inventory.armorCrystals.F + 1 }
+    } else if (drop === 'endlessKey') {
+      endlessKeys++
     }
   }
 
-  return { ...slot, gems: slot.gems + drops.gems, shards, inventory }
+  return { ...slot, gems: slot.gems + drops.gems, shards, endlessKeys, inventory }
+}
+
+/**
+ * Purchases one F-grade power, weapon, or armor crystal.
+ * Returns updated slot or 'insufficient_gems' on failure.
+ */
+export function buyFCrystal(
+  slot: StorySaveSlot,
+  type: 'power' | 'weapon' | 'armor',
+): StorySaveSlot | 'insufficient_gems' {
+  if (slot.gems < F_CRYSTAL_COST) return 'insufficient_gems'
+  const key = `${type}Crystals` as 'powerCrystals' | 'weaponCrystals' | 'armorCrystals'
+  return {
+    ...slot,
+    gems: slot.gems - F_CRYSTAL_COST,
+    inventory: {
+      ...slot.inventory,
+      [key]: { ...slot.inventory[key], F: slot.inventory[key].F + 1 },
+    },
+  }
+}
+
+/** Grants one Endless Key. */
+export function addEndlessKey(slot: StorySaveSlot): StorySaveSlot {
+  return { ...slot, endlessKeys: slot.endlessKeys + 1 }
+}
+
+/** Consumes one Endless Key. Returns null if none remaining. */
+export function consumeEndlessKey(slot: StorySaveSlot): StorySaveSlot | null {
+  if (slot.endlessKeys <= 0) return null
+  return { ...slot, endlessKeys: slot.endlessKeys - 1 }
+}
+
+/** Cost in gems to buy one Endless Key from the shop (available at player level 3+). */
+export const ENDLESS_KEY_GEM_COST = 50_000
+
+/** Purchases one Endless Key. Returns updated slot or 'insufficient_gems'. */
+export function buyEndlessKey(slot: StorySaveSlot): StorySaveSlot | 'insufficient_gems' {
+  if (slot.gems < ENDLESS_KEY_GEM_COST) return 'insufficient_gems'
+  return { ...slot, gems: slot.gems - ENDLESS_KEY_GEM_COST, endlessKeys: slot.endlessKeys + 1 }
 }
 
 /** Adds XP to a character in the roster. Returns updated slot. */
