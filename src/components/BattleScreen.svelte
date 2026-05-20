@@ -49,28 +49,34 @@
   type AnimDir = 'ltr' | 'rtl' | 'center'
   let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir } | null>(null)
   let animKey = 0
+  let dodgeDir = $state<'ltr' | 'rtl' | null>(null)
 
   function showAnim(type: string, color: string, direction: AnimDir = 'center') {
     if (animTimeoutId) clearTimeout(animTimeoutId)
     activeAnim = { type, color, key: ++animKey, direction }
-    animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
+    dodgeDir = type === 'dodge' ? (direction === 'ltr' ? 'ltr' : direction === 'rtl' ? 'rtl' : null) : null
+    animTimeoutId = setTimeout(() => { activeAnim = null; dodgeDir = null }, 950)
   }
 
   function detectAnim(line: string): { type: string; color: string; direction: AnimDir } | null {
-    const hasAction = line.includes('damage!') || line.includes('restores') ||
-      line.includes('recovers') || line.includes('barrier') || line.includes('defensive') ||
-      /BERSERK|combo finisher|follow-up/i.test(line)
-    if (!hasAction) return null
-
     const direction: AnimDir =
       (p1Char && line.startsWith(p1Char.name)) ? 'ltr' :
       (p2Char && line.startsWith(p2Char.name)) ? 'rtl' :
       'center'
 
+    const hasAction = line.includes('damage!') || line.includes('restores') ||
+      line.includes('recovers') || line.includes('barrier') || line.includes('defensive') ||
+      /BERSERK|combo finisher|follow-up/i.test(line) ||
+      /narrowly dodges|weaves around|barely evades|slips past|anticipates|phases through|blinks away|mirrors away|deflects/i.test(line)
+    if (!hasAction) return null
+
+    if (/narrowly dodges|weaves around|barely evades|slips past|anticipates and sidesteps|phases through|blinks away from|mirrors away/i.test(line))
+      return { type: 'dodge', color: '#a5f3fc', direction }
+    if (/barrier forms|defensive stance|protective shell|bracing/i.test(line))
+      return { type: 'shield', color: '#93c5fd', direction }
     if (/CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)) return { type: 'crit', color: '#fde047', direction }
     if (/berserk|frenzy/i.test(line)) return { type: 'berserker', color: '#ef4444', direction }
     if (/combo finisher|follow-up/i.test(line)) return { type: 'combo', color: '#f59e0b', direction }
-    if (/barrier forms|defensive stance|protective shell|bracing/i.test(line)) return { type: 'shield', color: '#93c5fd', direction: 'center' }
     if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction: 'center' }
     if (/fire|flame|blaze|inferno|burn|ember|magma|lava|heat/i.test(line)) return { type: 'fire', color: '#f97316', direction }
     if (/shadow|void|abyss|soul drain|leech/i.test(line)) return { type: 'shadow', color: '#8b5cf6', direction }
@@ -79,6 +85,7 @@
     if (/lightning|thunder|electric|storm|volt|spark|shock|arc/i.test(line)) return { type: 'lightning', color: '#fbbf24', direction }
     if (/ice|frost|freeze|cryo|blizzard|snow|cold|glacier/i.test(line)) return { type: 'ice', color: '#7dd3fc', direction }
     if (/divine|holy|celestial|angel|sacred|radiant|blessed/i.test(line)) return { type: 'holy', color: '#fde68a', direction }
+    if (/water|wave|aqua|flood|tidal|ocean|torrent/i.test(line)) return { type: 'water', color: '#38bdf8', direction }
     if (/time|temporal|chrono|rewind|haste|blink|phase/i.test(line)) return { type: 'time', color: '#a78bfa', direction }
     if (/psychic|mind|telepathy|mental|chaos|reality|warp|phantom/i.test(line)) return { type: 'psychic', color: '#e879f9', direction }
     if (/poison|acid|toxic|venom|plague|rot/i.test(line)) return { type: 'poison', color: '#84cc16', direction }
@@ -250,7 +257,7 @@
     <div class="grid grid-cols-2 gap-2 sm:gap-4">
 
       <!-- P1 panel -->
-      <div class="rounded-xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-2"
+      <div class="rounded-xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-2 {dodgeDir === 'ltr' ? 'panel-dodging' : ''}"
         style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,{phase === 'result' && winner === 'p1' ? '0.7' : '0.22'}); box-shadow: {phase === 'result' && winner === 'p1' ? '0 0 40px rgba(240,192,64,0.3)' : 'none'}; transition: box-shadow 0.5s, border-color 0.5s;">
         <div class="flex items-center gap-2 min-w-0">
           {#if phase === 'result' && winner === 'p1'}
@@ -276,7 +283,7 @@
       </div>
 
       <!-- P2 panel -->
-      <div class="rounded-xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-2"
+      <div class="rounded-xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-2 {dodgeDir === 'rtl' ? 'panel-dodging' : ''}"
         style="background: rgba(232,121,249,0.06); border: 1px solid rgba(232,121,249,{phase === 'result' && winner === 'p2' ? '0.7' : '0.22'}); box-shadow: {phase === 'result' && winner === 'p2' ? '0 0 40px rgba(232,121,249,0.3)' : 'none'}; transition: box-shadow 0.5s, border-color 0.5s;">
         <div class="flex items-center gap-2 min-w-0">
           {#if phase === 'result' && winner === 'p2'}
@@ -413,3 +420,19 @@
   {/if}
 
 </div>
+
+<style>
+@keyframes panel-dodge {
+  0%   { opacity: 1;    transform: translateX(0);     filter: none; }
+  12%  { opacity: 0.22; transform: translateX(-15px);  filter: brightness(1.8) blur(3px); }
+  30%  { opacity: 0.45; transform: translateX(11px);   filter: brightness(1.4) blur(1.5px); }
+  50%  { opacity: 0.18; transform: translateX(-9px);   filter: brightness(2) blur(3px); }
+  68%  { opacity: 0.55; transform: translateX(5px);    filter: blur(1px); }
+  85%  { opacity: 0.85; transform: translateX(-2px);   filter: none; }
+  100% { opacity: 1;    transform: translateX(0);     filter: none; }
+}
+.panel-dodging {
+  animation: panel-dodge 0.75s ease-out forwards;
+  will-change: transform, opacity;
+}
+</style>
