@@ -322,15 +322,18 @@
 
     const resultIndex = weightedRandom(segments)
     // Land at a random position within the segment (not always the midpoint).
-    // Pad 15% from each edge to avoid ambiguity at narrow segment borders.
+    // Pad 10–20% from each edge to vary how close to segment borders we land.
     const seg     = segmentAngles[resultIndex]
     const span    = seg.endDeg - seg.startDeg
-    const padding = span * 0.15
+    const padding = span * (0.10 + Math.random() * 0.10)
     const landDeg = seg.startDeg + padding + Math.random() * (span - 2 * padding)
     const currentMod = currentRotation % 360
     const delta = ((360 - landDeg) - currentMod + 360) % 360
-    const extraSpins = 8 + Math.floor(Math.random() * 5)   // 8–12 full rotations
+    const extraSpins = 5 + Math.floor(Math.random() * 10)   // 5–14 full rotations
     const targetAngle = currentRotation + (extraSpins * 360) + delta
+    // Duration scales with spin count so more rotations feel physically longer.
+    // Base 1.9s + 0.13s per extra rotation + up to 0.7s random variance.
+    const duration = (1.9 + extraSpins * 0.13 + Math.random() * 0.7) / spinSpeedMultiplier
 
     spinStatus     = 'SPINNING'
     prevGsapRot    = currentRotation
@@ -341,7 +344,7 @@
 
     spinTween = gsap.to(wheelGroupEl, {
       rotation: targetAngle,
-      duration: (2.5 + Math.random() * 0.8) / spinSpeedMultiplier,
+      duration,
       ease: 'power4.out',
       svgOrigin: SVG_CENTER,
       force3D: true,

@@ -19,7 +19,8 @@ import { energyLevelLabels } from '$lib/content/energy-level-labels'
 import { heightLabels }      from '$lib/content/height-labels'
 
 // Content imports — races, archetypes, items (Plans 02-02)
-import { races }       from '$lib/content/races'
+import { races as _races } from '$lib/content/races'
+const races = [..._races].sort((a, b) => b.weight - a.weight)
 import { archetypes }  from '$lib/content/archetypes'
 import { powers }      from '$lib/content/powers'
 import { weapons }     from '$lib/content/weapons'
