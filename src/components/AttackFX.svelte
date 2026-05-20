@@ -18,12 +18,10 @@
   )
 
   // ─── Particle sprite definitions ─────────────────────────────────────────
-  const K = '/images/kenney_particle-pack/PNG (Transparent)/'
-  const CI = '/images/Particles/Complex/impacts/'
-  const CC = '/images/Particles/Complex/circle/'
-  const CF = '/images/Particles/Complex/flare/'
-  const CS = '/images/Particles/Complex/smoke/'
-  const CO = '/images/Particles/Complex/others/'
+  const K  = '/fx/k/'
+  const CI = '/fx/c/'
+  const CF = '/fx/c/'
+  const CS = '/fx/c/'
 
   interface Sprite { src: string; x: number; y: number; tx: number; ty: number; rot: number; scale: number; delay: number; size: number }
 

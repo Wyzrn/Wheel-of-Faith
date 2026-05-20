@@ -29,7 +29,7 @@ export const ELEMENT_COLORS: Record<ElementType, string> = {
   Neutral:     '#6b7280',
 }
 
-const _K = '/images/kenney_particle-pack/PNG (Transparent)/'
+const _K = '/fx/k/'
 export const ELEMENT_ICONS: Record<ElementType, string> = {
   Fire:        _K + 'flame_01.png',
   Ice:         _K + 'twirl_01.png',
