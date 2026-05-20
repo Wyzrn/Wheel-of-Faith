@@ -16,6 +16,204 @@
     crashTypes.has(type) ? `fx-${direction}-crash` :
     `fx-${direction}-arc`
   )
+
+  // ─── Particle sprite definitions ─────────────────────────────────────────
+  const K = '/images/kenney_particle-pack/PNG (Transparent)/'
+  const CI = '/images/Particles/Complex/impacts/'
+  const CC = '/images/Particles/Complex/circle/'
+  const CF = '/images/Particles/Complex/flare/'
+  const CS = '/images/Particles/Complex/smoke/'
+  const CO = '/images/Particles/Complex/others/'
+
+  interface Sprite { src: string; x: number; y: number; tx: number; ty: number; rot: number; scale: number; delay: number; size: number }
+
+  function p(src: string, x: number, y: number, tx: number, ty: number, rot: number, scale: number, delay: number, sz = 24): Sprite {
+    return { src, x, y, tx, ty, rot, scale, delay, size: sz }
+  }
+
+  const PARTICLES: Record<string, Sprite[]> = {
+    slash: [
+      p(K+'slash_01.png',   50, 45,  30, -25, -20, 1.2, 0.00, 28),
+      p(K+'slash_02.png',   50, 50, -28, -18,  30, 1.0, 0.05, 22),
+      p(K+'slash_03.png',   50, 48,  15, -35,  10, 1.1, 0.08, 20),
+      p(K+'spark_05.png',   50, 50,  40, -20,  45, 0.8, 0.12, 16),
+      p(K+'spark_07.png',   50, 50, -35, -28, -35, 0.9, 0.10, 14),
+      p(K+'scorch_01.png',  50, 55,  10,  20,   0, 0.7, 0.18, 18),
+      p(CI+'impact_5.png',  50, 50,   0,   0,   0, 1.4, 0.15, 32),
+    ],
+    fire: [
+      p(K+'flame_01.png',   50, 50,  -8, -40,  10, 1.3, 0.00, 30),
+      p(K+'flame_03.png',   50, 50,  18, -35, -12, 1.1, 0.06, 26),
+      p(K+'fire_01.png',    50, 50, -20, -30,   5, 1.2, 0.10, 24),
+      p(K+'scorch_01.png',  50, 58,  25,  15,  20, 0.9, 0.14, 20),
+      p(K+'smoke_01.png',   50, 52, -18,  22, -15, 0.8, 0.20, 22),
+      p(K+'spark_04.png',   50, 50,  35, -22,  40, 0.7, 0.08, 14),
+      p(K+'spark_06.png',   50, 50, -30, -15, -40, 0.7, 0.12, 14),
+      p(CI+'impact_3.png',  50, 50,   0,   0,   0, 1.5, 0.18, 36),
+    ],
+    lightning: [
+      p(K+'spark_01.png',   50, 30,  12, -40,  15, 1.4, 0.00, 28),
+      p(K+'spark_03.png',   50, 50, -22, -28, -20, 1.2, 0.04, 24),
+      p(K+'spark_06.png',   50, 50,  28, -20,  35, 1.0, 0.08, 20),
+      p(K+'spark_07.png',   50, 50, -15,  30, -45, 0.8, 0.12, 16),
+      p(K+'muzzle_01.png',  50, 50,   0,   0,   0, 1.3, 0.05, 30),
+      p(K+'muzzle_03.png',  50, 50,  20,  -8,  20, 1.0, 0.10, 22),
+      p(CI+'impact_1.png',  50, 50,   0,   0,   0, 1.6, 0.16, 38),
+    ],
+    ice: [
+      p(K+'twirl_01.png',   50, 50,  -5,  -5,  45, 1.4, 0.00, 32),
+      p(K+'twirl_03.png',   50, 50,  22, -20, -30, 1.1, 0.06, 26),
+      p(K+'circle_04.png',  50, 50, -25, -15,  60, 1.0, 0.10, 22),
+      p(K+'circle_05.png',  50, 50,  18,  25, -20, 0.8, 0.14, 18),
+      p(K+'star_05.png',    50, 50, -20,  20,  30, 0.9, 0.08, 16),
+      p(K+'star_06.png',    50, 50,  30, -28,  15, 0.7, 0.12, 14),
+      p(CI+'impact_8.png',  50, 50,   0,   0,   0, 1.3, 0.20, 32),
+    ],
+    shadow: [
+      p(K+'smoke_07.png',   50, 50, -12, -35, -10, 1.3, 0.00, 28),
+      p(K+'smoke_08.png',   50, 50,  20, -28,  15, 1.1, 0.08, 26),
+      p(K+'smoke_09.png',   50, 50, -25,  18, -20, 1.0, 0.12, 24),
+      p(K+'smoke_10.png',   50, 50,  15,  30,  10, 0.9, 0.16, 22),
+      p(K+'circle_04.png',  50, 50,  -8, -20,  40, 0.8, 0.10, 18),
+      p(CS+'smoke2_3.png',  50, 50,   0, -25,   0, 1.2, 0.20, 30),
+    ],
+    holy: [
+      p(K+'light_01.png',   50, 50,   0,   0,   0, 1.6, 0.00, 36),
+      p(K+'light_02.png',   50, 50,  20, -22,  30, 1.2, 0.06, 28),
+      p(K+'light_03.png',   50, 50, -18, -25, -20, 1.1, 0.10, 26),
+      p(K+'star_03.png',    50, 50,  25,  20,  45, 0.9, 0.08, 20),
+      p(K+'star_05.png',    50, 50, -28,  18, -35, 0.8, 0.12, 18),
+      p(K+'star_07.png',    50, 50,  15, -30,  20, 0.7, 0.14, 16),
+      p(CF+'flare_5.png',   50, 50,   0,   0,   0, 1.4, 0.18, 38),
+    ],
+    time: [
+      p(K+'twirl_02.png',   50, 50,   5,   5, 360, 1.4, 0.00, 32),
+      p(K+'twirl_03.png',   50, 50, -20, -20, 180, 1.1, 0.06, 26),
+      p(K+'circle_01.png',  50, 50,  25,  -8,  90, 1.0, 0.10, 22),
+      p(K+'trace_06.png',   50, 50, -28,  15, -45, 0.8, 0.12, 20),
+      p(K+'symbol_01.png',  50, 50,  15, -28,  30, 0.7, 0.16, 18),
+    ],
+    psychic: [
+      p(K+'symbol_02.png',  50, 50,   0,   0,   0, 1.5, 0.00, 32),
+      p(K+'circle_02.png',  50, 50,  22, -18,  45, 1.2, 0.06, 26),
+      p(K+'circle_05.png',  50, 50, -20,  22, -30, 1.0, 0.10, 22),
+      p(K+'trace_04.png',   50, 50,  28, -25,  20, 0.8, 0.08, 18),
+      p(K+'trace_07.png',   50, 50, -25,  20, -40, 0.7, 0.12, 16),
+    ],
+    poison: [
+      p(K+'circle_02.png',  50, 50,  15, -30,  20, 1.3, 0.00, 28),
+      p(K+'circle_03.png',  50, 50, -22, -22, -15, 1.1, 0.06, 24),
+      p(K+'smoke_05.png',   50, 50,  -8,  28, -20, 1.0, 0.12, 22),
+      p(K+'smoke_06.png',   50, 50,  25,  18,  10, 0.8, 0.16, 20),
+      p(K+'trace_05.png',   50, 50, -20, -18,  35, 0.7, 0.10, 16),
+    ],
+    gravity: [
+      p(K+'circle_01.png',  50, 50,   0,   0,   0, 1.5, 0.00, 36),
+      p(K+'dirt_01.png',    50, 50,  20, -18,  25, 1.2, 0.06, 24),
+      p(K+'dirt_02.png',    50, 50, -22,  15, -20, 1.0, 0.08, 22),
+      p(K+'dirt_03.png',    50, 50,  12,  25,  15, 0.9, 0.12, 20),
+      p(K+'circle_04.png',  50, 50, -18, -22,  40, 0.8, 0.10, 18),
+    ],
+    combo: [
+      p(K+'star_01.png',    50, 50,  25, -20,  30, 1.2, 0.00, 22),
+      p(K+'star_02.png',    50, 50, -22, -18, -25, 1.0, 0.10, 20),
+      p(K+'star_03.png',    50, 50,  20,  22,  15, 0.9, 0.20, 18),
+      p(K+'spark_04.png',   50, 50, -25,  20, -35, 0.8, 0.30, 16),
+      p(K+'spark_02.png',   50, 50,  18, -28,  40, 0.7, 0.40, 14),
+    ],
+    crit: [
+      p(K+'star_04.png',    50, 50,   0,   0,   0, 1.8, 0.00, 40),
+      p(K+'star_05.png',    50, 50,  30, -25,  45, 1.3, 0.06, 30),
+      p(K+'star_06.png',    50, 50, -28, -22, -30, 1.2, 0.10, 28),
+      p(K+'flare_01.png',   50, 50,   0,   0,   0, 1.6, 0.08, 38),
+      p(K+'spark_06.png',   50, 50,  35,  20,  50, 1.0, 0.12, 22),
+      p(K+'spark_07.png',   50, 50, -32,  18, -45, 0.9, 0.14, 20),
+      p(K+'muzzle_02.png',  50, 50,  18, -30,  25, 0.8, 0.16, 18),
+      p(CI+'impact_10.png', 50, 50,   0,   0,   0, 1.8, 0.18, 44),
+    ],
+    shield: [
+      p(K+'circle_05.png',  50, 50,   0,   0,   0, 1.5, 0.00, 36),
+      p(K+'window_01.png',  50, 50,  22, -20,  20, 1.2, 0.06, 28),
+      p(K+'window_02.png',  50, 50, -20,  22, -15, 1.0, 0.10, 26),
+      p(K+'light_03.png',   50, 50,  18, -25,  30, 0.8, 0.14, 22),
+      p(K+'circle_01.png',  50, 50, -25,  18, -25, 0.7, 0.18, 20),
+    ],
+    berserker: [
+      p(K+'scorch_03.png',  50, 50,   0,   0,   0, 1.5, 0.00, 36),
+      p(K+'slash_03.png',   50, 50,  25, -22,  35, 1.3, 0.06, 28),
+      p(K+'slash_04.png',   50, 50, -22,  20, -40, 1.1, 0.10, 26),
+      p(K+'smoke_03.png',   50, 50,  -8,  30, -10, 1.0, 0.14, 24),
+      p(K+'spark_07.png',   50, 50,  30, -18,  50, 0.9, 0.08, 20),
+      p(CI+'impact_12.png', 50, 50,   0,   0,   0, 1.6, 0.20, 40),
+    ],
+    wind: [
+      p(K+'trace_01.png',   50, 50,  35,  -5,  15, 1.3, 0.00, 28),
+      p(K+'trace_02.png',   50, 50,  30,  -8, -10, 1.1, 0.06, 24),
+      p(K+'trace_07.png',   50, 50,  38, -12,  20, 1.0, 0.10, 22),
+      p(K+'circle_03.png',  50, 50,  25,  15, -15, 0.8, 0.12, 18),
+      p(K+'scratch_01.png', 50, 50,  20, -20,  25, 0.7, 0.14, 16),
+    ],
+    earth: [
+      p(K+'dirt_01.png',    50, 55,  20, -15,  20, 1.3, 0.00, 26),
+      p(K+'dirt_02.png',    50, 55, -18, -12, -15, 1.1, 0.05, 24),
+      p(K+'dirt_03.png',    50, 55,  -8, -20,  10, 1.0, 0.08, 22),
+      p(K+'scorch_01.png',  50, 58,  25,  10,  15, 0.9, 0.12, 20),
+      p(K+'scorch_02.png',  50, 58, -22,   8, -20, 0.8, 0.14, 18),
+      p(CI+'impact_7.png',  50, 50,   0,   0,   0, 1.4, 0.18, 36),
+    ],
+    blood: [
+      p(K+'scorch_02.png',  50, 50,  18, -25,  20, 1.4, 0.00, 30),
+      p(K+'scorch_03.png',  50, 50, -20, -20, -25, 1.2, 0.05, 26),
+      p(K+'circle_03.png',  50, 50,  25,  20,  10, 1.0, 0.10, 22),
+      p(K+'circle_02.png',  50, 50, -22,  18, -15, 0.9, 0.14, 20),
+      p(K+'trace_05.png',   50, 50,  15, -28,  35, 0.7, 0.08, 16),
+    ],
+    void: [
+      p(K+'circle_04.png',  50, 50,  -5,  -5, 180, 1.5, 0.00, 36),
+      p(K+'smoke_09.png',   50, 50,  18, -20, -90, 1.2, 0.08, 28),
+      p(K+'smoke_10.png',   50, 50, -20,  18,  90, 1.0, 0.12, 26),
+      p(K+'symbol_01.png',  50, 50,  22, -22,  45, 0.8, 0.10, 22),
+      p(K+'circle_02.png',  50, 50, -25,  15, -60, 0.7, 0.14, 18),
+    ],
+    energy: [
+      p(K+'magic_01.png',   50, 50,   0,   0,   0, 1.5, 0.00, 34),
+      p(K+'magic_03.png',   50, 50,  22, -18,  30, 1.2, 0.06, 28),
+      p(K+'light_02.png',   50, 50, -20,  20, -25, 1.0, 0.10, 24),
+      p(K+'circle_02.png',  50, 50,  25,  18,  45, 0.8, 0.08, 20),
+      p(K+'spark_03.png',   50, 50, -22, -20, -30, 0.7, 0.12, 16),
+      p(CF+'flare_3.png',   50, 50,   0,   0,   0, 1.4, 0.16, 36),
+    ],
+    cursed: [
+      p(K+'symbol_02.png',  50, 50,   0,   0,   0, 1.4, 0.00, 32),
+      p(K+'smoke_09.png',   50, 50,  18, -22,  20, 1.2, 0.06, 26),
+      p(K+'circle_04.png',  50, 50, -20,  18, -30, 1.0, 0.10, 22),
+      p(K+'trace_06.png',   50, 50,  25, -18,  40, 0.8, 0.12, 18),
+      p(K+'twirl_02.png',   50, 50, -22,  22, -20, 0.7, 0.14, 16),
+    ],
+    counter: [
+      p(K+'star_06.png',    50, 50,   0,   0,   0, 1.5, 0.00, 34),
+      p(K+'spark_02.png',   50, 50,  25, -20,  35, 1.2, 0.06, 24),
+      p(K+'light_01.png',   50, 50, -22,  18, -30, 1.0, 0.10, 22),
+      p(K+'circle_05.png',  50, 50,  20,  22,  20, 0.8, 0.12, 18),
+      p(CI+'impact_2.png',  50, 50,   0,   0,   0, 1.4, 0.18, 36),
+    ],
+    dodge: [
+      p(K+'trace_04.png',   50, 50,  35,  -5,  10, 1.2, 0.00, 24),
+      p(K+'trace_06.png',   50, 50,  30, -10, -12, 1.0, 0.06, 22),
+      p(K+'circle_03.png',  50, 50,  28,  12,  15, 0.8, 0.10, 18),
+      p(K+'smoke_02.png',   50, 50, -10,   8, -10, 0.6, 0.14, 16),
+    ],
+  }
+
+  const GENERIC_PARTICLES: Sprite[] = [
+    p(K+'spark_01.png',   50, 50,  22, -18,  30, 1.2, 0.00, 22),
+    p(K+'circle_01.png',  50, 50, -20,  20, -25, 1.0, 0.06, 20),
+    p(K+'star_01.png',    50, 50,  18,  22,  15, 0.9, 0.10, 18),
+    p(K+'smoke_02.png',   50, 50, -22, -15, -20, 0.7, 0.14, 16),
+    p(CI+'impact_4.png',  50, 50,   0,   0,   0, 1.3, 0.18, 30),
+  ]
+
+  let particleSprites = $derived(PARTICLES[type] ?? GENERIC_PARTICLES)
 </script>
 
 <div class="fx-root {flyClass}" style="width:{size}px;height:{size}px;--c:{color};">
@@ -416,6 +614,25 @@
     </svg>
   {/if}
 
+  <!-- ── Particle sprite overlay ──────────────────────────────────────── -->
+  <div class="particles">
+    {#each particleSprites as sp, i}
+      <img
+        src={sp.src}
+        class="ps"
+        alt=""
+        style="
+          left: {sp.x}%; top: {sp.y}%;
+          width: {sp.size}px; height: {sp.size}px;
+          --tx: {sp.tx}px; --ty: {sp.ty}px;
+          --pr: {sp.rot}deg; --ps: {sp.scale};
+          --pd: {sp.delay}s;
+          filter: drop-shadow(0 0 4px var(--c));
+        "
+      />
+    {/each}
+  </div>
+
 </div>
 
 <style>
@@ -428,6 +645,27 @@
   filter: drop-shadow(0 0 8px var(--c));
 }
 .fx-svg { width: 100%; height: 100%; }
+
+/* ── Particle sprite layer ─────────────────────────────────────────── */
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.ps {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  opacity: 0;
+  animation: ps-burst 0.65s var(--pd, 0s) cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+}
+@keyframes ps-burst {
+  0%   { transform: translate(-50%, -50%) scale(0) rotate(0deg);                          opacity: 0; }
+  18%  { opacity: 1; }
+  55%  { transform: translate(calc(-50% + var(--tx,0px)), calc(-50% + var(--ty,0px))) scale(var(--ps,1)) rotate(var(--pr,0deg)); opacity: 0.85; }
+  100% { transform: translate(calc(-50% + var(--tx,0px)*1.6), calc(-50% + var(--ty,0px)*1.6)) scale(calc(var(--ps,1) * 0.3)) rotate(calc(var(--pr,0deg) * 1.5)); opacity: 0; }
+}
 
 /* ─── ARC: curves upward at midpoint, crashes into target ─────────── */
 .fx-ltr-arc { animation: fly-ltr-arc 0.75s cubic-bezier(0.22, 0.8, 0.3, 1) forwards; }

@@ -2190,9 +2190,10 @@
                     {@const gradeInfo = item.grade ? ITEM_GRADE_INFO[item.grade] : null}
                     <div class="flex items-center gap-2 flex-wrap justify-center">
                       {#if item.element}
-                        <span class="px-2 py-0.5 rounded text-xs font-bold"
+                        <span class="px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"
                           style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
-                          {ELEMENT_ICONS[item.element]} {item.element}
+                          <img src={ELEMENT_ICONS[item.element]} class="w-4 h-4 object-contain" alt={item.element} style="filter: drop-shadow(0 0 3px {elColor});" />
+                          {item.element}
                         </span>
                       {/if}
                       {#if gradeInfo}
@@ -2213,9 +2214,10 @@
                     {@const gradeInfo = poolMeta.grade ? ITEM_GRADE_INFO[poolMeta.grade] : null}
                     <div class="flex items-center gap-2 flex-wrap justify-center">
                       {#if poolMeta.element}
-                        <span class="px-2 py-0.5 rounded text-xs font-bold"
+                        <span class="px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"
                           style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
-                          {ELEMENT_ICONS[poolMeta.element]} {poolMeta.element}
+                          <img src={ELEMENT_ICONS[poolMeta.element]} class="w-4 h-4 object-contain" alt={poolMeta.element} style="filter: drop-shadow(0 0 3px {elColor});" />
+                          {poolMeta.element}
                         </span>
                       {/if}
                       {#if gradeInfo}
@@ -2236,9 +2238,10 @@
                     {@const gradeInfo = abilMeta.grade ? ITEM_GRADE_INFO[abilMeta.grade] : null}
                     <div class="flex items-center gap-2 flex-wrap justify-center">
                       {#if abilMeta.element}
-                        <span class="px-2 py-0.5 rounded text-xs font-bold"
+                        <span class="px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"
                           style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
-                          {ELEMENT_ICONS[abilMeta.element]} {abilMeta.element}
+                          <img src={ELEMENT_ICONS[abilMeta.element]} class="w-4 h-4 object-contain" alt={abilMeta.element} style="filter: drop-shadow(0 0 3px {elColor});" />
+                          {abilMeta.element}
                         </span>
                       {/if}
                       {#if gradeInfo}

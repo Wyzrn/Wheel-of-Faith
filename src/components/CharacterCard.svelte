@@ -6,7 +6,7 @@
   import { powers as powersPool } from '$lib/content/powers'
   import { weapons as weaponsPool } from '$lib/content/weapons'
   import { armors as armorsPool } from '$lib/content/armors'
-  import { ITEM_GRADE_INFO, ELEMENT_COLORS, ELEMENT_ICONS, highestGrade } from '$lib/content/elements'
+  import { ITEM_GRADE_INFO, ELEMENT_COLORS, ELEMENT_ICONS, GRADE_ORDER, highestGrade } from '$lib/content/elements'
   import type { ItemGrade } from '$lib/content/types'
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
@@ -350,7 +350,7 @@
             {@const abGradeInfo = abMeta?.grade ? ITEM_GRADE_INFO[abMeta.grade] : null}
             <li class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e4e1ee; border: 1px solid rgba(240,192,64,0.12); border-left: 2px solid {abColor}55;">
               {#if abMeta?.element}
-                <span style="font-size: 10px;">{ELEMENT_ICONS[abMeta.element]}</span>
+                <img src={ELEMENT_ICONS[abMeta.element]} class="w-4 h-4 object-contain shrink-0" alt={abMeta.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[abMeta.element]});" />
               {/if}
               <span class="flex-1">{ab}</span>
               {#if abGradeInfo}
@@ -371,7 +371,7 @@
             {@const abGradeInfo = abMeta?.grade ? ITEM_GRADE_INFO[abMeta.grade] : null}
             <li class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e4e1ee; border: 1px solid rgba(139,92,246,0.15); border-left: 2px solid {abColor}55;">
               {#if abMeta?.element}
-                <span style="font-size: 10px;">{ELEMENT_ICONS[abMeta.element]}</span>
+                <img src={ELEMENT_ICONS[abMeta.element]} class="w-4 h-4 object-contain shrink-0" alt={abMeta.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[abMeta.element]});" />
               {/if}
               <span class="flex-1">{ab}</span>
               {#if abGradeInfo}
@@ -399,7 +399,7 @@
           {@const pGradeInfo = ITEM_GRADE_INFO[pGrade]}
           <span class="text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5"
             style="background: {pColor}18; color: {pColor}dd; border: 1px solid {pColor}44;">
-            {#if pInfo?.element}<span style="font-size: 11px; line-height: 1;">{ELEMENT_ICONS[pInfo.element]}</span>{/if}
+            {#if pInfo?.element}<img src={ELEMENT_ICONS[pInfo.element]} class="w-4 h-4 object-contain shrink-0" alt={pInfo.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[pInfo.element]});" />{/if}
             {p}
             <span class="text-[9px] font-bold px-1 py-0.5 rounded shrink-0"
               style="background: {pGradeInfo.color}22; color: {pGradeInfo.color}; border: 1px solid {pGradeInfo.color}55;">{pGrade}</span>
@@ -437,7 +437,10 @@
               {wGradeInfo.label} +{wGradeInfo.battleBonus}
             </span>
             {#if wElement}
-              <span class="text-xs" style="color: {ELEMENT_COLORS[wElement]};">{ELEMENT_ICONS[wElement]} {wElement}</span>
+              <span class="text-xs flex items-center gap-1" style="color: {ELEMENT_COLORS[wElement]};">
+                <img src={ELEMENT_ICONS[wElement]} class="w-3.5 h-3.5 object-contain" alt={wElement} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[wElement]});" />
+                {wElement}
+              </span>
             {/if}
             {#if wi === 0 && weaponType !== '—'}
               <span class="text-xs px-2 py-1 rounded" style="background: rgba(240,192,64,0.08); color: #9a907b; border: 1px solid rgba(240,192,64,0.15);">{weaponType}</span>
@@ -469,7 +472,10 @@
           {ITEM_GRADE_INFO[armorGrade].label}
         </span>
         {#if armorElement}
-          <span class="text-xs" style="color: {ELEMENT_COLORS[armorElement]};">{ELEMENT_ICONS[armorElement]} {armorElement}</span>
+          <span class="text-xs flex items-center gap-1" style="color: {ELEMENT_COLORS[armorElement]};">
+            <img src={ELEMENT_ICONS[armorElement]} class="w-3.5 h-3.5 object-contain" alt={armorElement} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[armorElement]});" />
+            {armorElement}
+          </span>
         {/if}
         {#if armorType !== '—'}
           <span class="text-xs px-2 py-1 rounded" style="background: rgba(251,146,60,0.08); color: #9a907b; border: 1px solid rgba(251,146,60,0.15);">{armorType}</span>
