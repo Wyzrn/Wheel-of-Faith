@@ -526,3 +526,28 @@ export const weapons: SimpleItem[] = [
   { label: 'Expired Yogurt (Thrown)', weight: 3, element: 'Neutral', grade: 'F' },
   { label: 'Gentle Nudge (Very Gentle)', weight: 3, element: 'Neutral', grade: 'F' },
 ]
+
+const _elementMap: Record<string, string> = {
+  Metal: 'Melee', Fire: 'Melee', Earth: 'Melee', Blood: 'Melee',
+  Wind: 'Ranged', Lightning: 'Ranged', Ice: 'Ranged', Water: 'Ranged',
+  Arcane: 'Magical', Cosmic: 'Magical', Light: 'Magical', Soul: 'Magical', Time: 'Magical',
+  Chaos: 'Exotic', Psychic: 'Exotic', Sound: 'Exotic', Gravity: 'Exotic', Nature: 'Exotic',
+  Shadow: 'Cursed', Void: 'Cursed', Poison: 'Cursed',
+  Neutral: 'None',
+}
+
+export const weaponsByCategory: Record<string, SimpleItem[]> = (() => {
+  const map: Record<string, SimpleItem[]> = {
+    None: [], Melee: [], Ranged: [], Magical: [], Exotic: [], Cursed: [], Ancient: [],
+  }
+  for (const w of weapons) {
+    const cat = _elementMap[w.element ?? ''] ?? 'Melee'
+    map[cat].push(w)
+  }
+  // Ancient gets a curated high-tier subset of Melee + Magical
+  map['Ancient'] = weapons.filter(w =>
+    (w.element === 'Metal' || w.element === 'Earth' || w.element === 'Light' || w.element === 'Cosmic') &&
+    ['God', 'SSS', 'SS', 'S', 'A', 'B'].includes(w.grade ?? '')
+  )
+  return map
+})()
