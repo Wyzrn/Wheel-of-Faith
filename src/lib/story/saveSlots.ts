@@ -202,12 +202,15 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     dailyCrystalPurchases: raw.dailyCrystalPurchases ?? freshDailyPurchases(),
     endlessKeys: raw.endlessKeys ?? 0,
     teams: raw.teams ?? [],
-    // Migrate roster entries to add xp/level/statBonuses if missing
+    // Migrate roster entries to add xp/level/statBonuses/equipped if missing
     roster: (raw.roster ?? []).map(r => ({
       ...r,
       level: r.level ?? 1,
       xp: r.xp ?? 0,
       statBonuses: r.statBonuses ?? {},
+      equippedWeapon: r.equippedWeapon ?? null,
+      equippedArmor: r.equippedArmor ?? null,
+      equippedPower: r.equippedPower ?? null,
     })),
   }
 }
@@ -470,13 +473,53 @@ export function deleteTeamInSlot(slot: StorySaveSlot, teamId: string): StorySave
   return { ...slot, teams: slot.teams.filter(t => t.id !== teamId) }
 }
 
-/** Adds XP to a character in the roster. Returns updated slot. */
+/** Adds XP to a character. Awards one common stat crystal per level gained. */
 export function addCharacterXp(slot: StorySaveSlot, characterId: string, xp: number): StorySaveSlot {
+  let inventory = slot.inventory
   const roster = slot.roster.map(r => {
     if (r.id !== characterId) return r
     const newXp = r.xp + xp
-    const newLevel = Math.floor(1 + Math.sqrt(newXp / 50))
+    const newLevel = Math.floor(1 + Math.sqrt(newXp / 200))
+    const levelsGained = Math.max(0, newLevel - r.level)
+    if (levelsGained > 0) {
+      inventory = {
+        ...inventory,
+        statCrystals: { ...inventory.statCrystals, common: inventory.statCrystals.common + levelsGained },
+      }
+    }
     return { ...r, xp: newXp, level: newLevel }
   })
-  return { ...slot, roster }
+  return { ...slot, roster, inventory }
+}
+
+/** Splits totalXp evenly across all characterIds (only IDs present in roster get XP). */
+export function addTeamXp(slot: StorySaveSlot, characterIds: string[], totalXp: number): StorySaveSlot {
+  const validIds = characterIds.filter(id => slot.roster.some(r => r.id === id))
+  if (validIds.length === 0 || totalXp <= 0) return slot
+  const xpEach = Math.floor(totalXp / validIds.length)
+  let updated = slot
+  for (const id of validIds) updated = addCharacterXp(updated, id, xpEach)
+  return updated
+}
+
+/** Equips a graded crystal item to a roster character, consuming one from inventory. */
+export function equipItemToCharacter(
+  slot: StorySaveSlot,
+  characterId: string,
+  itemType: 'weapon' | 'armor' | 'power',
+  grade: string,
+): StorySaveSlot | 'no_item' | 'char_not_found' {
+  const key = `${itemType}Crystals` as 'weaponCrystals' | 'armorCrystals' | 'powerCrystals'
+  const crystals = slot.inventory[key] as GradedCrystalCounts
+  if ((crystals[grade as keyof GradedCrystalCounts] ?? 0) <= 0) return 'no_item'
+  if (!slot.roster.some(r => r.id === characterId)) return 'char_not_found'
+  const equipField = `equipped${itemType.charAt(0).toUpperCase() + itemType.slice(1)}` as 'equippedWeapon' | 'equippedArmor' | 'equippedPower'
+  return {
+    ...slot,
+    inventory: {
+      ...slot.inventory,
+      [key]: { ...crystals, [grade]: (crystals[grade as keyof GradedCrystalCounts]) - 1 },
+    },
+    roster: slot.roster.map(r => r.id === characterId ? { ...r, [equipField]: grade } : r),
+  }
 }

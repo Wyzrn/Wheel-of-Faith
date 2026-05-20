@@ -248,6 +248,10 @@
     showResumePrompt = false
   }
 
+  function formatCategory(cat: string): string {
+    return cat.replace(/([A-Z])/g, ' $1').replace(/^[a-z]/, s => s.toUpperCase()).trim()
+  }
+
   // ── Spin completion — shows result popup before advancing ─────────────────────
   function handleSpinComplete(resultIndex: number, resultLabel: string) {
     if (!currentDef) return
@@ -286,6 +290,12 @@
         }
       }
       results.push(spinResult)
+      const isBonus = currentDef.category === 'statBonus'
+      pendingResult = {
+        label: resultLabel,
+        categoryDisplayName: currentDef.displayName,
+        color: isBonus ? '#34d399' : '#ef4444',
+      }
     } else {
       // Enrich stat spins with tier + score from segment data
       let resultColor = `hsl(${currentCategoryHue}, 70%, 65%)`
@@ -455,14 +465,6 @@
       isSessionDone = true
     }
 
-    // For statBonus/statPenalty spins, skip the popup and auto-advance
-    if (currentDef.category === 'statBonus' || currentDef.category === 'statPenalty') {
-      if (!isSessionDone) {
-        currentIndex = nextIndex
-      } else if (doneEntry) {
-        onSessionComplete(doneEntry)
-      }
-    }
   }
 
   // ── Continue from result popup ────────────────────────────────────────────────
@@ -595,6 +597,25 @@
           {isSessionDone ? 'Complete!' : 'Continue →'}
         </button>
       </div>
+    </div>
+  </div>
+{/if}
+
+<!-- ── Running spin log ───────────────────────────────────────────────────────── -->
+{#if results.length > 0 && !showResumePrompt && !pendingResult}
+  <div class="fixed bottom-0 left-0 right-0 z-10"
+    style="background: rgba(7,7,13,0.93); border-top: 1px solid rgba(240,192,64,0.12); backdrop-filter: blur(12px); padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));">
+    <p class="px-4 pt-2 font-mono tracking-widest uppercase" style="color: #9a907b; font-size: 9px; letter-spacing: 0.18em;">Obtained this spin</p>
+    <div class="px-4 pb-1.5 flex flex-col gap-0.5 overflow-y-auto" style="max-height: 88px;">
+      {#each [...results].reverse() as r}
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="font-mono flex-shrink-0" style="color: hsl({CATEGORY_HUES[r.category] ?? 45}, 60%, 62%); font-size: 9px; min-width: 80px; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{formatCategory(r.category)}</span>
+          <span class="font-mono truncate" style="color: var(--color-on-surface); font-size: 10px;">{r.displayLabel ?? r.resultLabel}</span>
+          {#if r.tier}
+            <span class="font-mono font-bold flex-shrink-0" style="color: hsl({CATEGORY_HUES[r.category] ?? 45}, 65%, 65%); font-size: 9px;">{r.tier}</span>
+          {/if}
+        </div>
+      {/each}
     </div>
   </div>
 {/if}

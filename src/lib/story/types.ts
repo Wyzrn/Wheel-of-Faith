@@ -26,6 +26,12 @@ export interface StoryRosterEntry {
   xp: number
   /** Stat bonuses applied from Stat Crystals, keyed by stat category name. */
   statBonuses: Record<string, number>
+  /** Equipped weapon crystal grade (e.g. 'F', 'S'), or null if none. Consumed from inventory on equip. */
+  equippedWeapon: string | null
+  /** Equipped armor crystal grade, or null. */
+  equippedArmor: string | null
+  /** Equipped power crystal grade, or null. */
+  equippedPower: string | null
   /** ISO timestamp of when this entry was added to the roster. */
   createdAt: string
   /** ISO timestamp captured when the story spin session began; passed as the `startedAt` prop to CharacterCard. */

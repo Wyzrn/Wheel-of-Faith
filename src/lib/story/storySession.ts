@@ -113,6 +113,9 @@ export function buildRosterEntryFromResults(args: {
     level: 1,
     xp: 0,
     statBonuses: {},
+    equippedWeapon: null,
+    equippedArmor: null,
+    equippedPower: null,
     createdAt: new Date().toISOString(),
     sessionStartedAt,
   }

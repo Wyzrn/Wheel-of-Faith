@@ -10,6 +10,55 @@ export const WORLD_GRADES: readonly WorldGrade[] = [
 
 export const BATTLES_PER_WORLD = 20
 
+/** A group of enemies of one type within a wave. */
+export interface WaveEnemySpec { type: EnemyType; count: number }
+/** One battle = array of waves, each wave = array of enemy groups. */
+export type BattleSpec = WaveEnemySpec[][]
+
+/** 20-battle wave spec. Battle N = BATTLE_SPECS[N-1]. */
+export const BATTLE_SPECS: BattleSpec[] = [
+  // Battle 1
+  [[{ type: 'normal', count: 1 }]],
+  // Battle 2
+  [[{ type: 'normal', count: 1 }]],
+  // Battle 3
+  [[{ type: 'normal', count: 2 }]],
+  // Battle 4
+  [[{ type: 'normal', count: 2 }]],
+  // Battle 5
+  [[{ type: 'elite', count: 1 }]],
+  // Battle 6
+  [[{ type: 'normal', count: 2 }], [{ type: 'normal', count: 2 }]],
+  // Battle 7
+  [[{ type: 'normal', count: 2 }], [{ type: 'normal', count: 3 }]],
+  // Battle 8
+  [[{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }]],
+  // Battle 9
+  [[{ type: 'normal', count: 3 }], [{ type: 'normal', count: 2 }, { type: 'elite', count: 1 }]],
+  // Battle 10
+  [[{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }], [{ type: 'normal', count: 2 }, { type: 'elite', count: 1 }]],
+  // Battle 11
+  [[{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }]],
+  // Battle 12
+  [[{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }]],
+  // Battle 13
+  [[{ type: 'normal', count: 2 }, { type: 'elite', count: 1 }], [{ type: 'normal', count: 3 }], [{ type: 'normal', count: 4 }]],
+  // Battle 14
+  [[{ type: 'elite', count: 2 }], [{ type: 'elite', count: 2 }], [{ type: 'normal', count: 4 }]],
+  // Battle 15
+  [[{ type: 'elite', count: 1 }], [{ type: 'elite', count: 2 }], [{ type: 'elite', count: 3 }]],
+  // Battle 16
+  [[{ type: 'normal', count: 5 }], [{ type: 'normal', count: 5 }], [{ type: 'elite', count: 1 }]],
+  // Battle 17
+  [[{ type: 'normal', count: 3 }], [{ type: 'elite', count: 3 }], [{ type: 'normal', count: 5 }]],
+  // Battle 18
+  [[{ type: 'normal', count: 5 }], [{ type: 'normal', count: 5 }], [{ type: 'elite', count: 2 }]],
+  // Battle 19
+  [[{ type: 'normal', count: 5 }], [{ type: 'elite', count: 3 }], [{ type: 'elite', count: 3 }]],
+  // Battle 20
+  [[{ type: 'elite', count: 3 }], [{ type: 'elite', count: 3 }], [{ type: 'boss', count: 1 }]],
+]
+
 /** Player level thresholds — which world must be beaten to reach each level. */
 export const PLAYER_LEVEL_WORLDS: Record<number, WorldGrade> = {
   1: 'C',
@@ -79,6 +128,31 @@ export interface Enemy {
   grade: WorldGrade
   type: EnemyType
   name: string
+}
+
+/**
+ * Expands a battle spec into concrete Enemy arrays for each wave.
+ * normal = world-1 grade, elite = world+1 (capped), boss = world grade.
+ */
+export function getBattleWaves(worldGrade: WorldGrade, battleNumber: number): Enemy[][] {
+  const idx = worldIndex(worldGrade)
+  const spec = BATTLE_SPECS[Math.min(battleNumber - 1, BATTLES_PER_WORLD - 1)]
+  return spec.map(wave =>
+    wave.flatMap(({ type, count }) =>
+      Array.from({ length: count }, (_, i) => {
+        let gradeIdx: number
+        if (type === 'boss') gradeIdx = idx
+        else if (type === 'elite') gradeIdx = Math.min(idx + 1, WORLD_GRADES.length - 1)
+        else gradeIdx = Math.max(0, idx - 1)
+        const grade = WORLD_GRADES[gradeIdx]
+        const suffix = count > 1 ? ` ${i + 1}` : ''
+        const name = type === 'boss' ? `${worldGrade} Overlord`
+          : type === 'elite' ? `${grade} Champion${suffix}`
+          : `${grade} Warrior${suffix}`
+        return { grade, type, name } as Enemy
+      })
+    )
+  )
 }
 
 export function getEnemy(worldGrade: WorldGrade, battleNumber: number): Enemy {

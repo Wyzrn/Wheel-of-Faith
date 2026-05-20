@@ -366,60 +366,67 @@
     </div>
   {/if}
 
-  <!-- Winner declaration -->
-  {#if phase === 'result' && winner}
-    {@const winnerName = winner === 'p1' ? p1Char?.name : winner === 'p2' ? p2Char?.name : null}
-    {@const winColor   = winner === 'draw' ? '#9ca3af' : winner === 'p1' ? '#f0c040' : '#e879f9'}
-    <div class="w-full text-center py-8 rounded-2xl mb-4"
-      style="background: {winner === 'draw' ? 'rgba(156,163,175,0.08)' : winner === 'p1' ? 'rgba(240,192,64,0.08)' : 'rgba(232,121,249,0.08)'}; border: 1px solid {winColor}55; box-shadow: 0 0 60px {winColor}18; animation: resultReveal 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;">
-      {#if winner === 'draw'}
-        <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">The battle concludes</p>
-        <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: #d1d5db; letter-spacing: 0.15em;">IT'S A DRAW!</p>
-        <p class="mt-2 text-sm" style="color: #9a907b;">Two warriors of equal destiny.</p>
-      {:else}
-        <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: {winColor};">Victory</p>
-        <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: {winColor}; letter-spacing: 0.12em; filter: drop-shadow(0 0 16px {winColor}55);">{winnerName} WINS!</p>
-        <p class="mt-2 text-sm" style="color: #9a907b;">Fate has spoken.</p>
-
-        <!-- Save status -->
-        {#if saveStatus === 'saving'}
-          <p class="mt-3 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Saving to champions record…</p>
-        {:else if saveStatus === 'saved'}
-          <div class="mt-3 flex items-center justify-center gap-1.5">
-            <span class="material-symbols-outlined" style="font-size: 14px; color: #34d399; font-variation-settings: 'FILL' 1;">check_circle</span>
-            <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #34d399;">Saved — {savedWins} rival win{savedWins !== 1 ? 's' : ''} total</p>
-          </div>
-        {:else if saveStatus === 'error'}
-          <p class="mt-3 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">Could not save — session too brief or server unavailable.</p>
-        {/if}
-      {/if}
-    </div>
-
-    <!-- Action buttons -->
-    <div class="flex flex-wrap gap-3 w-full max-w-sm justify-center">
-      {#if winner !== 'draw' && onChallengeWinner && saveStatus === 'saved'}
-        {@const winResults = winner === 'p1' ? p1Results : p2Results}
-        {@const winName    = winner === 'p1' ? p1Name    : p2Name}
-        <button
-          onclick={() => onChallengeWinner!(winResults, winName, savedShareId)}
-          class="flex-1 py-3 rounded-lg text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95 min-w-0"
-          style="font-family: 'Cinzel', serif; color: #fde68a; background: linear-gradient(135deg, #1c1a2a, #13121c); border: 1px solid #f0c040; box-shadow: 0 0 20px rgba(240,192,64,0.18);"
-        >Challenge Winner</button>
-      {/if}
-      <button
-        onclick={onRematch}
-        class="flex-1 py-3 rounded-lg text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95 min-w-0"
-        style="font-family: 'Cinzel', serif; color: #f9a8d4; background: #0d0d16; border: 1px solid #9d174d; box-shadow: 0 0 16px rgba(157,23,77,0.15);"
-      >⚔ Rematch</button>
-      <button
-        onclick={onBackToMenu}
-        class="flex-1 py-3 rounded-lg text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95 min-w-0"
-        style="font-family: 'Cinzel', serif; color: #9a907b; background: #0d0d16; border: 1px solid #4e4635;"
-      >Menu</button>
-    </div>
-  {/if}
 
 </div>
+
+<!-- ══ Result overlay (dark modal) ══════════════════════════════════════════ -->
+{#if phase === 'result' && winner}
+  {@const winnerName = winner === 'p1' ? p1Char?.name : winner === 'p2' ? p2Char?.name : null}
+  {@const winColor   = winner === 'draw' ? '#9ca3af' : winner === 'p1' ? '#f0c040' : '#e879f9'}
+  <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
+    style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(88px, calc(env(safe-area-inset-bottom,0px) + 88px));">
+    <div class="w-full max-w-md rounded-2xl overflow-hidden"
+      style="background: {winner === 'draw' ? 'rgba(156,163,175,0.06)' : winner === 'p1' ? 'rgba(240,192,64,0.06)' : 'rgba(232,121,249,0.06)'}; border: 1px solid {winColor}44; box-shadow: 0 0 60px {winColor}14; animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+      <div class="px-5 py-6 text-center">
+        {#if winner === 'draw'}
+          <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">The battle concludes</p>
+          <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: #d1d5db; letter-spacing: 0.15em;">IT'S A DRAW!</p>
+          <p class="mt-2 text-sm" style="color: #9a907b;">Two warriors of equal destiny.</p>
+        {:else}
+          <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: {winColor};">Victory</p>
+          <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: {winColor}; letter-spacing: 0.12em; filter: drop-shadow(0 0 16px {winColor}55);">{winnerName} WINS!</p>
+          <p class="mt-2 text-sm" style="color: #9a907b;">Fate has spoken.</p>
+
+          {#if saveStatus === 'saving'}
+            <p class="mt-3 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Saving to champions record…</p>
+          {:else if saveStatus === 'saved'}
+            <div class="mt-3 flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined" style="font-size: 14px; color: #34d399; font-variation-settings: 'FILL' 1;">check_circle</span>
+              <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #34d399;">Saved — {savedWins} rival win{savedWins !== 1 ? 's' : ''} total</p>
+            </div>
+          {:else if saveStatus === 'error'}
+            <p class="mt-3 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">Could not save — session too brief or server unavailable.</p>
+          {/if}
+        {/if}
+
+        <!-- Action buttons -->
+        <div class="flex flex-col gap-2 mt-5">
+          {#if winner !== 'draw' && onChallengeWinner && saveStatus === 'saved'}
+            {@const winResults = winner === 'p1' ? p1Results : p2Results}
+            {@const winName    = winner === 'p1' ? p1Name    : p2Name}
+            <button
+              onclick={() => onChallengeWinner!(winResults, winName, savedShareId)}
+              class="w-full py-3 rounded-xl text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95"
+              style="font-family: 'Cinzel', serif; color: #fde68a; background: linear-gradient(135deg, #1c1a2a, #13121c); border: 1px solid #f0c040; box-shadow: 0 0 20px rgba(240,192,64,0.18);"
+            >Challenge Winner</button>
+          {/if}
+          <div class="flex gap-2">
+            <button
+              onclick={onRematch}
+              class="flex-1 py-3 rounded-xl text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95"
+              style="font-family: 'Cinzel', serif; color: #f9a8d4; background: rgba(157,23,77,0.12); border: 1px solid #9d174d;"
+            >⚔ Rematch</button>
+            <button
+              onclick={onBackToMenu}
+              class="flex-1 py-3 rounded-xl text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95"
+              style="font-family: 'Cinzel', serif; color: #9a907b; background: rgba(255,255,255,0.03); border: 1px solid #4e4635;"
+            >Menu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
 @keyframes panel-dodge {
