@@ -138,6 +138,7 @@
 
   let battleNumber  = $derived((slot.worldProgress[world]?.battlesCompleted ?? 0) + 1)
   let enemy         = $derived(getEnemy(world, battleNumber))
+  let ec            = $derived(gradeColor(enemy.grade))
   let sortedRoster  = $derived([...slot.roster].sort((a, b) => b.overallScore - a.overallScore))
 
   let p1HpPct = $derived(playerChar ? Math.max(0, p1DisplayHp / playerChar.maxHp) : 1)
@@ -333,7 +334,6 @@
     <!-- Enemy preview -->
     <div class="mb-5">
       <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: var(--color-outline);">Opponent</p>
-      {@const ec = gradeColor(enemy.grade)}
       <div class="obsidian-slab rounded-xl px-3 py-2.5 flex items-center gap-2.5"
         style="border: 1px solid {ec}33;">
         <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs"
@@ -435,7 +435,6 @@
         </div>
 
         <!-- Enemy panel -->
-        {@const ec = gradeColor(enemy.grade)}
         <div class="rounded-xl p-2.5 flex flex-col gap-1.5 {dodgeDir === 'rtl' ? 'panel-dodging' : ''}"
           style="background: {ec}0d; border: 1px solid {ec}{phase === 'result' && !playerWon ? '66' : '22'}; box-shadow: {phase === 'result' && !playerWon ? '0 0 40px ' + ec + '30' : 'none'}; transition: box-shadow 0.5s, border-color 0.5s;">
           <div class="flex items-center gap-2 min-w-0">
