@@ -25,12 +25,17 @@
   let spinStatus = $state<SpinStatus>('IDLE')
   let currentRotation = $state(Math.random() * 360)
   let lastResult = $state<{ index: number; label: string } | null>(null)
+  // Snapshot taken at spin start — prevents post-spin segment mutations (dimming, weight
+  // changes from usedRacialAbilities etc.) from shifting arc positions while the wheel is
+  // frozen at targetAngle, which would misalign the pointer with the winning segment.
+  let frozenSegments = $state<typeof segments | null>(null)
 
   let canSpin = $derived(spinStatus === 'IDLE')
   let isRevealed = $derived(spinStatus === 'REVEALED')
-  let displaySegments = $derived(segments.map(s => s.dimmed ? { ...s, weight: Math.max(s.weight, 1) } : s))
+  let activeSegments = $derived(frozenSegments ?? segments)
+  let displaySegments = $derived(activeSegments.map(s => s.dimmed ? { ...s, weight: Math.max(s.weight, 1) } : s))
   let segmentAngles = $derived(weightedSegmentAngles(displaySegments))
-  let maxSegmentWeight = $derived(Math.max(...segments.filter(s => !s.dimmed).map(s => s.weight), 1))
+  let maxSegmentWeight = $derived(Math.max(...activeSegments.filter(s => !s.dimmed).map(s => s.weight), 1))
 
   let wheelGroupEl: SVGGElement
   let shakeEl: HTMLDivElement
@@ -321,6 +326,9 @@
     }
 
     const resultIndex = weightedRandom(segments)
+    // Freeze the visual layout now so post-spin reactive mutations (dimming, weight
+    // changes from usedRacialAbilities etc.) can't shift arc positions after the wheel stops.
+    frozenSegments = [...segments]
     // Land at a random position within the segment (not always the midpoint).
     // Pad 10–20% from each edge to vary how close to segment borders we land.
     const seg     = segmentAngles[resultIndex]
