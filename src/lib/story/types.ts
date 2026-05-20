@@ -20,6 +20,12 @@ export interface StoryRosterEntry {
   overallTier: TierGrade
   /** Full spin result array — used by CharacterCard for rendering. */
   spins: SpinResult[]
+  /** Character level, increases as XP accumulates from battles. */
+  level: number
+  /** Total accumulated XP from battle drops. */
+  xp: number
+  /** Stat bonuses applied from Stat Crystals, keyed by stat category name. */
+  statBonuses: Record<string, number>
   /** ISO timestamp of when this entry was added to the roster. */
   createdAt: string
   /** ISO timestamp captured when the story spin session began; passed as the `startedAt` prop to CharacterCard. */

@@ -110,6 +110,9 @@ export function buildRosterEntryFromResults(args: {
     overallScore,
     overallTier,
     spins: JSON.parse(JSON.stringify(results)),
+    level: 1,
+    xp: 0,
+    statBonuses: {},
     createdAt: new Date().toISOString(),
     sessionStartedAt,
   }

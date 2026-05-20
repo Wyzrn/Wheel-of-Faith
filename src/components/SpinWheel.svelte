@@ -410,16 +410,13 @@
 <div class="flex flex-col items-center gap-5 w-full mx-auto select-none">
 
   <!-- Shake wrapper — GSAP applies translate() here during spin -->
-  <div bind:this={shakeEl} class="w-full flex justify-center">
-  <!-- Wheel + canvas wrapper (relative so canvas can overlay) -->
-  <div class="w-full max-w-lg relative" style="filter: drop-shadow(0 0 28px rgba(0,0,0,0.92)) drop-shadow(0 0 14px rgba(240,192,64,0.22));">
+  <div bind:this={shakeEl} class="flex justify-center w-full">
+  <!-- Wheel + canvas wrapper — CSS Grid overlay so canvas and SVG share identical pixel bounds -->
+  <div style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: drop-shadow(0 0 28px rgba(0,0,0,0.92)) drop-shadow(0 0 14px rgba(240,192,64,0.22));">
     <svg
       bind:this={svgEl}
-      width={SVG_SIZE}
-      height={SVG_SIZE}
       viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
-      class="w-full"
-      style="overflow: visible;"
+      style="grid-area: 1/1; width: 100%; height: 100%; overflow: visible;"
       aria-label="Spinning wheel"
       role="img"
     >
@@ -528,11 +525,10 @@
       />
     </svg>
 
-    <!-- Particle canvas — pinned to all 4 sides of the relative wrapper so height resolves
-         correctly on mobile (avoids height:100% → auto on auto-height parents in Safari) -->
+    <!-- Particle canvas — grid-area: 1/1 overlays the SVG exactly; no absolute positioning needed -->
     <canvas
       bind:this={particleCanvas}
-      style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none;"
+      style="grid-area: 1/1; width: 100%; height: 100%; pointer-events: none;"
     ></canvas>
   </div>
   </div><!-- end shake wrapper -->

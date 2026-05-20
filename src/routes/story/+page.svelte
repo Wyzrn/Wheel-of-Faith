@@ -1,31 +1,35 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import {
     loadAllSlots, loadSaveSlot, saveSaveSlot, createSaveSlot, deleteSaveSlot,
     addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin,
-    buyStatCrystal, getDailyBought,
-    SHARD_COST_PER_SPIN, STAGE_LABELS, STAGE_ROSTER_THRESHOLDS,
+    buyStatCrystal, getDailyBought, applySpinRefresh, msUntilNextRefresh,
+    upgradeRosterCapacity, rosterUpgradeCost,
+    SHARD_COST_PER_SPIN, STAGE_LABELS, MAX_DAILY_SPINS,
     STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS,
     type StorySaveSlot, type SlotId, type StatCrystalType,
   } from '$lib/story/saveSlots'
   import { getShardValue } from '$lib/story/shards'
   import { getStageTierLabel } from '$lib/story/raceTiers'
+  import type { WorldGrade } from '$lib/story/worlds'
   import type { StoryRosterEntry } from '$lib/story/types'
   import CharacterCard from '../../components/CharacterCard.svelte'
   import TierBadge from '../../components/TierBadge.svelte'
   import RosterCard from '../../components/story/RosterCard.svelte'
   import SellConfirmModal from '../../components/story/SellConfirmModal.svelte'
   import StorySpinView from '../../components/story/StorySpinView.svelte'
+  import WorldsView from '../../components/story/WorldsView.svelte'
+  import BattleView from '../../components/story/BattleView.svelte'
 
   // ── View state machine ─────────────────────────────────────────────────────
-  // saveSlotSelect → hub → spin | roster | expanded | shop
-  type View = 'saveSlotSelect' | 'hub' | 'spin' | 'roster' | 'expanded' | 'shop'
+  type View = 'saveSlotSelect' | 'hub' | 'spin' | 'roster' | 'expanded' | 'shop' | 'worlds' | 'battle'
   let view = $state<View>('saveSlotSelect')
 
   // ── Slot state ─────────────────────────────────────────────────────────────
   let slots = $state<(StorySaveSlot | null)[]>([null, null, null, null])
   let currentSlot = $state<StorySaveSlot | null>(null)
   let deleteConfirmId = $state<SlotId | null>(null)
+  let activeWorld = $state<WorldGrade | null>(null)
 
   // ── Roster/sort/dialog state ───────────────────────────────────────────────
   let sortBy = $state<'tier' | 'race' | 'archetype'>('tier')
@@ -33,15 +37,43 @@
   let sellTarget = $state<StoryRosterEntry | null>(null)
   let rosterCapAlert = $state(false)
 
+  // ── Spin refresh timer ─────────────────────────────────────────────────────
+  let refreshMs = $state(0)
+  let refreshInterval: ReturnType<typeof setInterval> | null = null
+
+  function formatRefreshTime(ms: number): string {
+    if (ms <= 0) return ''
+    const totalSec = Math.ceil(ms / 1000)
+    const h = Math.floor(totalSec / 3600)
+    const m = Math.floor((totalSec % 3600) / 60)
+    const s = totalSec % 60
+    if (h > 0) return `${h}h ${m}m`
+    if (m > 0) return `${m}m ${s}s`
+    return `${s}s`
+  }
+
+  function tickRefresh() {
+    if (!currentSlot) return
+    // Apply any pending refresh intervals
+    const refreshed = applySpinRefresh($state.snapshot(currentSlot) as StorySaveSlot)
+    if (refreshed !== ($state.snapshot(currentSlot) as StorySaveSlot)) {
+      currentSlot = refreshed
+    }
+    refreshMs = msUntilNextRefresh($state.snapshot(currentSlot) as StorySaveSlot)
+  }
+
   // ── Derived values ─────────────────────────────────────────────────────────
   let roster = $derived(currentSlot?.roster ?? [])
   let gems = $derived(currentSlot?.gems ?? 0)
   let shards = $derived(currentSlot?.shards ?? 0)
   let stage = $derived(currentSlot?.stage ?? 1)
+  let playerLevel = $derived(currentSlot?.playerLevel ?? 0)
   let spinsRemaining = $derived(currentSlot?.spinsRemaining ?? 0)
+  let rosterCapacity = $derived(currentSlot?.rosterCapacity ?? 5)
+  let rosterUpgradeCount = $derived(currentSlot?.rosterUpgradeCount ?? 0)
+  let nextUpgradeCost = $derived(rosterUpgradeCost(rosterUpgradeCount))
   let statCrystalInventory = $derived(currentSlot?.inventory?.statCrystals ?? { common: 0, elite: 0, legendary: 0 })
 
-  // Daily bought counts (re-derived on slot change so they update when a purchase is made)
   let dailyCommon    = $derived(currentSlot ? getDailyBought(currentSlot, 'common')    : 0)
   let dailyElite     = $derived(currentSlot ? getDailyBought(currentSlot, 'elite')     : 0)
   let dailyLegendary = $derived(currentSlot ? getDailyBought(currentSlot, 'legendary') : 0)
@@ -49,6 +81,7 @@
   let commonCanBuy    = $derived(gems >= STAT_CRYSTAL_COSTS.common    && dailyCommon    < STAT_CRYSTAL_DAILY_LIMITS.common)
   let eliteCanBuy     = $derived(gems >= STAT_CRYSTAL_COSTS.elite     && dailyElite     < STAT_CRYSTAL_DAILY_LIMITS.elite)
   let legendaryCanBuy = $derived(gems >= STAT_CRYSTAL_COSTS.legendary && dailyLegendary < STAT_CRYSTAL_DAILY_LIMITS.legendary)
+  let canUpgradeRoster = $derived(gems >= nextUpgradeCost)
 
   let sortedRoster = $derived(
     [...roster].sort((a, b) => {
@@ -62,19 +95,14 @@
     expandedId !== null ? roster.find(r => r.id === expandedId) ?? null : null
   )
 
-  let nextStageThreshold = $derived(
-    stage < 6 ? STAGE_ROSTER_THRESHOLDS[stage] : null
-  )
-
-  let stageProgress = $derived(
-    nextStageThreshold !== null
-      ? Math.min(1, roster.length / nextStageThreshold)
-      : 1
-  )
-
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   onMount(() => {
     slots = loadAllSlots()
+    refreshInterval = setInterval(tickRefresh, 10_000)
+  })
+
+  onDestroy(() => {
+    if (refreshInterval !== null) clearInterval(refreshInterval)
   })
 
   // ── Persist current slot on every change ──────────────────────────────────
@@ -85,14 +113,13 @@
   // ── Save slot actions ──────────────────────────────────────────────────────
   function selectSlot(id: SlotId) {
     const existing = loadSaveSlot(id)
-    if (existing) {
-      currentSlot = existing
-    } else {
-      const fresh = createSaveSlot(id)
-      saveSaveSlot(fresh)
-      currentSlot = fresh
-    }
+    let slot = existing ?? createSaveSlot(id)
+    // Award any pending spin refreshes immediately on load
+    slot = applySpinRefresh(slot)
+    saveSaveSlot(slot)
+    currentSlot = slot
     slots = loadAllSlots()
+    refreshMs = msUntilNextRefresh(slot)
     view = 'hub'
   }
 
@@ -186,13 +213,38 @@
   }
 
   function handleSpinCancel() {
-    // Spin was cancelled mid-session — return spin credit
     if (!currentSlot) { view = 'hub'; return }
     currentSlot = {
       ...($state.snapshot(currentSlot) as StorySaveSlot),
       spinsRemaining: currentSlot.spinsRemaining + 1,
     }
     view = 'hub'
+  }
+
+  // ── Worlds / battle ────────────────────────────────────────────────────────
+  function enterWorld(world: WorldGrade) {
+    activeWorld = world
+    view = 'battle'
+  }
+
+  function handleBattleComplete(updated: StorySaveSlot) {
+    currentSlot = updated
+    // Return to worlds view so player can continue next battle
+    view = 'worlds'
+  }
+
+  // ── Shop extras ────────────────────────────────────────────────────────────
+  let rosterUpgradeError = $state<string | null>(null)
+
+  function handleRosterUpgrade() {
+    if (!currentSlot) return
+    const result = upgradeRosterCapacity($state.snapshot(currentSlot) as StorySaveSlot)
+    if (!result) {
+      rosterUpgradeError = 'Not enough gems.'
+      setTimeout(() => { rosterUpgradeError = null }, 2500)
+      return
+    }
+    currentSlot = result
   }
 
   function backToHub() {
@@ -239,17 +291,14 @@
               <!-- Occupied slot -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
-                  <span
-                    class="font-bold text-sm truncate"
-                    style="font-family: var(--font-cinzel); color: var(--color-on-surface);"
-                  >
-                    Stage {slot.stage} — {getStageTierLabel(slot.stage)}
+                  <span class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">
+                    Lv {slot.playerLevel} — {getStageTierLabel(slot.stage)}
                   </span>
                 </div>
                 <div class="flex items-center gap-3 font-mono text-xs" style="color: var(--color-outline);">
                   <span>{slot.roster.length} chars</span>
                   <span>·</span>
-                  <span style="color: var(--gold-bright);">{slot.shards} shards</span>
+                  <span style="color: #34d399;">{(slot.gems ?? 0).toLocaleString()} gems</span>
                   <span>·</span>
                   <span>{slot.spinsRemaining} spin{slot.spinsRemaining === 1 ? '' : 's'}</span>
                 </div>
@@ -331,10 +380,10 @@
           <span class="font-mono text-sm font-bold" style="color: var(--color-on-surface);">{roster.length}</span>
           <span class="font-mono text-xs" style="color: var(--color-outline);">chars</span>
         </div>
-        <!-- Stage -->
+        <!-- Player level -->
         <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">stars</span>
-          <span class="font-mono text-sm font-bold" style="color: var(--color-on-surface);">S{stage}</span>
+          <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">military_tech</span>
+          <span class="font-mono text-sm font-bold" style="color: var(--color-on-surface);">Lv {playerLevel}</span>
           <span class="font-mono text-xs" style="color: var(--color-outline);">{getStageTierLabel(stage)}</span>
         </div>
       </div>
@@ -360,7 +409,10 @@
           <div class="flex-1 text-left">
             <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Wheel</div>
             <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              {spinsRemaining} spin{spinsRemaining === 1 ? '' : 's'} remaining
+              {spinsRemaining}/{MAX_DAILY_SPINS} spins
+              {#if spinsRemaining < MAX_DAILY_SPINS && refreshMs > 0}
+                · +1 in {formatRefreshTime(refreshMs)}
+              {/if}
             </div>
           </div>
           {#if spinsRemaining > 0}
@@ -385,7 +437,7 @@
           <div class="flex-1 text-left">
             <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Roster</div>
             <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              {roster.length} / 50 characters
+              {roster.length} / {rosterCapacity} characters
             </div>
           </div>
           <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
@@ -415,34 +467,27 @@
         </button>
       </div>
 
-      <!-- Levels (progression display) -->
+      <!-- Worlds -->
       <div class="obsidian-slab rounded-xl overflow-hidden">
-        <div class="px-5 py-5 flex items-center gap-4">
+        <button
+          class="w-full px-5 py-5 flex items-center gap-4"
+          style="background: none; border: none; cursor: pointer;"
+          onclick={() => view = 'worlds'}
+        >
           <div
             class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
             style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.15);"
           >
             <span class="material-symbols-outlined" style="font-size: 22px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">map</span>
           </div>
-          <div class="flex-1">
-            <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Levels</div>
+          <div class="flex-1 text-left">
+            <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Worlds</div>
             <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              {#if nextStageThreshold !== null}
-                {roster.length}/{nextStageThreshold} chars to unlock {STAGE_LABELS[stage]} tier
-              {:else}
-                All tiers unlocked — Stage 6 / Godlike
-              {/if}
-            </div>
-            <!-- Progress bar -->
-            <div class="mt-2 rounded-full overflow-hidden" style="height: 3px; background: rgba(255,255,255,0.07);">
-              <div
-                class="h-full rounded-full"
-                style="width: {Math.round(stageProgress * 100)}%; background: var(--gold-bright); transition: width 0.4s ease;"
-              ></div>
+              {Object.values(currentSlot?.worldProgress ?? {}).filter(w => w.beaten).length} / 16 worlds cleared
             </div>
           </div>
-          <span class="font-mono text-xs font-bold" style="color: var(--color-outline);">S{stage}</span>
-        </div>
+          <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
+        </button>
       </div>
 
     </div>
@@ -479,7 +524,13 @@
 
   <div class="pt-20 pb-24 px-4 flex flex-col items-center gap-5 max-w-xs mx-auto w-full">
 
-    <!-- Error toast -->
+    <!-- Error toasts -->
+    {#if rosterUpgradeError}
+      <div class="w-full rounded-lg px-4 py-2 text-center font-mono text-sm"
+        style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
+        {rosterUpgradeError}
+      </div>
+    {/if}
     {#if crystalBuyError}
       <div class="w-full rounded-lg px-4 py-2 text-center font-mono text-sm"
         style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
@@ -505,6 +556,23 @@
         style="{shards < SHARD_COST_PER_SPIN ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
         onclick={buySpin}
         disabled={shards < SHARD_COST_PER_SPIN}
+      >
+        Buy
+      </button>
+    </div>
+
+    <!-- Roster capacity upgrade -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-5 flex items-center gap-4">
+      <div class="flex-1">
+        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Roster Expansion</p>
+        <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">+5 character slots (now {rosterCapacity})</p>
+        <p class="font-mono text-xs mt-1" style="color: #34d399;">{nextUpgradeCost.toLocaleString()} gems</p>
+      </div>
+      <button
+        class="{canUpgradeRoster ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-4 py-2 font-bold font-mono text-sm"
+        style="{!canUpgradeRoster ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
+        onclick={handleRosterUpgrade}
+        disabled={!canUpgradeRoster}
       >
         Buy
       </button>
@@ -747,6 +815,25 @@
       </div>
     </div>
   </div>
+{/if}
+
+<!-- ── Worlds view ───────────────────────────────────────────────────────────── -->
+{#if view === 'worlds' && currentSlot}
+  <WorldsView
+    slot={currentSlot}
+    onEnterWorld={enterWorld}
+    onBack={backToHub}
+  />
+{/if}
+
+<!-- ── Battle view ────────────────────────────────────────────────────────────── -->
+{#if view === 'battle' && currentSlot && activeWorld}
+  <BattleView
+    slot={currentSlot}
+    world={activeWorld}
+    onBattleComplete={handleBattleComplete}
+    onBack={() => view = 'worlds'}
+  />
 {/if}
 
 <!-- ── Sell confirmation modal ───────────────────────────────────────────────── -->
