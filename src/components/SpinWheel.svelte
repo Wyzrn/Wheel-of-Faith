@@ -183,9 +183,10 @@
   const TIP_SVG_Y = CENTER - WHEEL_RADIUS - 3
 
   // Convert SVG coordinate space to canvas pixel space.
-  // Since the canvas covers the SVG exactly (same CSS dimensions, DPR-scaled),
-  // we scale by the canvas pixel dimensions directly — no getBoundingClientRect
-  // needed, which avoids scroll/transform offset errors on mobile.
+  // Scale by the canvas's own pixel buffer dimensions — these are set from the
+  // canvas element's own offsetWidth/offsetHeight (not the SVG's getBoundingClientRect,
+  // which on iOS Safari can return the SVG *attribute* size 500×500 instead of
+  // the CSS layout size, causing particles to spawn at the wrong position on mobile).
   function svgToCanvas(svgX: number, svgY: number): [number, number] {
     if (!particleCanvas) return [0, 0]
     return [
@@ -195,11 +196,12 @@
   }
 
   function resizeCanvas() {
-    if (!particleCanvas || !svgEl) return
-    const rect = svgEl.getBoundingClientRect()
+    if (!particleCanvas) return
     const dpr = window.devicePixelRatio || 1
-    particleCanvas.width  = rect.width  * dpr
-    particleCanvas.height = rect.height * dpr
+    // Use the canvas element's own layout dimensions — offsetWidth/offsetHeight
+    // always reflect the CSS-computed size regardless of SVG attribute quirks.
+    particleCanvas.width  = Math.round(particleCanvas.offsetWidth  * dpr)
+    particleCanvas.height = Math.round(particleCanvas.offsetHeight * dpr)
   }
 
   function spawnParticles(normalizedSpeed: number) {
@@ -308,10 +310,12 @@
       svgOrigin: SVG_CENTER,
       force3D: true,
     })
-    // Resize after first paint so the SVG has its final layout dimensions
+    // Resize after first paint so the canvas has its final layout dimensions.
+    // Observe the canvas element itself — its size is what we resize from,
+    // and observing it avoids the iOS SVG getBoundingClientRect attribute bug.
     requestAnimationFrame(() => resizeCanvas())
     const ro = new ResizeObserver(() => requestAnimationFrame(resizeCanvas))
-    if (svgEl) ro.observe(svgEl)
+    if (particleCanvas) ro.observe(particleCanvas)
     return () => {
       ctx.revert()
       idleTween?.kill()
@@ -524,10 +528,11 @@
       />
     </svg>
 
-    <!-- Particle canvas — covers the SVG exactly, pointer-events off so clicks pass through -->
+    <!-- Particle canvas — pinned to all 4 sides of the relative wrapper so height resolves
+         correctly on mobile (avoids height:100% → auto on auto-height parents in Safari) -->
     <canvas
       bind:this={particleCanvas}
-      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"
+      style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none;"
     ></canvas>
   </div>
   </div><!-- end shake wrapper -->

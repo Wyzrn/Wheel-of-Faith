@@ -243,17 +243,17 @@
   })
 </script>
 
-<div class="w-full min-h-screen flex flex-col items-center px-4 py-8" style="max-width: 800px; margin: 0 auto;">
+<div class="w-full flex flex-col px-3 py-5 sm:px-6 sm:py-8 sm:items-center" style="min-height: 100dvh; max-width: 800px; margin: 0 auto;">
 
-  <!-- Header -->
-  <div class="text-center mb-8" style="animation: fadeIn 0.3s ease-out forwards;">
-    <p class="text-xs tracking-[0.28em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #f9a8d4;">⚔ Rivals Mode</p>
-    <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.6rem, 6vw, 2.4rem); font-weight: 900; color: #ffdf96; letter-spacing: 0.15em;">RIVALS BATTLE</h1>
+  <!-- Header — compact on mobile -->
+  <div class="text-center mb-4 sm:mb-8" style="animation: fadeIn 0.3s ease-out forwards;">
+    <p class="text-xs tracking-[0.28em] uppercase mb-1 sm:mb-2" style="font-family: 'JetBrains Mono', monospace; color: #f9a8d4;">⚔ Rivals Mode</p>
+    <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.2rem, 5vw, 2.4rem); font-weight: 900; color: #ffdf96; letter-spacing: 0.15em;">RIVALS BATTLE</h1>
   </div>
 
-  <!-- Character panels + attack animation overlay -->
+  <!-- Character panels + attack animation overlay — always 2 columns on all screen sizes -->
   {#if p1Char && p2Char}
-    <div class="w-full relative mb-6" style="overflow:visible;">
+    <div class="w-full relative mb-3 sm:mb-6" style="overflow:visible;">
     <div class="grid grid-cols-2 gap-2 sm:gap-4">
 
       <!-- P1 panel -->
@@ -333,9 +333,9 @@
     </div>
   {/if}
 
-  <!-- Battle log -->
+  <!-- Battle log — full width below character panels on mobile, centered on desktop -->
   {#if phase !== 'intro'}
-    <div class="w-full rounded-xl overflow-hidden mb-6" style="border: 1px solid rgba(240,192,64,0.12); background: #0d0d16;">
+    <div class="w-full rounded-xl overflow-hidden mb-4 sm:mb-6" style="border: 1px solid rgba(240,192,64,0.12); background: #0d0d16;">
       <div class="flex items-center gap-2 px-4 py-2.5" style="border-bottom: 1px solid rgba(240,192,64,0.08);">
         <span class="material-symbols-outlined" style="font-size: 14px; color: #9a907b; font-variation-settings: 'FILL' 1;">menu_book</span>
         <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Battle Log</p>
