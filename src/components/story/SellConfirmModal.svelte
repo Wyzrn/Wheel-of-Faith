@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { StoryRosterEntry } from '$lib/story/types'
-  import { getShardValue } from '$lib/story/shards'
+  import { getGemValue } from '$lib/story/shards'
   import TierBadge from '../TierBadge.svelte'
 
   let { entry, onConfirm, onCancel }: {
@@ -9,7 +9,7 @@
     onCancel: () => void
   } = $props()
 
-  let value = $derived(getShardValue(entry.overallTier))
+  let value = $derived(getGemValue(entry.overallTier))
 
   // Focus trap between the two buttons
   let keepBtn = $state<HTMLButtonElement | null>(null)
@@ -85,9 +85,9 @@
       <span>{entry.overallTier}</span>
     </div>
 
-    <!-- Shard value -->
+    <!-- Gem value -->
     <p class="text-base text-center" style="color: var(--color-on-surface-variant);">
-      You will receive <span style="color: var(--gold-bright); font-weight: 700;">{value}</span> Fate Shards
+      You will receive <span style="color: #34d399; font-weight: 700;">{value.toLocaleString()}</span> gems
     </p>
 
     <!-- Warning line -->

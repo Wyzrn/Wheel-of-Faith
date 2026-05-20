@@ -5,11 +5,13 @@
     addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin,
     buyStatCrystal, getDailyBought, applySpinRefresh, msUntilNextRefresh,
     upgradeRosterCapacity, rosterUpgradeCost, buyFCrystal, buyEndlessKey,
+    createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
     SHARD_COST_PER_SPIN, STAGE_LABELS, MAX_DAILY_SPINS,
     STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, F_CRYSTAL_COST, ENDLESS_KEY_GEM_COST,
     type StorySaveSlot, type SlotId, type StatCrystalType,
   } from '$lib/story/saveSlots'
-  import { getShardValue } from '$lib/story/shards'
+  import type { StoryTeam } from '$lib/story/types'
+  import { getGemValue } from '$lib/story/shards'
   import { getStageTierLabel } from '$lib/story/raceTiers'
   import type { WorldGrade } from '$lib/story/worlds'
   import type { StoryRosterEntry } from '$lib/story/types'
@@ -22,7 +24,7 @@
   import BattleView from '../../components/story/BattleView.svelte'
 
   // ── View state machine ─────────────────────────────────────────────────────
-  type View = 'saveSlotSelect' | 'hub' | 'spin' | 'roster' | 'expanded' | 'shop' | 'worlds' | 'battle' | 'inventory'
+  type View = 'saveSlotSelect' | 'hub' | 'spin' | 'roster' | 'expanded' | 'shop' | 'worlds' | 'battle' | 'inventory' | 'teams'
   let view = $state<View>('saveSlotSelect')
 
   // ── Slot state ─────────────────────────────────────────────────────────────
@@ -185,7 +187,7 @@
 
   function confirmSell() {
     if (!sellTarget || !currentSlot) return
-    const value = getShardValue(sellTarget.overallTier)
+    const value = getGemValue(sellTarget.overallTier)
     currentSlot = sellCharacterFromSlot(
       $state.snapshot(currentSlot) as StorySaveSlot,
       sellTarget.id,
@@ -281,6 +283,58 @@
   function backToHub() {
     view = 'hub'
     rosterCapAlert = false
+  }
+
+  // ── Teams state ────────────────────────────────────────────────────────────
+  let teams = $derived(currentSlot?.teams ?? [])
+  let teamMaxSize = $derived(maxTeamSize(playerLevel))
+
+  type TeamFormMode = 'none' | 'create' | 'edit'
+  let teamFormMode = $state<TeamFormMode>('none')
+  let teamEditId   = $state<string | null>(null)
+  let teamFormName = $state('')
+  let teamFormIds  = $state<string[]>([])
+
+  function openCreateTeam() {
+    teamFormMode = 'create'
+    teamEditId   = null
+    teamFormName = ''
+    teamFormIds  = []
+  }
+
+  function openEditTeam(team: StoryTeam) {
+    teamFormMode = 'edit'
+    teamEditId   = team.id
+    teamFormName = team.name
+    teamFormIds  = [...team.characterIds]
+  }
+
+  function cancelTeamForm() {
+    teamFormMode = 'none'
+    teamEditId   = null
+  }
+
+  function saveTeamForm() {
+    if (!currentSlot || !teamFormName.trim() || teamFormIds.length === 0) return
+    if (teamFormMode === 'create') {
+      currentSlot = createTeamInSlot($state.snapshot(currentSlot) as StorySaveSlot, teamFormName.trim(), teamFormIds)
+    } else if (teamFormMode === 'edit' && teamEditId) {
+      currentSlot = updateTeamInSlot($state.snapshot(currentSlot) as StorySaveSlot, teamEditId, teamFormName.trim(), teamFormIds)
+    }
+    cancelTeamForm()
+  }
+
+  function handleDeleteTeam(teamId: string) {
+    if (!currentSlot) return
+    currentSlot = deleteTeamInSlot($state.snapshot(currentSlot) as StorySaveSlot, teamId)
+  }
+
+  function toggleTeamChar(id: string) {
+    if (teamFormIds.includes(id)) {
+      teamFormIds = teamFormIds.filter(x => x !== id)
+    } else if (teamFormIds.length < teamMaxSize) {
+      teamFormIds = [...teamFormIds, id]
+    }
   }
 
   // ── Inventory constants ────────────────────────────────────────────────────
@@ -522,6 +576,29 @@
             <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Worlds</div>
             <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
               {Object.values(currentSlot?.worldProgress ?? {}).filter(w => w.beaten).length} / 16 worlds cleared
+            </div>
+          </div>
+          <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
+        </button>
+      </div>
+
+      <!-- Teams -->
+      <div class="obsidian-slab rounded-xl overflow-hidden">
+        <button
+          class="w-full px-5 py-5 flex items-center gap-4"
+          style="background: none; border: none; cursor: pointer;"
+          onclick={() => view = 'teams'}
+        >
+          <div
+            class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+            style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.15);"
+          >
+            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">shield_person</span>
+          </div>
+          <div class="flex-1 text-left">
+            <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Teams</div>
+            <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
+              {teams.length} team{teams.length === 1 ? '' : 's'} · max {teamMaxSize} per team
             </div>
           </div>
           <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
@@ -840,7 +917,7 @@
     {/if}
 
     <p class="font-mono text-xs text-center" style="color: var(--color-outline); line-height: 1.6;">
-      Sell characters from your Roster to earn Fate Shards.
+      Sell characters from your Roster to earn Gems.
     </p>
 
   </div>
@@ -1003,6 +1080,158 @@
     onBattleComplete={handleBattleComplete}
     onBack={() => view = 'worlds'}
   />
+{/if}
+
+<!-- ── Teams view ─────────────────────────────────────────────────────────────── -->
+{#if view === 'teams' && currentSlot}
+  <header class="fixed top-0 left-0 right-0 z-30 flex items-center gap-4 px-4"
+    style="height: 64px; background: rgba(7,7,13,0.97); border-bottom: 1px solid rgba(240,192,64,0.15); backdrop-filter: blur(20px);">
+    <button class="font-mono text-sm"
+      style="color: var(--color-outline); background: none; border: none; cursor: pointer;"
+      onclick={() => { view = 'hub'; cancelTeamForm() }}>←</button>
+    <h2 class="font-bold flex-1" style="font-family: var(--font-cinzel); font-size: 18px; color: var(--color-on-surface);">Teams</h2>
+    <span class="font-mono text-xs" style="color: var(--color-outline);">max {teamMaxSize}/team</span>
+  </header>
+
+  <div class="pt-20 pb-24 px-4 flex flex-col gap-4 max-w-md mx-auto w-full">
+
+    {#if teamFormMode === 'none'}
+      <!-- Team list -->
+      {#if teams.length === 0}
+        <div class="text-center pt-10">
+          <span class="material-symbols-outlined" style="font-size: 40px; color: var(--color-outline); font-variation-settings: 'FILL' 1;">shield_person</span>
+          <p class="font-mono text-sm mt-3" style="color: var(--color-outline);">No teams yet.</p>
+          <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Create a team to use in battle.</p>
+        </div>
+      {:else}
+        <div class="flex flex-col gap-3">
+          {#each teams as team (team.id)}
+            {@const members = team.characterIds.map(id => roster.find(r => r.id === id)).filter(Boolean)}
+            <div class="obsidian-slab rounded-xl px-4 py-3"
+              style="border: 1px solid rgba(240,192,64,0.15);">
+              <div class="flex items-center gap-3 mb-2">
+                <div class="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
+                  style="background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.25);">
+                  <span class="material-symbols-outlined" style="font-size: 18px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">shield_person</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{team.name}</p>
+                  <p class="font-mono text-xs" style="color: var(--color-outline);">{members.length} / {teamMaxSize} fighter{members.length === 1 ? '' : 's'}</p>
+                </div>
+                <div class="flex gap-2">
+                  <button onclick={() => openEditTeam(team)}
+                    class="font-mono text-xs px-2 py-1 rounded"
+                    style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.2); color: var(--gold-bright); cursor: pointer;">
+                    Edit
+                  </button>
+                  <button onclick={() => handleDeleteTeam(team.id)}
+                    class="font-mono text-xs px-2 py-1 rounded"
+                    style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; cursor: pointer;">
+                    Delete
+                  </button>
+                </div>
+              </div>
+              {#if members.length > 0}
+                <div class="flex flex-col gap-1 pl-12">
+                  {#each members as member}
+                    {#if member}
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs font-bold" style="color: var(--gold-bright);">{member.overallTier}</span>
+                        <span class="font-mono text-xs" style="color: var(--color-on-surface);">{member.name}</span>
+                        <span class="font-mono text-xs" style="color: var(--color-outline);">{member.race} · Lv {member.level}</span>
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+              {:else}
+                <p class="font-mono text-xs pl-12" style="color: #ef4444;">All members sold — edit team</p>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <!-- Create team button -->
+      <button onclick={openCreateTeam}
+        class="metal-stamp-gold w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest mt-2">
+        + Create Team
+      </button>
+
+    {:else}
+      <!-- Team form (create / edit) -->
+      <div class="obsidian-slab rounded-xl px-5 py-5 flex flex-col gap-4"
+        style="border: 1px solid rgba(240,192,64,0.2);">
+        <h3 class="font-bold" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">
+          {teamFormMode === 'create' ? 'Create Team' : 'Edit Team'}
+        </h3>
+
+        <!-- Name input -->
+        <div>
+          <label class="font-mono text-xs mb-1 block" style="color: var(--color-outline);">Team Name</label>
+          <input
+            type="text"
+            bind:value={teamFormName}
+            maxlength={24}
+            placeholder="My Team"
+            class="w-full px-3 py-2 rounded-lg font-mono text-sm"
+            style="background: rgba(255,255,255,0.04); border: 1px solid rgba(240,192,64,0.2); color: var(--color-on-surface); outline: none;"
+          />
+        </div>
+
+        <!-- Character selector -->
+        <div>
+          <label class="font-mono text-xs mb-2 block" style="color: var(--color-outline);">
+            Select Fighters ({teamFormIds.length}/{teamMaxSize})
+          </label>
+          {#if roster.length === 0}
+            <p class="font-mono text-xs" style="color: var(--color-outline);">No characters in roster.</p>
+          {:else}
+            <div class="flex flex-col gap-2 max-h-64 overflow-y-auto">
+              {#each sortedRoster as char (char.id)}
+                {@const sel = teamFormIds.includes(char.id)}
+                {@const disabled = !sel && teamFormIds.length >= teamMaxSize}
+                <button
+                  onclick={() => toggleTeamChar(char.id)}
+                  disabled={disabled}
+                  class="flex items-center gap-3 px-3 py-2 rounded-lg w-full text-left"
+                  style="background: {sel ? 'rgba(240,192,64,0.1)' : 'rgba(255,255,255,0.03)'}; border: 1px solid {sel ? 'rgba(240,192,64,0.4)' : 'rgba(255,255,255,0.06)'}; opacity: {disabled ? 0.35 : 1}; cursor: {disabled ? 'not-allowed' : 'pointer'}; transition: border-color 120ms, background 120ms;"
+                >
+                  <div class="flex-shrink-0 w-5 h-5 rounded flex items-center justify-center"
+                    style="background: {sel ? 'rgba(240,192,64,0.9)' : 'rgba(255,255,255,0.06)'}; border: 1px solid {sel ? 'rgba(240,192,64,1)' : 'rgba(255,255,255,0.12)'};">
+                    {#if sel}
+                      <span class="material-symbols-outlined" style="font-size: 14px; color: #000; font-variation-settings: 'FILL' 1;">check</span>
+                    {/if}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-bold text-xs truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{char.name}</p>
+                    <p class="font-mono text-xs" style="color: var(--color-outline);">{char.race} · Lv {char.level}</p>
+                  </div>
+                  <span class="font-mono text-xs font-bold" style="color: var(--gold-bright);">{char.overallTier}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
+
+        <!-- Form buttons -->
+        <div class="flex gap-3">
+          <button onclick={cancelTeamForm}
+            class="flex-1 obsidian-slab py-2.5 rounded-lg font-bold font-mono text-sm"
+            style="border: 1px solid rgba(255,255,255,0.08); color: var(--color-outline); cursor: pointer;">
+            Cancel
+          </button>
+          <button
+            onclick={saveTeamForm}
+            disabled={!teamFormName.trim() || teamFormIds.length === 0}
+            class="{teamFormName.trim() && teamFormIds.length > 0 ? 'metal-stamp-gold' : 'obsidian-slab'} flex-1 py-2.5 rounded-lg font-bold font-mono text-sm"
+            style="{!teamFormName.trim() || teamFormIds.length === 0 ? 'opacity: 0.4; cursor: not-allowed; color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07);' : ''}">
+            Save Team
+          </button>
+        </div>
+      </div>
+    {/if}
+
+  </div>
 {/if}
 
 <!-- ── Inventory view ────────────────────────────────────────────────────────── -->

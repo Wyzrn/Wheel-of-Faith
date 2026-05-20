@@ -2,7 +2,7 @@
 // roster, gems, shards, world progression, spin credits, inventory, and daily shop limits.
 // Keys are story_slot_1 … story_slot_4; never overlaps the legacy story_roster/story_shards keys.
 
-import type { StoryRosterEntry } from './types'
+import type { StoryRosterEntry, StoryTeam } from './types'
 import type { WorldGrade } from './worlds'
 import { WORLD_GRADES, BATTLES_PER_WORLD, getPlayerLevelFromWorlds } from './worlds'
 
@@ -94,6 +94,7 @@ export interface StorySaveSlot {
   /** World-by-world progress. */
   worldProgress: Partial<Record<WorldGrade, WorldProgress>>
   roster: StoryRosterEntry[]
+  teams: StoryTeam[]
   /** Maximum characters allowed in roster. Starts at INITIAL_ROSTER_CAPACITY. */
   rosterCapacity: number
   /** How many times the roster has been upgraded (for cost scaling). */
@@ -158,6 +159,7 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
     playerLevel: 0,
     worldProgress: {},
     roster: [],
+    teams: [],
     rosterCapacity: INITIAL_ROSTER_CAPACITY,
     rosterUpgradeCount: 0,
     gems: 0,
@@ -199,6 +201,7 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     inventory: migrateInventory(raw.inventory ?? {}),
     dailyCrystalPurchases: raw.dailyCrystalPurchases ?? freshDailyPurchases(),
     endlessKeys: raw.endlessKeys ?? 0,
+    teams: raw.teams ?? [],
     // Migrate roster entries to add xp/level/statBonuses if missing
     roster: (raw.roster ?? []).map(r => ({
       ...r,
@@ -286,16 +289,16 @@ export function upgradeRosterCapacity(slot: StorySaveSlot): StorySaveSlot | null
   }
 }
 
-/** Sells a character from a slot's roster, crediting shards. */
+/** Sells a character from a slot's roster, crediting gems. */
 export function sellCharacterFromSlot(
   slot: StorySaveSlot,
   characterId: string,
-  shardValue: number,
+  gemValue: number,
 ): StorySaveSlot {
   return {
     ...slot,
     roster: slot.roster.filter(r => r.id !== characterId),
-    shards: slot.shards + shardValue,
+    gems: slot.gems + gemValue,
   }
 }
 
@@ -444,6 +447,27 @@ export const ENDLESS_KEY_GEM_COST = 50_000
 export function buyEndlessKey(slot: StorySaveSlot): StorySaveSlot | 'insufficient_gems' {
   if (slot.gems < ENDLESS_KEY_GEM_COST) return 'insufficient_gems'
   return { ...slot, gems: slot.gems - ENDLESS_KEY_GEM_COST, endlessKeys: slot.endlessKeys + 1 }
+}
+
+/** Max characters allowed in a team at a given player level. Level 0–1 = 1, then +1 per level up to 4. */
+export function maxTeamSize(playerLevel: number): number {
+  return Math.min(4, Math.max(1, playerLevel))
+}
+
+/** Creates a new named team in the slot. */
+export function createTeamInSlot(slot: StorySaveSlot, name: string, characterIds: string[]): StorySaveSlot {
+  const team: StoryTeam = { id: crypto.randomUUID(), name, characterIds, createdAt: new Date().toISOString() }
+  return { ...slot, teams: [...slot.teams, team] }
+}
+
+/** Replaces an existing team's name and members. Returns unchanged slot if team not found. */
+export function updateTeamInSlot(slot: StorySaveSlot, teamId: string, name: string, characterIds: string[]): StorySaveSlot {
+  return { ...slot, teams: slot.teams.map(t => t.id === teamId ? { ...t, name, characterIds } : t) }
+}
+
+/** Removes a team from the slot. */
+export function deleteTeamInSlot(slot: StorySaveSlot, teamId: string): StorySaveSlot {
+  return { ...slot, teams: slot.teams.filter(t => t.id !== teamId) }
 }
 
 /** Adds XP to a character in the roster. Returns updated slot. */

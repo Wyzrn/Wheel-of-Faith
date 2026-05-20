@@ -12,6 +12,8 @@
 
   onMount(() => { auth.init() })
 
+  let isStoryRoute = $derived($page.url.pathname.startsWith('/story'))
+
   let activeTab = $derived(
     $page.url.pathname === '/' ? 'home' :
     $page.url.pathname.startsWith('/character') ? 'characters' :
@@ -48,30 +50,42 @@
 
 <!-- Bottom navigation bar -->
 <nav class="bottom-nav">
-  <button onclick={handleHomeClick} class="nav-tab" class:active={activeTab === 'home'}>
-    <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'home' ? 1 : 0};">home</span>
-    <span class="nav-label">Home</span>
-  </button>
-  <a href="/characters" class="nav-tab" class:active={activeTab === 'characters'}>
-    <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'characters' ? 1 : 0};">group</span>
-    <span class="nav-label">Fighters</span>
-  </a>
-  <a href="/rivals" class="nav-tab" class:active={activeTab === 'rivals'}>
-    <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'rivals' ? 1 : 0};">swords</span>
-    <span class="nav-label">Rivals</span>
-  </a>
-  <a href="/friends" class="nav-tab" class:active={activeTab === 'friends'}>
-    <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'friends' ? 1 : 0};">group</span>
-    <span class="nav-label">Friends</span>
-  </a>
-  <a href={auth.loggedIn ? '/profile' : '/login'} class="nav-tab" class:active={activeTab === 'profile'}>
-    <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'profile' ? 1 : 0};">{auth.loggedIn ? 'account_circle' : 'login'}</span>
-    <span class="nav-label">{auth.loggedIn ? auth.user?.username?.slice(0,8) ?? 'Profile' : 'Login'}</span>
-  </a>
-  <button onclick={() => showSettings = !showSettings} class="nav-tab" class:active={showSettings}>
-    <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {showSettings ? 1 : 0};">settings</span>
-    <span class="nav-label">Settings</span>
-  </button>
+  {#if isStoryRoute}
+    <!-- Story mode: Home + Settings only -->
+    <button onclick={handleHomeClick} class="nav-tab" class:active={activeTab === 'home'}>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'home' ? 1 : 0};">home</span>
+      <span class="nav-label">Home</span>
+    </button>
+    <button onclick={() => showSettings = !showSettings} class="nav-tab" class:active={showSettings}>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {showSettings ? 1 : 0};">settings</span>
+      <span class="nav-label">Settings</span>
+    </button>
+  {:else}
+    <button onclick={handleHomeClick} class="nav-tab" class:active={activeTab === 'home'}>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'home' ? 1 : 0};">home</span>
+      <span class="nav-label">Home</span>
+    </button>
+    <a href="/characters" class="nav-tab" class:active={activeTab === 'characters'}>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'characters' ? 1 : 0};">group</span>
+      <span class="nav-label">Fighters</span>
+    </a>
+    <a href="/rivals" class="nav-tab" class:active={activeTab === 'rivals'}>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'rivals' ? 1 : 0};">swords</span>
+      <span class="nav-label">Rivals</span>
+    </a>
+    <a href="/friends" class="nav-tab" class:active={activeTab === 'friends'}>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'friends' ? 1 : 0};">group</span>
+      <span class="nav-label">Friends</span>
+    </a>
+    <a href={auth.loggedIn ? '/profile' : '/login'} class="nav-tab" class:active={activeTab === 'profile'}>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'profile' ? 1 : 0};">{auth.loggedIn ? 'account_circle' : 'login'}</span>
+      <span class="nav-label">{auth.loggedIn ? auth.user?.username?.slice(0,8) ?? 'Profile' : 'Login'}</span>
+    </a>
+    <button onclick={() => showSettings = !showSettings} class="nav-tab" class:active={showSettings}>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {showSettings ? 1 : 0};">settings</span>
+      <span class="nav-label">Settings</span>
+    </button>
+  {/if}
 </nav>
 
 {#if showSettings}

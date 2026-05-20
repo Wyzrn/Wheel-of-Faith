@@ -20,6 +20,14 @@ const TIERS_ABOVE_SS: TierGrade[] = [
 ]
 
 /**
+ * Returns the gem sell value for a given TierGrade.
+ * Roughly 100× the shard value, scaled to feel meaningful vs battle gem drops.
+ */
+export function getGemValue(tier: TierGrade): number {
+  return getShardValue(tier) * 100
+}
+
+/**
  * Returns the Fate Shard sell value for a given TierGrade.
  *
  * F–D bracket  (F-, F, F+, E-, E, E+, D-, D, D+): linearly interpolated 20 → 55

@@ -12,7 +12,7 @@
     recordBattleWin, applyBattleDrops, addCharacterXp,
     type StorySaveSlot, type BattleDrops,
   } from '$lib/story/saveSlots'
-  import type { StoryRosterEntry } from '$lib/story/types'
+  import type { StoryRosterEntry, StoryTeam } from '$lib/story/types'
   import AttackFX from '../AttackFX.svelte'
 
   let { slot, world, onBattleComplete, onBack }: {
@@ -116,6 +116,7 @@
   // ── State ──────────────────────────────────────────────────────────────────
   type Phase = 'pick' | 'intro' | 'battle' | 'result'
   let phase         = $state<Phase>('pick')
+  let selectedTeam  = $state<StoryTeam | null>(null)
   let selectedChar  = $state<StoryRosterEntry | null>(null)
   let playerChar    = $state<BattleCharacter | null>(null)
   let enemyChar     = $state<BattleCharacter | null>(null)
@@ -139,7 +140,24 @@
   let battleNumber  = $derived((slot.worldProgress[world]?.battlesCompleted ?? 0) + 1)
   let enemy         = $derived(getEnemy(world, battleNumber))
   let ec            = $derived(gradeColor(enemy.grade))
-  let sortedRoster  = $derived([...slot.roster].sort((a, b) => b.overallScore - a.overallScore))
+
+  // Teams available for battle — filter out teams with no current roster members
+  let teams = $derived(
+    (slot.teams ?? []).map(t => ({
+      team: t,
+      members: t.characterIds.map(id => slot.roster.find(r => r.id === id)).filter((r): r is StoryRosterEntry => !!r),
+    })).filter(t => t.members.length > 0)
+  )
+
+  // Pick best-scored member from selected team as the fighter
+  let teamFighter = $derived(
+    selectedTeam
+      ? (slot.teams ?? []).find(t => t.id === selectedTeam!.id)?.characterIds
+          .map(id => slot.roster.find(r => r.id === id))
+          .filter((r): r is StoryRosterEntry => !!r)
+          .sort((a, b) => b.overallScore - a.overallScore)[0] ?? null
+      : null
+  )
 
   let p1HpPct = $derived(playerChar ? Math.max(0, p1DisplayHp / playerChar.maxHp) : 1)
   let p2HpPct = $derived(enemyChar  ? Math.max(0, p2DisplayHp / enemyChar.maxHp)  : 1)
@@ -265,8 +283,10 @@
 
   // ── Start fight ────────────────────────────────────────────────────────────
   function startFight() {
-    if (!selectedChar) return
-    playerChar = buildBattleCharacter(selectedChar.spins, selectedChar.name)
+    const fighter = teamFighter
+    if (!fighter) return
+    selectedChar = fighter
+    playerChar = buildBattleCharacter(fighter.spins, fighter.name)
     enemyChar  = buildEnemyChar(enemy)
 
     p1DisplayHp = playerChar.hp
@@ -285,6 +305,7 @@
   function confirmResult() {
     if (!playerWon || !lastDrops) {
       phase        = 'pick'
+      selectedTeam = null
       selectedChar = null
       playerChar   = null
       enemyChar    = null
@@ -349,29 +370,35 @@
       </div>
     </div>
 
-    <!-- Character picker -->
-    {#if sortedRoster.length === 0}
+    <!-- Team picker -->
+    {#if teams.length === 0}
       <div class="text-center pt-8">
-        <p class="font-mono text-sm" style="color: var(--color-outline);">No characters in roster. Spin to add some first.</p>
+        <span class="material-symbols-outlined" style="font-size: 36px; color: var(--color-outline); font-variation-settings: 'FILL' 1;">shield_person</span>
+        <p class="font-mono text-sm mt-3" style="color: var(--color-outline);">No teams available.</p>
+        <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Go to Teams in the hub to create one.</p>
         <button onclick={onBack} class="metal-stamp-gold rounded-lg px-5 py-2 font-bold font-mono text-sm mt-5">Back</button>
       </div>
     {:else}
-      <p class="font-bold text-sm mb-3" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Choose your fighter:</p>
+      <p class="font-bold text-sm mb-3" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Select your team:</p>
       <div class="flex flex-col gap-2">
-        {#each sortedRoster as char (char.id)}
-          {@const sel = selectedChar?.id === char.id}
+        {#each teams as { team, members } (team.id)}
+          {@const sel = selectedTeam?.id === team.id}
           <button
-            onclick={() => selectedChar = char}
+            onclick={() => selectedTeam = team}
             class="obsidian-slab rounded-xl px-4 py-3 flex items-center gap-3 w-full text-left"
             style="border: 1px solid {sel ? 'rgba(240,192,64,0.5)' : 'transparent'}; cursor: pointer; background: {sel ? 'rgba(240,192,64,0.05)' : ''}; transition: border-color 120ms;"
           >
-            <div class="flex-1 min-w-0">
-              <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{char.name}</p>
-              <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">{char.race} · {char.archetype} · Lv {char.level}</p>
+            <div class="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
+              style="background: {sel ? 'rgba(240,192,64,0.18)' : 'rgba(240,192,64,0.07)'}; border: 1px solid rgba(240,192,64,{sel ? '0.4' : '0.15'});">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">shield_person</span>
             </div>
-            <div class="flex-shrink-0 text-right">
-              <p class="font-mono text-xs font-bold" style="color: var(--gold-bright);">{char.overallTier}</p>
-              <p class="font-mono text-xs" style="color: var(--color-outline);">score {char.overallScore}</p>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{team.name}</p>
+              <div class="flex flex-wrap gap-x-2 mt-0.5">
+                {#each members as m}
+                  <span class="font-mono text-xs" style="color: var(--color-outline);">{m.name} <span style="color: var(--gold-bright);">({m.overallTier})</span></span>
+                {/each}
+              </div>
             </div>
             {#if sel}
               <span class="material-symbols-outlined flex-shrink-0" style="font-size: 18px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">check_circle</span>
@@ -379,18 +406,31 @@
           </button>
         {/each}
       </div>
+
+      <!-- Selected team fighter preview -->
+      {#if selectedTeam && teamFighter}
+        <div class="mt-3 rounded-xl px-4 py-3 flex items-center gap-3"
+          style="background: rgba(240,192,64,0.04); border: 1px solid rgba(240,192,64,0.18);">
+          <span class="material-symbols-outlined" style="font-size: 18px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">person</span>
+          <div class="flex-1 min-w-0">
+            <p class="font-mono text-xs" style="color: var(--color-outline);">Lead Fighter</p>
+            <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{teamFighter.name}</p>
+            <p class="font-mono text-xs" style="color: var(--color-outline);">{teamFighter.race} · {teamFighter.archetype} · Lv {teamFighter.level} · {teamFighter.overallTier}</p>
+          </div>
+        </div>
+      {/if}
     {/if}
 
     <!-- Fight button -->
-    {#if sortedRoster.length > 0}
+    {#if teams.length > 0}
       <div class="fixed bottom-0 left-0 right-0 px-4 pt-3 z-20"
         style="background: linear-gradient(transparent, rgba(7,7,13,0.97) 40%); padding-bottom: max(28px, env(safe-area-inset-bottom, 28px));">
         <div class="max-w-md mx-auto">
           <button
             onclick={startFight}
-            disabled={!selectedChar}
-            class="{selectedChar ? 'metal-stamp-gold' : 'obsidian-slab'} w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-widest"
-            style="{!selectedChar ? 'opacity: 0.4; cursor: not-allowed; color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07);' : ''}"
+            disabled={!selectedTeam || !teamFighter}
+            class="{selectedTeam && teamFighter ? 'metal-stamp-gold' : 'obsidian-slab'} w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-widest"
+            style="{!selectedTeam || !teamFighter ? 'opacity: 0.4; cursor: not-allowed; color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07);' : ''}"
           >
             ⚔ Fight
           </button>

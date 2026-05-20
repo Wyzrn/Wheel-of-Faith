@@ -39,3 +39,12 @@ export interface StoryState {
   /** Current Fate Shard balance earned from selling characters. */
   shards: number
 }
+
+/** A named team of roster characters used for battles. */
+export interface StoryTeam {
+  id: string
+  name: string
+  /** Ordered list of character IDs from the roster. First valid member fights. */
+  characterIds: string[]
+  createdAt: string
+}
