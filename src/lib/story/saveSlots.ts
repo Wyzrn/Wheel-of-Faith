@@ -1,5 +1,5 @@
 // Story Mode save slot system — 4 isolated save slots, each with its own
-// roster, shards, stage progression, and spin credits.
+// roster, gems, shards, stage progression, spin credits, inventory, and daily shop limits.
 // Keys are story_slot_1 … story_slot_4; never overlaps the legacy story_roster/story_shards keys.
 
 import type { StoryRosterEntry } from './types'
@@ -18,18 +18,75 @@ export const STAGE_MIN_WEIGHTS = [12, 7, 5, 4, 2, 1] as const
 /** Starting spin credits given to a brand-new save slot. */
 export const INITIAL_SPIN_CREDITS = 3
 
+/** Stat crystal shop prices in gems. */
+export const STAT_CRYSTAL_COSTS = {
+  common:    10_000,
+  elite:    100_000,
+  legendary: 1_000_000,
+} as const
+
+/** Daily purchase limits per stat crystal type. */
+export const STAT_CRYSTAL_DAILY_LIMITS = {
+  common:    5,
+  elite:     3,
+  legendary: 1,
+} as const
+
+export type StatCrystalType = 'common' | 'elite' | 'legendary'
+
+export interface StoryInventory {
+  statCrystals: {
+    common: number
+    elite: number
+    legendary: number
+  }
+}
+
+/** Tracks how many stat crystals have been purchased today (resets at midnight). */
+export interface DailyCrystalPurchases {
+  date: string   // "YYYY-MM-DD"
+  statCrystals: {
+    common: number
+    elite: number
+    legendary: number
+  }
+}
+
 export interface StorySaveSlot {
   id: SlotId
   stage: number           // 1–6
   roster: StoryRosterEntry[]
-  shards: number
+  gems: number            // primary earned currency
+  shards: number          // rare premium currency
   spinsRemaining: number
+  inventory: StoryInventory
+  dailyCrystalPurchases: DailyCrystalPurchases
   createdAt: string
   lastPlayedAt: string
 }
 
 function slotKey(id: SlotId): string {
   return `story_slot_${id}`
+}
+
+function todayString(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function freshDailyPurchases(): DailyCrystalPurchases {
+  return { date: todayString(), statCrystals: { common: 0, elite: 0, legendary: 0 } }
+}
+
+function freshInventory(): StoryInventory {
+  return { statCrystals: { common: 0, elite: 0, legendary: 0 } }
+}
+
+/** Returns daily purchase record, resetting it if the stored date is not today. */
+function getOrResetDaily(slot: StorySaveSlot): DailyCrystalPurchases {
+  if (!slot.dailyCrystalPurchases || slot.dailyCrystalPurchases.date !== todayString()) {
+    return freshDailyPurchases()
+  }
+  return slot.dailyCrystalPurchases
 }
 
 /**
@@ -49,10 +106,24 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
     id,
     stage: 1,
     roster: [],
+    gems: 0,
     shards: 0,
     spinsRemaining: INITIAL_SPIN_CREDITS,
+    inventory: freshInventory(),
+    dailyCrystalPurchases: freshDailyPurchases(),
     createdAt: new Date().toISOString(),
     lastPlayedAt: new Date().toISOString(),
+  }
+}
+
+/** Migrates a raw parsed slot to fill in any missing fields from older saves. */
+function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlot {
+  return {
+    ...createSaveSlot(raw.id),
+    ...raw,
+    gems: raw.gems ?? 0,
+    inventory: raw.inventory ?? freshInventory(),
+    dailyCrystalPurchases: raw.dailyCrystalPurchases ?? freshDailyPurchases(),
   }
 }
 
@@ -62,7 +133,7 @@ export function loadSaveSlot(id: SlotId): StorySaveSlot | null {
   try {
     const raw = localStorage.getItem(slotKey(id))
     if (!raw) return null
-    return JSON.parse(raw) as StorySaveSlot
+    return migrateSlot(JSON.parse(raw) as Partial<StorySaveSlot> & { id: SlotId })
   } catch {
     return null
   }
@@ -125,4 +196,45 @@ export function purchaseSpin(slot: StorySaveSlot): StorySaveSlot | null {
 export function consumeSpin(slot: StorySaveSlot): StorySaveSlot | null {
   if (slot.spinsRemaining <= 0) return null
   return { ...slot, spinsRemaining: slot.spinsRemaining - 1 }
+}
+
+/**
+ * Attempts to buy one stat crystal.
+ * Returns updated slot, or 'insufficient_gems' / 'daily_limit' on failure.
+ */
+export function buyStatCrystal(
+  slot: StorySaveSlot,
+  type: StatCrystalType,
+): StorySaveSlot | 'insufficient_gems' | 'daily_limit' {
+  const cost = STAT_CRYSTAL_COSTS[type]
+  const limit = STAT_CRYSTAL_DAILY_LIMITS[type]
+  const daily = getOrResetDaily(slot)
+
+  if (daily.statCrystals[type] >= limit) return 'daily_limit'
+  if (slot.gems < cost) return 'insufficient_gems'
+
+  return {
+    ...slot,
+    gems: slot.gems - cost,
+    inventory: {
+      ...slot.inventory,
+      statCrystals: {
+        ...slot.inventory.statCrystals,
+        [type]: slot.inventory.statCrystals[type] + 1,
+      },
+    },
+    dailyCrystalPurchases: {
+      ...daily,
+      statCrystals: {
+        ...daily.statCrystals,
+        [type]: daily.statCrystals[type] + 1,
+      },
+    },
+  }
+}
+
+/** How many of a stat crystal type the player has bought today. */
+export function getDailyBought(slot: StorySaveSlot, type: StatCrystalType): number {
+  const daily = getOrResetDaily(slot)
+  return daily.statCrystals[type]
 }

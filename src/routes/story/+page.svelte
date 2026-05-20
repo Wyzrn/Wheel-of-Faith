@@ -3,8 +3,10 @@
   import {
     loadAllSlots, loadSaveSlot, saveSaveSlot, createSaveSlot, deleteSaveSlot,
     addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin,
+    buyStatCrystal, getDailyBought,
     SHARD_COST_PER_SPIN, STAGE_LABELS, STAGE_ROSTER_THRESHOLDS,
-    type StorySaveSlot, type SlotId,
+    STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS,
+    type StorySaveSlot, type SlotId, type StatCrystalType,
   } from '$lib/story/saveSlots'
   import { getShardValue } from '$lib/story/shards'
   import { getStageTierLabel } from '$lib/story/raceTiers'
@@ -33,9 +35,20 @@
 
   // ── Derived values ─────────────────────────────────────────────────────────
   let roster = $derived(currentSlot?.roster ?? [])
+  let gems = $derived(currentSlot?.gems ?? 0)
   let shards = $derived(currentSlot?.shards ?? 0)
   let stage = $derived(currentSlot?.stage ?? 1)
   let spinsRemaining = $derived(currentSlot?.spinsRemaining ?? 0)
+  let statCrystalInventory = $derived(currentSlot?.inventory?.statCrystals ?? { common: 0, elite: 0, legendary: 0 })
+
+  // Daily bought counts (re-derived on slot change so they update when a purchase is made)
+  let dailyCommon    = $derived(currentSlot ? getDailyBought(currentSlot, 'common')    : 0)
+  let dailyElite     = $derived(currentSlot ? getDailyBought(currentSlot, 'elite')     : 0)
+  let dailyLegendary = $derived(currentSlot ? getDailyBought(currentSlot, 'legendary') : 0)
+
+  let commonCanBuy    = $derived(gems >= STAT_CRYSTAL_COSTS.common    && dailyCommon    < STAT_CRYSTAL_DAILY_LIMITS.common)
+  let eliteCanBuy     = $derived(gems >= STAT_CRYSTAL_COSTS.elite     && dailyElite     < STAT_CRYSTAL_DAILY_LIMITS.elite)
+  let legendaryCanBuy = $derived(gems >= STAT_CRYSTAL_COSTS.legendary && dailyLegendary < STAT_CRYSTAL_DAILY_LIMITS.legendary)
 
   let sortedRoster = $derived(
     [...roster].sort((a, b) => {
@@ -109,6 +122,24 @@
     const updated = purchaseSpin($state.snapshot(currentSlot) as StorySaveSlot)
     if (!updated) return
     currentSlot = updated
+  }
+
+  let crystalBuyError = $state<string | null>(null)
+
+  function handleBuyStatCrystal(type: StatCrystalType) {
+    if (!currentSlot) return
+    const result = buyStatCrystal($state.snapshot(currentSlot) as StorySaveSlot, type)
+    if (result === 'insufficient_gems') {
+      crystalBuyError = 'Not enough gems.'
+      setTimeout(() => { crystalBuyError = null }, 2500)
+      return
+    }
+    if (result === 'daily_limit') {
+      crystalBuyError = `Daily limit reached for ${type} stat crystals.`
+      setTimeout(() => { crystalBuyError = null }, 2500)
+      return
+    }
+    currentSlot = result
   }
 
   // ── Roster actions ─────────────────────────────────────────────────────────
@@ -278,21 +309,34 @@
     </div>
 
     <!-- Stats bar -->
-    <div class="obsidian-slab w-full max-w-xs rounded-xl px-5 py-3 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">diamond</span>
-        <span class="font-mono text-sm font-bold" style="color: var(--gold-bright);">{shards}</span>
-        <span class="font-mono text-xs" style="color: var(--color-outline);">shards</span>
+    <div class="obsidian-slab w-full max-w-xs rounded-xl px-5 py-3 flex flex-col gap-2">
+      <div class="flex items-center justify-between gap-4">
+        <!-- Gems -->
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined" style="font-size: 16px; color: #34d399; font-variation-settings: 'FILL' 1;">paid</span>
+          <span class="font-mono text-sm font-bold" style="color: #34d399;">{gems.toLocaleString()}</span>
+          <span class="font-mono text-xs" style="color: var(--color-outline);">gems</span>
+        </div>
+        <!-- Shards -->
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">diamond</span>
+          <span class="font-mono text-sm font-bold" style="color: var(--gold-bright);">{shards}</span>
+          <span class="font-mono text-xs" style="color: var(--color-outline);">shards</span>
+        </div>
       </div>
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">person</span>
-        <span class="font-mono text-sm font-bold" style="color: var(--color-on-surface);">{roster.length}</span>
-        <span class="font-mono text-xs" style="color: var(--color-outline);">chars</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">stars</span>
-        <span class="font-mono text-sm font-bold" style="color: var(--color-on-surface);">S{stage}</span>
-        <span class="font-mono text-xs" style="color: var(--color-outline);">{getStageTierLabel(stage)}</span>
+      <div class="flex items-center justify-between gap-4">
+        <!-- Chars -->
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">person</span>
+          <span class="font-mono text-sm font-bold" style="color: var(--color-on-surface);">{roster.length}</span>
+          <span class="font-mono text-xs" style="color: var(--color-outline);">chars</span>
+        </div>
+        <!-- Stage -->
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">stars</span>
+          <span class="font-mono text-sm font-bold" style="color: var(--color-on-surface);">S{stage}</span>
+          <span class="font-mono text-xs" style="color: var(--color-outline);">{getStageTierLabel(stage)}</span>
+        </div>
       </div>
     </div>
 
@@ -420,22 +464,37 @@
     <h2 class="font-bold" style="font-family: var(--font-cinzel); font-size: 18px; color: var(--color-on-surface);">
       Fate Shop
     </h2>
-    <div class="ml-auto flex items-center gap-2">
-      <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">diamond</span>
-      <span class="font-mono text-sm font-bold" style="color: var(--gold-bright);">{shards}</span>
+    <!-- Currency display -->
+    <div class="ml-auto flex items-center gap-4">
+      <div class="flex items-center gap-1.5">
+        <span class="material-symbols-outlined" style="font-size: 15px; color: #34d399; font-variation-settings: 'FILL' 1;">paid</span>
+        <span class="font-mono text-sm font-bold" style="color: #34d399;">{gems.toLocaleString()}</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="material-symbols-outlined" style="font-size: 15px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">diamond</span>
+        <span class="font-mono text-sm font-bold" style="color: var(--gold-bright);">{shards}</span>
+      </div>
     </div>
   </header>
 
-  <div class="pt-20 pb-24 px-4 flex flex-col items-center gap-5">
+  <div class="pt-20 pb-24 px-4 flex flex-col items-center gap-5 max-w-xs mx-auto w-full">
 
-    <!-- Spin credits display -->
-    <div class="obsidian-slab w-full max-w-xs rounded-xl px-5 py-4 text-center">
+    <!-- Error toast -->
+    {#if crystalBuyError}
+      <div class="w-full rounded-lg px-4 py-2 text-center font-mono text-sm"
+        style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
+        {crystalBuyError}
+      </div>
+    {/if}
+
+    <!-- Spin credits -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-4 text-center">
       <p class="font-mono text-xs mb-1" style="color: var(--color-outline);">Current spin credits</p>
       <p class="font-bold text-3xl" style="font-family: var(--font-cinzel); color: var(--gold-bright);">{spinsRemaining}</p>
     </div>
 
     <!-- Buy spin -->
-    <div class="obsidian-slab w-full max-w-xs rounded-xl px-5 py-5 flex items-center gap-4">
+    <div class="obsidian-slab w-full rounded-xl px-5 py-5 flex items-center gap-4">
       <div class="flex-1">
         <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Fate Spin</p>
         <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Generate one new character</p>
@@ -451,8 +510,120 @@
       </button>
     </div>
 
-    <p class="font-mono text-xs text-center max-w-xs" style="color: var(--color-outline); line-height: 1.6;">
-      Sell characters from your Roster to earn Fate Shards. Rarer characters sell for more.
+    <!-- ── Stat Crystals section ──────────────────────────────────────────── -->
+    <div class="w-full flex items-center gap-3 mt-2">
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.06);"></div>
+      <p class="font-mono text-xs tracking-widest uppercase" style="color: var(--color-outline);">Stat Crystals</p>
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.06);"></div>
+    </div>
+    <p class="font-mono text-xs text-center" style="color: var(--color-outline); line-height: 1.6; margin-top: -8px;">
+      Boost any character stat. Daily limits reset at midnight.
+    </p>
+
+    <!-- Inventory summary -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-3 flex items-center justify-around gap-2">
+      <div class="text-center">
+        <p class="font-mono text-xs" style="color: var(--color-outline);">Common</p>
+        <p class="font-bold font-mono" style="color: #9ca3af;">{statCrystalInventory.common}</p>
+      </div>
+      <div style="width: 1px; height: 28px; background: rgba(255,255,255,0.06);"></div>
+      <div class="text-center">
+        <p class="font-mono text-xs" style="color: var(--color-outline);">Elite</p>
+        <p class="font-bold font-mono" style="color: #8b5cf6;">{statCrystalInventory.elite}</p>
+      </div>
+      <div style="width: 1px; height: 28px; background: rgba(255,255,255,0.06);"></div>
+      <div class="text-center">
+        <p class="font-mono text-xs" style="color: var(--color-outline);">Legendary</p>
+        <p class="font-bold font-mono" style="color: #f59e0b;">{statCrystalInventory.legendary}</p>
+      </div>
+    </div>
+
+    <!-- Common Stat Crystal -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
+      <div
+        class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+        style="background: rgba(156,163,175,0.1); border: 1px solid rgba(156,163,175,0.25);"
+      >
+        <span class="material-symbols-outlined" style="font-size: 20px; color: #9ca3af; font-variation-settings: 'FILL' 1;">hexagon</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Common Crystal</p>
+        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">+1 to any stat</p>
+        <div class="flex items-center gap-3 mt-1">
+          <span class="font-mono text-xs" style="color: #34d399;">{STAT_CRYSTAL_COSTS.common.toLocaleString()} gems</span>
+          <span class="font-mono text-xs" style="color: {dailyCommon >= STAT_CRYSTAL_DAILY_LIMITS.common ? '#ef4444' : 'var(--color-outline)'};">
+            {dailyCommon}/{STAT_CRYSTAL_DAILY_LIMITS.common} today
+          </span>
+        </div>
+      </div>
+      <button
+        class="{commonCanBuy ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
+        style="{!commonCanBuy ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
+        onclick={() => handleBuyStatCrystal('common')}
+        disabled={!commonCanBuy}
+      >
+        Buy
+      </button>
+    </div>
+
+    <!-- Elite Stat Crystal -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
+      <div
+        class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+        style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3);"
+      >
+        <span class="material-symbols-outlined" style="font-size: 20px; color: #8b5cf6; font-variation-settings: 'FILL' 1;">hexagon</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Elite Crystal</p>
+        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">+3 to any stat</p>
+        <div class="flex items-center gap-3 mt-1">
+          <span class="font-mono text-xs" style="color: #34d399;">{STAT_CRYSTAL_COSTS.elite.toLocaleString()} gems</span>
+          <span class="font-mono text-xs" style="color: {dailyElite >= STAT_CRYSTAL_DAILY_LIMITS.elite ? '#ef4444' : 'var(--color-outline)'};">
+            {dailyElite}/{STAT_CRYSTAL_DAILY_LIMITS.elite} today
+          </span>
+        </div>
+      </div>
+      <button
+        class="{eliteCanBuy ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
+        style="{!eliteCanBuy ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
+        onclick={() => handleBuyStatCrystal('elite')}
+        disabled={!eliteCanBuy}
+      >
+        Buy
+      </button>
+    </div>
+
+    <!-- Legendary Stat Crystal -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
+      <div
+        class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+        style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);"
+      >
+        <span class="material-symbols-outlined" style="font-size: 20px; color: #f59e0b; font-variation-settings: 'FILL' 1;">hexagon</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Legendary Crystal</p>
+        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">+5 to any stat</p>
+        <div class="flex items-center gap-3 mt-1">
+          <span class="font-mono text-xs" style="color: #34d399;">{STAT_CRYSTAL_COSTS.legendary.toLocaleString()} gems</span>
+          <span class="font-mono text-xs" style="color: {dailyLegendary >= STAT_CRYSTAL_DAILY_LIMITS.legendary ? '#ef4444' : 'var(--color-outline)'};">
+            {dailyLegendary}/{STAT_CRYSTAL_DAILY_LIMITS.legendary} today
+          </span>
+        </div>
+      </div>
+      <button
+        class="{legendaryCanBuy ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
+        style="{!legendaryCanBuy ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
+        onclick={() => handleBuyStatCrystal('legendary')}
+        disabled={!legendaryCanBuy}
+      >
+        Buy
+      </button>
+    </div>
+
+    <p class="font-mono text-xs text-center" style="color: var(--color-outline); line-height: 1.6;">
+      Sell characters from your Roster to earn Fate Shards.
     </p>
 
   </div>
