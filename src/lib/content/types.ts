@@ -11,8 +11,8 @@ import type { TierGrade } from '$lib/game/scoreTier'
 export type StatBonusGrants = Record<string, 'statBonus' | 'statPenalty'>
 
 // Item grade — rarity/power tier for powers, weapons, and armors.
-// F = Common, D = Uncommon, C = Rare, B = Epic, A = Legendary, S = Mythic, SS = Divine, SSS = Primordial
-export type ItemGrade = 'F' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS'
+// F = Common, E = Weak, D = Uncommon, C = Rare, B = Epic, A = Legendary, S = Mythic, SS = Divine, SSS = Primordial, God = God-Tier
+export type ItemGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'God'
 
 // Element type — thematic elemental affinity for powers, weapons, armor, and race classes.
 export type ElementType =
@@ -31,6 +31,7 @@ export interface Race {
   abilities: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]  // race-unique ability pool drawn for racialAbility spins
   statModifiers?: Record<string, number>  // multiplier per stat category; >1 boosts higher tiers, <1 pushes lower
   extraPowerSpins?: number                // additional power category spins spliced after race lands
+  extraWeaponSpins?: number               // additional weapon spins spliced after race lands (some races get unique weapons)
   minStatTier?: TierGrade                 // lowest stat tier grade that can be rolled; tiers below this are excluded
   customHeightPool?: { label: string; weight: number }[]
   customGenderPool?: { label: string; weight: number }[]  // overrides default height labels for this race

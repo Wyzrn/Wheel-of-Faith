@@ -129,6 +129,12 @@
   let p2StartedAt = $state('')     // session_started_at for P2 character save
   let p1ShareId = $state('')       // set if P1 is a pre-saved character (from challenge flow)
 
+  // ── Last completed character (persisted until next spin starts) ──────────
+  const LAST_CHAR_KEY = 'wof_last_char'
+  let lastCharResults = $state<SpinResult[] | null>(null)
+  let lastCharName    = $state<string | null>(null)
+  let showLastChar    = $state(false)
+
   // ── Tutorial state ────────────────────────────────────────────────────────
   // -1 = inactive (done/skipped), 0 = welcome modal, 1–8 = step cards, 9 = toast
   const TUTORIAL_KEY = 'wof_tutorial_done'
@@ -576,6 +582,15 @@
 
   // ── onMount: restore session if saved ────────────────────────────────────
   onMount(() => {
+    try {
+      const raw = localStorage.getItem(LAST_CHAR_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw) as { results: SpinResult[]; name: string }
+        lastCharResults = parsed.results
+        lastCharName = parsed.name
+      }
+    } catch { /* ignore */ }
+
     const saved = loadSession()
     if (saved && saved.completedSpins.length > 0) {
       currentSession = saved
@@ -718,6 +733,7 @@
       const race = races.find(r => r.label === resultLabel)
       const count = race?.abilitySpinCount ?? 1
       const extraPowers = race?.extraPowerSpins ?? 0
+      const extraWeapons = (race as any)?.extraWeaponSpins ?? 0
       const weaknessCount = race?.weaknessCount ?? deriveWeaknessCount(race?.weaknessProbabilityModifier ?? 1.0)
       const insertSlots: SpinDefinition[] = []
 
@@ -746,6 +762,11 @@
         insertSlots.push({ category: 'power' as const, displayName: `Bonus Power ${extraPowers > 1 ? i + 1 : ''}`.trim(), useRacialPowerPool: true })
       }
 
+      // Bonus weapon slots — races that have signature weapon types
+      for (let i = 0; i < extraWeapons; i++) {
+        insertSlots.push({ category: 'weapon' as const, displayName: extraWeapons > 1 ? `Racial Weapon ${i + 1}` : 'Racial Weapon' })
+      }
+
       // Weakness slots immediately after abilities
       for (let i = 0; i < weaknessCount; i++) {
         insertSlots.push({ category: 'weakness' as const, displayName: weaknessCount > 1 ? `Weakness ${i + 1}` : 'Weakness' })
@@ -762,6 +783,7 @@
       if (race?.transformationPool?.length) parts.push('power level')
       parts.push(`${count} racial ability${count > 1 ? ' slots' : ''}`)
       if (extraPowers > 0) parts.push(`${extraPowers} bonus power${extraPowers > 1 ? 's' : ''}`)
+      if (extraWeapons > 0) parts.push(`${extraWeapons} racial weapon${extraWeapons > 1 ? 's' : ''}`)
       if (weaknessCount > 0) parts.push(`${weaknessCount} weakness${weaknessCount > 1 ? 'es' : ''}`)
       showAnnouncement = `${resultLabel}: spin for ${parts.join(', ')}!`
     } else if (def.category === 'raceSubType') {
@@ -1547,6 +1569,10 @@
 
   // ── handleStartOver: clear session, rebuild from scratch ─────────────────
   function handleStartOver() {
+    // Clear saved last character — a new spin is beginning
+    try { localStorage.removeItem(LAST_CHAR_KEY) } catch { /* ignore */ }
+    lastCharResults = null
+    lastCharName = null
     clearSession()
     currentSession = createSession()
     spinQueue = buildInitialQueue()
@@ -1661,7 +1687,7 @@
     p2StartedAt = new Date().toISOString()
   }
 
-  // ── handleNewCharacter: same as start over ────────────────────────────────
+  // ── handleNewCharacter: return to menu with fully reset state ────────────
   function handleNewCharacter() {
     clearSession()
     currentSession = createSession()
@@ -1690,6 +1716,8 @@
     p1StartedAt = ''
     p2StartedAt = ''
     p1ShareId = ''
+    // Return to menu so user sees a clean start, not a potentially stale wheel
+    showMenu = true
   }
 
   function handleNameSubmit() {
@@ -1726,6 +1754,13 @@
       if (tutorialStep >= 0) {
         tutorialStep = 9
       }
+      // Persist last character for "View Last Character" button
+      const snapshot = $state.snapshot(results) as SpinResult[]
+      try {
+        localStorage.setItem(LAST_CHAR_KEY, JSON.stringify({ results: snapshot, name: characterName }))
+        lastCharResults = snapshot
+        lastCharName = characterName
+      } catch { /* ignore */ }
       clearSession()
       showNameScreen = false
       showCard = true
@@ -1852,10 +1887,36 @@
         >
           📖 Story Mode
         </a>
+        {#if lastCharResults && lastCharName !== null}
+          <button
+            onclick={() => { showLastChar = true; showMenu = false }}
+            class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
+            style="font-family: 'Cinzel', serif; color: #7dd3fc; border: 1px solid rgba(125,211,252,0.3);"
+          >
+            ← Last Character
+          </button>
+        {/if}
       </div>
 
       <!-- Bottom flavour -->
       <p class="mt-14 text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">23 spins. One fate. No take-backs.</p>
+    </div>
+  {/if}
+
+  <!-- Last character view overlay -->
+  {#if showLastChar && lastCharResults && lastCharName !== null}
+    <div class="flex justify-center pt-20 pb-24 px-4">
+      <div class="w-full max-w-xl flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <p class="text-xs tracking-[0.2em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #7dd3fc;">Last Completed Character</p>
+          <button
+            onclick={() => { showLastChar = false; showMenu = true }}
+            class="text-xs px-3 py-1.5 rounded transition-all active:scale-95"
+            style="color: #9a907b; border: 1px solid #4e4635; background: none; font-family: 'JetBrains Mono', monospace; cursor: pointer;"
+          >← Back</button>
+        </div>
+        <CharacterCard results={lastCharResults} name={lastCharName} startedAt={new Date(0).toISOString()} readonly={true} onNewCharacter={() => { showLastChar = false; showMenu = true }} onBackToMenu={() => { showLastChar = false; showMenu = true }} />
+      </div>
     </div>
   {/if}
 

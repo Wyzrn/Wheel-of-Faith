@@ -2,6 +2,7 @@
   import type { SpinResult } from '$lib/session/types'
   import { computeOverallScore, scoreTier, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import { archetypes } from '$lib/content/archetypes'
+  import { races } from '$lib/content/races'
   import { powers as powersPool } from '$lib/content/powers'
   import { weapons as weaponsPool } from '$lib/content/weapons'
   import { armors as armorsPool } from '$lib/content/armors'
@@ -73,7 +74,7 @@
   let archetypeAbilities = $derived(getAll('archetypeAbility'))
   let powers            = $derived(getAll('power'))
   let weaknesses        = $derived(getAll('weakness'))
-  let weapon            = $derived(get('weapon'))
+  let weapons           = $derived(getAll('weapon').filter(w => w !== 'No Weapon' && w !== 'No Weapon (Unarmed)'))
   let weaponType        = $derived(get('weaponType'))
   let weaponEnchs       = $derived(getAll('weaponEnchantment'))
   let armor             = $derived(get('armor'))
@@ -99,11 +100,47 @@
   const weaponMap = new Map(weaponsPool.map(w => [w.label, w]))
   const armorMap  = new Map(armorsPool.map(a => [a.label, a]))
 
-  let topPowerGrade = $derived(highestGrade(powers.map(label => powerMap.get(label)?.grade)))
-  let weaponGrade   = $derived((weaponMap.get(weapon)?.grade ?? 'F') as ItemGrade)
-  let armorGrade    = $derived((armorMap.get(armor)?.grade  ?? 'F') as ItemGrade)
-  let weaponElement = $derived(weaponMap.get(weapon)?.element)
-  let armorElement  = $derived(armorMap.get(armor)?.element)
+  // Ability lookup — element + grade from race and archetype pools
+  const abilityMap = new Map<string, { element?: import('$lib/content/types').ElementType; grade?: ItemGrade }>()
+  for (const race of races) {
+    for (const entry of [
+      ...race.abilities,
+      ...(race.subTypePool ?? []).flatMap(e => e.abilities ?? []),
+      ...(race.classPool ?? []).flatMap(e => e.abilities ?? []),
+      ...(race.transformationPool ?? []).flatMap(e => e.abilities ?? []),
+    ]) {
+      if ((entry.element || entry.grade) && !abilityMap.has(entry.label)) {
+        abilityMap.set(entry.label, { element: entry.element, grade: entry.grade })
+      }
+    }
+  }
+  for (const arc of archetypes) {
+    for (const entry of [...arc.abilities, ...(arc.customAbilityPool ?? [])]) {
+      if ((entry.element || entry.grade) && !abilityMap.has(entry.label)) {
+        abilityMap.set(entry.label, { element: entry.element, grade: entry.grade })
+      }
+    }
+  }
+
+  // Grade → numeric score for aggregate calculations (0–9 index in GRADE_ORDER)
+  function gradeScore(grade: ItemGrade | undefined): number {
+    if (!grade) return 0
+    const idx = GRADE_ORDER.indexOf(grade)
+    return idx < 0 ? 0 : idx * 11
+  }
+
+  function averageGrade(labels: string[], lookupFn: (l: string) => ItemGrade | undefined): ItemGrade {
+    const grades = labels.map(lookupFn).filter((g): g is ItemGrade => g !== undefined)
+    if (grades.length === 0) return 'F'
+    const avg = grades.reduce((s, g) => s + gradeScore(g), 0) / grades.length
+    const idx = Math.min(GRADE_ORDER.length - 1, Math.round(avg / 11))
+    return GRADE_ORDER[idx]
+  }
+
+  let topPowerGrade  = $derived(averageGrade(powers, l => powerMap.get(l)?.grade))
+  let topWeaponGrade = $derived(averageGrade(weapons, l => weaponMap.get(l)?.grade))
+  let armorGrade     = $derived((armorMap.get(armor)?.grade ?? 'F') as ItemGrade)
+  let armorElement   = $derived(armorMap.get(armor)?.element)
 
   // ── Save & Share state ────────────────────────────────────────────────────
 
@@ -253,27 +290,27 @@
   {/if}
 
   <!-- Combat Grades -->
-  {#if powers.length > 0 || (weapon !== '—' && weapon !== 'No Weapon') || armor !== '—'}
+  {#if powers.length > 0 || weapons.length > 0 || armor !== '—'}
     <div class="flex gap-3">
       {#if powers.length > 0}
         <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center" style="border: 1px solid {ITEM_GRADE_INFO[topPowerGrade].color}44;">
           <p class="text-[9px] tracking-[0.18em] uppercase mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Power Grade</p>
           <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[topPowerGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[topPowerGrade].glow});">{topPowerGrade}</p>
-          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[topPowerGrade].label}</p>
+          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[topPowerGrade].label} · +{ITEM_GRADE_INFO[topPowerGrade].battleBonus}</p>
         </div>
       {/if}
-      {#if weapon !== '—' && weapon !== 'No Weapon'}
-        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center" style="border: 1px solid {ITEM_GRADE_INFO[weaponGrade].color}44;">
+      {#if weapons.length > 0}
+        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center" style="border: 1px solid {ITEM_GRADE_INFO[topWeaponGrade].color}44;">
           <p class="text-[9px] tracking-[0.18em] uppercase mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Weapon Grade</p>
-          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[weaponGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[weaponGrade].glow});">{weaponGrade}</p>
-          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[weaponGrade].label}</p>
+          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[topWeaponGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[topWeaponGrade].glow});">{topWeaponGrade}</p>
+          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[topWeaponGrade].label} · +{ITEM_GRADE_INFO[topWeaponGrade].battleBonus}</p>
         </div>
       {/if}
       {#if armor !== '—'}
         <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center" style="border: 1px solid {ITEM_GRADE_INFO[armorGrade].color}44;">
           <p class="text-[9px] tracking-[0.18em] uppercase mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Armor Grade</p>
           <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[armorGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[armorGrade].glow});">{armorGrade}</p>
-          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[armorGrade].label}</p>
+          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[armorGrade].label} · +{ITEM_GRADE_INFO[armorGrade].battleBonus}</p>
         </div>
       {/if}
     </div>
@@ -308,7 +345,18 @@
         <p class="text-xs tracking-[0.15em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Racial Abilities</p>
         <ul class="space-y-1">
           {#each racialAbilities as ab}
-            <li class="obsidian-slab text-xs rounded px-3 py-2" style="color: #e4e1ee; border: 1px solid rgba(240,192,64,0.12); border-left: 2px solid rgba(240,192,64,0.35);">{ab}</li>
+            {@const abMeta = abilityMap.get(ab)}
+            {@const abColor = abMeta?.element ? ELEMENT_COLORS[abMeta.element] : 'rgba(240,192,64,0.4)'}
+            {@const abGradeInfo = abMeta?.grade ? ITEM_GRADE_INFO[abMeta.grade] : null}
+            <li class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e4e1ee; border: 1px solid rgba(240,192,64,0.12); border-left: 2px solid {abColor}55;">
+              {#if abMeta?.element}
+                <span style="font-size: 10px;">{ELEMENT_ICONS[abMeta.element]}</span>
+              {/if}
+              <span class="flex-1">{ab}</span>
+              {#if abGradeInfo}
+                <span class="text-[9px] font-bold px-1 py-0.5 rounded shrink-0" style="background: {abGradeInfo.color}22; color: {abGradeInfo.color}; border: 1px solid {abGradeInfo.color}55;">{abMeta?.grade}</span>
+              {/if}
+            </li>
           {/each}
         </ul>
       </div>
@@ -318,7 +366,18 @@
         <p class="text-xs tracking-[0.15em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Archetype Abilities</p>
         <ul class="space-y-1">
           {#each archetypeAbilities as ab}
-            <li class="obsidian-slab text-xs rounded px-3 py-2" style="color: #e4e1ee; border: 1px solid rgba(139,92,246,0.15); border-left: 2px solid rgba(139,92,246,0.4);">{ab}</li>
+            {@const abMeta = abilityMap.get(ab)}
+            {@const abColor = abMeta?.element ? ELEMENT_COLORS[abMeta.element] : 'rgba(139,92,246,0.4)'}
+            {@const abGradeInfo = abMeta?.grade ? ITEM_GRADE_INFO[abMeta.grade] : null}
+            <li class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e4e1ee; border: 1px solid rgba(139,92,246,0.15); border-left: 2px solid {abColor}55;">
+              {#if abMeta?.element}
+                <span style="font-size: 10px;">{ELEMENT_ICONS[abMeta.element]}</span>
+              {/if}
+              <span class="flex-1">{ab}</span>
+              {#if abGradeInfo}
+                <span class="text-[9px] font-bold px-1 py-0.5 rounded shrink-0" style="background: {abGradeInfo.color}22; color: {abGradeInfo.color}; border: 1px solid {abGradeInfo.color}55;">{abMeta?.grade}</span>
+              {/if}
+            </li>
           {/each}
         </ul>
       </div>
@@ -350,37 +409,47 @@
     </div>
   {/if}
 
-  <!-- Weapon -->
-  {#if weapon !== '—' && weapon !== 'No Weapon'}
-    {@const wBorderColor = weaponElement ? ELEMENT_COLORS[weaponElement] : 'rgba(240,192,64,0.4)'}
+  <!-- Weapons (all) -->
+  {#if weapons.length > 0}
     <div>
       <div class="flex items-center gap-2 mb-2">
         <span class="material-symbols-outlined text-sm" style="color: #f0c040; font-variation-settings: 'FILL' 1;">swords</span>
-        <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Weapon</p>
-      </div>
-      <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3"
-        style="border: 1px solid {wBorderColor}33; border-left: 3px solid {wBorderColor};">
-        <span class="text-xs font-bold px-2 py-0.5 rounded"
-          style="background: {ITEM_GRADE_INFO[weaponGrade].color}22; color: {ITEM_GRADE_INFO[weaponGrade].color}; border: 1px solid {ITEM_GRADE_INFO[weaponGrade].color}55;">
-          {ITEM_GRADE_INFO[weaponGrade].label}
-        </span>
-        {#if weaponElement}
-          <span class="text-xs" style="color: {ELEMENT_COLORS[weaponElement]};">{ELEMENT_ICONS[weaponElement]} {weaponElement}</span>
-        {/if}
-        {#if weaponType !== '—'}
-          <span class="text-xs px-2 py-1 rounded" style="background: rgba(240,192,64,0.08); color: #9a907b; border: 1px solid rgba(240,192,64,0.15);">{weaponType}</span>
-        {/if}
-        <span class="text-sm font-medium" style="color: #e4e1ee;">{weapon}</span>
-        {#each weaponEnchs as ench}
-          <span class="text-xs" style="color: #f0c040;">✦ {ench}</span>
-        {/each}
+        <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Weapon{weapons.length > 1 ? 's' : ''}</p>
         {#if getTierLabel('weaponMastery')}
           {@const wmTierColor = TIER_COLORS[getTier('weaponMastery') ?? ''] ?? '#9a907b'}
           <span class="ml-auto text-xs font-bold px-1.5 py-0.5 rounded"
             style="background: {wmTierColor}22; color: {wmTierColor}; border: 1px solid {wmTierColor}66;">
-            {getTierLabel('weaponMastery')}
+            Mastery: {getTierLabel('weaponMastery')}
           </span>
         {/if}
+      </div>
+      <div class="space-y-1.5">
+        {#each weapons as w, wi}
+          {@const wInfo = weaponMap.get(w)}
+          {@const wGrade = (wInfo?.grade ?? 'F') as ItemGrade}
+          {@const wGradeInfo = ITEM_GRADE_INFO[wGrade]}
+          {@const wElement = wInfo?.element}
+          {@const wBorderColor = wElement ? ELEMENT_COLORS[wElement] : 'rgba(240,192,64,0.4)'}
+          <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3"
+            style="border: 1px solid {wBorderColor}33; border-left: 3px solid {wBorderColor};">
+            <span class="text-xs font-bold px-2 py-0.5 rounded"
+              style="background: {wGradeInfo.color}22; color: {wGradeInfo.color}; border: 1px solid {wGradeInfo.color}55;">
+              {wGradeInfo.label} +{wGradeInfo.battleBonus}
+            </span>
+            {#if wElement}
+              <span class="text-xs" style="color: {ELEMENT_COLORS[wElement]};">{ELEMENT_ICONS[wElement]} {wElement}</span>
+            {/if}
+            {#if wi === 0 && weaponType !== '—'}
+              <span class="text-xs px-2 py-1 rounded" style="background: rgba(240,192,64,0.08); color: #9a907b; border: 1px solid rgba(240,192,64,0.15);">{weaponType}</span>
+            {/if}
+            <span class="text-sm font-medium" style="color: #e4e1ee;">{w}</span>
+            {#if wi === 0}
+              {#each weaponEnchs as ench}
+                <span class="text-xs" style="color: #f0c040;">✦ {ench}</span>
+              {/each}
+            {/if}
+          </div>
+        {/each}
       </div>
     </div>
   {/if}

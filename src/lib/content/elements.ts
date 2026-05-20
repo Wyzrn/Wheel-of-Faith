@@ -64,17 +64,19 @@ export interface GradeInfo {
 
 export const ITEM_GRADE_INFO: Record<ItemGrade, GradeInfo> = {
   F:   { label: 'Common',     color: '#9ca3af', glow: '#9ca3af44', battleBonus: 0   },
-  D:   { label: 'Uncommon',   color: '#22c55e', glow: '#22c55e44', battleBonus: 3   },
-  C:   { label: 'Rare',       color: '#3b82f6', glow: '#3b82f644', battleBonus: 7   },
-  B:   { label: 'Epic',       color: '#8b5cf6', glow: '#8b5cf644', battleBonus: 14  },
-  A:   { label: 'Legendary',  color: '#f59e0b', glow: '#f59e0b44', battleBonus: 24  },
-  S:   { label: 'Mythic',     color: '#ef4444', glow: '#ef444444', battleBonus: 36  },
-  SS:  { label: 'Divine',     color: '#fbbf24', glow: '#fbbf2455', battleBonus: 52  },
-  SSS: { label: 'Primordial', color: '#ffffff', glow: '#ffffff55', battleBonus: 70  },
+  E:   { label: 'Weak',       color: '#6b7280', glow: '#6b728044', battleBonus: 2   },
+  D:   { label: 'Uncommon',   color: '#22c55e', glow: '#22c55e44', battleBonus: 5   },
+  C:   { label: 'Rare',       color: '#3b82f6', glow: '#3b82f644', battleBonus: 10  },
+  B:   { label: 'Epic',       color: '#8b5cf6', glow: '#8b5cf644', battleBonus: 18  },
+  A:   { label: 'Legendary',  color: '#f59e0b', glow: '#f59e0b44', battleBonus: 28  },
+  S:   { label: 'Mythic',     color: '#ef4444', glow: '#ef444444', battleBonus: 42  },
+  SS:  { label: 'Divine',     color: '#fbbf24', glow: '#fbbf2455', battleBonus: 60  },
+  SSS: { label: 'Primordial', color: '#ffffff', glow: '#ffffff55', battleBonus: 82  },
+  God: { label: 'God-Tier',   color: '#fde68a', glow: '#fde68a88', battleBonus: 110 },
 }
 
 // Grade ordering for comparisons (lowest → highest)
-export const GRADE_ORDER: ItemGrade[] = ['F', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS']
+export const GRADE_ORDER: ItemGrade[] = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS', 'God']
 
 export function highestGrade(grades: (ItemGrade | undefined)[]): ItemGrade {
   const defined = grades.filter((g): g is ItemGrade => g !== undefined)
