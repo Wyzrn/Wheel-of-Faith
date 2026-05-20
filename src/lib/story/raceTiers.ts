@@ -1,12 +1,21 @@
-// 6-tier race availability system for Story Mode.
-// Races are grouped by their spin weight: higher weight = more common = available earlier.
-// Each stage unlocks the next tier, so rarer races only appear as the player progresses.
+// 6-tier race and archetype availability system for Story Mode.
+// Races/archetypes are grouped by their spin weight: higher weight = more common = available earlier.
+// Each stage unlocks the next tier, so rarer options only appear as the player progresses.
 
 import { races } from '$lib/content/races'
-import type { Race } from '$lib/content/races'
+import { archetypes } from '$lib/content/archetypes'
+import type { Race, Archetype } from '$lib/content/types'
 import { STAGE_MIN_WEIGHTS, STAGE_LABELS } from './saveSlots'
 
-export type { Race }
+export type { Race, Archetype }
+
+// Archetypes have weights 1–6, so use tighter thresholds than the race system.
+// Stage 1: weight >= 5 → Warrior, Mage, Rogue, Superhero (4 archetypes)
+// Stage 2: weight >= 4 → + Paladin, Ranger, Bard, Cleric, Anti-Hero, Demon Slayer, Shinobi
+// Stage 3: weight >= 3 → + Berserker, Monk, Dual Wielder, Stand User, Nen Hunter, Esper, etc.
+// Stage 4: weight >= 2 → + Necromancer, Druid, Artificer, Warlock, Devil Fruit User, etc.
+// Stage 5+: weight >= 1 → all archetypes
+export const ARCHETYPE_STAGE_MIN_WEIGHTS = [5, 4, 3, 2, 1, 1] as const
 
 /**
  * Returns the subset of races available at the given stage (1–6).
@@ -32,8 +41,24 @@ export function getStageTierLabel(stage: number): string {
 }
 
 /**
+ * Returns the subset of archetypes available at the given stage (1–6).
+ */
+export function getArchetypesForStage(stage: number): Archetype[] {
+  const clamped = Math.max(1, Math.min(6, stage))
+  const minWeight = ARCHETYPE_STAGE_MIN_WEIGHTS[clamped - 1]
+  return archetypes.filter(a => a.weight >= minWeight)
+}
+
+/**
  * Converts a race array to weighted segments compatible with SpinWheel.
  */
 export function racesToSegments(raceList: Race[]): { label: string; weight: number }[] {
   return raceList.map(r => ({ label: r.label, weight: r.weight }))
+}
+
+/**
+ * Converts an archetype array to weighted segments compatible with SpinWheel.
+ */
+export function archetypesToSegments(archetypeList: Archetype[]): { label: string; weight: number }[] {
+  return archetypeList.map(a => ({ label: a.label, weight: a.weight }))
 }

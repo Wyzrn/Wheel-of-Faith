@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import SpinWheel from '../SpinWheel.svelte'
+  import TierBadge from '../TierBadge.svelte'
   import {
     createStorySession,
     loadStorySession,
@@ -15,7 +16,44 @@
   import type { StoryRosterEntry } from '$lib/story/types'
   import { races } from '$lib/content/races'
   import { archetypes } from '$lib/content/archetypes'
-  import { getRacesForStage, racesToSegments } from '$lib/story/raceTiers'
+  import { getRacesForStage, racesToSegments, getArchetypesForStage, archetypesToSegments } from '$lib/story/raceTiers'
+
+  // ── Category hue map — mirrors main game so wheel colors match ───────────────
+  const CATEGORY_HUES: Record<string, number> = {
+    race:              340,
+    raceSubType:       350,
+    raceClass:         160,
+    raceTransformation: 30,
+    racialAbility:     320,
+    archetype:         270,
+    archetypeAbility:  250,
+    backstory:         180,
+    height:            120,
+    strength:           30,
+    speed:             190,
+    agility:           140,
+    durability:         40,
+    iq:                220,
+    charisma:          300,
+    fightingSkill:      15,
+    power:               0,
+    powerMastery:      280,
+    weaponType:        205,
+    weapon:            200,
+    weaponMastery:     210,
+    weaponEnchantment:  50,
+    potential:          55,
+    energyLevel:        60,
+    weakness:           25,
+    statBonus:          105,
+    statPenalty:          0,
+    title:               45,
+  }
+
+  // ── Stat tier caps per stage (scores above this are dimmed / unspinnable) ────
+  // Stage 1 → max B+ (score 54), Stage 2 → A+ (69), Stage 3 → S+ (82),
+  // Stage 4 → SS+ (92), Stage 5 → SSS+ (99), Stage 6 → no limit
+  const STAGE_MAX_STAT_SCORES = [54, 69, 82, 92, 99, Infinity] as const
 
   // ── STAT_CATEGORIES matching scoreTier.ts STAT_WEIGHTS keys ─────────────────
   const STAT_CATEGORIES = new Set([
@@ -50,6 +88,16 @@
   let usedRacialAbilities = $state<Set<string>>(new Set())
   let usedArchetypeAbilities = $state<Set<string>>(new Set())
 
+  // Result popup state — shown after each spin before advancing to the next
+  let pendingResult = $state<{
+    label: string
+    categoryDisplayName: string
+    tier?: string
+    color: string
+  } | null>(null)
+  let isSessionDone = $state(false)
+  let doneEntry = $state<StoryRosterEntry | null>(null)
+
   // ── On mount ──────────────────────────────────────────────────────────────────
   onMount(() => {
     const existing = loadStorySession()
@@ -62,8 +110,18 @@
   // ── Derived values ────────────────────────────────────────────────────────────
   let currentDef = $derived(queue[currentIndex] as SpinDefinition | undefined)
 
-  // Stage-aware race segments (the core fix: filter by stage min weight)
+  let currentCategoryHue = $derived(
+    currentDef ? (CATEGORY_HUES[currentDef.category] ?? 45) : 45
+  )
+
+  // Stage-aware race segments
   let stageRaceSegments = $derived(racesToSegments(getRacesForStage(stage)) as WeightedSegment[])
+
+  // Stage-aware archetype segments
+  let stageArchetypeSegments = $derived(archetypesToSegments(getArchetypesForStage(stage)) as WeightedSegment[])
+
+  // Max allowed stat score for this stage (0-indexed)
+  let stageMaxStatScore = $derived(STAGE_MAX_STAT_SCORES[Math.max(0, Math.min(5, stage - 1))])
 
   let currentSegments = $derived.by((): WeightedSegment[] => {
     if (!currentDef) return []
@@ -73,12 +131,16 @@
       return stageRaceSegments
     }
 
+    // Archetype wheel: only show archetypes available at current stage
+    if (currentDef.category === 'archetype') {
+      return stageArchetypeSegments
+    }
+
     // Racial ability: use race-specific pool with dimming for used abilities
     if (currentDef.category === 'racialAbility') {
       const raceResult = results.find(r => r.category === 'race')
       if (raceResult) {
         const race = races.find(r => r.label === raceResult.resultLabel)
-        // Check for class or subType ability overrides
         const classResult = results.find(r => r.category === 'raceClass')
         const classItem = race?.classPool?.find(c => c.label === classResult?.resultLabel)
         const subTypeResult = results.find(r => r.category === 'raceSubType')
@@ -122,6 +184,16 @@
       return (race?.classPool as WeightedSegment[] | undefined) ?? getSegmentsForCategory('raceClass')
     }
 
+    // Stat wheels: cap tiers by stage — dim and zero-weight segments above the stage max
+    if (STAT_CATEGORIES.has(currentDef.category)) {
+      const segs = getSegmentsForCategory(currentDef.category as SpinCategory) as (WeightedSegment & { score?: number })[]
+      return segs.map(seg =>
+        (seg.score !== undefined && seg.score > stageMaxStatScore)
+          ? { ...seg, weight: 0, dimmed: true }
+          : seg
+      )
+    }
+
     return getSegmentsForCategory(currentDef.category as SpinCategory)
   })
 
@@ -139,10 +211,13 @@
     currentIndex = 0
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
+    pendingResult = null
+    isSessionDone = false
+    doneEntry = null
     showResumePrompt = false
   }
 
-  // ── Spin completion — mirrors main game pattern (queue splicing + tracking) ───
+  // ── Spin completion — shows result popup before advancing ─────────────────────
   function handleSpinComplete(resultIndex: number, resultLabel: string) {
     if (!currentDef) return
 
@@ -155,12 +230,14 @@
     }
 
     // Enrich stat spins with tier + score from segment data
+    let resultColor = `hsl(${currentCategoryHue}, 70%, 65%)`
     if (STAT_CATEGORIES.has(currentDef.category)) {
       const segs = getSegmentsForCategory(currentDef.category as SpinCategory)
-      const matched = (segs as { label: string; weight: number; tier?: string; score?: number }[])
+      const matched = (segs as { label: string; weight: number; tier?: string; score?: number; color?: string }[])
         .find(s => s.label === resultLabel)
       if (matched?.tier !== undefined) spinResult.tier = matched.tier as SpinResult['tier']
       if (matched?.score !== undefined) spinResult.score = matched.score
+      if (matched?.color) resultColor = matched.color
     }
 
     // ── Post-spin queue splicing (mirrors main game logic) ─────────────────────
@@ -169,11 +246,9 @@
     if (currentDef.category === 'race') {
       const race = races.find(r => r.label === resultLabel)
       if (race) {
-        // Splice sub-type spin if race has a subTypePool
         if (race.subTypePool && race.subTypePool.length > 0) {
           insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Sub-Type` })
         }
-        // Splice racial ability spins (abilitySpinCount per race)
         const count = race.abilitySpinCount ?? 1
         for (let i = 0; i < count; i++) {
           insertSlots.push({
@@ -181,7 +256,6 @@
             displayName: count > 1 ? `Racial Ability ${i + 1}` : 'Racial Ability',
           })
         }
-        // Splice weakness spins
         const weaknessCount = deriveWeaknessCount(race.weaknessProbabilityModifier ?? 1.0)
         for (let i = 0; i < weaknessCount; i++) {
           insertSlots.push({
@@ -190,9 +264,7 @@
           })
         }
       }
-      if (insertSlots.length > 0) {
-        queue.splice(currentIndex + 1, 0, ...insertSlots)
-      }
+      if (insertSlots.length > 0) queue.splice(currentIndex + 1, 0, ...insertSlots)
     }
 
     if (currentDef.category === 'archetype') {
@@ -205,25 +277,16 @@
             displayName: count > 1 ? `Archetype Ability ${i + 1}` : 'Archetype Ability',
           })
         }
-        if (insertSlots.length > 0) {
-          queue.splice(currentIndex + 1, 0, ...insertSlots)
-        }
+        if (insertSlots.length > 0) queue.splice(currentIndex + 1, 0, ...insertSlots)
       }
     }
 
-    // Track used abilities for dimming on future spins
-    if (currentDef.category === 'racialAbility') {
-      usedRacialAbilities.add(resultLabel)
-    }
-    if (currentDef.category === 'archetypeAbility') {
-      usedArchetypeAbilities.add(resultLabel)
-    }
+    if (currentDef.category === 'racialAbility') usedRacialAbilities.add(resultLabel)
+    if (currentDef.category === 'archetypeAbility') usedArchetypeAbilities.add(resultLabel)
 
     results.push(spinResult)
     const nextIndex = currentIndex + 1
-    currentIndex = nextIndex
 
-    // Persist after every spin
     saveStorySession({
       ...session,
       completedSpins: $state.snapshot(results),
@@ -231,15 +294,33 @@
       currentSpinIndex: nextIndex,
     } as StorySessionState)
 
-    // Session complete when all queue entries have been processed
+    // Prepare completion entry if this was the last spin
     if (nextIndex >= queue.length) {
-      const entry = buildRosterEntryFromResults({
+      doneEntry = buildRosterEntryFromResults({
         results: $state.snapshot(results),
         sessionStartedAt: session.startedAt,
       })
       clearStorySession()
-      onSessionComplete(entry)
+      isSessionDone = true
     }
+
+    // Show result popup — user must tap Continue before advancing
+    pendingResult = {
+      label: resultLabel,
+      categoryDisplayName: currentDef.displayName,
+      tier: spinResult.tier,
+      color: resultColor,
+    }
+  }
+
+  // ── Continue from result popup ────────────────────────────────────────────────
+  function handleContinue() {
+    pendingResult = null
+    if (isSessionDone && doneEntry) {
+      onSessionComplete(doneEntry)
+      return
+    }
+    currentIndex = currentIndex + 1
   }
 </script>
 
@@ -264,12 +345,13 @@
     </button>
   </div>
 
-  <!-- Spin wheel (remounts on each new spin via {#key} — same pattern as main game) -->
-  {#if currentDef && !showResumePrompt}
+  <!-- Spin wheel (remounts on each new spin via {#key}) -->
+  {#if currentDef && !showResumePrompt && !pendingResult}
     <div class="flex flex-col items-center gap-4">
       {#key currentIndex}
         <SpinWheel
           segments={currentSegments}
+          categoryHue={currentCategoryHue}
           onSpinComplete={handleSpinComplete}
         />
       {/key}
@@ -286,6 +368,59 @@
     </div>
   {/if}
 </div>
+
+<!-- ── Result popup — shown after every spin before advancing ────────────────── -->
+{#if pendingResult}
+  <div
+    class="fixed inset-0 z-40 flex items-center justify-center px-4"
+    style="background: rgba(7,7,13,0.88); backdrop-filter: blur(12px);"
+  >
+    <div
+      class="obsidian-slab w-full max-w-sm rounded-xl p-7 text-center relative overflow-hidden"
+      style="border: 1px solid {pendingResult.color}44; box-shadow: 0 0 60px rgba(0,0,0,0.9), 0 0 40px {pendingResult.color}18;"
+    >
+      <div class="noise-overlay"></div>
+      <div class="absolute top-3 left-3 w-7 h-7" style="border-top: 2px solid {pendingResult.color}55; border-left: 2px solid {pendingResult.color}55;"></div>
+      <div class="absolute top-3 right-3 w-7 h-7" style="border-top: 2px solid {pendingResult.color}55; border-right: 2px solid {pendingResult.color}55;"></div>
+      <div class="absolute bottom-3 left-3 w-7 h-7" style="border-bottom: 2px solid {pendingResult.color}55; border-left: 2px solid {pendingResult.color}55;"></div>
+      <div class="absolute bottom-3 right-3 w-7 h-7" style="border-bottom: 2px solid {pendingResult.color}55; border-right: 2px solid {pendingResult.color}55;"></div>
+
+      <div class="relative z-10 flex flex-col items-center gap-3">
+        <!-- Category label -->
+        <p class="font-mono text-xs tracking-widest uppercase" style="color: var(--color-outline);">
+          {pendingResult.categoryDisplayName}
+        </p>
+
+        <!-- Result label -->
+        <p
+          class="font-bold leading-snug"
+          style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: clamp(1.1rem, 5vw, 1.5rem); color: {pendingResult.color}; filter: drop-shadow(0 0 10px {pendingResult.color}66); max-width: 280px;"
+        >
+          {pendingResult.label}
+        </p>
+
+        <!-- Tier badge for stat spins -->
+        {#if pendingResult.tier}
+          <div class="mt-1">
+            <TierBadge grade={pendingResult.tier as import('$lib/game/scoreTier').TierGrade} />
+          </div>
+        {/if}
+
+        <!-- Divider -->
+        <div class="w-full mt-1" style="height: 1px; background: linear-gradient(90deg, transparent, {pendingResult.color}44, transparent);"></div>
+
+        <!-- Continue button -->
+        <button
+          onclick={handleContinue}
+          class="metal-stamp-gold w-full py-3 rounded-lg font-bold text-sm tracking-widest"
+          style="font-family: var(--font-cinzel, 'Cinzel', serif); margin-top: 4px;"
+        >
+          {isSessionDone ? 'Complete!' : 'Continue →'}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- ── Resume prompt modal ───────────────────────────────────────────────────── -->
 {#if showResumePrompt}
