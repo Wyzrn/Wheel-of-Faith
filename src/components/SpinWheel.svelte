@@ -182,14 +182,16 @@
   const TIP_SVG_X = CENTER
   const TIP_SVG_Y = CENTER - WHEEL_RADIUS - 3
 
+  // Convert SVG coordinate space to canvas pixel space.
+  // Since the canvas covers the SVG exactly (same CSS dimensions, DPR-scaled),
+  // we scale by the canvas pixel dimensions directly — no getBoundingClientRect
+  // needed, which avoids scroll/transform offset errors on mobile.
   function svgToCanvas(svgX: number, svgY: number): [number, number] {
-    if (!particleCanvas || !svgEl) return [0, 0]
-    const svgRect    = svgEl.getBoundingClientRect()
-    const canvasRect = particleCanvas.getBoundingClientRect()
-    const dpr = window.devicePixelRatio || 1
-    const vx = svgRect.left + (svgX / SVG_SIZE) * svgRect.width
-    const vy = svgRect.top  + (svgY / SVG_SIZE) * svgRect.height
-    return [(vx - canvasRect.left) * dpr, (vy - canvasRect.top) * dpr]
+    if (!particleCanvas) return [0, 0]
+    return [
+      (svgX / SVG_SIZE) * particleCanvas.width,
+      (svgY / SVG_SIZE) * particleCanvas.height,
+    ]
   }
 
   function resizeCanvas() {
@@ -220,16 +222,19 @@
         life: 1,
         size: Math.max(0.8, (0.9 + Math.random() * 2.4) * normalizedSpeed) * dpr,
         color: SPARKLE_COLORS[Math.floor(Math.random() * SPARKLE_COLORS.length)],
-        isStar: Math.random() < 0.35,
+        isStar: Math.random() < 0.80,
       })
     }
   }
 
+  // Sharp 4-prong star (✦ shape): 4 long outer spikes, 4 narrow inner valleys.
+  // inner ratio 0.15 gives very crisp, distinct prongs vs the old 0.38 (which was stubby).
   function drawStar(c: CanvasRenderingContext2D, x: number, y: number, r: number) {
-    const inner = r * 0.38
+    const inner = r * 0.15
     c.beginPath()
     for (let i = 0; i < 8; i++) {
-      const a = (i * Math.PI) / 4 - Math.PI / 8
+      // Align first prong pointing straight up (−π/2 offset)
+      const a = (i * Math.PI) / 4 - Math.PI / 2
       const radius = i % 2 === 0 ? r : inner
       if (i === 0) c.moveTo(x + Math.cos(a) * radius, y + Math.sin(a) * radius)
       else         c.lineTo(x + Math.cos(a) * radius, y + Math.sin(a) * radius)
