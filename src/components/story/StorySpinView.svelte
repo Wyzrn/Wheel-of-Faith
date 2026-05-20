@@ -17,6 +17,9 @@
   import { races } from '$lib/content/races'
   import { archetypes } from '$lib/content/archetypes'
   import { getRacesForStage, racesToSegments, getArchetypesForStage, archetypesToSegments } from '$lib/story/raceTiers'
+  import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
+  import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
+  import type { ElementType, ItemGrade } from '$lib/content/types'
 
   // ── Category hue map — mirrors main game so wheel colors match ───────────────
   const CATEGORY_HUES: Record<string, number> = {
@@ -62,6 +65,27 @@
     'powerMastery', 'weaponMastery',
   ])
 
+  const TIER_ORDER = TIER_THRESHOLDS.map(t => t.grade)
+
+  function getVirtualTierIdx(result: SpinResult): number {
+    if (result.displayLabel) {
+      if (result.displayLabel.startsWith('F- -')) return -parseInt(result.displayLabel.slice(4))
+      if (/^Absolute\+\d+$/.test(result.displayLabel)) return TIER_ORDER.length - 1 + parseInt(result.displayLabel.slice(9))
+    }
+    return result.tier ? TIER_ORDER.indexOf(result.tier as import('$lib/game/scoreTier').TierGrade) : 0
+  }
+
+  function applyStatShift(result: SpinResult, tierShift: number, statCategory: string): Pick<SpinResult, 'tier' | 'score' | 'displayLabel'> {
+    const currentVti = getVirtualTierIdx(result)
+    const rawVti = currentVti + tierShift
+    const minVti = NO_NEGATIVE_STATS.has(statCategory) ? 0 : -20
+    const maxVti = TIER_ORDER.length - 1 + 20
+    const vti = Math.max(minVti, Math.min(maxVti, rawVti))
+    if (vti < 0) return { tier: 'F-' as import('$lib/game/scoreTier').TierGrade, score: Math.max(-19, 1 + vti), displayLabel: `F- -${Math.abs(vti)}` }
+    if (vti >= TIER_ORDER.length) return { tier: 'Absolute+' as import('$lib/game/scoreTier').TierGrade, score: 150 + (vti - (TIER_ORDER.length - 1)), displayLabel: `Absolute+${vti - (TIER_ORDER.length - 1)}` }
+    return { tier: TIER_ORDER[vti], score: gradeToScore(TIER_ORDER[vti]), displayLabel: undefined }
+  }
+
   function deriveWeaknessCount(modifier: number): number {
     if (modifier < 0.65) return 0
     if (modifier < 1.15) return 1
@@ -88,12 +112,17 @@
   let usedRacialAbilities = $state<Set<string>>(new Set())
   let usedArchetypeAbilities = $state<Set<string>>(new Set())
 
+  // Pending stat bonus/penalty spins — keyed by stat category, consumed when that stat is spun
+  let pendingStatBonuses = $state<Record<string, Array<'statBonus' | 'statPenalty'>>>({})
+
   // Result popup state — shown after each spin before advancing to the next
   let pendingResult = $state<{
     label: string
     categoryDisplayName: string
     tier?: string
     color: string
+    element?: ElementType
+    grade?: ItemGrade
   } | null>(null)
   let isSessionDone = $state(false)
   let doneEntry = $state<StoryRosterEntry | null>(null)
@@ -211,6 +240,7 @@
     currentIndex = 0
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
+    pendingStatBonuses = {}
     pendingResult = null
     isSessionDone = false
     doneEntry = null
@@ -221,6 +251,11 @@
   function handleSpinComplete(resultIndex: number, resultLabel: string) {
     if (!currentDef) return
 
+    // Grab element + grade from the landed segment before any queue mutation
+    const landedSegment = currentSegments.find(s => s.label === resultLabel)
+    const resultElement = landedSegment?.element
+    const resultGrade = landedSegment?.grade
+
     const spinResult: SpinResult = {
       step: results.length + 1,
       category: currentDef.category,
@@ -229,62 +264,157 @@
       timestamp: new Date().toISOString(),
     }
 
-    // Enrich stat spins with tier + score from segment data
-    let resultColor = `hsl(${currentCategoryHue}, 70%, 65%)`
-    if (STAT_CATEGORIES.has(currentDef.category)) {
-      const segs = getSegmentsForCategory(currentDef.category as SpinCategory)
-      const matched = (segs as { label: string; weight: number; tier?: string; score?: number; color?: string }[])
-        .find(s => s.label === resultLabel)
-      if (matched?.tier !== undefined) spinResult.tier = matched.tier as SpinResult['tier']
-      if (matched?.score !== undefined) spinResult.score = matched.score
-      if (matched?.color) resultColor = matched.color
-    }
-
-    // ── Post-spin queue splicing (mirrors main game logic) ─────────────────────
-    const insertSlots: SpinDefinition[] = []
-
-    if (currentDef.category === 'race') {
-      const race = races.find(r => r.label === resultLabel)
-      if (race) {
-        if (race.subTypePool && race.subTypePool.length > 0) {
-          insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Sub-Type` })
+    // ── statBonus / statPenalty: apply tier shift to target stat ──────────────
+    if (currentDef.category === 'statBonus' || currentDef.category === 'statPenalty') {
+      const tierShift = parseInt(resultLabel)
+      const targetStat = currentDef.targetStat
+      if (targetStat) {
+        let targetIdx = -1
+        for (let i = results.length - 1; i >= 0; i--) {
+          if (results[i].category === targetStat) { targetIdx = i; break }
         }
-        const count = race.abilitySpinCount ?? 1
-        for (let i = 0; i < count; i++) {
-          insertSlots.push({
-            category: 'racialAbility' as const,
-            displayName: count > 1 ? `Racial Ability ${i + 1}` : 'Racial Ability',
-          })
-        }
-        const weaknessCount = deriveWeaknessCount(race.weaknessProbabilityModifier ?? 1.0)
-        for (let i = 0; i < weaknessCount; i++) {
-          insertSlots.push({
-            category: 'weakness' as const,
-            displayName: weaknessCount > 1 ? `Weakness ${i + 1}` : 'Weakness',
-          })
+        if (targetIdx !== -1 && results[targetIdx].tier) {
+          const { tier: newGrade, score: newScore, displayLabel: newDisplayLabel } =
+            applyStatShift(results[targetIdx], tierShift, targetStat)
+          const statSegs = getSegmentsForCategory(targetStat as SpinCategory)
+          const newLabel = newDisplayLabel
+            ? results[targetIdx].resultLabel
+            : (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === newGrade)?.label
+              ?? results[targetIdx].resultLabel
+          results[targetIdx] = { ...results[targetIdx], tier: newGrade, score: newScore, resultLabel: newLabel, displayLabel: newDisplayLabel }
         }
       }
-      if (insertSlots.length > 0) queue.splice(currentIndex + 1, 0, ...insertSlots)
-    }
+      results.push(spinResult)
+    } else {
+      // Enrich stat spins with tier + score from segment data
+      let resultColor = `hsl(${currentCategoryHue}, 70%, 65%)`
+      if (STAT_CATEGORIES.has(currentDef.category)) {
+        // Splice any pending bonus/penalty spins for this stat before advancing
+        if (pendingStatBonuses[currentDef.category]?.length) {
+          const bonusQueue = pendingStatBonuses[currentDef.category]
+          const bonusSlots = bonusQueue.map((bonusType, i) => ({
+            category: bonusType as 'statBonus' | 'statPenalty',
+            displayName: bonusQueue.length > 1
+              ? `${currentDef!.displayName} ${bonusType === 'statBonus' ? 'Bonus' : 'Penalty'} ${i + 1}`
+              : `${currentDef!.displayName} ${bonusType === 'statBonus' ? 'Bonus' : 'Penalty'}`,
+            targetStat: currentDef!.category,
+          }))
+          queue.splice(currentIndex + 1, 0, ...bonusSlots)
+          delete pendingStatBonuses[currentDef.category]
+        }
 
-    if (currentDef.category === 'archetype') {
-      const archetype = archetypes.find(a => a.label === resultLabel)
-      if (archetype) {
-        const count = archetype.abilitySpinCount ?? 2
-        for (let i = 0; i < count; i++) {
-          insertSlots.push({
-            category: 'archetypeAbility' as const,
-            displayName: count > 1 ? `Archetype Ability ${i + 1}` : 'Archetype Ability',
-          })
+        const segs = getSegmentsForCategory(currentDef.category as SpinCategory)
+        const matched = (segs as { label: string; weight: number; tier?: string; score?: number; color?: string }[])
+          .find(s => s.label === resultLabel)
+        if (matched?.tier !== undefined) spinResult.tier = matched.tier as SpinResult['tier']
+        if (matched?.score !== undefined) spinResult.score = matched.score
+        if (matched?.color) resultColor = matched.color
+      }
+
+      // ── Post-spin queue splicing ───────────────────────────────────────────
+      const insertSlots: SpinDefinition[] = []
+
+      if (currentDef.category === 'race') {
+        const race = races.find(r => r.label === resultLabel)
+        if (race) {
+          if (race.subTypePool?.length) {
+            insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Sub-Type` })
+          }
+          if (race.classPool?.length) {
+            insertSlots.push({ category: 'raceClass' as const, displayName: `${resultLabel} Class` })
+          }
+          const count = race.abilitySpinCount ?? 1
+          for (let i = 0; i < count; i++) {
+            insertSlots.push({
+              category: 'racialAbility' as const,
+              displayName: count > 1 ? `Racial Ability ${i + 1}` : 'Racial Ability',
+            })
+          }
+          const extraPowers = race.extraPowerSpins ?? 0
+          for (let i = 0; i < extraPowers; i++) {
+            insertSlots.push({ category: 'power' as const, displayName: extraPowers > 1 ? `Racial Power ${i + 1}` : 'Racial Power' })
+          }
+          const weaknessCount = race.weaknessCount ?? deriveWeaknessCount(race.weaknessProbabilityModifier ?? 1.0)
+          for (let i = 0; i < weaknessCount; i++) {
+            insertSlots.push({ category: 'weakness' as const, displayName: weaknessCount > 1 ? `Weakness ${i + 1}` : 'Weakness' })
+          }
         }
         if (insertSlots.length > 0) queue.splice(currentIndex + 1, 0, ...insertSlots)
       }
+
+      if (currentDef.category === 'raceSubType') {
+        const raceResult = results.find(r => r.category === 'race')
+        const race = races.find(r => r.label === raceResult?.resultLabel)
+        const subTypeItem = race?.subTypePool?.find(s => s.label === resultLabel)
+        if (subTypeItem?.statBonusGrants) {
+          for (const [stat, bonusType] of Object.entries(subTypeItem.statBonusGrants)) {
+            pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+          }
+        }
+      }
+
+      if (currentDef.category === 'raceClass') {
+        const raceResult = results.find(r => r.category === 'race')
+        const race = races.find(r => r.label === raceResult?.resultLabel)
+        const classItem = race?.classPool?.find(c => c.label === resultLabel)
+        if (classItem?.statBonusGrants) {
+          for (const [stat, bonusType] of Object.entries(classItem.statBonusGrants)) {
+            pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+          }
+        }
+        // Class-specific power pool or granted powers
+        if (classItem?.powerPool?.length) {
+          const powerSlots = classItem.powerPool.slice(0, 1).map(() => ({
+            category: 'power' as const,
+            displayName: 'Class Power',
+          }))
+          if (powerSlots.length > 0) queue.splice(currentIndex + 1, 0, ...powerSlots)
+        }
+      }
+
+      if (currentDef.category === 'archetype') {
+        const archetype = archetypes.find(a => a.label === resultLabel)
+        if (archetype) {
+          const abilityLabel = archetype.abilitySpinDisplayName ?? 'Archetype Ability'
+          const count = archetype.abilitySpinCount ?? 2
+          const abilitySlots: SpinDefinition[] = []
+          for (let i = 0; i < count; i++) {
+            abilitySlots.push({
+              category: 'archetypeAbility' as const,
+              displayName: count > 1 ? `${abilityLabel} ${i + 1}` : abilityLabel,
+            })
+          }
+          const extraPowers = archetype.extraPowerSpins ?? 0
+          for (let i = 0; i < extraPowers; i++) {
+            abilitySlots.push({ category: 'power' as const, displayName: extraPowers > 1 ? `Bonus Power ${i + 1}` : 'Bonus Power' })
+          }
+          if (abilitySlots.length > 0) queue.splice(currentIndex + 1, 0, ...abilitySlots)
+
+          // statBonusGrants — deferred to fire right after each relevant stat spin
+          if (archetype.statBonusGrants) {
+            for (const [stat, bonusType] of Object.entries(archetype.statBonusGrants)) {
+              pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType as 'statBonus' | 'statPenalty']
+            }
+          }
+        }
+      }
+
+      if (currentDef.category === 'racialAbility') usedRacialAbilities.add(resultLabel)
+      if (currentDef.category === 'archetypeAbility') usedArchetypeAbilities.add(resultLabel)
+
+      results.push(spinResult)
+
+      // Show result popup — user must tap Continue before advancing
+      pendingResult = {
+        label: resultLabel,
+        categoryDisplayName: currentDef.displayName,
+        tier: spinResult.tier,
+        color: resultColor,
+        element: resultElement,
+        grade: resultGrade,
+      }
     }
 
-    if (currentDef.category === 'racialAbility') usedRacialAbilities.add(resultLabel)
-    if (currentDef.category === 'archetypeAbility') usedArchetypeAbilities.add(resultLabel)
-
-    results.push(spinResult)
     const nextIndex = currentIndex + 1
 
     saveStorySession({
@@ -304,12 +434,13 @@
       isSessionDone = true
     }
 
-    // Show result popup — user must tap Continue before advancing
-    pendingResult = {
-      label: resultLabel,
-      categoryDisplayName: currentDef.displayName,
-      tier: spinResult.tier,
-      color: resultColor,
+    // For statBonus/statPenalty spins, skip the popup and auto-advance
+    if (currentDef.category === 'statBonus' || currentDef.category === 'statPenalty') {
+      if (!isSessionDone) {
+        currentIndex = nextIndex
+      } else if (doneEntry) {
+        onSessionComplete(doneEntry)
+      }
     }
   }
 
@@ -403,6 +534,28 @@
         {#if pendingResult.tier}
           <div class="mt-1">
             <TierBadge grade={pendingResult.tier as import('$lib/game/scoreTier').TierGrade} />
+          </div>
+        {/if}
+
+        <!-- Element + grade badges for powers, weapons, abilities, etc. -->
+        {#if pendingResult.element || pendingResult.grade}
+          {@const elColor = pendingResult.element ? ELEMENT_COLORS[pendingResult.element] : '#9a907b'}
+          {@const gradeInfo = pendingResult.grade ? ITEM_GRADE_INFO[pendingResult.grade] : null}
+          <div class="flex items-center gap-2 flex-wrap justify-center mt-1">
+            {#if pendingResult.element}
+              <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-xs font-semibold"
+                style="background: {elColor}1a; border: 1px solid {elColor}55; color: {elColor};">
+                <img src={ELEMENT_ICONS[pendingResult.element]} class="w-3.5 h-3.5 object-contain" alt={pendingResult.element}
+                  style="filter: drop-shadow(0 0 3px {elColor});" />
+                {pendingResult.element}
+              </span>
+            {/if}
+            {#if gradeInfo}
+              <span class="px-2.5 py-1 rounded-full font-mono text-xs font-bold"
+                style="background: {gradeInfo.color}22; border: 1px solid {gradeInfo.color}55; color: {gradeInfo.color}; box-shadow: 0 0 8px {gradeInfo.glow};">
+                {pendingResult.grade} · {gradeInfo.label}
+              </span>
+            {/if}
           </div>
         {/if}
 
