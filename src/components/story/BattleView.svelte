@@ -351,11 +351,13 @@
 
   function confirmResult() {
     if (!playerWon || !lastDrops) {
+      carryOverDeadIds = new Set()
       phase = 'pick'
       selectedTeam = null
       resetBattleState()
       return
     }
+    carryOverDeadIds = new Set()
     onBattleComplete(buildUpdatedSlot())
   }
 
@@ -692,11 +694,11 @@
           </div>
         {:else}
           <div class="mt-5 flex flex-col gap-2">
-            <button onclick={() => { resetBattleState(); phase = 'pick'; if (selectedTeam) setTimeout(startFight, 50) }}
+            <button onclick={() => { carryOverDeadIds = new Set(); resetBattleState(); phase = 'pick'; if (selectedTeam) setTimeout(startFight, 50) }}
               class="w-full metal-stamp-gold py-3 rounded-xl font-bold font-mono text-sm tracking-widest">
               ↺ Try Again (Same Team)
             </button>
-            <button onclick={() => { resetBattleState(); selectedTeam = null; phase = 'pick' }}
+            <button onclick={() => { carryOverDeadIds = new Set(); resetBattleState(); selectedTeam = null; phase = 'pick' }}
               class="w-full obsidian-slab py-2.5 rounded-xl font-mono text-sm tracking-widest"
               style="border: 1px solid rgba(239,68,68,0.25); color: #f87171;">
               ↩ Back to World

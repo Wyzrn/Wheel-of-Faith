@@ -61,12 +61,10 @@
 
   function tickRefresh() {
     if (!currentSlot) return
-    // Apply any pending refresh intervals
-    const refreshed = applySpinRefresh($state.snapshot(currentSlot) as StorySaveSlot)
-    if (refreshed !== ($state.snapshot(currentSlot) as StorySaveSlot)) {
-      currentSlot = refreshed
-    }
-    refreshMs = msUntilNextRefresh($state.snapshot(currentSlot) as StorySaveSlot)
+    const snapshot = $state.snapshot(currentSlot) as StorySaveSlot
+    const refreshed = applySpinRefresh(snapshot)
+    if (refreshed !== snapshot) currentSlot = refreshed
+    refreshMs = msUntilNextRefresh(refreshed)
   }
 
   // ── Derived values ─────────────────────────────────────────────────────────
@@ -446,6 +444,7 @@
       return
     }
     currentSlot = result.slot
+    saveSaveSlot($state.snapshot(result.slot) as StorySaveSlot)
     crystalAnim = { type, grade, phase: 'pulse', item: result.item }
     setTimeout(() => {
       crystalAnim = crystalAnim ? { ...crystalAnim, phase: 'crack' } : null
@@ -474,7 +473,10 @@
       equipModal.item.id,
       equipModal.type,
     )
-    if (typeof result !== 'string') currentSlot = result
+    if (typeof result !== 'string') {
+      currentSlot = result
+      saveSaveSlot($state.snapshot(result) as StorySaveSlot)
+    }
     equipModal = null
   }
 
