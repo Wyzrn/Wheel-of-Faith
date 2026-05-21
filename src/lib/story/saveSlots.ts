@@ -143,6 +143,7 @@ export interface OpenedItem {
 }
 
 export interface GradedCrystalCounts {
+  [key: string]: number
   F: number; E: number; D: number; C: number; B: number
   A: number; S: number; SS: number; SSS: number; God: number
 }

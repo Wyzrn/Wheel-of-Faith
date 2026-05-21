@@ -260,18 +260,22 @@
 
   function generateBotResults(): SpinResult[] {
     const r: SpinResult[] = []
+    const ts = new Date().toISOString()
+    let step = 0
+    const push = (obj: Omit<SpinResult, 'step' | 'resultIndex' | 'timestamp'>) =>
+      r.push({ ...obj, step: step++, resultIndex: 0, timestamp: ts })
     const race = BOT_RACES[rng(BOT_RACES.length)]
     const arch = BOT_ARCHETYPES[rng(BOT_ARCHETYPES.length)]
-    r.push({ category: 'race', resultLabel: race, tier: 'C', score: 28 })
-    r.push({ category: 'archetype', resultLabel: arch, tier: 'C', score: 28 })
+    push({ category: 'race', resultLabel: race, tier: 'C', score: 28 })
+    push({ category: 'archetype', resultLabel: arch, tier: 'C', score: 28 })
     for (const cat of STAT_CATS) {
       const t = BOT_TIERS[rng(BOT_TIERS.length)]
-      r.push({ category: cat, resultLabel: `Bot ${t.tier}`, tier: t.tier as SpinResult['tier'], score: t.score + rng(8) })
+      push({ category: cat, resultLabel: `Bot ${t.tier}`, tier: t.tier as SpinResult['tier'], score: t.score + rng(8) })
     }
-    r.push({ category: 'title', resultLabel: 'The Algorithmic', tier: 'C', score: 28 })
-    r.push({ category: 'power', resultLabel: 'Calculated Prediction', tier: 'B', score: 45 })
-    r.push({ category: 'weapon', resultLabel: 'Iron Sword', tier: 'C', score: 28 })
-    r.push({ category: 'armor', resultLabel: 'Chain Mail', tier: 'C', score: 28 })
+    push({ category: 'title', resultLabel: 'The Algorithmic', tier: 'C', score: 28 })
+    push({ category: 'power', resultLabel: 'Calculated Prediction', tier: 'B', score: 45 })
+    push({ category: 'weapon', resultLabel: 'Iron Sword', tier: 'C', score: 28 })
+    push({ category: 'armor', resultLabel: 'Chain Mail', tier: 'C', score: 28 })
     return r
   }
 </script>

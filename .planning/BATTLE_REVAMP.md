@@ -1,6 +1,6 @@
 # Battle System Revamp — Master Plan
 
-**Status**: Planning  
+**Status**: Phases 1–3 complete; Phase 4 partially complete (grade wiring done, origin-based FX pending)  
 **Affects**: `battle.ts`, `AttackFX.svelte`, `BattleScreen.svelte`, `QuickBattleView.svelte`, `TeamBattleScreen.svelte`, `story/BattleView.svelte`, `content/types.ts`, `content/powers-epic.ts`, `content/powers-absurd.ts`, `content/weaknesses.ts`
 
 ---
@@ -364,11 +364,22 @@ The weakness spin category currently draws from `weaknesses.ts` (text-based, som
 **Test**: 1v1 and team battles, summons appear/disappear, AOE hits all.  
 **Effort**: ~4–5 hours.
 
+**Progress**:
+- ✅ `grade` prop wired through `showAnim` → `activeAnim` → `AttackFX` in all 4 views (`BattleScreen`, `TeamBattleScreen`, `QuickBattleView`, `story/BattleView`)
+- ✅ `currentFxEvents` / `fxEventIdx` state added to all 4 views; `playRound` seeds events per round; `playLines` pulls grade from fxEvent on damage lines
+- ⏳ Character DOM refs for origin tracking (`getBoundingClientRect` on attacker/target)
+- ⏳ `originX/Y` + `targetX/Y` props on `AttackFX` — fly arc from attacker position to target position
+- ⏳ AOE fan-out: multiple simultaneous `AttackFX` instances for AOE moves
+- ⏳ Summoned unit party row: show SummonedUnit name + HP bar in team panel; animate in/out on summon/death
+
 ### Phase 5 — Weakness Display & Card Updates
 **Files**: `CharacterCard.svelte`, weakness segment logic  
 **What**: Show elemental weaknesses with element icon, update character card weakness section.  
 **Test**: Character card renders weaknesses with element icon correctly.  
 **Effort**: ~1 hour.
+
+**Progress**:
+- ⏳ `CharacterCard.svelte` weakness section: render `elementWeaknesses[]` with element-color icons
 
 ---
 

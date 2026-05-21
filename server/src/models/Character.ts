@@ -14,6 +14,7 @@ export interface ICharacter extends Document {
   deleted_at: Date | null
   share_in_gallery: boolean
   rivals_wins: number
+  elementWeaknesses: string[]  // elemental weakness tags (e.g. ['Fire', 'Ice'])
 }
 
 const CharacterSchema = new Schema<ICharacter>({
@@ -30,6 +31,7 @@ const CharacterSchema = new Schema<ICharacter>({
   deleted_at:          { type: Date, default: null, index: true },
   share_in_gallery:    { type: Boolean, default: false },
   rivals_wins:         { type: Number, default: 0 },
+  elementWeaknesses:   { type: [String], default: [], index: true },
 }, {
   collection: 'characters',
   versionKey: false,

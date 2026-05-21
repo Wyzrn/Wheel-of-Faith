@@ -317,7 +317,7 @@ export function detectAttackType(label: string, explicitType?: AttackType): Atta
 }
 
 // Detects which element a weakness label corresponds to
-function detectWeaknessElement(label: string): ElementType | undefined {
+export function detectWeaknessElement(label: string): ElementType | undefined {
   const lower = label.toLowerCase()
   const ELEMENTS: ElementType[] = [
     'Fire','Ice','Lightning','Earth','Wind','Shadow','Light','Arcane','Nature',

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from 'svelte'
-  import { buildBattleCharacter, simulateTeamBattle, formatHp } from '$lib/game/battle'
-  import type { BattleCharacter, TeamBattleRound } from '$lib/game/battle'
+  import { buildBattleCharacter, simulateTeamBattle, formatHp, detectWeaknessElement } from '$lib/game/battle'
+  import type { BattleCharacter, TeamBattleRound, RoundFxEvent } from '$lib/game/battle'
   import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
   import { settings } from '$lib/settings.svelte'
   import type { SpinResult } from '$lib/session/types'
@@ -42,12 +42,14 @@
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
   type AnimDir = 'ltr' | 'rtl' | 'center'
-  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir } | null>(null)
+  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string } | null>(null)
   let animKey = 0
+  let currentFxEvents = $state<RoundFxEvent[]>([])
+  let fxEventIdx = 0
 
-  function showAnim(type: string, color: string, direction: AnimDir = 'center') {
+  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
-    activeAnim = { type, color, key: ++animKey, direction }
+    activeAnim = { type, color, key: ++animKey, direction, grade }
     animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
     if (direction !== 'center') emitTrail(direction, color, type)
   }
@@ -540,7 +542,12 @@
     scrollLog()
     triggerLineEffect(head)
     const anim = detectAnim(head)
-    if (anim) showAnim(anim.type, anim.color, anim.direction)
+    if (anim) {
+      const fx = currentFxEvents[fxEventIdx]
+      const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
+      if (fx && head.includes('damage!')) fxEventIdx++
+      showAnim(anim.type, anim.color, anim.direction, grade)
+    }
     const base = head.startsWith('──') ? 550 : 1600
     timeoutId = setTimeout(() => playLines(rest, onDone), speedDelay(base))
   }
@@ -554,6 +561,8 @@
     }
     const round = rounds[roundIdx]
     roundIdx++
+    currentFxEvents = round.fxEvents ?? []
+    fxEventIdx = 0
 
     if (settings.battleSpeed < 99) {
       roundBanner = `ROUND ${round.roundNum}`
@@ -601,7 +610,11 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: winnerName || race, race, archetype,
             overall_score: computeOverallScore(statScores), overall_tier: scoreTier(computeOverallScore(statScores)),
-            spins: winnerResults, session_started_at: winnerStart }),
+            spins: winnerResults, session_started_at: winnerStart,
+            elementWeaknesses: winnerResults
+              .filter(r => r.category === 'weakness')
+              .map(r => detectWeaknessElement(r.resultLabel))
+              .filter((e): e is NonNullable<typeof e> => !!e) }),
         })
         if (!res.ok) { saveStatus = 'error'; return }
         const data = await res.json() as { shareId: string }
@@ -710,7 +723,7 @@
                      activeAnim.direction === 'center' ? 'left:50%;transform:translate(-50%,-50%)' :
                                                          'left:3%;transform:translateY(-50%)'}">
           <AttackFX type={activeAnim.type} color={activeAnim.color}
-                    direction={activeAnim.direction} size={68}/>
+                    direction={activeAnim.direction} size={68} grade={activeAnim.grade}/>
         </div>
       {/key}
     {/if}

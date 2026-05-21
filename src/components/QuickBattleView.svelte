@@ -2,7 +2,7 @@
   import { onDestroy, onMount, tick } from 'svelte'
   import {
     buildBattleCharacter, simulateTeamBattle, formatHp,
-    type BattleCharacter, type TeamBattleRound,
+    type BattleCharacter, type TeamBattleRound, type RoundFxEvent,
   } from '$lib/game/battle'
   import { settings } from '$lib/settings.svelte'
   import AttackFX from './AttackFX.svelte'
@@ -53,10 +53,12 @@
   let allT2Names   = $state(new Set<string>())
 
   type AnimDir = 'ltr' | 'rtl' | 'center'
-  let activeAnim    = $state<{ type: string; color: string; key: number; direction: AnimDir } | null>(null)
+  let activeAnim    = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string } | null>(null)
   let animKey       = 0
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
   let timeoutId:     ReturnType<typeof setTimeout> | null = null
+  let currentFxEvents = $state<RoundFxEvent[]>([])
+  let fxEventIdx = 0
 
   function speedDelay(ms: number): number {
     if (settings.battleSpeed >= 99) return 10
@@ -92,9 +94,9 @@
     if (animTimeoutId) clearTimeout(animTimeoutId)
   })
 
-  function showAnim(type: string, color: string, direction: AnimDir = 'center') {
+  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
-    activeAnim = { type, color, key: ++animKey, direction }
+    activeAnim = { type, color, key: ++animKey, direction, grade }
     animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
   }
 
@@ -143,7 +145,12 @@
     logLines = [...logLines, head]
     scrollLog()
     const anim = detectAnim(head)
-    if (anim) showAnim(anim.type, anim.color, anim.direction)
+    if (anim) {
+      const fx = currentFxEvents[fxEventIdx]
+      const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
+      if (fx && head.includes('damage!')) fxEventIdx++
+      showAnim(anim.type, anim.color, anim.direction, grade)
+    }
     const delay = speedDelay(head.startsWith('──') ? 350 : 600)
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
   }
@@ -152,6 +159,8 @@
     if (roundIdx >= allRounds.length) { finishBattle('draw'); return }
     const round = allRounds[roundIdx]
     roundIdx++
+    currentFxEvents = round.fxEvents ?? []
+    fxEventIdx = 0
     playLines([`── Round ${round.roundNum} ──`, ...round.lines], () => {
       t1DispHp = [...round.t1Hp]
       t2DispHp = [...round.t2Hp]
@@ -269,7 +278,7 @@
                       {activeAnim.direction === 'rtl' ? 'right: 8%' : activeAnim.direction === 'center' ? 'left: 50%; transform: translate(-50%,-50%)' : 'left: 8%'};
                       z-index: 20; pointer-events: none;">
             <AttackFX type={activeAnim.type} color={activeAnim.color}
-                      direction={activeAnim.direction} size={76} />
+                      direction={activeAnim.direction} size={76} grade={activeAnim.grade} />
           </div>
         {/key}
       {/if}

@@ -11,7 +11,7 @@
   } = $props()
 
   let bgColor = $derived(tierToCssVar(grade))
-  let textColor = $derived(grade === 'God' ? '#1a1a1a' : 'white')
+  let textColor = $derived(grade === 'Godly' || grade === 'Absolute' ? '#1a1a1a' : 'white')
   let label = $derived(normalizeLegacyDisplayLabel(displayLabel) ?? grade)
 </script>
 

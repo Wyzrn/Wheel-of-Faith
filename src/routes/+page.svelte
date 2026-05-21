@@ -1268,7 +1268,7 @@
       } else if (resultLabel === 'God Tier Potential (One Use)') {
         const potIdx = results.findIndex(r => r.category === 'potential')
         if (potIdx !== -1) {
-          const statSegs = getSegmentsForCategory('potential') as { label: string; tier: TierGrade; score: number }[]
+          const statSegs = getSegmentsForCategory('potential') as unknown as { label: string; tier: TierGrade; score: number }[]
           const topSeg = [...statSegs].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0]
           if (topSeg) results[potIdx] = { ...results[potIdx], tier: topSeg.tier, score: topSeg.score, resultLabel: topSeg.label }
         }
@@ -1276,7 +1276,7 @@
       } else if (resultLabel === 'Free God Tier Strength') {
         const strIdx = results.findIndex(r => r.category === 'strength')
         if (strIdx !== -1) {
-          const statSegs = getSegmentsForCategory('strength') as { label: string; tier: TierGrade; score: number }[]
+          const statSegs = getSegmentsForCategory('strength') as unknown as { label: string; tier: TierGrade; score: number }[]
           const topSeg = [...statSegs].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0]
           if (topSeg) results[strIdx] = { ...results[strIdx], tier: topSeg.tier, score: topSeg.score, resultLabel: topSeg.label }
         }

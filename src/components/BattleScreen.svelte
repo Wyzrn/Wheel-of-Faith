@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from 'svelte'
-  import { buildBattleCharacter, simulateBattle, formatHp } from '$lib/game/battle'
+  import { buildBattleCharacter, simulateBattle, formatHp, detectWeaknessElement } from '$lib/game/battle'
   import type { BattleCharacter, BattleRound } from '$lib/game/battle'
   import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
   import type { SpinResult } from '$lib/session/types'
@@ -199,6 +199,10 @@
             overall_tier:       overallTier,
             spins:              winnerResults,
             session_started_at: winnerStartedAt,
+            elementWeaknesses:  winnerResults
+              .filter(r => r.category === 'weakness')
+              .map(r => detectWeaknessElement(r.resultLabel))
+              .filter((e): e is NonNullable<typeof e> => !!e),
           }),
         })
 

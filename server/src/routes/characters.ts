@@ -39,6 +39,7 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
           spins:              { type: 'array' },
           session_started_at: { type: 'string', format: 'date-time' },
           share_in_gallery:   { type: 'boolean' },
+          elementWeaknesses:  { type: 'array', items: { type: 'string' }, maxItems: 5 },
         },
       },
     },
@@ -52,6 +53,7 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       spins: unknown[]
       session_started_at: string
       share_in_gallery?: boolean
+      elementWeaknesses?: string[]
     }
 
     // 90-second session guard
@@ -79,6 +81,7 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       spins: body.spins,
       session_started_at: new Date(body.session_started_at),
       share_in_gallery: body.share_in_gallery ?? false,
+      elementWeaknesses: (body.elementWeaknesses ?? []).slice(0, 5),
       ...(userId ? { userId: new mongoose.Types.ObjectId(userId) } : {}),
     })
 
@@ -98,23 +101,25 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       querystring: {
         type: 'object',
         properties: {
-          sort:   { type: 'string', enum: ['desc', 'asc'], default: 'desc' },
-          sortBy: { type: 'string', enum: ['score', 'rivals', 'date', 'name', 'race', 'archetype'], default: 'score' },
-          page:   { type: 'integer', minimum: 0, default: 0 },
-          limit:  { type: 'integer', minimum: 1, maximum: 50, default: 20 },
-          search: { type: 'string', maxLength: 80, default: '' },
+          sort:     { type: 'string', enum: ['desc', 'asc'], default: 'desc' },
+          sortBy:   { type: 'string', enum: ['score', 'rivals', 'date', 'name', 'race', 'archetype'], default: 'score' },
+          page:     { type: 'integer', minimum: 0, default: 0 },
+          limit:    { type: 'integer', minimum: 1, maximum: 50, default: 20 },
+          search:   { type: 'string', maxLength: 80, default: '' },
+          weakness: { type: 'string', maxLength: 30, default: '' },
         },
       },
     },
   }, async (request, reply) => {
     const {
-      sort   = 'desc',
-      sortBy = 'score',
-      page   = 0,
-      limit  = 20,
-      search = '',
+      sort     = 'desc',
+      sortBy   = 'score',
+      page     = 0,
+      limit    = 20,
+      search   = '',
+      weakness = '',
     } = request.query as {
-      sort?: string; sortBy?: string; page?: number; limit?: number; search?: string
+      sort?: string; sortBy?: string; page?: number; limit?: number; search?: string; weakness?: string
     }
 
     const dir = sort === 'asc' ? 1 : -1
@@ -134,13 +139,15 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       const re = { $regex: escapeRegex(q), $options: 'i' }
       filter.$or = [{ name: re }, { race: re }, { archetype: re }]
     }
+    const w = (weakness as string).trim()
+    if (w) filter.elementWeaknesses = w
 
     const [characters, total] = await Promise.all([
       Character.find(filter)
         .sort(sortSpec)
         .skip(skip)
         .limit(limit as number)
-        .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins userId')
+        .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins elementWeaknesses userId')
         .populate('userId', 'username')
         .lean(),
       Character.countDocuments(filter),
@@ -212,7 +219,7 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
 
     const characters = await Character.find({ userId: new mongoose.Types.ObjectId(userId) })
       .sort({ created_at: -1 })
-      .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins share_in_gallery')
+      .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins elementWeaknesses share_in_gallery')
       .lean()
 
     return reply.send({ characters })
