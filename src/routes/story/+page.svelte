@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte'
+  import { onMount, onDestroy, untrack } from 'svelte'
   import { storyHomeSignal } from '$lib/menuState.svelte'
   import {
     loadAllSlots, loadSaveSlot, saveSaveSlot, createSaveSlot, deleteSaveSlot,
@@ -122,10 +122,12 @@
 
   // ── Story Home hotbar button → return to hub from anywhere ─────────────────
   $effect(() => {
-    void storyHomeSignal.count
-    if (currentSlot && view !== 'saveSlotSelect') {
-      view = 'hub'
-    }
+    void storyHomeSignal.count  // only reactive dependency; reads below are untracked
+    untrack(() => {
+      if (currentSlot && view !== 'saveSlotSelect') {
+        view = 'hub'
+      }
+    })
   })
 
   // ── Save slot actions ──────────────────────────────────────────────────────
