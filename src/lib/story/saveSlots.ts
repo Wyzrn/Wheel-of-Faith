@@ -49,11 +49,69 @@ export const STAT_CRYSTAL_DAILY_LIMITS = {
   legendary: 1,
 } as const
 
-/** Shop price (gems) for one F-grade power/weapon/armor crystal. */
+/** @deprecated Use CRYSTAL_BUY_PRICES_GEMS['F'] instead. Kept for backward compat. */
 export const F_CRYSTAL_COST = 5_000
 
 export type StatCrystalType = 'common' | 'elite' | 'legendary'
 export type CrystalGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'God'
+
+export const CRYSTAL_GRADE_LIST: readonly CrystalGrade[] = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS', 'God']
+
+/** Gem cost to buy one power/weapon/armor crystal of each grade from the shop. */
+export const CRYSTAL_BUY_PRICES_GEMS: Record<CrystalGrade, number> = {
+  F:      5_000,
+  E:     12_000,
+  D:     30_000,
+  C:     75_000,
+  B:    200_000,
+  A:    500_000,
+  S:  1_500_000,
+  SS: 5_000_000,
+  SSS: 15_000_000,
+  God: 50_000_000,
+}
+
+/** Fate Shard cost to buy one power/weapon/armor crystal of each grade from the shop. */
+export const CRYSTAL_BUY_PRICES_SHARDS: Record<CrystalGrade, number> = {
+  F:       5,
+  E:      12,
+  D:      30,
+  C:      75,
+  B:     200,
+  A:     500,
+  S:   1_500,
+  SS:  5_000,
+  SSS: 15_000,
+  God: 50_000,
+}
+
+/** Gems earned when selling one power/weapon/armor crystal of each grade (~30% of buy price). */
+export const CRYSTAL_SELL_PRICES: Record<CrystalGrade, number> = {
+  F:      1_500,
+  E:      3_600,
+  D:      9_000,
+  C:     22_500,
+  B:     60_000,
+  A:    150_000,
+  S:    450_000,
+  SS: 1_500_000,
+  SSS: 4_500_000,
+  God: 15_000_000,
+}
+
+/** Gems earned when selling one stat crystal of each type (~30% of buy price). */
+export const STAT_CRYSTAL_SELL_PRICES: Record<StatCrystalType, number> = {
+  common:    3_000,
+  elite:    30_000,
+  legendary: 300_000,
+}
+
+/** Fate Shard cost to buy one stat crystal (alternative to gems). Shares the daily limit. */
+export const STAT_CRYSTAL_SHARD_COSTS: Record<StatCrystalType, number> = {
+  common:    100,
+  elite:   1_000,
+  legendary: 10_000,
+}
 
 /** Tier levels advanced per crystal type (not score points). */
 export const STAT_CRYSTAL_BOOST: Record<StatCrystalType, number> = {
@@ -531,6 +589,130 @@ export function buyFCrystal(
     inventory: {
       ...slot.inventory,
       [key]: { ...slot.inventory[key], F: slot.inventory[key].F + 1 },
+    },
+  }
+}
+
+/**
+ * Purchases one power/weapon/armor crystal of any grade with gems.
+ * Returns updated slot or 'insufficient_gems' on failure.
+ */
+export function buyCrystalWithGems(
+  slot: StorySaveSlot,
+  type: 'power' | 'weapon' | 'armor',
+  grade: CrystalGrade,
+): StorySaveSlot | 'insufficient_gems' {
+  const cost = CRYSTAL_BUY_PRICES_GEMS[grade]
+  if (slot.gems < cost) return 'insufficient_gems'
+  const key = `${type}Crystals` as 'powerCrystals' | 'weaponCrystals' | 'armorCrystals'
+  return {
+    ...slot,
+    gems: slot.gems - cost,
+    inventory: {
+      ...slot.inventory,
+      [key]: { ...slot.inventory[key], [grade]: (slot.inventory[key][grade] ?? 0) + 1 },
+    },
+  }
+}
+
+/**
+ * Purchases one power/weapon/armor crystal of any grade with Fate Shards.
+ * Returns updated slot or 'insufficient_shards' on failure.
+ */
+export function buyCrystalWithShards(
+  slot: StorySaveSlot,
+  type: 'power' | 'weapon' | 'armor',
+  grade: CrystalGrade,
+): StorySaveSlot | 'insufficient_shards' {
+  const cost = CRYSTAL_BUY_PRICES_SHARDS[grade]
+  if (slot.shards < cost) return 'insufficient_shards'
+  const key = `${type}Crystals` as 'powerCrystals' | 'weaponCrystals' | 'armorCrystals'
+  return {
+    ...slot,
+    shards: slot.shards - cost,
+    inventory: {
+      ...slot.inventory,
+      [key]: { ...slot.inventory[key], [grade]: (slot.inventory[key][grade] ?? 0) + 1 },
+    },
+  }
+}
+
+/**
+ * Sells N power/weapon/armor crystals of a given grade for gems.
+ * Returns updated slot or 'insufficient_crystals' if fewer than count are owned.
+ */
+export function sellCrystal(
+  slot: StorySaveSlot,
+  type: 'power' | 'weapon' | 'armor',
+  grade: CrystalGrade,
+  count: number = 1,
+): StorySaveSlot | 'insufficient_crystals' {
+  const key = `${type}Crystals` as 'powerCrystals' | 'weaponCrystals' | 'armorCrystals'
+  const current = slot.inventory[key][grade] ?? 0
+  if (current < count) return 'insufficient_crystals'
+  return {
+    ...slot,
+    gems: slot.gems + CRYSTAL_SELL_PRICES[grade] * count,
+    inventory: {
+      ...slot.inventory,
+      [key]: { ...slot.inventory[key], [grade]: current - count },
+    },
+  }
+}
+
+/**
+ * Sells N stat crystals of a given type for gems.
+ * Returns updated slot or 'insufficient_crystals' if fewer than count are owned.
+ */
+export function sellStatCrystal(
+  slot: StorySaveSlot,
+  type: StatCrystalType,
+  count: number = 1,
+): StorySaveSlot | 'insufficient_crystals' {
+  const current = slot.inventory.statCrystals[type]
+  if (current < count) return 'insufficient_crystals'
+  return {
+    ...slot,
+    gems: slot.gems + STAT_CRYSTAL_SELL_PRICES[type] * count,
+    inventory: {
+      ...slot.inventory,
+      statCrystals: { ...slot.inventory.statCrystals, [type]: current - count },
+    },
+  }
+}
+
+/**
+ * Purchases one stat crystal with Fate Shards (alternative to gems).
+ * Shares the same daily purchase limit as the gems purchase path.
+ * Returns updated slot or 'insufficient_shards' / 'daily_limit' on failure.
+ */
+export function buyStatCrystalWithShards(
+  slot: StorySaveSlot,
+  type: StatCrystalType,
+): StorySaveSlot | 'insufficient_shards' | 'daily_limit' {
+  const cost = STAT_CRYSTAL_SHARD_COSTS[type]
+  const limit = STAT_CRYSTAL_DAILY_LIMITS[type]
+  const daily = getOrResetDaily(slot)
+
+  if (daily.statCrystals[type] >= limit) return 'daily_limit'
+  if (slot.shards < cost) return 'insufficient_shards'
+
+  return {
+    ...slot,
+    shards: slot.shards - cost,
+    inventory: {
+      ...slot.inventory,
+      statCrystals: {
+        ...slot.inventory.statCrystals,
+        [type]: slot.inventory.statCrystals[type] + 1,
+      },
+    },
+    dailyCrystalPurchases: {
+      ...daily,
+      statCrystals: {
+        ...daily.statCrystals,
+        [type]: daily.statCrystals[type] + 1,
+      },
     },
   }
 }

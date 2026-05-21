@@ -365,12 +365,16 @@
     if (!playerWon || !lastDrops) return
     const updated = buildUpdatedSlot()
     onNextBattle?.(updated)
-    // Always revive the full team for the next battle round
     carryOverDeadIds = new Set()
     resetBattleState()
-    phase = 'pick'
-    // Re-trigger fight immediately with same team still selected
+    // Let the slot prop update propagate before rebuilding the team
     timeoutId = setTimeout(() => { if (selectedTeam) startFight() }, 50)
+  }
+
+  function retryBattle() {
+    carryOverDeadIds = new Set()
+    resetBattleState()
+    if (selectedTeam) startFight()
   }
 
   function getDropLabel(drop: string): string {
@@ -691,7 +695,7 @@
           </div>
         {:else}
           <div class="mt-5 flex flex-col gap-2">
-            <button onclick={() => { carryOverDeadIds = new Set(); resetBattleState(); phase = 'pick'; if (selectedTeam) setTimeout(startFight, 50) }}
+            <button onclick={retryBattle}
               class="w-full metal-stamp-gold py-3 rounded-xl font-bold font-mono text-sm tracking-widest">
               ↺ Try Again (Same Team)
             </button>

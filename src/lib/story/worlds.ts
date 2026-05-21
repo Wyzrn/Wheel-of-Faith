@@ -101,15 +101,44 @@ export const GRADE_DROPS: Record<WorldGrade, GradeDropTable> = {
 export const ELITE_DROP_MULT = 3
 export const BOSS_DROP_MULT = 5
 
-/** Crystal grades for dropped gear (worlds beyond SSS cap at 'God'). */
+/** Crystal grades for dropped gear. */
 export type CrystalDropGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'God'
 /** Stat crystal rarity: normal enemies → common, elites → elite, bosses → legendary. */
 export type StatCrystalRarity = 'common' | 'elite' | 'legendary'
 
-/** Maps a world grade to the crystal grade dropped by its enemies. */
-export const WORLD_TO_CRYSTAL_GRADE: Record<WorldGrade, CrystalDropGrade> = {
-  F: 'F', E: 'E', D: 'D', C: 'C', B: 'B', A: 'A', S: 'S', SS: 'SS', SSS: 'SSS',
-  Z: 'God', ZZ: 'God', ZZZ: 'God', Celestial: 'God', Godly: 'God', Primordial: 'God', Absolute: 'God',
+/** Ordered crystal grades (ascending). Used for range-based drop rolls. */
+export const CRYSTAL_GRADE_ORDER: readonly CrystalDropGrade[] = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS', 'God']
+
+/**
+ * Maps a world grade to the [min, max] crystal grade range enemies can drop.
+ * The actual grade is chosen randomly within this range on each kill — higher
+ * worlds have a wider range biased toward better grades.
+ */
+export const WORLD_CRYSTAL_DROP_RANGE: Record<WorldGrade, [CrystalDropGrade, CrystalDropGrade]> = {
+  F:          ['F',  'F'  ],
+  E:          ['F',  'E'  ],
+  D:          ['F',  'D'  ],
+  C:          ['E',  'D'  ],
+  B:          ['E',  'C'  ],
+  A:          ['D',  'C'  ],
+  S:          ['D',  'B'  ],
+  SS:         ['C',  'B'  ],
+  SSS:        ['C',  'A'  ],
+  Z:          ['B',  'A'  ],
+  ZZ:         ['B',  'S'  ],
+  ZZZ:        ['A',  'S'  ],
+  Celestial:  ['A',  'SS' ],
+  Godly:      ['S',  'SS' ],
+  Primordial: ['S',  'SSS'],
+  Absolute:   ['SS', 'God'],
+}
+
+/** Rolls a random crystal grade within a world's drop range. */
+export function rollCrystalGrade(worldGrade: WorldGrade): CrystalDropGrade {
+  const [min, max] = WORLD_CRYSTAL_DROP_RANGE[worldGrade]
+  const minIdx = CRYSTAL_GRADE_ORDER.indexOf(min)
+  const maxIdx = CRYSTAL_GRADE_ORDER.indexOf(max)
+  return CRYSTAL_GRADE_ORDER[minIdx + Math.floor(Math.random() * (maxIdx - minIdx + 1))]
 }
 
 /** Maps enemy type to the stat crystal rarity they drop. */
@@ -187,16 +216,15 @@ export function rollDrops(enemy: Enemy): { gems: number; xp: number; chanceDrops
   const mult = enemy.type === 'boss' ? BOSS_DROP_MULT : enemy.type === 'elite' ? ELITE_DROP_MULT : 1
   const roll = (r: DropRange) => Math.floor((r.min + Math.random() * (r.max - r.min + 1)) * mult)
 
-  const cg = WORLD_TO_CRYSTAL_GRADE[enemy.grade]
   const sr = TYPE_TO_STAT_RARITY[enemy.type]
 
   const chanceDrops: ChanceDrop[] = []
   if (Math.random() < CHANCE_DROP_RATES.fateShard)     chanceDrops.push('fateShard')
-  if (Math.random() < CHANCE_DROP_RATES.powerCrystal)  chanceDrops.push(`powerCrystal:${cg}`)
+  if (Math.random() < CHANCE_DROP_RATES.powerCrystal)  chanceDrops.push(`powerCrystal:${rollCrystalGrade(enemy.grade)}`)
   if (Math.random() < CHANCE_DROP_RATES.statCrystal)   chanceDrops.push(`statCrystal:${sr}`)
-  if (Math.random() < CHANCE_DROP_RATES.weaponCrystal) chanceDrops.push(`weaponCrystal:${cg}`)
-  if (Math.random() < CHANCE_DROP_RATES.armorCrystal)  chanceDrops.push(`armorCrystal:${cg}`)
-  if (Math.random() < CHANCE_DROP_RATES.spin)           chanceDrops.push('spin')
+  if (Math.random() < CHANCE_DROP_RATES.weaponCrystal) chanceDrops.push(`weaponCrystal:${rollCrystalGrade(enemy.grade)}`)
+  if (Math.random() < CHANCE_DROP_RATES.armorCrystal)  chanceDrops.push(`armorCrystal:${rollCrystalGrade(enemy.grade)}`)
+  if (Math.random() < CHANCE_DROP_RATES.spin)          chanceDrops.push('spin')
 
   return { gems: roll(table.gems), xp: roll(table.xp), chanceDrops }
 }

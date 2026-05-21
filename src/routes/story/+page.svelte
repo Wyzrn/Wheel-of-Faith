@@ -4,12 +4,15 @@
   import {
     loadAllSlots, loadSaveSlot, saveSaveSlot, createSaveSlot, deleteSaveSlot,
     addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin, consumeBonusSpin,
-    buyStatCrystal, getDailyBought, applySpinRefresh, msUntilNextRefresh,
-    upgradeRosterCapacity, rosterUpgradeCost, buyFCrystal, buyEndlessKey,
+    buyStatCrystal, buyStatCrystalWithShards, getDailyBought, applySpinRefresh, msUntilNextRefresh,
+    upgradeRosterCapacity, rosterUpgradeCost, buyCrystalWithGems, buyCrystalWithShards,
+    sellCrystal, sellStatCrystal, buyEndlessKey,
     createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
     openCrystal, equipOpenedItem, useStatCrystal,
     SHARD_COST_PER_SPIN, STAGE_LABELS, MAX_DAILY_SPINS,
-    STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, F_CRYSTAL_COST, ENDLESS_KEY_GEM_COST,
+    STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, STAT_CRYSTAL_SHARD_COSTS,
+    CRYSTAL_BUY_PRICES_GEMS, CRYSTAL_BUY_PRICES_SHARDS, CRYSTAL_SELL_PRICES, CRYSTAL_GRADE_LIST,
+    STAT_CRYSTAL_SELL_PRICES, ENDLESS_KEY_GEM_COST,
     BOOSTABLE_STATS, BOOSTABLE_STAT_LABELS, STAT_CRYSTAL_BOOST,
     type StorySaveSlot, type SlotId, type StatCrystalType, type CrystalGrade, type BoostableStat,
     type OpenedItem,
@@ -276,15 +279,61 @@
   // ── Graded crystal purchases ───────────────────────────────────────────────
   let fCrystalBuyError = $state<string | null>(null)
 
-  function handleBuyFCrystal(type: 'power' | 'weapon' | 'armor') {
+  function handleBuyCrystalGems(type: 'power' | 'weapon' | 'armor', grade: CrystalGrade) {
     if (!currentSlot) return
-    const result = buyFCrystal($state.snapshot(currentSlot) as StorySaveSlot, type)
+    const result = buyCrystalWithGems($state.snapshot(currentSlot) as StorySaveSlot, type, grade)
     if (result === 'insufficient_gems') {
       fCrystalBuyError = 'Not enough gems.'
       setTimeout(() => { fCrystalBuyError = null }, 2500)
       return
     }
     currentSlot = result
+    saveSaveSlot($state.snapshot(result) as StorySaveSlot)
+  }
+
+  function handleBuyCrystalShards(type: 'power' | 'weapon' | 'armor', grade: CrystalGrade) {
+    if (!currentSlot) return
+    const result = buyCrystalWithShards($state.snapshot(currentSlot) as StorySaveSlot, type, grade)
+    if (result === 'insufficient_shards') {
+      fCrystalBuyError = 'Not enough shards.'
+      setTimeout(() => { fCrystalBuyError = null }, 2500)
+      return
+    }
+    currentSlot = result
+    saveSaveSlot($state.snapshot(result) as StorySaveSlot)
+  }
+
+  function handleSellCrystal(type: 'power' | 'weapon' | 'armor', grade: CrystalGrade) {
+    if (!currentSlot) return
+    const result = sellCrystal($state.snapshot(currentSlot) as StorySaveSlot, type, grade)
+    if (result === 'insufficient_crystals') return
+    currentSlot = result
+    saveSaveSlot($state.snapshot(result) as StorySaveSlot)
+  }
+
+  function handleSellStatCrystal(type: StatCrystalType) {
+    if (!currentSlot) return
+    const result = sellStatCrystal($state.snapshot(currentSlot) as StorySaveSlot, type)
+    if (result === 'insufficient_crystals') return
+    currentSlot = result
+    saveSaveSlot($state.snapshot(result) as StorySaveSlot)
+  }
+
+  function handleBuyStatCrystalShards(type: StatCrystalType) {
+    if (!currentSlot) return
+    const result = buyStatCrystalWithShards($state.snapshot(currentSlot) as StorySaveSlot, type)
+    if (result === 'insufficient_shards') {
+      crystalBuyError = 'Not enough shards.'
+      setTimeout(() => { crystalBuyError = null }, 2500)
+      return
+    }
+    if (result === 'daily_limit') {
+      crystalBuyError = `Daily limit reached for ${type} stat crystals.`
+      setTimeout(() => { crystalBuyError = null }, 2500)
+      return
+    }
+    currentSlot = result
+    saveSaveSlot($state.snapshot(result) as StorySaveSlot)
   }
 
   let endlessKeyBuyError = $state<string | null>(null)
@@ -929,88 +978,40 @@
       </div>
     </div>
 
-    <!-- Common Stat Crystal -->
-    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
-      <div
-        class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-        style="background: rgba(156,163,175,0.1); border: 1px solid rgba(156,163,175,0.25);"
-      >
-        <span class="material-symbols-outlined" style="font-size: 20px; color: #9ca3af; font-variation-settings: 'FILL' 1;">hexagon</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Common Crystal</p>
-        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">+1 to any stat</p>
-        <div class="flex items-center gap-3 mt-1">
-          <span class="font-mono text-xs" style="color: #34d399;">{STAT_CRYSTAL_COSTS.common.toLocaleString()} gems</span>
-          <span class="font-mono text-xs" style="color: {dailyCommon >= STAT_CRYSTAL_DAILY_LIMITS.common ? '#ef4444' : 'var(--color-outline)'};">
-            {dailyCommon}/{STAT_CRYSTAL_DAILY_LIMITS.common} today
-          </span>
+    <!-- Stat crystals — all 3 types with gems + shards options -->
+    <div class="obsidian-slab w-full rounded-xl px-4 py-4">
+      {#each ([
+        ['common',    'Common',    '#9ca3af', '+1 to any stat', dailyCommon,    commonCanBuy,    STAT_CRYSTAL_DAILY_LIMITS.common],
+        ['elite',     'Elite',     '#8b5cf6', '+3 to any stat', dailyElite,     eliteCanBuy,     STAT_CRYSTAL_DAILY_LIMITS.elite],
+        ['legendary', 'Legendary', '#f59e0b', '+5 to any stat', dailyLegendary, legendaryCanBuy, STAT_CRYSTAL_DAILY_LIMITS.legendary],
+      ] as const) as [type, label, color, desc, dailyUsed, canBuyGems, limit], i}
+        {@const canBuyShards = shards >= STAT_CRYSTAL_SHARD_COSTS[type] && dailyUsed < limit}
+        {#if i > 0}<div style="height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0;"></div>{/if}
+        <div class="flex items-center gap-3">
+          <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+            style="background: {color}18; border: 1px solid {color}30;">
+            <span class="material-symbols-outlined" style="font-size: 16px; color: {color}; font-variation-settings: 'FILL' 1;">hexagon</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-xs" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{label}</p>
+            <p class="font-mono" style="font-size: 10px; color: var(--color-outline);">{desc} · {dailyUsed}/{limit} today</p>
+          </div>
+          <div class="flex gap-1">
+            <button onclick={() => handleBuyStatCrystal(type)} disabled={!canBuyGems}
+              class="font-mono px-2 py-1 rounded flex flex-col items-center"
+              style="font-size: 10px; background: {canBuyGems ? 'rgba(52,211,153,0.12)' : 'transparent'}; border: 1px solid {canBuyGems ? 'rgba(52,211,153,0.35)' : 'rgba(255,255,255,0.07)'}; color: {canBuyGems ? '#34d399' : 'var(--color-outline)'}; cursor: {canBuyGems ? 'pointer' : 'not-allowed'}; opacity: {canBuyGems ? 1 : 0.4};">
+              <span>💎</span>
+              <span>{STAT_CRYSTAL_COSTS[type] >= 1_000_000 ? (STAT_CRYSTAL_COSTS[type]/1_000_000)+'M' : (STAT_CRYSTAL_COSTS[type]/1_000)+'k'}</span>
+            </button>
+            <button onclick={() => handleBuyStatCrystalShards(type)} disabled={!canBuyShards}
+              class="font-mono px-2 py-1 rounded flex flex-col items-center"
+              style="font-size: 10px; background: {canBuyShards ? 'rgba(240,192,64,0.12)' : 'transparent'}; border: 1px solid {canBuyShards ? 'rgba(240,192,64,0.35)' : 'rgba(255,255,255,0.07)'}; color: {canBuyShards ? 'var(--gold-bright)' : 'var(--color-outline)'}; cursor: {canBuyShards ? 'pointer' : 'not-allowed'}; opacity: {canBuyShards ? 1 : 0.4};">
+              <span>◆</span>
+              <span>{STAT_CRYSTAL_SHARD_COSTS[type] >= 1_000 ? (STAT_CRYSTAL_SHARD_COSTS[type]/1_000)+'k' : STAT_CRYSTAL_SHARD_COSTS[type]}</span>
+            </button>
+          </div>
         </div>
-      </div>
-      <button
-        class="{commonCanBuy ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
-        style="{!commonCanBuy ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
-        onclick={() => handleBuyStatCrystal('common')}
-        disabled={!commonCanBuy}
-      >
-        Buy
-      </button>
-    </div>
-
-    <!-- Elite Stat Crystal -->
-    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
-      <div
-        class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-        style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3);"
-      >
-        <span class="material-symbols-outlined" style="font-size: 20px; color: #8b5cf6; font-variation-settings: 'FILL' 1;">hexagon</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Elite Crystal</p>
-        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">+3 to any stat</p>
-        <div class="flex items-center gap-3 mt-1">
-          <span class="font-mono text-xs" style="color: #34d399;">{STAT_CRYSTAL_COSTS.elite.toLocaleString()} gems</span>
-          <span class="font-mono text-xs" style="color: {dailyElite >= STAT_CRYSTAL_DAILY_LIMITS.elite ? '#ef4444' : 'var(--color-outline)'};">
-            {dailyElite}/{STAT_CRYSTAL_DAILY_LIMITS.elite} today
-          </span>
-        </div>
-      </div>
-      <button
-        class="{eliteCanBuy ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
-        style="{!eliteCanBuy ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
-        onclick={() => handleBuyStatCrystal('elite')}
-        disabled={!eliteCanBuy}
-      >
-        Buy
-      </button>
-    </div>
-
-    <!-- Legendary Stat Crystal -->
-    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
-      <div
-        class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-        style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);"
-      >
-        <span class="material-symbols-outlined" style="font-size: 20px; color: #f59e0b; font-variation-settings: 'FILL' 1;">hexagon</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Legendary Crystal</p>
-        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">+5 to any stat</p>
-        <div class="flex items-center gap-3 mt-1">
-          <span class="font-mono text-xs" style="color: #34d399;">{STAT_CRYSTAL_COSTS.legendary.toLocaleString()} gems</span>
-          <span class="font-mono text-xs" style="color: {dailyLegendary >= STAT_CRYSTAL_DAILY_LIMITS.legendary ? '#ef4444' : 'var(--color-outline)'};">
-            {dailyLegendary}/{STAT_CRYSTAL_DAILY_LIMITS.legendary} today
-          </span>
-        </div>
-      </div>
-      <button
-        class="{legendaryCanBuy ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
-        style="{!legendaryCanBuy ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
-        onclick={() => handleBuyStatCrystal('legendary')}
-        disabled={!legendaryCanBuy}
-      >
-        Buy
-      </button>
+      {/each}
     </div>
 
     <!-- ── Combat Crystals section ─────────────────────────────────────── -->
@@ -1023,62 +1024,45 @@
       Open these to unlock gear you can equip to any character. Higher grades drop from harder worlds.
     </p>
 
-    <!-- Power Crystal (F) -->
-    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
-      <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-        style="background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.3);">
-        <span class="material-symbols-outlined" style="font-size: 20px; color: #fb923c; font-variation-settings: 'FILL' 1;">flash_on</span>
+    <!-- Power Crystals — all grades -->
+    {#snippet crystalShopSection(label: string, icon: string, iconColor: string, invMap: Record<string, number>, type: 'power' | 'weapon' | 'armor')}
+      <div class="obsidian-slab w-full rounded-xl px-4 py-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="material-symbols-outlined" style="font-size: 16px; color: {iconColor}; font-variation-settings: 'FILL' 1;">{icon}</span>
+          <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{label} Crystals</p>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          {#each CRYSTAL_GRADE_LIST as g}
+            {@const owned = invMap[g] ?? 0}
+            {@const gemCost = CRYSTAL_BUY_PRICES_GEMS[g]}
+            {@const shardCost = CRYSTAL_BUY_PRICES_SHARDS[g]}
+            {@const canGems = gems >= gemCost}
+            {@const canShards = shards >= shardCost}
+            {@const gc = CRYSTAL_GRADE_COLORS[g]}
+            <div class="flex items-center gap-2 px-2 py-1.5 rounded"
+              style="background: rgba(255,255,255,0.02); border: 1px solid {gc}18;">
+              <span class="font-mono text-xs font-bold w-8 shrink-0" style="color: {gc};">{g}</span>
+              <span class="font-mono text-xs shrink-0" style="color: var(--color-outline);">×{owned}</span>
+              <span class="font-mono text-xs shrink-0" style="color: #34d399;">{gemCost >= 1_000_000 ? (gemCost/1_000_000).toFixed(gemCost % 1_000_000 === 0 ? 0 : 1)+'M' : gemCost >= 1_000 ? (gemCost/1_000).toFixed(gemCost % 1_000 === 0 ? 0 : 0)+'k' : gemCost}g</span>
+              <span class="font-mono text-xs shrink-0" style="color: var(--gold-bright);">{shardCost >= 1_000 ? (shardCost/1_000).toFixed(0)+'k' : shardCost}◆</span>
+              <div class="ml-auto flex gap-1">
+                <button onclick={() => handleBuyCrystalGems(type, g as CrystalGrade)} disabled={!canGems}
+                  class="font-mono text-xs px-2 py-0.5 rounded"
+                  style="background: {canGems ? 'rgba(52,211,153,0.12)' : 'transparent'}; border: 1px solid {canGems ? 'rgba(52,211,153,0.35)' : 'rgba(255,255,255,0.07)'}; color: {canGems ? '#34d399' : 'var(--color-outline)'}; cursor: {canGems ? 'pointer' : 'not-allowed'}; opacity: {canGems ? 1 : 0.4};">💎</button>
+                <button onclick={() => handleBuyCrystalShards(type, g as CrystalGrade)} disabled={!canShards}
+                  class="font-mono text-xs px-2 py-0.5 rounded"
+                  style="background: {canShards ? 'rgba(240,192,64,0.12)' : 'transparent'}; border: 1px solid {canShards ? 'rgba(240,192,64,0.35)' : 'rgba(255,255,255,0.07)'}; color: {canShards ? 'var(--gold-bright)' : 'var(--color-outline)'}; cursor: {canShards ? 'pointer' : 'not-allowed'}; opacity: {canShards ? 1 : 0.4};">◆</button>
+              </div>
+            </div>
+          {/each}
+        </div>
+        <p class="font-mono text-xs mt-2" style="color: var(--color-outline);">💎 = buy with gems · ◆ = buy with shards</p>
       </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Power Crystal (F)</p>
-        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">Owned: {powerCrystalInventory.F}</p>
-        <span class="font-mono text-xs mt-1 block" style="color: #34d399;">{F_CRYSTAL_COST.toLocaleString()} gems</span>
-      </div>
-      <button
-        class="{gems >= F_CRYSTAL_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
-        style="{gems < F_CRYSTAL_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
-        onclick={() => handleBuyFCrystal('power')}
-        disabled={gems < F_CRYSTAL_COST}
-      >Buy</button>
-    </div>
+    {/snippet}
 
-    <!-- Weapon Crystal (F) -->
-    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
-      <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-        style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3);">
-        <span class="material-symbols-outlined" style="font-size: 20px; color: #818cf8; font-variation-settings: 'FILL' 1;">swords</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Weapon Crystal (F)</p>
-        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">Owned: {weaponCrystalInventory.F}</p>
-        <span class="font-mono text-xs mt-1 block" style="color: #34d399;">{F_CRYSTAL_COST.toLocaleString()} gems</span>
-      </div>
-      <button
-        class="{gems >= F_CRYSTAL_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
-        style="{gems < F_CRYSTAL_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
-        onclick={() => handleBuyFCrystal('weapon')}
-        disabled={gems < F_CRYSTAL_COST}
-      >Buy</button>
-    </div>
-
-    <!-- Armor Crystal (F) -->
-    <div class="obsidian-slab w-full rounded-xl px-5 py-4 flex items-center gap-4">
-      <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-        style="background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3);">
-        <span class="material-symbols-outlined" style="font-size: 20px; color: #2dd4bf; font-variation-settings: 'FILL' 1;">shield</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Armor Crystal (F)</p>
-        <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">Owned: {armorCrystalInventory.F}</p>
-        <span class="font-mono text-xs mt-1 block" style="color: #34d399;">{F_CRYSTAL_COST.toLocaleString()} gems</span>
-      </div>
-      <button
-        class="{gems >= F_CRYSTAL_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-3 py-2 font-bold font-mono text-sm flex-shrink-0"
-        style="{gems < F_CRYSTAL_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.45; cursor: not-allowed;' : ''}"
-        onclick={() => handleBuyFCrystal('armor')}
-        disabled={gems < F_CRYSTAL_COST}
-      >Buy</button>
-    </div>
+    {@render crystalShopSection('Power', 'flash_on', '#fb923c', powerCrystalInventory, 'power')}
+    {@render crystalShopSection('Weapon', 'swords', '#818cf8', weaponCrystalInventory, 'weapon')}
+    {@render crystalShopSection('Armor', 'shield', '#2dd4bf', armorCrystalInventory, 'armor')}
 
     <!-- ── Endless Keys (level 3+) ──────────────────────────────────────── -->
     {#if playerLevel >= 3}
@@ -1506,96 +1490,62 @@
                 <span class="font-mono text-xs font-bold" style="color: {color};">{label}</span>
                 <span class="font-mono text-xs ml-2" style="color: var(--color-outline);">×{count} · +{boost} to stat</span>
               </div>
-              <button onclick={() => openUseStatModal(type)} disabled={count === 0}
-                class="font-mono text-xs px-2.5 py-1 rounded"
-                style="background: {count > 0 ? 'rgba(52,211,153,0.1)' : 'transparent'}; border: 1px solid {count > 0 ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.07)'}; color: {count > 0 ? '#34d399' : 'var(--color-outline)'}; cursor: {count > 0 ? 'pointer' : 'not-allowed'}; opacity: {count > 0 ? 1 : 0.4};">
-                Use
-              </button>
+              <div class="flex gap-1">
+                <button onclick={() => openUseStatModal(type)} disabled={count === 0}
+                  class="font-mono text-xs px-2.5 py-1 rounded"
+                  style="background: {count > 0 ? 'rgba(52,211,153,0.1)' : 'transparent'}; border: 1px solid {count > 0 ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.07)'}; color: {count > 0 ? '#34d399' : 'var(--color-outline)'}; cursor: {count > 0 ? 'pointer' : 'not-allowed'}; opacity: {count > 0 ? 1 : 0.4};">
+                  Use
+                </button>
+                <button onclick={() => handleSellStatCrystal(type)} disabled={count === 0}
+                  title="Sell for {STAT_CRYSTAL_SELL_PRICES[type].toLocaleString()} gems"
+                  class="font-mono text-xs px-2.5 py-1 rounded"
+                  style="background: {count > 0 ? 'rgba(239,68,68,0.08)' : 'transparent'}; border: 1px solid {count > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.07)'}; color: {count > 0 ? '#f87171' : 'var(--color-outline)'}; cursor: {count > 0 ? 'pointer' : 'not-allowed'}; opacity: {count > 0 ? 1 : 0.4};">
+                  Sell
+                </button>
+              </div>
             </div>
           {/each}
         </div>
       </div>
 
-      <!-- Power Crystals (Open) -->
-      <div class="obsidian-slab rounded-xl px-5 py-4">
-        <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #fb923c;">Power Crystals</p>
-        <div class="flex flex-col gap-2">
-          {#each CRYSTAL_GRADES as g}
-            {@const count = powerCrystalInventory[g] ?? 0}
-            {#if count > 0}
-              <div class="flex items-center justify-between px-3 py-2 rounded"
-                style="background: rgba(255,255,255,0.03); border: 1px solid {CRYSTAL_GRADE_COLORS[g]}22;">
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[g]};">{g}</span>
-                  <span class="font-mono text-xs" style="color: var(--color-outline);">×{count}</span>
+      {#snippet crystalInventorySection(label: string, accentColor: string, openColor: string, invMap: Record<string, number>, type: 'power' | 'weapon' | 'armor')}
+        <div class="obsidian-slab rounded-xl px-5 py-4">
+          <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: {accentColor};">{label} Crystals</p>
+          <div class="flex flex-col gap-2">
+            {#each CRYSTAL_GRADES as g}
+              {@const count = invMap[g] ?? 0}
+              {#if count > 0}
+                <div class="flex items-center gap-2 px-3 py-2 rounded"
+                  style="background: rgba(255,255,255,0.03); border: 1px solid {CRYSTAL_GRADE_COLORS[g]}22;">
+                  <span class="font-mono text-xs font-bold w-8 shrink-0" style="color: {CRYSTAL_GRADE_COLORS[g]};">{g}</span>
+                  <span class="font-mono text-xs shrink-0" style="color: var(--color-outline);">×{count}</span>
+                  <span class="font-mono text-xs shrink-0" style="color: #9a907b; font-size: 10px;">sell {(CRYSTAL_SELL_PRICES[g as CrystalGrade] >= 1_000_000 ? (CRYSTAL_SELL_PRICES[g as CrystalGrade]/1_000_000).toFixed(CRYSTAL_SELL_PRICES[g as CrystalGrade] % 1_000_000 === 0 ? 0 : 1)+'M' : CRYSTAL_SELL_PRICES[g as CrystalGrade] >= 1_000 ? (CRYSTAL_SELL_PRICES[g as CrystalGrade]/1_000)+'k' : String(CRYSTAL_SELL_PRICES[g as CrystalGrade]))}g</span>
+                  <div class="ml-auto flex gap-1">
+                    <button onclick={() => handleOpenCrystal(type, g as CrystalGrade)}
+                      class="font-mono text-xs px-2.5 py-1 rounded"
+                      style="background: {openColor}18; border: 1px solid {openColor}44; color: {openColor}; cursor: pointer;">
+                      Open
+                    </button>
+                    <button onclick={() => handleSellCrystal(type, g as CrystalGrade)}
+                      title="Sell 1 for {CRYSTAL_SELL_PRICES[g as CrystalGrade].toLocaleString()} gems"
+                      class="font-mono text-xs px-2.5 py-1 rounded"
+                      style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); color: #f87171; cursor: pointer;">
+                      Sell
+                    </button>
+                  </div>
                 </div>
-                <button onclick={() => handleOpenCrystal('power', g as CrystalGrade)}
-                  class="font-mono text-xs px-2.5 py-1 rounded"
-                  style="background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.3); color: #fb923c; cursor: pointer;">
-                  Open
-                </button>
-              </div>
+              {/if}
+            {/each}
+            {#if !CRYSTAL_GRADES.some(g => (invMap[g] ?? 0) > 0)}
+              <p class="font-mono text-xs" style="color: var(--color-outline);">None in inventory</p>
             {/if}
-          {/each}
-          {#if !CRYSTAL_GRADES.some(g => (powerCrystalInventory[g] ?? 0) > 0)}
-            <p class="font-mono text-xs" style="color: var(--color-outline);">None in inventory</p>
-          {/if}
+          </div>
         </div>
-      </div>
+      {/snippet}
 
-      <!-- Weapon Crystals (Open) -->
-      <div class="obsidian-slab rounded-xl px-5 py-4">
-        <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #818cf8;">Weapon Crystals</p>
-        <div class="flex flex-col gap-2">
-          {#each CRYSTAL_GRADES as g}
-            {@const count = weaponCrystalInventory[g] ?? 0}
-            {#if count > 0}
-              <div class="flex items-center justify-between px-3 py-2 rounded"
-                style="background: rgba(255,255,255,0.03); border: 1px solid {CRYSTAL_GRADE_COLORS[g]}22;">
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[g]};">{g}</span>
-                  <span class="font-mono text-xs" style="color: var(--color-outline);">×{count}</span>
-                </div>
-                <button onclick={() => handleOpenCrystal('weapon', g as CrystalGrade)}
-                  class="font-mono text-xs px-2.5 py-1 rounded"
-                  style="background: rgba(129,140,248,0.1); border: 1px solid rgba(129,140,248,0.3); color: #818cf8; cursor: pointer;">
-                  Open
-                </button>
-              </div>
-            {/if}
-          {/each}
-          {#if !CRYSTAL_GRADES.some(g => (weaponCrystalInventory[g] ?? 0) > 0)}
-            <p class="font-mono text-xs" style="color: var(--color-outline);">None in inventory</p>
-          {/if}
-        </div>
-      </div>
-
-      <!-- Armor Crystals (Open) -->
-      <div class="obsidian-slab rounded-xl px-5 py-4">
-        <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #2dd4bf;">Armor Crystals</p>
-        <div class="flex flex-col gap-2">
-          {#each CRYSTAL_GRADES as g}
-            {@const count = armorCrystalInventory[g] ?? 0}
-            {#if count > 0}
-              <div class="flex items-center justify-between px-3 py-2 rounded"
-                style="background: rgba(255,255,255,0.03); border: 1px solid {CRYSTAL_GRADE_COLORS[g]}22;">
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[g]};">{g}</span>
-                  <span class="font-mono text-xs" style="color: var(--color-outline);">×{count}</span>
-                </div>
-                <button onclick={() => handleOpenCrystal('armor', g as CrystalGrade)}
-                  class="font-mono text-xs px-2.5 py-1 rounded"
-                  style="background: rgba(45,212,191,0.1); border: 1px solid rgba(45,212,191,0.3); color: #2dd4bf; cursor: pointer;">
-                  Open
-                </button>
-              </div>
-            {/if}
-          {/each}
-          {#if !CRYSTAL_GRADES.some(g => (armorCrystalInventory[g] ?? 0) > 0)}
-            <p class="font-mono text-xs" style="color: var(--color-outline);">None in inventory</p>
-          {/if}
-        </div>
-      </div>
+      {@render crystalInventorySection('Power',  '#fb923c', '#fb923c', powerCrystalInventory,  'power')}
+      {@render crystalInventorySection('Weapon', '#818cf8', '#818cf8', weaponCrystalInventory, 'weapon')}
+      {@render crystalInventorySection('Armor',  '#2dd4bf', '#2dd4bf', armorCrystalInventory,  'armor')}
 
     <!-- ── Weapons tab ── -->
     {:else if invTab === 'weapons'}
