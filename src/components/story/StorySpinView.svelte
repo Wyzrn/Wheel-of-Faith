@@ -116,8 +116,9 @@
   }
 
   // ── Props ─────────────────────────────────────────────────────────────────────
-  const { stage = 1, onSessionComplete, onCancel }: {
+  const { stage = 1, spinClass, onSessionComplete, onCancel }: {
     stage?: number
+    spinClass?: 'hero' | 'legend'
     onSessionComplete: (entry: StoryRosterEntry) => void
     onCancel: () => void
   } = $props()
@@ -748,9 +749,19 @@
 
     // Prepare completion entry if this was the last spin
     if (nextIndex >= queue.length) {
+      const luckShift = spinClass === 'legend' ? 4 : spinClass === 'hero' ? 2 : 0
+      const rawResults = $state.snapshot(results) as SpinResult[]
+      const boostedResults = luckShift > 0
+        ? rawResults.map(r =>
+            STAT_CATEGORIES.has(r.category)
+              ? { ...r, ...applyStatShift(r, luckShift, r.category) }
+              : r
+          )
+        : rawResults
       doneEntry = buildRosterEntryFromResults({
-        results: $state.snapshot(results),
+        results: boostedResults,
         sessionStartedAt: session.startedAt,
+        spinClass,
       })
       clearStorySession()
       isSessionDone = true

@@ -318,11 +318,12 @@
     const dead = carryOverDeadIds
     carryOverDeadIds = new Set()
     t1Chars  = teamMembers.map(m => {
+      const spinMult = m.spinClass === 'legend' ? 4 : m.spinClass === 'hero' ? 2 : 1
       const bc = buildBattleCharacter(m.spins, m.name, {
         weapons: m.equippedWeapons ?? [],
         armors:  m.equippedArmors  ?? [],
         powers:  m.equippedPowers  ?? [],
-      })
+      }, spinMult)
       return dead.has(m.id) ? { ...bc, hp: 0 } : bc
     })
     t1DispHp = t1Chars.map(c => c.hp)
@@ -387,6 +388,8 @@
     if (drop === 'fateShard')   return 'Fate Shard'
     if (drop === 'endlessKey')  return 'Endless Key'
     if (drop === 'spin')        return '✦ Bonus Spin'
+    if (drop === 'heroSpin')    return '⚔ Hero Spin'
+    if (drop === 'legendSpin')  return '★ Legend Spin'
     const colon = drop.indexOf(':')
     if (colon === -1) return drop
     const [type, suffix] = [drop.slice(0, colon), drop.slice(colon + 1)]

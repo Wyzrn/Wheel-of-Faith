@@ -7,6 +7,7 @@
     buyStatCrystal, buyStatCrystalWithShards, getDailyBought, applySpinRefresh, msUntilNextRefresh,
     upgradeRosterCapacity, rosterUpgradeCost, buyCrystalWithGems, buyCrystalWithShards,
     sellCrystal, sellStatCrystal, buyEndlessKey, consumeEndlessKey,
+    buyHeroSpin, buyLegendSpin, consumeHeroSpin, consumeLegendSpin,
     recordWorldReplayStart, worldReplayCooldownMs, WORLD_REPLAY_COOLDOWN_MS,
     createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
     openCrystal, equipOpenedItem, useStatCrystal,
@@ -14,6 +15,7 @@
     STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, STAT_CRYSTAL_SHARD_COSTS,
     CRYSTAL_BUY_PRICES_GEMS, CRYSTAL_BUY_PRICES_SHARDS, CRYSTAL_SELL_PRICES, CRYSTAL_GRADE_LIST,
     STAT_CRYSTAL_SELL_PRICES, ENDLESS_KEY_GEM_COST,
+    HERO_SPIN_GEM_COST, LEGEND_SPIN_GEM_COST,
     BOOSTABLE_STATS, BOOSTABLE_STAT_LABELS, STAT_CRYSTAL_BOOST,
     type StorySaveSlot, type SlotId, type StatCrystalType, type CrystalGrade, type BoostableStat,
     type OpenedItem,
@@ -81,7 +83,11 @@
   let playerLevel = $derived(currentSlot?.playerLevel ?? 0)
   let spinsRemaining = $derived(currentSlot?.spinsRemaining ?? 0)
   let bonusSpins     = $derived(currentSlot?.bonusSpins ?? 0)
-  let hasAnySpin     = $derived(spinsRemaining > 0 || bonusSpins > 0)
+  let heroSpins      = $derived(currentSlot?.heroSpins ?? 0)
+  let legendSpins    = $derived(currentSlot?.legendSpins ?? 0)
+  let hasHeroSpins   = $derived(playerLevel >= 2 && heroSpins > 0)
+  let hasLegendSpins = $derived(playerLevel >= 4 && legendSpins > 0)
+  let hasAnySpin     = $derived(spinsRemaining > 0 || bonusSpins > 0 || hasHeroSpins || hasLegendSpins)
   let rosterCapacity = $derived(currentSlot?.rosterCapacity ?? 5)
   let rosterUpgradeCount = $derived(currentSlot?.rosterUpgradeCount ?? 0)
   let nextUpgradeCost = $derived(rosterUpgradeCost(rosterUpgradeCount))
@@ -162,23 +168,33 @@
   }
 
   // ── Hub actions ────────────────────────────────────────────────────────────
+  type SpinType = 'refresh' | 'bonus' | 'hero' | 'legend'
   let spinTypeModal = $state(false)
-  let lastSpinType = $state<'refresh' | 'bonus'>('refresh')
+  let lastSpinType = $state<SpinType>('refresh')
 
   function handleWheelClick() {
     if (!currentSlot || !hasAnySpin) return
-    if (bonusSpins > 0 && spinsRemaining > 0) {
-      spinTypeModal = true
+    const available: SpinType[] = []
+    if (spinsRemaining > 0) available.push('refresh')
+    if (bonusSpins > 0) available.push('bonus')
+    if (hasHeroSpins) available.push('hero')
+    if (hasLegendSpins) available.push('legend')
+    if (available.length === 1) {
+      startSpin(available[0])
     } else {
-      startSpin(bonusSpins > 0 ? 'bonus' : 'refresh')
+      spinTypeModal = true
     }
   }
 
-  function startSpin(type: 'refresh' | 'bonus') {
+  function startSpin(type: SpinType) {
     if (!currentSlot) return
     spinTypeModal = false
     const snapshot = $state.snapshot(currentSlot) as StorySaveSlot
-    const updated = type === 'bonus' ? consumeBonusSpin(snapshot) : consumeSpin(snapshot)
+    let updated: StorySaveSlot | null = null
+    if (type === 'bonus') updated = consumeBonusSpin(snapshot)
+    else if (type === 'hero') updated = consumeHeroSpin(snapshot)
+    else if (type === 'legend') updated = consumeLegendSpin(snapshot)
+    else updated = consumeSpin(snapshot)
     if (!updated) return
     lastSpinType = type
     currentSlot = updated
@@ -257,10 +273,31 @@
   function handleSpinCancel() {
     if (!currentSlot) { view = 'hub'; return }
     const snap = $state.snapshot(currentSlot) as StorySaveSlot
-    currentSlot = lastSpinType === 'bonus'
-      ? { ...snap, bonusSpins: snap.bonusSpins + 1 }
-      : { ...snap, spinsRemaining: snap.spinsRemaining + 1 }
+    if (lastSpinType === 'bonus') {
+      currentSlot = { ...snap, bonusSpins: snap.bonusSpins + 1 }
+    } else if (lastSpinType === 'hero') {
+      currentSlot = { ...snap, heroSpins: (snap.heroSpins ?? 0) + 1 }
+    } else if (lastSpinType === 'legend') {
+      currentSlot = { ...snap, legendSpins: (snap.legendSpins ?? 0) + 1 }
+    } else {
+      currentSlot = { ...snap, spinsRemaining: snap.spinsRemaining + 1 }
+    }
     view = 'hub'
+  }
+
+  // ── Level-up popup ─────────────────────────────────────────────────────────
+  let levelUpPopup = $state<{ newLevel: number } | null>(null)
+
+  const LEVEL_UNLOCKS: Record<number, { unlocks: string[]; statCap: string }> = {
+    1: { unlocks: ['Team size increased to 3', 'Stat cap raised to SS+'], statCap: 'SS+' },
+    2: { unlocks: ['Team size increased to 4', 'Hero Spins unlocked (500 gems each)', '2× stat multiplier + luck boost in battle'], statCap: 'SSS+' },
+    3: { unlocks: ['Endless Mode unlocked', 'Stat cap raised to Z'], statCap: 'Z' },
+    4: { unlocks: ['Legend Spins unlocked (2,000 gems each)', '4× stat multiplier + luck boost in battle', 'Stat cap raised to ZZZ'], statCap: 'ZZZ' },
+    5: { unlocks: ['Stat cap removed — no more limits', 'All systems at maximum'], statCap: 'Uncapped' },
+  }
+
+  function checkLevelUp(oldLevel: number, updated: StorySaveSlot) {
+    if (updated.playerLevel > oldLevel) levelUpPopup = { newLevel: updated.playerLevel }
   }
 
   // ── Worlds / battle ────────────────────────────────────────────────────────
@@ -293,13 +330,16 @@
   }
 
   function handleBattleComplete(updated: StorySaveSlot) {
+    const oldLevel = currentSlot?.playerLevel ?? 0
     currentSlot = updated
+    checkLevelUp(oldLevel, updated)
     view = 'worlds'
   }
 
   function handleNextBattle(updated: StorySaveSlot) {
-    // Update slot without changing view — BattleView will restart the fight
+    const oldLevel = currentSlot?.playerLevel ?? 0
     currentSlot = updated
+    checkLevelUp(oldLevel, updated)
   }
 
   // ── Graded crystal purchases ───────────────────────────────────────────────
@@ -370,6 +410,41 @@
     if (result === 'insufficient_gems') {
       endlessKeyBuyError = 'Not enough gems.'
       setTimeout(() => { endlessKeyBuyError = null }, 2500)
+      return
+    }
+    currentSlot = result
+  }
+
+  let heroSpinBuyError = $state<string | null>(null)
+  let legendSpinBuyError = $state<string | null>(null)
+
+  function handleBuyHeroSpin() {
+    if (!currentSlot) return
+    const result = buyHeroSpin($state.snapshot(currentSlot) as StorySaveSlot)
+    if (result === 'locked') {
+      heroSpinBuyError = 'Reach Level 2 to unlock Hero Spins.'
+      setTimeout(() => { heroSpinBuyError = null }, 2500)
+      return
+    }
+    if (result === 'insufficient_gems') {
+      heroSpinBuyError = 'Not enough gems.'
+      setTimeout(() => { heroSpinBuyError = null }, 2500)
+      return
+    }
+    currentSlot = result
+  }
+
+  function handleBuyLegendSpin() {
+    if (!currentSlot) return
+    const result = buyLegendSpin($state.snapshot(currentSlot) as StorySaveSlot)
+    if (result === 'locked') {
+      legendSpinBuyError = 'Reach Level 4 to unlock Legend Spins.'
+      setTimeout(() => { legendSpinBuyError = null }, 2500)
+      return
+    }
+    if (result === 'insufficient_gems') {
+      legendSpinBuyError = 'Not enough gems.'
+      setTimeout(() => { legendSpinBuyError = null }, 2500)
       return
     }
     currentSlot = result
@@ -949,7 +1024,7 @@
     <!-- Spin credits -->
     <div class="obsidian-slab w-full rounded-xl px-5 py-4">
       <p class="font-mono text-xs mb-2" style="color: var(--color-outline);">Spin Credits</p>
-      <div class="flex items-center justify-around gap-4">
+      <div class="flex items-center justify-around gap-2 flex-wrap">
         <div class="text-center">
           <p class="font-mono text-xs" style="color: var(--color-outline);">Refresh</p>
           <p class="font-bold text-2xl" style="font-family: var(--font-cinzel); color: var(--gold-bright);">{spinsRemaining}</p>
@@ -961,6 +1036,22 @@
           <p class="font-bold text-2xl" style="font-family: var(--font-cinzel); color: #a78bfa;">{bonusSpins}</p>
           <p class="font-mono text-[10px]" style="color: var(--color-outline);">drops &amp; milestones</p>
         </div>
+        {#if playerLevel >= 2}
+          <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.06);"></div>
+          <div class="text-center">
+            <p class="font-mono text-xs" style="color: #f97316;">Hero</p>
+            <p class="font-bold text-2xl" style="font-family: var(--font-cinzel); color: #f97316;">{heroSpins}</p>
+            <p class="font-mono text-[10px]" style="color: var(--color-outline);">2× power</p>
+          </div>
+        {/if}
+        {#if playerLevel >= 4}
+          <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.06);"></div>
+          <div class="text-center">
+            <p class="font-mono text-xs" style="color: #fbbf24;">Legend</p>
+            <p class="font-bold text-2xl" style="font-family: var(--font-cinzel); color: #fbbf24;">{legendSpins}</p>
+            <p class="font-mono text-[10px]" style="color: var(--color-outline);">4× power</p>
+          </div>
+        {/if}
       </div>
     </div>
 
@@ -979,6 +1070,78 @@
       >
         Buy
       </button>
+    </div>
+
+    <!-- ── Hero / Legend Spins section ───────────────────────────────────── -->
+    <div class="w-full flex items-center gap-3 mt-2">
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.06);"></div>
+      <p class="font-mono text-xs tracking-widest uppercase" style="color: var(--color-outline);">Special Spins</p>
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.06);"></div>
+    </div>
+
+    {#if heroSpinBuyError}
+      <div class="w-full rounded-lg px-4 py-2 text-center font-mono text-sm"
+        style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
+        {heroSpinBuyError}
+      </div>
+    {/if}
+    {#if legendSpinBuyError}
+      <div class="w-full rounded-lg px-4 py-2 text-center font-mono text-sm"
+        style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
+        {legendSpinBuyError}
+      </div>
+    {/if}
+
+    <!-- Hero Spin -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-5"
+      style="border: 1px solid {playerLevel >= 2 ? 'rgba(249,115,22,0.25)' : 'rgba(255,255,255,0.06)'}; opacity: {playerLevel >= 2 ? 1 : 0.4};">
+      <div class="flex items-center gap-4">
+        <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+          style="background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.3);">
+          <span class="material-symbols-outlined" style="font-size: 20px; color: #f97316; font-variation-settings: 'FILL' 1;">military_tech</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #f97316;">Hero Spin</p>
+          <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">2× luck boost · 2× battle stats · {heroSpins} owned</p>
+          <p class="font-mono text-xs mt-0.5" style="color: #34d399;">{HERO_SPIN_GEM_COST.toLocaleString()} gems
+            {#if playerLevel < 2}<span style="color: #f97316;"> · Unlocks at Level 2</span>{/if}
+          </p>
+        </div>
+        <button
+          class="{playerLevel >= 2 && gems >= HERO_SPIN_GEM_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-4 py-2 font-bold font-mono text-sm flex-shrink-0"
+          style="{playerLevel < 2 || gems < HERO_SPIN_GEM_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
+          onclick={handleBuyHeroSpin}
+          disabled={playerLevel < 2 || gems < HERO_SPIN_GEM_COST}
+        >
+          Buy
+        </button>
+      </div>
+    </div>
+
+    <!-- Legend Spin -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-5"
+      style="border: 1px solid {playerLevel >= 4 ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.06)'}; opacity: {playerLevel >= 4 ? 1 : 0.4};">
+      <div class="flex items-center gap-4">
+        <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+          style="background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3);">
+          <span class="material-symbols-outlined" style="font-size: 20px; color: #fbbf24; font-variation-settings: 'FILL' 1;">star</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #fbbf24;">Legend Spin</p>
+          <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">4× luck boost · 4× battle stats · {legendSpins} owned</p>
+          <p class="font-mono text-xs mt-0.5" style="color: #34d399;">{LEGEND_SPIN_GEM_COST.toLocaleString()} gems
+            {#if playerLevel < 4}<span style="color: #fbbf24;"> · Unlocks at Level 4</span>{/if}
+          </p>
+        </div>
+        <button
+          class="{playerLevel >= 4 && gems >= LEGEND_SPIN_GEM_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-4 py-2 font-bold font-mono text-sm flex-shrink-0"
+          style="{playerLevel < 4 || gems < LEGEND_SPIN_GEM_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
+          onclick={handleBuyLegendSpin}
+          disabled={playerLevel < 4 || gems < LEGEND_SPIN_GEM_COST}
+        >
+          Buy
+        </button>
+      </div>
     </div>
 
     <!-- ── Stat Crystals section ──────────────────────────────────────────── -->
@@ -1132,6 +1295,7 @@
 {#if view === 'spin' && currentSlot}
   <StorySpinView
     stage={stage}
+    spinClass={lastSpinType === 'hero' ? 'hero' : lastSpinType === 'legend' ? 'legend' : undefined}
     onSessionComplete={handleStoryComplete}
     onCancel={handleSpinCancel}
   />
@@ -1746,29 +1910,94 @@
         <p class="font-mono text-xs mb-1 tracking-widest uppercase" style="color: var(--color-outline);">Choose Spin Type</p>
         <h3 class="font-bold text-sm mb-4" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Which spin pool to use?</h3>
         <div class="flex flex-col gap-3">
-          <button onclick={() => startSpin('refresh')}
-            class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left metal-stamp-gold"
-            style="cursor: pointer;">
-            <span class="material-symbols-outlined" style="font-size: 20px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">casino</span>
-            <div class="flex-1">
-              <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Refresh Spin</p>
-              <p class="font-mono text-xs" style="color: var(--color-outline);">{spinsRemaining} remaining · restores every 3h</p>
-            </div>
-          </button>
-          <button onclick={() => startSpin('bonus')}
-            class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left"
-            style="background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3); cursor: pointer;">
-            <span class="material-symbols-outlined" style="font-size: 20px; color: #a78bfa; font-variation-settings: 'FILL' 1;">stars</span>
-            <div class="flex-1">
-              <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #a78bfa;">Bonus Spin</p>
-              <p class="font-mono text-xs" style="color: var(--color-outline);">{bonusSpins} remaining · from drops &amp; milestones</p>
-            </div>
-          </button>
+          {#if spinsRemaining > 0}
+            <button onclick={() => startSpin('refresh')}
+              class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left metal-stamp-gold"
+              style="cursor: pointer;">
+              <span class="material-symbols-outlined" style="font-size: 20px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">casino</span>
+              <div class="flex-1">
+                <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Refresh Spin</p>
+                <p class="font-mono text-xs" style="color: var(--color-outline);">{spinsRemaining} remaining · restores every 3h</p>
+              </div>
+            </button>
+          {/if}
+          {#if bonusSpins > 0}
+            <button onclick={() => startSpin('bonus')}
+              class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left"
+              style="background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3); cursor: pointer;">
+              <span class="material-symbols-outlined" style="font-size: 20px; color: #a78bfa; font-variation-settings: 'FILL' 1;">stars</span>
+              <div class="flex-1">
+                <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #a78bfa;">Bonus Spin</p>
+                <p class="font-mono text-xs" style="color: var(--color-outline);">{bonusSpins} remaining · drops &amp; milestones</p>
+              </div>
+            </button>
+          {/if}
+          {#if hasHeroSpins}
+            <button onclick={() => startSpin('hero')}
+              class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left"
+              style="background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.3); cursor: pointer;">
+              <span class="material-symbols-outlined" style="font-size: 20px; color: #f97316; font-variation-settings: 'FILL' 1;">military_tech</span>
+              <div class="flex-1">
+                <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #f97316;">Hero Spin</p>
+                <p class="font-mono text-xs" style="color: var(--color-outline);">{heroSpins} remaining · 2× luck + 2× battle stats</p>
+              </div>
+            </button>
+          {/if}
+          {#if hasLegendSpins}
+            <button onclick={() => startSpin('legend')}
+              class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left"
+              style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); cursor: pointer;">
+              <span class="material-symbols-outlined" style="font-size: 20px; color: #fbbf24; font-variation-settings: 'FILL' 1;">star</span>
+              <div class="flex-1">
+                <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #fbbf24;">Legend Spin</p>
+                <p class="font-mono text-xs" style="color: var(--color-outline);">{legendSpins} remaining · 4× luck + 4× battle stats</p>
+              </div>
+            </button>
+          {/if}
         </div>
         <button onclick={() => spinTypeModal = false}
           class="mt-4 w-full py-2.5 rounded-xl font-bold font-mono text-sm"
           style="border: 1px solid rgba(255,255,255,0.08); color: var(--color-outline); background: transparent; cursor: pointer;">
           Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- ── Level-up popup ─────────────────────────────────────────────────────── -->
+{#if levelUpPopup}
+  {@const info = LEVEL_UNLOCKS[levelUpPopup.newLevel]}
+  <div class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    style="background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);">
+    <div class="w-full max-w-sm rounded-2xl overflow-hidden"
+      style="background: linear-gradient(135deg, rgba(240,192,64,0.1), rgba(7,7,13,0.98)); border: 1px solid rgba(240,192,64,0.5); box-shadow: 0 0 60px rgba(240,192,64,0.2); animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+      <div class="px-6 py-7 text-center">
+        <p class="font-mono text-xs tracking-widest uppercase mb-2" style="color: rgba(240,192,64,0.6);">Level Up!</p>
+        <p style="font-family: var(--font-cinzel); font-size: 2.5rem; font-weight: 900; color: var(--gold-bright); filter: drop-shadow(0 0 20px rgba(240,192,64,0.6));">
+          Level {levelUpPopup.newLevel}
+        </p>
+        {#if info}
+          <div class="mt-5 text-left rounded-xl px-4 py-4" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(240,192,64,0.12);">
+            <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: var(--color-outline);">Unlocked</p>
+            <div class="flex flex-col gap-2">
+              {#each info.unlocks as unlock}
+                <div class="flex items-start gap-2">
+                  <span class="material-symbols-outlined flex-shrink-0 mt-0.5" style="font-size: 14px; color: #4ade80; font-variation-settings: 'FILL' 1;">check_circle</span>
+                  <p class="font-mono text-xs" style="color: var(--color-on-surface);">{unlock}</p>
+                </div>
+              {/each}
+            </div>
+            <div class="mt-3 pt-3" style="border-top: 1px solid rgba(240,192,64,0.1);">
+              <p class="font-mono text-xs" style="color: var(--color-outline);">New stat cap:
+                <span style="color: var(--gold-bright); font-weight: bold;">{info.statCap}</span>
+              </p>
+            </div>
+          </div>
+        {/if}
+        <button onclick={() => levelUpPopup = null}
+          class="mt-5 w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-widest metal-stamp-gold">
+          Continue
         </button>
       </div>
     </div>

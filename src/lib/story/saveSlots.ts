@@ -123,6 +123,7 @@ export const STAT_CRYSTAL_BOOST: Record<StatCrystalType, number> = {
 export const BOOSTABLE_STATS = [
   'strength', 'durability', 'agility', 'speed', 'fightingSkill',
   'energyLevel', 'powerMastery', 'weaponMastery', 'potential', 'armorStrength',
+  'charisma',
 ] as const
 export type BoostableStat = typeof BOOSTABLE_STATS[number]
 
@@ -130,6 +131,7 @@ export const BOOSTABLE_STAT_LABELS: Record<BoostableStat, string> = {
   strength: 'Strength', durability: 'Durability', agility: 'Agility', speed: 'Speed',
   fightingSkill: 'Fighting Skill', energyLevel: 'Energy Level', powerMastery: 'Power Mastery',
   weaponMastery: 'Weapon Mastery', potential: 'Potential', armorStrength: 'Armor Strength',
+  charisma: 'Charisma',
 }
 
 /** An item obtained by opening a power/weapon/armor crystal. */
@@ -200,7 +202,7 @@ export function worldReplayCooldownMs(slot: StorySaveSlot, world: WorldGrade): n
   return Math.max(0, WORLD_REPLAY_COOLDOWN_MS - elapsed)
 }
 
-/** Stamps the replay start timestamp and resets battlesCompleted so battles run 1–20 again. */
+/** Stamps the replay start timestamp and resets battlesCompleted to the last battle (19 of 20). */
 export function recordWorldReplayStart(slot: StorySaveSlot, world: WorldGrade): StorySaveSlot {
   const prev = slot.worldProgress[world]
   if (!prev?.beaten) return slot
@@ -208,7 +210,7 @@ export function recordWorldReplayStart(slot: StorySaveSlot, world: WorldGrade): 
     ...slot,
     worldProgress: {
       ...slot.worldProgress,
-      [world]: { ...prev, battlesCompleted: 0, lastReplayedAt: new Date().toISOString() },
+      [world]: { ...prev, battlesCompleted: BATTLES_PER_WORLD - 1, lastReplayedAt: new Date().toISOString() },
     },
   }
 }
@@ -242,6 +244,10 @@ export interface StorySaveSlot {
   spinsRemaining: number
   /** Bonus spins earned from enemy drops and battle milestones (every 5 battles). */
   bonusSpins: number
+  /** Hero Spins (2× luck + 2× battle stats). Unlocked at player level 2. */
+  heroSpins: number
+  /** Legend Spins (4× luck + 4× battle stats). Unlocked at player level 4. */
+  legendSpins: number
   /** ISO timestamp of last spin refresh check. Used to award spins every 3 hours. */
   spinsLastRefreshedAt: string
   /** Endless Mode keys — each key grants one Endless Mode run. Unlocked at player level 3. */
@@ -315,6 +321,8 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
     shards: 0,
     spinsRemaining: INITIAL_SPIN_CREDITS,
     bonusSpins: 0,
+    heroSpins: 0,
+    legendSpins: 0,
     spinsLastRefreshedAt: new Date().toISOString(),
     endlessKeys: 0,
     absolutePlusCompleted: 0,
@@ -354,6 +362,8 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     rosterUpgradeCount: raw.rosterUpgradeCount ?? 0,
     gems: raw.gems ?? 0,
     bonusSpins: raw.bonusSpins ?? 0,
+    heroSpins: raw.heroSpins ?? 0,
+    legendSpins: raw.legendSpins ?? 0,
     spinsLastRefreshedAt: raw.spinsLastRefreshedAt ?? new Date().toISOString(),
     inventory: migrateInventory(raw.inventory ?? {}),
     dailyCrystalPurchases: raw.dailyCrystalPurchases ?? freshDailyPurchases(),
@@ -585,6 +595,9 @@ export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops): Story
   let bonusSpins = slot.bonusSpins
   const inventory = { ...slot.inventory }
 
+  let heroSpins = slot.heroSpins ?? 0
+  let legendSpins = slot.legendSpins ?? 0
+
   for (const drop of drops.chanceDrops) {
     if (drop === 'fateShard') {
       shards++
@@ -592,6 +605,10 @@ export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops): Story
       endlessKeys++
     } else if (drop === 'spin') {
       bonusSpins++
+    } else if (drop === 'heroSpin') {
+      heroSpins++
+    } else if (drop === 'legendSpin') {
+      legendSpins++
     } else if (drop.startsWith('statCrystal:')) {
       const rarity = drop.slice('statCrystal:'.length) as StatCrystalType
       if (rarity in inventory.statCrystals) {
@@ -609,7 +626,7 @@ export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops): Story
     }
   }
 
-  return { ...slot, gems: slot.gems + drops.gems, shards, endlessKeys, bonusSpins, inventory }
+  return { ...slot, gems: slot.gems + drops.gems, shards, endlessKeys, bonusSpins, heroSpins, legendSpins, inventory }
 }
 
 /**
@@ -808,10 +825,42 @@ export function consumeEndlessKey(slot: StorySaveSlot): StorySaveSlot | null {
 /** Cost in gems to buy one Endless Key from the shop (available at player level 3+). */
 export const ENDLESS_KEY_GEM_COST = 50_000
 
+/** Gem cost for one Hero Spin (unlocked at player level 2). 2× luck boost + 2× stat multiplier in battle. */
+export const HERO_SPIN_GEM_COST = 500
+
+/** Gem cost for one Legend Spin (unlocked at player level 4). 4× luck boost + 4× stat multiplier in battle. */
+export const LEGEND_SPIN_GEM_COST = 2_000
+
 /** Purchases one Endless Key. Returns updated slot or 'insufficient_gems'. */
 export function buyEndlessKey(slot: StorySaveSlot): StorySaveSlot | 'insufficient_gems' {
   if (slot.gems < ENDLESS_KEY_GEM_COST) return 'insufficient_gems'
   return { ...slot, gems: slot.gems - ENDLESS_KEY_GEM_COST, endlessKeys: slot.endlessKeys + 1 }
+}
+
+/** Purchases one Hero Spin. Returns updated slot or 'insufficient_gems' / 'locked'. */
+export function buyHeroSpin(slot: StorySaveSlot): StorySaveSlot | 'insufficient_gems' | 'locked' {
+  if (slot.playerLevel < 2) return 'locked'
+  if (slot.gems < HERO_SPIN_GEM_COST) return 'insufficient_gems'
+  return { ...slot, gems: slot.gems - HERO_SPIN_GEM_COST, heroSpins: (slot.heroSpins ?? 0) + 1 }
+}
+
+/** Purchases one Legend Spin. Returns updated slot or 'insufficient_gems' / 'locked'. */
+export function buyLegendSpin(slot: StorySaveSlot): StorySaveSlot | 'insufficient_gems' | 'locked' {
+  if (slot.playerLevel < 4) return 'locked'
+  if (slot.gems < LEGEND_SPIN_GEM_COST) return 'insufficient_gems'
+  return { ...slot, gems: slot.gems - LEGEND_SPIN_GEM_COST, legendSpins: (slot.legendSpins ?? 0) + 1 }
+}
+
+/** Consumes one Hero Spin. Returns updated slot or null if none remaining. */
+export function consumeHeroSpin(slot: StorySaveSlot): StorySaveSlot | null {
+  if ((slot.heroSpins ?? 0) <= 0) return null
+  return { ...slot, heroSpins: (slot.heroSpins ?? 0) - 1 }
+}
+
+/** Consumes one Legend Spin. Returns updated slot or null if none remaining. */
+export function consumeLegendSpin(slot: StorySaveSlot): StorySaveSlot | null {
+  if ((slot.legendSpins ?? 0) <= 0) return null
+  return { ...slot, legendSpins: (slot.legendSpins ?? 0) - 1 }
 }
 
 /**

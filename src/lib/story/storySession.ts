@@ -84,8 +84,9 @@ export function clearStorySession(): void {
 export function buildRosterEntryFromResults(args: {
   results: SpinResult[]
   sessionStartedAt: string
+  spinClass?: 'hero' | 'legend'
 }): StoryRosterEntry {
-  const { results, sessionStartedAt } = args
+  const { results, sessionStartedAt, spinClass } = args
 
   const race = results.find(r => r.category === 'race')?.resultLabel ?? 'Unknown Race'
   const archetype = results.find(r => r.category === 'archetype')?.resultLabel ?? 'Unknown Archetype'
@@ -118,5 +119,6 @@ export function buildRosterEntryFromResults(args: {
     equippedPowers:  [],
     createdAt: new Date().toISOString(),
     sessionStartedAt,
+    spinClass,
   }
 }

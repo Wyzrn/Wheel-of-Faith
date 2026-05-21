@@ -155,10 +155,12 @@ export const TYPE_TO_STAT_RARITY: Record<EnemyType, StatCrystalRarity> = {
 export const CHANCE_DROP_RATES = {
   fateShard:     0.05,
   powerCrystal:  0.08,
-  statCrystal:   0.02,
+  statCrystal:   0.005,  // reduced — were dropping too frequently
   weaponCrystal: 0.07,
   armorCrystal:  0.07,
   spin:          0.03,   // 3% — rare character spin drop
+  heroSpin:      0.008,  // 0.8% — hero spin drop (unlocked at level 2)
+  legendSpin:    0.002,  // 0.2% — legend spin drop (unlocked at level 4)
 } as const
 
 /** Endless Key drop rate — only applies at player level 3+ (caller must check). */
@@ -167,10 +169,10 @@ export const ENDLESS_KEY_DROP_RATE = 0.08
 /**
  * A drop from a killed enemy. Crystal drops carry the grade/rarity as a colon-separated suffix:
  * e.g. 'powerCrystal:E', 'statCrystal:elite', 'weaponCrystal:God'.
- * Simple drops have no suffix: 'fateShard', 'spin', 'endlessKey'.
+ * Simple drops have no suffix: 'fateShard', 'spin', 'endlessKey', 'heroSpin', 'legendSpin'.
  */
 export type ChanceDrop =
-  | 'fateShard' | 'spin' | 'endlessKey'
+  | 'fateShard' | 'spin' | 'endlessKey' | 'heroSpin' | 'legendSpin'
   | `statCrystal:${StatCrystalRarity}`
   | `powerCrystal:${CrystalDropGrade}`
   | `weaponCrystal:${CrystalDropGrade}`
@@ -228,6 +230,8 @@ export function rollDrops(enemy: Enemy): { gems: number; xp: number; chanceDrops
   if (Math.random() < CHANCE_DROP_RATES.weaponCrystal) chanceDrops.push(`weaponCrystal:${rollCrystalGrade(enemy.grade)}`)
   if (Math.random() < CHANCE_DROP_RATES.armorCrystal)  chanceDrops.push(`armorCrystal:${rollCrystalGrade(enemy.grade)}`)
   if (Math.random() < CHANCE_DROP_RATES.spin)          chanceDrops.push('spin')
+  if (Math.random() < CHANCE_DROP_RATES.heroSpin)      chanceDrops.push('heroSpin')
+  if (Math.random() < CHANCE_DROP_RATES.legendSpin)    chanceDrops.push('legendSpin')
 
   return { gems: roll(table.gems), xp: roll(table.xp), chanceDrops }
 }

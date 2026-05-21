@@ -311,6 +311,7 @@ export function buildBattleCharacter(
   results: SpinResult[],
   name: string,
   equipped?: EquippedCrystals,
+  statMultiplier?: number,
 ): BattleCharacter {
   const rs = results
   const durTier    = getDisplayTier(rs, 'durability')
@@ -397,12 +398,17 @@ export function buildBattleCharacter(
   for (const r of abilities) moves.push({ name: r.resultLabel, type: 'ability',  effectTag: detectEffectTag(r.resultLabel), behavior: detectMoveBehavior(r.resultLabel) })
   if (moves.length === 0)    moves.push({ name: 'Desperate Strike', type: 'physical', effectTag: null, behavior: 'attack' })
 
+  const mult = statMultiplier ?? 1
+  const finalHp  = Math.round(hp * mult)
+  const finalPhysDmg = Math.round(physicalDamage * mult)
+  const finalPwrDmg  = Math.round(powerDamage * mult)
+
   return {
     name: name.trim() || (rs.find(r => r.category === 'race')?.resultLabel ?? 'Unknown'),
     raceLabel:      rs.find(r => r.category === 'race')?.resultLabel      ?? 'Unknown',
     archetypeLabel: rs.find(r => r.category === 'archetype')?.resultLabel ?? 'Unknown',
-    hp, maxHp: hp,
-    physicalDamage, powerDamage,
+    hp: finalHp, maxHp: finalHp,
+    physicalDamage: finalPhysDmg, powerDamage: finalPwrDmg,
     armorReduction, armorType: armorTypeLabel, weaponType: weaponTypeLabel,
     agilityRank, speedRank, charismaRank, iqRank, potentialRank, energyRank, fightingSkillRank,
     weaponEnchantTags, armorEnchantTags,
