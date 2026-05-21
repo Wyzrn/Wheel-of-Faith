@@ -49,6 +49,31 @@ export const F_CRYSTAL_COST = 5_000
 export type StatCrystalType = 'common' | 'elite' | 'legendary'
 export type CrystalGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'God'
 
+/** Stat boost amount per crystal type. */
+export const STAT_CRYSTAL_BOOST: Record<StatCrystalType, number> = {
+  common: 1, elite: 3, legendary: 5,
+}
+
+/** Stats that can be boosted via stat crystals. */
+export const BOOSTABLE_STATS = [
+  'strength', 'durability', 'agility', 'speed', 'fightingSkill',
+  'energyLevel', 'powerMastery', 'weaponMastery', 'potential', 'armorStrength',
+] as const
+export type BoostableStat = typeof BOOSTABLE_STATS[number]
+
+export const BOOSTABLE_STAT_LABELS: Record<BoostableStat, string> = {
+  strength: 'Strength', durability: 'Durability', agility: 'Agility', speed: 'Speed',
+  fightingSkill: 'Fighting Skill', energyLevel: 'Energy Level', powerMastery: 'Power Mastery',
+  weaponMastery: 'Weapon Mastery', potential: 'Potential', armorStrength: 'Armor Strength',
+}
+
+/** An item obtained by opening a power/weapon/armor crystal. */
+export interface OpenedItem {
+  id: string
+  grade: CrystalGrade
+  name: string
+}
+
 export interface GradedCrystalCounts {
   F: number; E: number; D: number; C: number; B: number
   A: number; S: number; SS: number; SSS: number; God: number
@@ -56,6 +81,45 @@ export interface GradedCrystalCounts {
 
 function freshGradedCrystals(): GradedCrystalCounts {
   return { F: 0, E: 0, D: 0, C: 0, B: 0, A: 0, S: 0, SS: 0, SSS: 0, God: 0 }
+}
+
+const ITEM_NAME_POOL: Record<'weapon' | 'armor' | 'power', Record<CrystalGrade, string[]>> = {
+  weapon: {
+    F:   ['Iron Sword', 'Rusty Dagger', 'Wooden Club'],
+    E:   ['Steel Blade', 'Bronze Axe', 'Hunting Bow'],
+    D:   ['Shadow Blade', 'Enchanted Staff', 'Silver Spear'],
+    C:   ['Crystal Sword', 'Dragon Lance', 'Soul Scythe'],
+    B:   ['Void Edge', 'Phantom Blade', 'Thunder Spear'],
+    A:   ['Celestial Sword', 'Doom Blade', 'Storm Fang'],
+    S:   ['Godslayer Blade', 'Eternal Edge', 'Chaos Sword'],
+    SS:  ['Infinity Blade', 'Void Drinker', 'Reality Shard'],
+    SSS: ['Absolute Edge', 'Primordial Fang', 'Universal Blade'],
+    God: ["God's Wrath", 'Fate Blade', 'Cosmos Edge'],
+  },
+  armor: {
+    F:   ['Leather Armor', 'Cloth Robe', 'Wooden Shield'],
+    E:   ['Chainmail', 'Iron Vest', 'Bronze Guard'],
+    D:   ['Shadow Cloak', 'Enchanted Robe', 'Silver Plate'],
+    C:   ['Crystal Mail', 'Dragon Scale Vest', 'Spectral Guard'],
+    B:   ['Void Plate', 'Phantom Shroud', 'Thunder Mantle'],
+    A:   ['Celestial Mail', 'Doom Plate', 'Storm Shield'],
+    S:   ['Godwall Plate', 'Eternal Guard', 'Chaos Mail'],
+    SS:  ['Infinity Shell', 'Void Barrier', 'Reality Plate'],
+    SSS: ['Absolute Fortress', 'Primordial Shell', 'Universal Guard'],
+    God: ["God's Mantle", 'Fate Armor', 'Cosmos Shield'],
+  },
+  power: {
+    F:   ['Shadow Bolt', 'Fire Spark', 'Stone Fist'],
+    E:   ['Dark Wave', 'Flame Arrow', 'Wind Slash'],
+    D:   ['Shadow Burst', 'Inferno Strike', 'Storm Fist'],
+    C:   ['Void Pulse', 'Dragon Flame', 'Crystal Nova'],
+    B:   ['Phantom Storm', 'Shadow Realm', 'Thunder God'],
+    A:   ['Celestial Strike', 'Reality Warp', 'Chaos Surge'],
+    S:   ['Godly Wrath', 'Eternal Flame', 'Void Collapse'],
+    SS:  ['Infinity Blast', 'Reality Erasure', 'Absolute Zero'],
+    SSS: ['Universal Destruction', 'Primordial Flame', 'Absolute Strike'],
+    God: ['Omnipotence Surge', 'Existence Erasure', 'Conceptual Destruction'],
+  },
 }
 
 export interface StoryInventory {
@@ -67,6 +131,9 @@ export interface StoryInventory {
   powerCrystals:  GradedCrystalCounts
   weaponCrystals: GradedCrystalCounts
   armorCrystals:  GradedCrystalCounts
+  openedWeapons:  OpenedItem[]
+  openedArmors:   OpenedItem[]
+  openedPowers:   OpenedItem[]
 }
 
 /** Per-world battle progress. */
@@ -127,9 +194,12 @@ function freshDailyPurchases(): DailyCrystalPurchases {
 function freshInventory(): StoryInventory {
   return {
     statCrystals: { common: 0, elite: 0, legendary: 0 },
-    powerCrystals: freshGradedCrystals(),
+    powerCrystals:  freshGradedCrystals(),
     weaponCrystals: freshGradedCrystals(),
-    armorCrystals: freshGradedCrystals(),
+    armorCrystals:  freshGradedCrystals(),
+    openedWeapons:  [],
+    openedArmors:   [],
+    openedPowers:   [],
   }
 }
 
@@ -177,10 +247,13 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
 /** Merges missing inventory fields so old saves missing graded crystals still work. */
 function migrateInventory(raw: Partial<StoryInventory>): StoryInventory {
   return {
-    statCrystals: raw.statCrystals ?? { common: 0, elite: 0, legendary: 0 },
-    powerCrystals: raw.powerCrystals ?? freshGradedCrystals(),
+    statCrystals:  raw.statCrystals  ?? { common: 0, elite: 0, legendary: 0 },
+    powerCrystals:  raw.powerCrystals  ?? freshGradedCrystals(),
     weaponCrystals: raw.weaponCrystals ?? freshGradedCrystals(),
-    armorCrystals: raw.armorCrystals ?? freshGradedCrystals(),
+    armorCrystals:  raw.armorCrystals  ?? freshGradedCrystals(),
+    openedWeapons:  raw.openedWeapons  ?? [],
+    openedArmors:   raw.openedArmors   ?? [],
+    openedPowers:   raw.openedPowers   ?? [],
   }
 }
 
@@ -502,24 +575,74 @@ export function addTeamXp(slot: StorySaveSlot, characterIds: string[], totalXp: 
   return updated
 }
 
-/** Equips a graded crystal item to a roster character, consuming one from inventory. */
-export function equipItemToCharacter(
+/**
+ * Opens a graded power/weapon/armor crystal: consumes one crystal, generates a named item,
+ * and places it in the appropriate opened items list.
+ */
+export function openCrystal(
   slot: StorySaveSlot,
-  characterId: string,
-  itemType: 'weapon' | 'armor' | 'power',
-  grade: string,
-): StorySaveSlot | 'no_item' | 'char_not_found' {
-  const key = `${itemType}Crystals` as 'weaponCrystals' | 'armorCrystals' | 'powerCrystals'
+  type: 'weapon' | 'armor' | 'power',
+  grade: CrystalGrade,
+): StorySaveSlot | 'no_crystal' {
+  const key = `${type}Crystals` as 'weaponCrystals' | 'armorCrystals' | 'powerCrystals'
   const crystals = slot.inventory[key] as GradedCrystalCounts
-  if ((crystals[grade as keyof GradedCrystalCounts] ?? 0) <= 0) return 'no_item'
-  if (!slot.roster.some(r => r.id === characterId)) return 'char_not_found'
-  const equipField = `equipped${itemType.charAt(0).toUpperCase() + itemType.slice(1)}` as 'equippedWeapon' | 'equippedArmor' | 'equippedPower'
+  if ((crystals[grade] ?? 0) <= 0) return 'no_crystal'
+
+  const pool = ITEM_NAME_POOL[type][grade]
+  const name = pool[Math.floor(Math.random() * pool.length)]
+  const item: OpenedItem = { id: crypto.randomUUID(), grade, name }
+  const listKey = type === 'weapon' ? 'openedWeapons' : type === 'armor' ? 'openedArmors' : 'openedPowers'
+
   return {
     ...slot,
     inventory: {
       ...slot.inventory,
-      [key]: { ...crystals, [grade]: (crystals[grade as keyof GradedCrystalCounts]) - 1 },
+      [key]: { ...crystals, [grade]: crystals[grade] - 1 },
+      [listKey]: [...slot.inventory[listKey], item],
     },
-    roster: slot.roster.map(r => r.id === characterId ? { ...r, [equipField]: grade } : r),
+  }
+}
+
+/** Uses a stat crystal on a character, consuming the crystal and applying a stat bonus. */
+export function useStatCrystal(
+  slot: StorySaveSlot,
+  characterId: string,
+  stat: BoostableStat,
+  type: StatCrystalType,
+): StorySaveSlot | 'no_crystal' | 'char_not_found' {
+  if (slot.inventory.statCrystals[type] <= 0) return 'no_crystal'
+  if (!slot.roster.some(r => r.id === characterId)) return 'char_not_found'
+  const boost = STAT_CRYSTAL_BOOST[type]
+  return {
+    ...slot,
+    inventory: {
+      ...slot.inventory,
+      statCrystals: { ...slot.inventory.statCrystals, [type]: slot.inventory.statCrystals[type] - 1 },
+    },
+    roster: slot.roster.map(r =>
+      r.id === characterId
+        ? { ...r, statBonuses: { ...r.statBonuses, [stat]: (r.statBonuses[stat] ?? 0) + boost } }
+        : r
+    ),
+  }
+}
+
+/** Equips an opened item to a roster character, removing it from the opened items list. */
+export function equipOpenedItem(
+  slot: StorySaveSlot,
+  characterId: string,
+  itemId: string,
+  type: 'weapon' | 'armor' | 'power',
+): StorySaveSlot | 'no_item' | 'char_not_found' {
+  const listKey = type === 'weapon' ? 'openedWeapons' : type === 'armor' ? 'openedArmors' : 'openedPowers'
+  const list = slot.inventory[listKey] as OpenedItem[]
+  const item = list.find(i => i.id === itemId)
+  if (!item) return 'no_item'
+  if (!slot.roster.some(r => r.id === characterId)) return 'char_not_found'
+  const equipField = `equipped${type.charAt(0).toUpperCase() + type.slice(1)}` as 'equippedWeapon' | 'equippedArmor' | 'equippedPower'
+  return {
+    ...slot,
+    inventory: { ...slot.inventory, [listKey]: list.filter(i => i.id !== itemId) },
+    roster: slot.roster.map(r => r.id === characterId ? { ...r, [equipField]: item.grade } : r),
   }
 }

@@ -6,10 +6,12 @@
     buyStatCrystal, getDailyBought, applySpinRefresh, msUntilNextRefresh,
     upgradeRosterCapacity, rosterUpgradeCost, buyFCrystal, buyEndlessKey,
     createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
-    equipItemToCharacter,
+    openCrystal, equipOpenedItem, useStatCrystal,
     SHARD_COST_PER_SPIN, STAGE_LABELS, MAX_DAILY_SPINS,
     STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, F_CRYSTAL_COST, ENDLESS_KEY_GEM_COST,
-    type StorySaveSlot, type SlotId, type StatCrystalType,
+    BOOSTABLE_STATS, BOOSTABLE_STAT_LABELS, STAT_CRYSTAL_BOOST,
+    type StorySaveSlot, type SlotId, type StatCrystalType, type CrystalGrade, type BoostableStat,
+    type OpenedItem,
   } from '$lib/story/saveSlots'
   import type { StoryTeam } from '$lib/story/types'
   import { getGemValue } from '$lib/story/shards'
@@ -345,25 +347,81 @@
     A:'#a78bfa', S:'#f59e0b', SS:'#f97316', SSS:'#ef4444', God:'#ffd700',
   }
 
-  // ── Equip modal state ──────────────────────────────────────────────────────
-  let equipModal = $state<{ type: 'weapon' | 'armor' | 'power'; grade: string } | null>(null)
+  // ── Inventory tabs ─────────────────────────────────────────────────────────
+  type InvTab = 'crystals' | 'weapons' | 'armor' | 'powers'
+  let invTab = $state<InvTab>('crystals')
 
-  function openEquipModal(type: 'weapon' | 'armor' | 'power', grade: string) {
-    equipModal = { type, grade }
+  let openedWeapons = $derived(currentSlot?.inventory?.openedWeapons ?? [])
+  let openedArmors  = $derived(currentSlot?.inventory?.openedArmors  ?? [])
+  let openedPowers  = $derived(currentSlot?.inventory?.openedPowers  ?? [])
+
+  // ── Open crystal ───────────────────────────────────────────────────────────
+  let openCrystalError = $state<string | null>(null)
+
+  function handleOpenCrystal(type: 'weapon' | 'armor' | 'power', grade: CrystalGrade) {
+    if (!currentSlot) return
+    const result = openCrystal($state.snapshot(currentSlot) as StorySaveSlot, type, grade)
+    if (result === 'no_crystal') {
+      openCrystalError = 'No crystals of that grade.'
+      setTimeout(() => { openCrystalError = null }, 2500)
+      return
+    }
+    currentSlot = result
+  }
+
+  // ── Equip opened item modal ────────────────────────────────────────────────
+  let equipModal = $state<{ type: 'weapon' | 'armor' | 'power'; item: OpenedItem } | null>(null)
+
+  function openEquipModal(type: 'weapon' | 'armor' | 'power', item: OpenedItem) {
+    equipModal = { type, item }
   }
 
   function doEquip(charId: string) {
     if (!currentSlot || !equipModal) return
-    const result = equipItemToCharacter(
+    const result = equipOpenedItem(
       $state.snapshot(currentSlot) as StorySaveSlot,
       charId,
+      equipModal.item.id,
       equipModal.type,
-      equipModal.grade,
     )
-    if (typeof result !== 'string') {
-      currentSlot = result
-    }
+    if (typeof result !== 'string') currentSlot = result
     equipModal = null
+  }
+
+  // ── Use stat crystal modal ─────────────────────────────────────────────────
+  type UseStatPhase = 'pickChar' | 'pickStat'
+  let useStatModal = $state<{ type: StatCrystalType; phase: UseStatPhase; charId: string | null } | null>(null)
+  let useStatError = $state<string | null>(null)
+
+  function openUseStatModal(type: StatCrystalType) {
+    useStatModal = { type, phase: 'pickChar', charId: null }
+  }
+
+  function selectUseStatChar(charId: string) {
+    if (!useStatModal) return
+    useStatModal = { ...useStatModal, phase: 'pickStat', charId }
+  }
+
+  function doUseStat(stat: BoostableStat) {
+    if (!currentSlot || !useStatModal || !useStatModal.charId) return
+    const result = useStatCrystal(
+      $state.snapshot(currentSlot) as StorySaveSlot,
+      useStatModal.charId,
+      stat,
+      useStatModal.type,
+    )
+    if (result === 'no_crystal') {
+      useStatError = 'No crystals available.'
+      setTimeout(() => { useStatError = null }, 2500)
+      return
+    }
+    if (result === 'char_not_found') {
+      useStatError = 'Character not found.'
+      setTimeout(() => { useStatError = null }, 2500)
+      return
+    }
+    currentSlot = result
+    useStatModal = null
   }
 </script>
 
@@ -1254,134 +1312,249 @@
     <button class="font-mono text-sm"
       style="color: var(--color-outline); background: none; border: none; cursor: pointer;"
       onclick={backToHub}>←</button>
-    <h2 class="font-bold" style="font-family: var(--font-cinzel); font-size: 18px; color: var(--color-on-surface);">Inventory</h2>
-    <div class="ml-auto flex items-center gap-3">
-      <div class="flex items-center gap-1">
-        <span class="material-symbols-outlined" style="font-size: 14px; color: #34d399; font-variation-settings: 'FILL' 1;">paid</span>
-        <span class="font-mono text-sm font-bold" style="color: #34d399;">{gems.toLocaleString()}</span>
-      </div>
+    <h2 class="font-bold flex-1" style="font-family: var(--font-cinzel); font-size: 18px; color: var(--color-on-surface);">Inventory</h2>
+    <div class="flex items-center gap-1">
+      <span class="material-symbols-outlined" style="font-size: 14px; color: #34d399; font-variation-settings: 'FILL' 1;">paid</span>
+      <span class="font-mono text-sm font-bold" style="color: #34d399;">{gems.toLocaleString()}</span>
     </div>
   </header>
 
-  <div class="pt-20 pb-24 px-4 flex flex-col gap-5 max-w-xs mx-auto w-full">
+  <!-- Tab bar -->
+  <div class="fixed top-16 left-0 right-0 z-20 flex"
+    style="background: rgba(7,7,13,0.97); border-bottom: 1px solid rgba(255,255,255,0.06);">
+    {#each ([['crystals','Crystals'],['weapons','Weapons'],['armor','Armor'],['powers','Powers']] as const) as [tab, label]}
+      <button onclick={() => invTab = tab}
+        class="flex-1 py-2.5 font-mono text-xs font-bold tracking-widest uppercase"
+        style="background: none; border: none; cursor: pointer; border-bottom: 2px solid {invTab === tab ? 'var(--gold-bright)' : 'transparent'}; color: {invTab === tab ? 'var(--gold-bright)' : 'var(--color-outline)'}; transition: color 120ms, border-color 120ms;">
+        {label}
+      </button>
+    {/each}
+  </div>
 
-    <!-- Endless Keys -->
-    <div class="obsidian-slab rounded-xl px-5 py-4">
-      <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: var(--color-outline);">Endless Keys</p>
-      <div class="flex items-center gap-3">
-        <span class="text-2xl">🗝</span>
-        <span class="font-bold font-mono text-xl" style="color: var(--gold-bright);">{endlessKeys}</span>
-        <span class="font-mono text-xs" style="color: var(--color-outline);">{endlessKeys === 1 ? 'key' : 'keys'} available</span>
+  <div class="pt-32 pb-24 px-4 flex flex-col gap-4 max-w-sm mx-auto w-full">
+
+    {#if openCrystalError}
+      <div class="rounded-lg px-4 py-2 text-center font-mono text-sm"
+        style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
+        {openCrystalError}
       </div>
-    </div>
+    {/if}
 
-    <!-- Stat Crystals -->
-    <div class="obsidian-slab rounded-xl px-5 py-4">
-      <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: var(--color-outline);">Stat Crystals</p>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center justify-between">
-          <span class="font-mono text-xs" style="color: #9ca3af;">Common</span>
-          <span class="font-mono text-sm font-bold" style="color: #9ca3af;">{statCrystalInventory.common}</span>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="font-mono text-xs" style="color: #8b5cf6;">Elite</span>
-          <span class="font-mono text-sm font-bold" style="color: #8b5cf6;">{statCrystalInventory.elite}</span>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="font-mono text-xs" style="color: #f59e0b;">Legendary</span>
-          <span class="font-mono text-sm font-bold" style="color: #f59e0b;">{statCrystalInventory.legendary}</span>
+    <!-- ── Crystals tab ── -->
+    {#if invTab === 'crystals'}
+
+      <!-- Endless Keys -->
+      <div class="obsidian-slab rounded-xl px-5 py-4">
+        <p class="font-mono text-xs mb-2 tracking-widest uppercase" style="color: var(--color-outline);">Endless Keys</p>
+        <div class="flex items-center gap-3">
+          <span class="text-xl">🗝</span>
+          <span class="font-bold font-mono text-xl" style="color: var(--gold-bright);">{endlessKeys}</span>
+          <span class="font-mono text-xs" style="color: var(--color-outline);">{endlessKeys === 1 ? 'key' : 'keys'}</span>
         </div>
       </div>
-    </div>
 
-    <!-- Power Crystals -->
-    <div class="obsidian-slab rounded-xl px-5 py-4">
-      <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #fb923c;">Power Crystals</p>
-      <div class="flex flex-col gap-2">
-        {#each CRYSTAL_GRADES as g}
-          {@const count = powerCrystalInventory[g] ?? 0}
-          {@const gc = CRYSTAL_GRADE_COLORS[g]}
-          {#if count > 0}
-            <div class="flex items-center justify-between px-3 py-2 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid {gc}18;">
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-xs font-bold" style="color: {gc};">{g}</span>
-                <span class="font-mono text-xs" style="color: var(--color-outline);">×{count}</span>
+      <!-- Stat Crystals -->
+      <div class="obsidian-slab rounded-xl px-5 py-4">
+        <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: var(--color-outline);">Stat Crystals</p>
+        <div class="flex flex-col gap-2">
+          {#each ([['common','Common','#9ca3af'],['elite','Elite','#8b5cf6'],['legendary','Legendary','#f59e0b']] as const) as [type, label, color]}
+            {@const count = statCrystalInventory[type]}
+            {@const boost = STAT_CRYSTAL_BOOST[type]}
+            <div class="flex items-center justify-between px-3 py-2 rounded"
+              style="background: rgba(255,255,255,0.03); border: 1px solid {color}18;">
+              <div>
+                <span class="font-mono text-xs font-bold" style="color: {color};">{label}</span>
+                <span class="font-mono text-xs ml-2" style="color: var(--color-outline);">×{count} · +{boost} to stat</span>
               </div>
-              <button onclick={() => openEquipModal('power', g)}
+              <button onclick={() => openUseStatModal(type)} disabled={count === 0}
                 class="font-mono text-xs px-2.5 py-1 rounded"
-                style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.22); color: var(--gold-bright); cursor: pointer;">
+                style="background: {count > 0 ? 'rgba(52,211,153,0.1)' : 'transparent'}; border: 1px solid {count > 0 ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.07)'}; color: {count > 0 ? '#34d399' : 'var(--color-outline)'}; cursor: {count > 0 ? 'pointer' : 'not-allowed'}; opacity: {count > 0 ? 1 : 0.4};">
+                Use
+              </button>
+            </div>
+          {/each}
+        </div>
+      </div>
+
+      <!-- Power Crystals (Open) -->
+      <div class="obsidian-slab rounded-xl px-5 py-4">
+        <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #fb923c;">Power Crystals</p>
+        <div class="flex flex-col gap-2">
+          {#each CRYSTAL_GRADES as g}
+            {@const count = powerCrystalInventory[g] ?? 0}
+            {#if count > 0}
+              <div class="flex items-center justify-between px-3 py-2 rounded"
+                style="background: rgba(255,255,255,0.03); border: 1px solid {CRYSTAL_GRADE_COLORS[g]}22;">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[g]};">{g}</span>
+                  <span class="font-mono text-xs" style="color: var(--color-outline);">×{count}</span>
+                </div>
+                <button onclick={() => handleOpenCrystal('power', g as CrystalGrade)}
+                  class="font-mono text-xs px-2.5 py-1 rounded"
+                  style="background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.3); color: #fb923c; cursor: pointer;">
+                  Open
+                </button>
+              </div>
+            {/if}
+          {/each}
+          {#if !CRYSTAL_GRADES.some(g => (powerCrystalInventory[g] ?? 0) > 0)}
+            <p class="font-mono text-xs" style="color: var(--color-outline);">None in inventory</p>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Weapon Crystals (Open) -->
+      <div class="obsidian-slab rounded-xl px-5 py-4">
+        <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #818cf8;">Weapon Crystals</p>
+        <div class="flex flex-col gap-2">
+          {#each CRYSTAL_GRADES as g}
+            {@const count = weaponCrystalInventory[g] ?? 0}
+            {#if count > 0}
+              <div class="flex items-center justify-between px-3 py-2 rounded"
+                style="background: rgba(255,255,255,0.03); border: 1px solid {CRYSTAL_GRADE_COLORS[g]}22;">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[g]};">{g}</span>
+                  <span class="font-mono text-xs" style="color: var(--color-outline);">×{count}</span>
+                </div>
+                <button onclick={() => handleOpenCrystal('weapon', g as CrystalGrade)}
+                  class="font-mono text-xs px-2.5 py-1 rounded"
+                  style="background: rgba(129,140,248,0.1); border: 1px solid rgba(129,140,248,0.3); color: #818cf8; cursor: pointer;">
+                  Open
+                </button>
+              </div>
+            {/if}
+          {/each}
+          {#if !CRYSTAL_GRADES.some(g => (weaponCrystalInventory[g] ?? 0) > 0)}
+            <p class="font-mono text-xs" style="color: var(--color-outline);">None in inventory</p>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Armor Crystals (Open) -->
+      <div class="obsidian-slab rounded-xl px-5 py-4">
+        <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #2dd4bf;">Armor Crystals</p>
+        <div class="flex flex-col gap-2">
+          {#each CRYSTAL_GRADES as g}
+            {@const count = armorCrystalInventory[g] ?? 0}
+            {#if count > 0}
+              <div class="flex items-center justify-between px-3 py-2 rounded"
+                style="background: rgba(255,255,255,0.03); border: 1px solid {CRYSTAL_GRADE_COLORS[g]}22;">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[g]};">{g}</span>
+                  <span class="font-mono text-xs" style="color: var(--color-outline);">×{count}</span>
+                </div>
+                <button onclick={() => handleOpenCrystal('armor', g as CrystalGrade)}
+                  class="font-mono text-xs px-2.5 py-1 rounded"
+                  style="background: rgba(45,212,191,0.1); border: 1px solid rgba(45,212,191,0.3); color: #2dd4bf; cursor: pointer;">
+                  Open
+                </button>
+              </div>
+            {/if}
+          {/each}
+          {#if !CRYSTAL_GRADES.some(g => (armorCrystalInventory[g] ?? 0) > 0)}
+            <p class="font-mono text-xs" style="color: var(--color-outline);">None in inventory</p>
+          {/if}
+        </div>
+      </div>
+
+    <!-- ── Weapons tab ── -->
+    {:else if invTab === 'weapons'}
+      {#if openedWeapons.length === 0}
+        <div class="text-center pt-12">
+          <span class="material-symbols-outlined" style="font-size: 40px; color: var(--color-outline); font-variation-settings: 'FILL' 1;">swords</span>
+          <p class="font-mono text-sm mt-3" style="color: var(--color-outline);">No weapons yet.</p>
+          <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Open Weapon Crystals from the Crystals tab.</p>
+        </div>
+      {:else}
+        <div class="flex flex-col gap-2">
+          {#each openedWeapons as item (item.id)}
+            <div class="obsidian-slab rounded-xl px-4 py-3 flex items-center gap-3"
+              style="border: 1px solid {CRYSTAL_GRADE_COLORS[item.grade]}22;">
+              <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                style="background: rgba(129,140,248,0.1); border: 1px solid rgba(129,140,248,0.25);">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: #818cf8; font-variation-settings: 'FILL' 1;">swords</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{item.name}</p>
+                <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[item.grade]};">{item.grade} Grade</span>
+              </div>
+              <button onclick={() => openEquipModal('weapon', item)}
+                class="metal-stamp-gold font-mono text-xs px-3 py-1.5 rounded-lg flex-shrink-0">
                 Equip
               </button>
             </div>
-          {/if}
-        {/each}
-        {#if !CRYSTAL_GRADES.some(g => (powerCrystalInventory[g] ?? 0) > 0)}
-          <p class="font-mono text-xs" style="color: var(--color-outline);">None in inventory</p>
-        {/if}
-      </div>
-    </div>
+          {/each}
+        </div>
+      {/if}
 
-    <!-- Weapon Crystals -->
-    <div class="obsidian-slab rounded-xl px-5 py-4">
-      <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #818cf8;">Weapon Crystals</p>
-      <div class="flex flex-col gap-2">
-        {#each CRYSTAL_GRADES as g}
-          {@const count = weaponCrystalInventory[g] ?? 0}
-          {@const gc = CRYSTAL_GRADE_COLORS[g]}
-          {#if count > 0}
-            <div class="flex items-center justify-between px-3 py-2 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid {gc}18;">
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-xs font-bold" style="color: {gc};">{g}</span>
-                <span class="font-mono text-xs" style="color: var(--color-outline);">×{count}</span>
+    <!-- ── Armor tab ── -->
+    {:else if invTab === 'armor'}
+      {#if openedArmors.length === 0}
+        <div class="text-center pt-12">
+          <span class="material-symbols-outlined" style="font-size: 40px; color: var(--color-outline); font-variation-settings: 'FILL' 1;">shield</span>
+          <p class="font-mono text-sm mt-3" style="color: var(--color-outline);">No armor yet.</p>
+          <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Open Armor Crystals from the Crystals tab.</p>
+        </div>
+      {:else}
+        <div class="flex flex-col gap-2">
+          {#each openedArmors as item (item.id)}
+            <div class="obsidian-slab rounded-xl px-4 py-3 flex items-center gap-3"
+              style="border: 1px solid {CRYSTAL_GRADE_COLORS[item.grade]}22;">
+              <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                style="background: rgba(45,212,191,0.1); border: 1px solid rgba(45,212,191,0.25);">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: #2dd4bf; font-variation-settings: 'FILL' 1;">shield</span>
               </div>
-              <button onclick={() => openEquipModal('weapon', g)}
-                class="font-mono text-xs px-2.5 py-1 rounded"
-                style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.22); color: var(--gold-bright); cursor: pointer;">
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{item.name}</p>
+                <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[item.grade]};">{item.grade} Grade</span>
+              </div>
+              <button onclick={() => openEquipModal('armor', item)}
+                class="metal-stamp-gold font-mono text-xs px-3 py-1.5 rounded-lg flex-shrink-0">
                 Equip
               </button>
             </div>
-          {/if}
-        {/each}
-        {#if !CRYSTAL_GRADES.some(g => (weaponCrystalInventory[g] ?? 0) > 0)}
-          <p class="font-mono text-xs" style="color: var(--color-outline);">None in inventory</p>
-        {/if}
-      </div>
-    </div>
+          {/each}
+        </div>
+      {/if}
 
-    <!-- Armor Crystals -->
-    <div class="obsidian-slab rounded-xl px-5 py-4">
-      <p class="font-mono text-xs mb-3 tracking-widest uppercase" style="color: #2dd4bf;">Armor Crystals</p>
-      <div class="flex flex-col gap-2">
-        {#each CRYSTAL_GRADES as g}
-          {@const count = armorCrystalInventory[g] ?? 0}
-          {@const gc = CRYSTAL_GRADE_COLORS[g]}
-          {#if count > 0}
-            <div class="flex items-center justify-between px-3 py-2 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid {gc}18;">
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-xs font-bold" style="color: {gc};">{g}</span>
-                <span class="font-mono text-xs" style="color: var(--color-outline);">×{count}</span>
+    <!-- ── Powers tab ── -->
+    {:else if invTab === 'powers'}
+      {#if openedPowers.length === 0}
+        <div class="text-center pt-12">
+          <span class="material-symbols-outlined" style="font-size: 40px; color: var(--color-outline); font-variation-settings: 'FILL' 1;">flash_on</span>
+          <p class="font-mono text-sm mt-3" style="color: var(--color-outline);">No powers yet.</p>
+          <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Open Power Crystals from the Crystals tab.</p>
+        </div>
+      {:else}
+        <div class="flex flex-col gap-2">
+          {#each openedPowers as item (item.id)}
+            <div class="obsidian-slab rounded-xl px-4 py-3 flex items-center gap-3"
+              style="border: 1px solid {CRYSTAL_GRADE_COLORS[item.grade]}22;">
+              <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                style="background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.25);">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: #fb923c; font-variation-settings: 'FILL' 1;">flash_on</span>
               </div>
-              <button onclick={() => openEquipModal('armor', g)}
-                class="font-mono text-xs px-2.5 py-1 rounded"
-                style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.22); color: var(--gold-bright); cursor: pointer;">
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{item.name}</p>
+                <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[item.grade]};">{item.grade} Grade</span>
+              </div>
+              <button onclick={() => openEquipModal('power', item)}
+                class="metal-stamp-gold font-mono text-xs px-3 py-1.5 rounded-lg flex-shrink-0">
                 Equip
               </button>
             </div>
-          {/if}
-        {/each}
-        {#if !CRYSTAL_GRADES.some(g => (armorCrystalInventory[g] ?? 0) > 0)}
-          <p class="font-mono text-xs" style="color: var(--color-outline);">None in inventory</p>
-        {/if}
-      </div>
-    </div>
+          {/each}
+        </div>
+      {/if}
+    {/if}
 
   </div>
 {/if}
 
-<!-- ── Equip crystal modal ─────────────────────────────────────────────────── -->
+<!-- ── Equip opened item modal ─────────────────────────────────────────────── -->
 {#if equipModal && currentSlot}
   {@const et = equipModal.type}
-  {@const eg = equipModal.grade}
+  {@const item = equipModal.item}
   {@const typeLabel = et === 'power' ? 'Power' : et === 'weapon' ? 'Weapon' : 'Armor'}
   <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
     style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(24px, calc(env(safe-area-inset-bottom,0px) + 24px));"
@@ -1391,10 +1564,12 @@
       style="border: 1px solid rgba(240,192,64,0.25); animation: resultReveal 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;"
       onclick={(e) => e.stopPropagation()}>
       <div class="px-5 py-5">
+        <p class="font-mono text-xs mb-1 tracking-widest uppercase" style="color: var(--color-outline);">Equip {typeLabel}</p>
         <h3 class="font-bold text-sm mb-1" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">
-          Equip {eg} {typeLabel} Crystal
+          {item.name}
+          <span class="font-mono text-xs ml-2" style="color: {CRYSTAL_GRADE_COLORS[item.grade]};">{item.grade}</span>
         </h3>
-        <p class="font-mono text-xs mb-4" style="color: var(--color-outline);">Select a character — this item is consumed from inventory.</p>
+        <p class="font-mono text-xs mb-4" style="color: var(--color-outline);">Select a character. This item is consumed from inventory.</p>
 
         {#if roster.length === 0}
           <p class="font-mono text-xs" style="color: var(--color-outline);">No characters in roster.</p>
@@ -1402,17 +1577,15 @@
           <div class="flex flex-col gap-2 max-h-64 overflow-y-auto">
             {#each sortedRoster as char (char.id)}
               {@const equipped = et === 'weapon' ? char.equippedWeapon : et === 'armor' ? char.equippedArmor : char.equippedPower}
-              <button
-                onclick={() => doEquip(char.id)}
+              <button onclick={() => doEquip(char.id)}
                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left"
-                style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); cursor: pointer; transition: border-color 120ms;"
-              >
+                style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); cursor: pointer;">
                 <div class="flex-1 min-w-0">
                   <p class="font-bold text-xs truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{char.name}</p>
                   <p class="font-mono text-xs" style="color: var(--color-outline);">{char.race} · {char.overallTier} · Lv {char.level}</p>
                 </div>
                 {#if equipped}
-                  <span class="font-mono text-xs flex-shrink-0" style="color: #f59e0b;">{equipped} → replace</span>
+                  <span class="font-mono text-xs flex-shrink-0" style="color: #f59e0b;">{equipped} equipped → replace</span>
                 {:else}
                   <span class="font-mono text-xs flex-shrink-0" style="color: #34d399;">Equip →</span>
                 {/if}
@@ -1420,8 +1593,83 @@
             {/each}
           </div>
         {/if}
-
         <button onclick={() => equipModal = null}
+          class="mt-4 w-full py-2.5 rounded-xl font-bold font-mono text-sm"
+          style="border: 1px solid rgba(255,255,255,0.08); color: var(--color-outline); background: transparent; cursor: pointer;">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- ── Use stat crystal modal ─────────────────────────────────────────────── -->
+{#if useStatModal && currentSlot}
+  {@const boost = STAT_CRYSTAL_BOOST[useStatModal.type]}
+  {@const typeColors = { common: '#9ca3af', elite: '#8b5cf6', legendary: '#f59e0b' }}
+  {@const color = typeColors[useStatModal.type]}
+  <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
+    style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(24px, calc(env(safe-area-inset-bottom,0px) + 24px));"
+    onclick={() => { useStatModal = null; useStatError = null }}
+    role="dialog" aria-modal="true">
+    <div class="w-full max-w-md rounded-2xl overflow-hidden obsidian-slab"
+      style="border: 1px solid {color}33; animation: resultReveal 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;"
+      onclick={(e) => e.stopPropagation()}>
+      <div class="px-5 py-5">
+        <p class="font-mono text-xs mb-1 tracking-widest uppercase" style="color: {color};">
+          {useStatModal.type.charAt(0).toUpperCase() + useStatModal.type.slice(1)} Stat Crystal · +{boost}
+        </p>
+
+        {#if useStatError}
+          <p class="font-mono text-xs mb-3" style="color: #ef4444;">{useStatError}</p>
+        {/if}
+
+        {#if useStatModal.phase === 'pickChar'}
+          <h3 class="font-bold text-sm mb-3" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Select a character</h3>
+          {#if roster.length === 0}
+            <p class="font-mono text-xs" style="color: var(--color-outline);">No characters in roster.</p>
+          {:else}
+            <div class="flex flex-col gap-2 max-h-64 overflow-y-auto">
+              {#each sortedRoster as char (char.id)}
+                <button onclick={() => selectUseStatChar(char.id)}
+                  class="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left"
+                  style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); cursor: pointer;">
+                  <div class="flex-1 min-w-0">
+                    <p class="font-bold text-xs truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{char.name}</p>
+                    <p class="font-mono text-xs" style="color: var(--color-outline);">{char.race} · {char.overallTier} · Lv {char.level}</p>
+                  </div>
+                  <span class="font-mono text-xs flex-shrink-0" style="color: var(--gold-bright);">Select →</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
+
+        {:else}
+          {@const selectedChar = roster.find(r => r.id === useStatModal?.charId)}
+          <h3 class="font-bold text-sm mb-1" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">
+            {selectedChar?.name ?? '—'}
+          </h3>
+          <p class="font-mono text-xs mb-3" style="color: var(--color-outline);">Choose a stat to boost by +{boost}</p>
+          <div class="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
+            {#each BOOSTABLE_STATS as stat}
+              {@const current = selectedChar?.statBonuses?.[stat] ?? 0}
+              <button onclick={() => doUseStat(stat)}
+                class="px-3 py-2.5 rounded-xl text-left"
+                style="background: rgba(255,255,255,0.03); border: 1px solid {color}22; cursor: pointer; transition: border-color 120ms;">
+                <p class="font-mono text-xs font-bold" style="color: {color};">{BOOSTABLE_STAT_LABELS[stat]}</p>
+                {#if current > 0}
+                  <p class="font-mono text-xs" style="color: #34d399;">+{current} bonus</p>
+                {/if}
+              </button>
+            {/each}
+          </div>
+          <button onclick={() => { if (useStatModal) useStatModal = { ...useStatModal, phase: 'pickChar', charId: null } }}
+            class="mt-3 font-mono text-xs" style="color: var(--color-outline); background: none; border: none; cursor: pointer;">
+            ← Back
+          </button>
+        {/if}
+
+        <button onclick={() => { useStatModal = null; useStatError = null }}
           class="mt-4 w-full py-2.5 rounded-xl font-bold font-mono text-sm"
           style="border: 1px solid rgba(255,255,255,0.08); color: var(--color-outline); background: transparent; cursor: pointer;">
           Cancel

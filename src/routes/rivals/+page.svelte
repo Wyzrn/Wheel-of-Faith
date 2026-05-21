@@ -4,6 +4,8 @@
   import { page } from '$app/stores'
   import { auth } from '$lib/stores/auth.svelte'
   import { normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
+  import TeamBattleScreen from '../../components/TeamBattleScreen.svelte'
+  import type { SpinResult } from '$lib/session/types'
 
   // ── Phase state machine ────────────────────────────────────────────────────
   type Phase =
@@ -492,3 +494,13 @@
 
   </div>
 </main>
+
+<!-- ── Battle screen (outside main container for full-screen layout) ──────── -->
+{#if phase === 'battle'}
+  <TeamBattleScreen
+    team1={[{ results: myResults as SpinResult[], name: auth.user?.username ?? 'You' }]}
+    team2={[{ results: partnerResults as SpinResult[], name: partnerName || 'Opponent' }]}
+    onRematch={() => { phase = 'mode'; myResults = []; partnerResults = [] }}
+    onBackToMenu={() => { phase = 'mode'; myResults = []; partnerResults = [] }}
+  />
+{/if}

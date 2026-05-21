@@ -288,7 +288,7 @@
     allT2Names = new Set()
 
     // Build player team at full HP
-    t1Chars  = teamMembers.map(m => buildBattleCharacter(m.spins, m.name))
+    t1Chars  = teamMembers.map(m => buildBattleCharacter(m.spins, m.name, m.statBonuses))
     t1DispHp = t1Chars.map(c => c.hp)
 
     // Pre-roll drops for all enemies across all waves

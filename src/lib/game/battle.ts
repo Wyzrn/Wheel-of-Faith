@@ -300,24 +300,30 @@ export function formatHp(hp: number): string {
 
 // ─── Build ────────────────────────────────────────────────────────────────────
 
-export function buildBattleCharacter(results: SpinResult[], name: string): BattleCharacter {
-  const durTier    = getDisplayTier(results, 'durability')
-  const strTier    = getDisplayTier(results, 'strength')
-  const elTier     = getDisplayTier(results, 'energyLevel')
-  const potTier    = getDisplayTier(results, 'potential')
-  const armStrTier = getDisplayTier(results, 'armorStrength')
+export function buildBattleCharacter(results: SpinResult[], name: string, statBonuses?: Record<string, number>): BattleCharacter {
+  // Apply stat bonuses by boosting the score of matching spin results
+  const effective = statBonuses && Object.keys(statBonuses).length > 0
+    ? results.map(r => {
+        const bonus = statBonuses[r.category]
+        return bonus && r.score != null ? { ...r, score: r.score + bonus } : r
+      })
+    : results
+  const rs = effective
+  const durTier    = getDisplayTier(rs, 'durability')
+  const strTier    = getDisplayTier(rs, 'strength')
+  const elTier     = getDisplayTier(rs, 'energyLevel')
+  const potTier    = getDisplayTier(rs, 'potential')
+  const armStrTier = getDisplayTier(rs, 'armorStrength')
 
-  const agilityRank       = tierRank(getDisplayTier(results, 'agility'))
-  const speedRank         = tierRank(getDisplayTier(results, 'speed'))
-  const charismaRank      = tierRank(getDisplayTier(results, 'charisma'))
-  const iqRank            = tierRank(getDisplayTier(results, 'iq'))
+  const agilityRank       = tierRank(getDisplayTier(rs, 'agility'))
+  const speedRank         = tierRank(getDisplayTier(rs, 'speed'))
+  const charismaRank      = tierRank(getDisplayTier(rs, 'charisma'))
+  const iqRank            = tierRank(getDisplayTier(rs, 'iq'))
   const potentialRank     = tierRank(potTier)
   const energyRank        = tierRank(elTier)
-  const fightingSkillRank = tierRank(getDisplayTier(results, 'fightingSkill'))
+  const fightingSkillRank = tierRank(getDisplayTier(rs, 'fightingSkill'))
   const armStrRank        = tierRank(armStrTier)
 
-  // HP: durability 55%, strength 20%, energy 15%, potential 10%
-  // Spreading HP across stats means no single stat decides survivability
   const hp = Math.round(
     hpForTier(durTier) * 0.55 +
     hpForTier(strTier) * 0.20 +
@@ -325,35 +331,28 @@ export function buildBattleCharacter(results: SpinResult[], name: string): Battl
     hpForTier(potTier) * 0.10
   )
 
-  // Item grade bonuses — weapon/power/armor quality scales damage and protection
-  const powerLabels  = results.filter(r => r.category === 'power').map(r => r.resultLabel)
-  const weaponLabel  = results.find(r => r.category === 'weapon')?.resultLabel ?? ''
-  const armorLabel   = results.find(r => r.category === 'armor')?.resultLabel  ?? ''
+  const powerLabels  = rs.filter(r => r.category === 'power').map(r => r.resultLabel)
+  const weaponLabel  = rs.find(r => r.category === 'weapon')?.resultLabel ?? ''
+  const armorLabel   = rs.find(r => r.category === 'armor')?.resultLabel  ?? ''
   const topPowerGrade  = highestGrade(powerLabels.map(l => _powerMap.get(l)?.grade))
   const weaponGradeVal = _weaponMap.get(weaponLabel)?.grade ?? 'F'
   const armorGradeVal  = _armorMap.get(armorLabel)?.grade  ?? 'F'
-  // battleBonus 0–70 → multiplier 1.0–1.70 for power/weapon; flat armor fraction per point
   const powerGradeMult  = 1 + ITEM_GRADE_INFO[topPowerGrade].battleBonus  / 100
   const weaponGradeMult = 1 + ITEM_GRADE_INFO[weaponGradeVal].battleBonus / 100
   const armorGradeFlat  = ITEM_GRADE_INFO[armorGradeVal].battleBonus * 0.003
 
-  // Physical damage: fightingSkill (55%), strength (25%), weaponMastery (20%)
-  // Technique and mastery matter more than raw power
-  const strScore = results.find(r => r.category === 'strength')?.score ?? 28
-  const fskScore = results.find(r => r.category === 'fightingSkill')?.score ?? 28
-  const wmScore  = results.find(r => r.category === 'weaponMastery')?.score ?? 28
+  const strScore = rs.find(r => r.category === 'strength')?.score ?? 28
+  const fskScore = rs.find(r => r.category === 'fightingSkill')?.score ?? 28
+  const wmScore  = rs.find(r => r.category === 'weaponMastery')?.score ?? 28
   const physDamageTier = extendedTierFromScore(Math.round(strScore * 0.25 + fskScore * 0.55 + wmScore * 0.20))
   const physicalDamage = Math.round(hpForTier(physDamageTier) / 2 * weaponGradeMult)
 
-  // Power damage: blended score from power mastery (60%), energy level (40%)
-  const pmScore = results.find(r => r.category === 'powerMastery')?.score ?? 28
-  const elScore = results.find(r => r.category === 'energyLevel')?.score ?? 28
+  const pmScore = rs.find(r => r.category === 'powerMastery')?.score ?? 28
+  const elScore = rs.find(r => r.category === 'energyLevel')?.score ?? 28
   const pwrDamageTier = extendedTierFromScore(Math.round(pmScore * 0.60 + elScore * 0.40))
   const powerDamage = Math.round(hpForTier(pwrDamageTier) / 2 * powerGradeMult)
 
-  // Armor: armorStrength rank → base fraction, modulated by armor type + armor grade
-  // Cap lowered to 0.62 — even the heaviest armor doesn't make you immune
-  const armorTypeLabel = results.find(r => r.category === 'armorType')?.resultLabel ?? 'None'
+  const armorTypeLabel = rs.find(r => r.category === 'armorType')?.resultLabel ?? 'None'
   const baseArmor = 0.05 + (armStrRank / (TIER_THRESHOLDS.length - 1)) * 0.45
   const ARMOR_TYPE_MULT: Record<string, number> = {
     'None': 0, 'Helmet Only': 0.40, 'Half-Suit': 0.70,
@@ -361,13 +360,13 @@ export function buildBattleCharacter(results: SpinResult[], name: string): Battl
   }
   const armorReduction = Math.min(0.62, baseArmor * (ARMOR_TYPE_MULT[armorTypeLabel] ?? 1.0) + armorGradeFlat)
 
-  const weaponTypeLabel = results.find(r => r.category === 'weaponType')?.resultLabel ?? 'Melee'
+  const weaponTypeLabel = rs.find(r => r.category === 'weaponType')?.resultLabel ?? 'Melee'
 
   const toTag = (r: SpinResult) => detectEffectTag(r.resultLabel)
-  const weaponEnchantTags = results
+  const weaponEnchantTags = rs
     .filter(r => r.category === 'weaponEnchantment')
     .map(toTag).filter((t): t is string => t !== null)
-  const armorEnchantTags = results
+  const armorEnchantTags = rs
     .filter(r => r.category === 'armorEnchantment')
     .map(toTag).filter((t): t is string => t !== null)
 
@@ -377,11 +376,11 @@ export function buildBattleCharacter(results: SpinResult[], name: string): Battl
   const initiative     = speedRank * 0.7 + agilityRank * 0.3
 
   const moves: BattleMove[] = []
-  const powers    = results.filter(r => r.category === 'power').slice(0, 4)
-  const weapons   = results.filter(r =>
+  const powers    = rs.filter(r => r.category === 'power').slice(0, 4)
+  const weapons   = rs.filter(r =>
     r.category === 'weapon' && !r.resultLabel.includes('No Weapon') && !r.resultLabel.includes('Unarmed')
   ).slice(0, 2)
-  const abilities = results.filter(r =>
+  const abilities = rs.filter(r =>
     r.category === 'racialAbility' || r.category === 'archetypeAbility'
   ).slice(0, 2)
 
@@ -391,9 +390,9 @@ export function buildBattleCharacter(results: SpinResult[], name: string): Battl
   if (moves.length === 0)    moves.push({ name: 'Desperate Strike', type: 'physical', effectTag: null, behavior: 'attack' })
 
   return {
-    name: name.trim() || (results.find(r => r.category === 'race')?.resultLabel ?? 'Unknown'),
-    raceLabel:      results.find(r => r.category === 'race')?.resultLabel      ?? 'Unknown',
-    archetypeLabel: results.find(r => r.category === 'archetype')?.resultLabel ?? 'Unknown',
+    name: name.trim() || (rs.find(r => r.category === 'race')?.resultLabel ?? 'Unknown'),
+    raceLabel:      rs.find(r => r.category === 'race')?.resultLabel      ?? 'Unknown',
+    archetypeLabel: rs.find(r => r.category === 'archetype')?.resultLabel ?? 'Unknown',
     hp, maxHp: hp,
     physicalDamage, powerDamage,
     armorReduction, armorType: armorTypeLabel, weaponType: weaponTypeLabel,
