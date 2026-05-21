@@ -121,7 +121,7 @@ export const STAT_CRYSTAL_BOOST: Record<StatCrystalType, number> = {
 
 /** Stats that can be boosted via stat crystals. */
 export const BOOSTABLE_STATS = [
-  'strength', 'durability', 'agility', 'speed', 'fightingSkill',
+  'strength', 'durability', 'agility', 'speed', 'fightingSkill', 'iq',
   'energyLevel', 'powerMastery', 'weaponMastery', 'potential', 'armorStrength',
   'charisma',
 ] as const
@@ -129,9 +129,9 @@ export type BoostableStat = typeof BOOSTABLE_STATS[number]
 
 export const BOOSTABLE_STAT_LABELS: Record<BoostableStat, string> = {
   strength: 'Strength', durability: 'Durability', agility: 'Agility', speed: 'Speed',
-  fightingSkill: 'Fighting Skill', energyLevel: 'Energy Level', powerMastery: 'Power Mastery',
-  weaponMastery: 'Weapon Mastery', potential: 'Potential', armorStrength: 'Armor Strength',
-  charisma: 'Charisma',
+  fightingSkill: 'Fighting Skill', iq: 'IQ', energyLevel: 'Energy Level',
+  powerMastery: 'Power Mastery', weaponMastery: 'Weapon Mastery',
+  potential: 'Potential', armorStrength: 'Armor Strength', charisma: 'Charisma',
 }
 
 /** An item obtained by opening a power/weapon/armor crystal. */
