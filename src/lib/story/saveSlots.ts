@@ -8,6 +8,9 @@ import { WORLD_GRADES, BATTLES_PER_WORLD, getPlayerLevelFromWorlds } from './wor
 import { scoreTier, computeOverallScore, extendedTierFromScore, boostedTier } from '../game/scoreTier'
 import type { TierGrade } from '../game/scoreTier'
 import type { SpinResult } from '../session/types'
+import { weapons } from '../content/weapons'
+import { armors } from '../content/armors'
+import { powers } from '../content/powers'
 
 export type SlotId = 1 | 2 | 3 | 4
 
@@ -75,6 +78,7 @@ export interface OpenedItem {
   id: string
   grade: CrystalGrade
   name: string
+  element?: string
 }
 
 export interface GradedCrystalCounts {
@@ -86,43 +90,22 @@ function freshGradedCrystals(): GradedCrystalCounts {
   return { F: 0, E: 0, D: 0, C: 0, B: 0, A: 0, S: 0, SS: 0, SSS: 0, God: 0 }
 }
 
-const ITEM_NAME_POOL: Record<'weapon' | 'armor' | 'power', Record<CrystalGrade, string[]>> = {
-  weapon: {
-    F:   ['Iron Sword', 'Rusty Dagger', 'Wooden Club'],
-    E:   ['Steel Blade', 'Bronze Axe', 'Hunting Bow'],
-    D:   ['Shadow Blade', 'Enchanted Staff', 'Silver Spear'],
-    C:   ['Crystal Sword', 'Dragon Lance', 'Soul Scythe'],
-    B:   ['Void Edge', 'Phantom Blade', 'Thunder Spear'],
-    A:   ['Celestial Sword', 'Doom Blade', 'Storm Fang'],
-    S:   ['Godslayer Blade', 'Eternal Edge', 'Chaos Sword'],
-    SS:  ['Infinity Blade', 'Void Drinker', 'Reality Shard'],
-    SSS: ['Absolute Edge', 'Primordial Fang', 'Universal Blade'],
-    God: ["God's Wrath", 'Fate Blade', 'Cosmos Edge'],
-  },
-  armor: {
-    F:   ['Leather Armor', 'Cloth Robe', 'Wooden Shield'],
-    E:   ['Chainmail', 'Iron Vest', 'Bronze Guard'],
-    D:   ['Shadow Cloak', 'Enchanted Robe', 'Silver Plate'],
-    C:   ['Crystal Mail', 'Dragon Scale Vest', 'Spectral Guard'],
-    B:   ['Void Plate', 'Phantom Shroud', 'Thunder Mantle'],
-    A:   ['Celestial Mail', 'Doom Plate', 'Storm Shield'],
-    S:   ['Godwall Plate', 'Eternal Guard', 'Chaos Mail'],
-    SS:  ['Infinity Shell', 'Void Barrier', 'Reality Plate'],
-    SSS: ['Absolute Fortress', 'Primordial Shell', 'Universal Guard'],
-    God: ["God's Mantle", 'Fate Armor', 'Cosmos Shield'],
-  },
-  power: {
-    F:   ['Shadow Bolt', 'Fire Spark', 'Stone Fist'],
-    E:   ['Dark Wave', 'Flame Arrow', 'Wind Slash'],
-    D:   ['Shadow Burst', 'Inferno Strike', 'Storm Fist'],
-    C:   ['Void Pulse', 'Dragon Flame', 'Crystal Nova'],
-    B:   ['Phantom Storm', 'Shadow Realm', 'Thunder God'],
-    A:   ['Celestial Strike', 'Reality Warp', 'Chaos Surge'],
-    S:   ['Godly Wrath', 'Eternal Flame', 'Void Collapse'],
-    SS:  ['Infinity Blast', 'Reality Erasure', 'Absolute Zero'],
-    SSS: ['Universal Destruction', 'Primordial Flame', 'Absolute Strike'],
-    God: ['Omnipotence Surge', 'Existence Erasure', 'Conceptual Destruction'],
-  },
+/** Picks a random item from the real content pool for the given type and grade. */
+function pickCrystalItem(
+  type: 'weapon' | 'armor' | 'power',
+  grade: CrystalGrade,
+): { name: string; element?: string } {
+  const pool = (type === 'weapon' ? weapons : type === 'armor' ? armors : powers)
+    .filter(item => item.grade === grade)
+  if (pool.length === 0) return { name: `${grade} ${type.charAt(0).toUpperCase() + type.slice(1)}` }
+  const totalWeight = pool.reduce((s, item) => s + (item.weight ?? 1), 0)
+  let roll = Math.random() * totalWeight
+  for (const item of pool) {
+    roll -= item.weight ?? 1
+    if (roll <= 0) return { name: item.label, element: item.element }
+  }
+  const last = pool[pool.length - 1]
+  return { name: last.label, element: last.element }
 }
 
 export interface StoryInventory {
@@ -628,30 +611,33 @@ export function addTeamXp(slot: StorySaveSlot, characterIds: string[], totalXp: 
 }
 
 /**
- * Opens a graded power/weapon/armor crystal: consumes one crystal, generates a named item,
- * and places it in the appropriate opened items list.
+ * Opens a graded power/weapon/armor crystal: consumes one crystal, picks a real item
+ * from the content pool, and places it in the appropriate opened items list.
+ * Returns `{ slot, item }` on success or `'no_crystal'` if none available.
  */
 export function openCrystal(
   slot: StorySaveSlot,
   type: 'weapon' | 'armor' | 'power',
   grade: CrystalGrade,
-): StorySaveSlot | 'no_crystal' {
+): { slot: StorySaveSlot; item: OpenedItem } | 'no_crystal' {
   const key = `${type}Crystals` as 'weaponCrystals' | 'armorCrystals' | 'powerCrystals'
   const crystals = slot.inventory[key] as GradedCrystalCounts
   if ((crystals[grade] ?? 0) <= 0) return 'no_crystal'
 
-  const pool = ITEM_NAME_POOL[type][grade]
-  const name = pool[Math.floor(Math.random() * pool.length)]
-  const item: OpenedItem = { id: crypto.randomUUID(), grade, name }
+  const picked = pickCrystalItem(type, grade)
+  const item: OpenedItem = { id: crypto.randomUUID(), grade, name: picked.name, element: picked.element }
   const listKey = type === 'weapon' ? 'openedWeapons' : type === 'armor' ? 'openedArmors' : 'openedPowers'
 
   return {
-    ...slot,
-    inventory: {
-      ...slot.inventory,
-      [key]: { ...crystals, [grade]: crystals[grade] - 1 },
-      [listKey]: [...slot.inventory[listKey], item],
+    slot: {
+      ...slot,
+      inventory: {
+        ...slot.inventory,
+        [key]: { ...crystals, [grade]: crystals[grade] - 1 },
+        [listKey]: [...slot.inventory[listKey], item],
+      },
     },
+    item,
   }
 }
 

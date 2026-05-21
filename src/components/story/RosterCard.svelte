@@ -64,6 +64,30 @@
     {entry.archetype}
   </p>
 
+  <!-- Equipped gear indicator -->
+  {#if (entry.equippedWeapons?.length ?? 0) + (entry.equippedArmors?.length ?? 0) + (entry.equippedPowers?.length ?? 0) > 0}
+    <div class="flex gap-1 flex-wrap mt-0.5">
+      {#if (entry.equippedWeapons?.length ?? 0) > 0}
+        <span class="font-mono text-[9px] px-1.5 py-0.5 rounded"
+          style="background: rgba(129,140,248,0.12); border: 1px solid rgba(129,140,248,0.25); color: #818cf8;">
+          ⚔ ×{entry.equippedWeapons.length}
+        </span>
+      {/if}
+      {#if (entry.equippedArmors?.length ?? 0) > 0}
+        <span class="font-mono text-[9px] px-1.5 py-0.5 rounded"
+          style="background: rgba(45,212,191,0.12); border: 1px solid rgba(45,212,191,0.25); color: #2dd4bf;">
+          🛡 ×{entry.equippedArmors.length}
+        </span>
+      {/if}
+      {#if (entry.equippedPowers?.length ?? 0) > 0}
+        <span class="font-mono text-[9px] px-1.5 py-0.5 rounded"
+          style="background: rgba(251,146,60,0.12); border: 1px solid rgba(251,146,60,0.25); color: #fb923c;">
+          ⚡ ×{entry.equippedPowers.length}
+        </span>
+      {/if}
+    </div>
+  {/if}
+
   <!-- Sell button -->
   <button
     class="metal-stamp-crimson w-full rounded text-sm font-bold font-mono"

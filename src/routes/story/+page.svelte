@@ -380,17 +380,62 @@
     F:'#6b7280', E:'#78716c', D:'#a3a3a3', C:'#4ade80', B:'#60a5fa',
     A:'#a78bfa', S:'#f59e0b', SS:'#f97316', SSS:'#ef4444', God:'#ffd700',
   }
+  const CRYSTAL_GRADE_ORDER: Record<string, number> = {
+    F:0, E:1, D:2, C:3, B:4, A:5, S:6, SS:7, SSS:8, God:9
+  }
 
   // ── Inventory tabs ─────────────────────────────────────────────────────────
   type InvTab = 'crystals' | 'weapons' | 'armor' | 'powers'
   let invTab = $state<InvTab>('crystals')
+  let invItemSortDesc = $state(true)  // true = highest grade first
 
   let openedWeapons = $derived(currentSlot?.inventory?.openedWeapons ?? [])
   let openedArmors  = $derived(currentSlot?.inventory?.openedArmors  ?? [])
   let openedPowers  = $derived(currentSlot?.inventory?.openedPowers  ?? [])
 
+  // ── Stacked item view ──────────────────────────────────────────────────────
+  interface StackedItem { name: string; grade: CrystalGrade; element?: string; count: number; ids: string[] }
+
+  function stackItems(items: OpenedItem[]): StackedItem[] {
+    const map = new Map<string, StackedItem>()
+    for (const item of items) {
+      const key = `${item.grade}||${item.name}`
+      const existing = map.get(key)
+      if (existing) { existing.count++; existing.ids.push(item.id) }
+      else map.set(key, { name: item.name, grade: item.grade, element: item.element, count: 1, ids: [item.id] })
+    }
+    return [...map.values()]
+  }
+
+  function sortStacked(items: StackedItem[]): StackedItem[] {
+    return [...items].sort((a, b) => {
+      const diff = (CRYSTAL_GRADE_ORDER[b.grade] ?? 0) - (CRYSTAL_GRADE_ORDER[a.grade] ?? 0)
+      if (diff !== 0) return invItemSortDesc ? diff : -diff
+      return a.name.localeCompare(b.name)
+    })
+  }
+
+  let stackedWeapons = $derived(sortStacked(stackItems(openedWeapons)))
+  let stackedArmors  = $derived(sortStacked(stackItems(openedArmors)))
+  let stackedPowers  = $derived(sortStacked(stackItems(openedPowers)))
+
+  function equipFirstOfStack(type: 'weapon' | 'armor' | 'power', stack: StackedItem) {
+    const list = type === 'weapon' ? openedWeapons : type === 'armor' ? openedArmors : openedPowers
+    const item = list.find(i => i.id === stack.ids[0])
+    if (item) openEquipModal(type, item)
+  }
+
   // ── Open crystal ───────────────────────────────────────────────────────────
   let openCrystalError = $state<string | null>(null)
+
+  type CrystalAnimPhase = 'pulse' | 'crack' | 'reveal'
+  interface CrystalAnim {
+    type: 'weapon' | 'armor' | 'power'
+    grade: CrystalGrade
+    phase: CrystalAnimPhase
+    item: OpenedItem
+  }
+  let crystalAnim = $state<CrystalAnim | null>(null)
 
   function handleOpenCrystal(type: 'weapon' | 'armor' | 'power', grade: CrystalGrade) {
     if (!currentSlot) return
@@ -400,7 +445,18 @@
       setTimeout(() => { openCrystalError = null }, 2500)
       return
     }
-    currentSlot = result
+    currentSlot = result.slot
+    crystalAnim = { type, grade, phase: 'pulse', item: result.item }
+    setTimeout(() => {
+      crystalAnim = crystalAnim ? { ...crystalAnim, phase: 'crack' } : null
+      setTimeout(() => {
+        crystalAnim = crystalAnim ? { ...crystalAnim, phase: 'reveal' } : null
+      }, 450)
+    }, 1500)
+  }
+
+  function dismissCrystalAnim() {
+    crystalAnim = null
   }
 
   // ── Equip opened item modal ────────────────────────────────────────────────
@@ -1514,26 +1570,43 @@
 
     <!-- ── Weapons tab ── -->
     {:else if invTab === 'weapons'}
-      {#if openedWeapons.length === 0}
+      {#if stackedWeapons.length === 0}
         <div class="text-center pt-12">
           <span class="material-symbols-outlined" style="font-size: 40px; color: var(--color-outline); font-variation-settings: 'FILL' 1;">swords</span>
           <p class="font-mono text-sm mt-3" style="color: var(--color-outline);">No weapons yet.</p>
           <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Open Weapon Crystals from the Crystals tab.</p>
         </div>
       {:else}
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-mono text-xs" style="color: var(--color-outline);">{openedWeapons.length} total · {stackedWeapons.length} unique</span>
+          <button onclick={() => invItemSortDesc = !invItemSortDesc}
+            class="font-mono text-xs px-2 py-1 rounded flex items-center gap-1"
+            style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--color-outline); cursor: pointer;">
+            Grade {invItemSortDesc ? '↓' : '↑'}
+          </button>
+        </div>
         <div class="flex flex-col gap-2">
-          {#each openedWeapons as item (item.id)}
+          {#each stackedWeapons as stack (stack.grade + '||' + stack.name)}
             <div class="obsidian-slab rounded-xl px-4 py-3 flex items-center gap-3"
-              style="border: 1px solid {CRYSTAL_GRADE_COLORS[item.grade]}22;">
+              style="border: 1px solid {CRYSTAL_GRADE_COLORS[stack.grade]}22;">
               <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
                 style="background: rgba(129,140,248,0.1); border: 1px solid rgba(129,140,248,0.25);">
                 <span class="material-symbols-outlined" style="font-size: 16px; color: #818cf8; font-variation-settings: 'FILL' 1;">swords</span>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{item.name}</p>
-                <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[item.grade]};">{item.grade} Grade</span>
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{stack.name}</p>
+                  {#if stack.count > 1}
+                    <span class="font-mono text-xs font-bold flex-shrink-0 px-1.5 py-0.5 rounded-full"
+                      style="background: rgba(129,140,248,0.15); border: 1px solid rgba(129,140,248,0.3); color: #818cf8;">×{stack.count}</span>
+                  {/if}
+                </div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[stack.grade]};">{stack.grade}</span>
+                  {#if stack.element}<span class="font-mono text-xs" style="color: var(--color-outline);">· {stack.element}</span>{/if}
+                </div>
               </div>
-              <button onclick={() => openEquipModal('weapon', item)}
+              <button onclick={() => equipFirstOfStack('weapon', stack)}
                 class="metal-stamp-gold font-mono text-xs px-3 py-1.5 rounded-lg flex-shrink-0">
                 Equip
               </button>
@@ -1544,26 +1617,43 @@
 
     <!-- ── Armor tab ── -->
     {:else if invTab === 'armor'}
-      {#if openedArmors.length === 0}
+      {#if stackedArmors.length === 0}
         <div class="text-center pt-12">
           <span class="material-symbols-outlined" style="font-size: 40px; color: var(--color-outline); font-variation-settings: 'FILL' 1;">shield</span>
           <p class="font-mono text-sm mt-3" style="color: var(--color-outline);">No armor yet.</p>
           <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Open Armor Crystals from the Crystals tab.</p>
         </div>
       {:else}
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-mono text-xs" style="color: var(--color-outline);">{openedArmors.length} total · {stackedArmors.length} unique</span>
+          <button onclick={() => invItemSortDesc = !invItemSortDesc}
+            class="font-mono text-xs px-2 py-1 rounded flex items-center gap-1"
+            style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--color-outline); cursor: pointer;">
+            Grade {invItemSortDesc ? '↓' : '↑'}
+          </button>
+        </div>
         <div class="flex flex-col gap-2">
-          {#each openedArmors as item (item.id)}
+          {#each stackedArmors as stack (stack.grade + '||' + stack.name)}
             <div class="obsidian-slab rounded-xl px-4 py-3 flex items-center gap-3"
-              style="border: 1px solid {CRYSTAL_GRADE_COLORS[item.grade]}22;">
+              style="border: 1px solid {CRYSTAL_GRADE_COLORS[stack.grade]}22;">
               <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
                 style="background: rgba(45,212,191,0.1); border: 1px solid rgba(45,212,191,0.25);">
                 <span class="material-symbols-outlined" style="font-size: 16px; color: #2dd4bf; font-variation-settings: 'FILL' 1;">shield</span>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{item.name}</p>
-                <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[item.grade]};">{item.grade} Grade</span>
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{stack.name}</p>
+                  {#if stack.count > 1}
+                    <span class="font-mono text-xs font-bold flex-shrink-0 px-1.5 py-0.5 rounded-full"
+                      style="background: rgba(45,212,191,0.15); border: 1px solid rgba(45,212,191,0.3); color: #2dd4bf;">×{stack.count}</span>
+                  {/if}
+                </div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[stack.grade]};">{stack.grade}</span>
+                  {#if stack.element}<span class="font-mono text-xs" style="color: var(--color-outline);">· {stack.element}</span>{/if}
+                </div>
               </div>
-              <button onclick={() => openEquipModal('armor', item)}
+              <button onclick={() => equipFirstOfStack('armor', stack)}
                 class="metal-stamp-gold font-mono text-xs px-3 py-1.5 rounded-lg flex-shrink-0">
                 Equip
               </button>
@@ -1574,26 +1664,43 @@
 
     <!-- ── Powers tab ── -->
     {:else if invTab === 'powers'}
-      {#if openedPowers.length === 0}
+      {#if stackedPowers.length === 0}
         <div class="text-center pt-12">
           <span class="material-symbols-outlined" style="font-size: 40px; color: var(--color-outline); font-variation-settings: 'FILL' 1;">flash_on</span>
           <p class="font-mono text-sm mt-3" style="color: var(--color-outline);">No powers yet.</p>
           <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Open Power Crystals from the Crystals tab.</p>
         </div>
       {:else}
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-mono text-xs" style="color: var(--color-outline);">{openedPowers.length} total · {stackedPowers.length} unique</span>
+          <button onclick={() => invItemSortDesc = !invItemSortDesc}
+            class="font-mono text-xs px-2 py-1 rounded flex items-center gap-1"
+            style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--color-outline); cursor: pointer;">
+            Grade {invItemSortDesc ? '↓' : '↑'}
+          </button>
+        </div>
         <div class="flex flex-col gap-2">
-          {#each openedPowers as item (item.id)}
+          {#each stackedPowers as stack (stack.grade + '||' + stack.name)}
             <div class="obsidian-slab rounded-xl px-4 py-3 flex items-center gap-3"
-              style="border: 1px solid {CRYSTAL_GRADE_COLORS[item.grade]}22;">
+              style="border: 1px solid {CRYSTAL_GRADE_COLORS[stack.grade]}22;">
               <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
                 style="background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.25);">
                 <span class="material-symbols-outlined" style="font-size: 16px; color: #fb923c; font-variation-settings: 'FILL' 1;">flash_on</span>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{item.name}</p>
-                <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[item.grade]};">{item.grade} Grade</span>
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <p class="font-bold text-sm truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{stack.name}</p>
+                  {#if stack.count > 1}
+                    <span class="font-mono text-xs font-bold flex-shrink-0 px-1.5 py-0.5 rounded-full"
+                      style="background: rgba(251,146,60,0.15); border: 1px solid rgba(251,146,60,0.3); color: #fb923c;">×{stack.count}</span>
+                  {/if}
+                </div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="font-mono text-xs font-bold" style="color: {CRYSTAL_GRADE_COLORS[stack.grade]};">{stack.grade}</span>
+                  {#if stack.element}<span class="font-mono text-xs" style="color: var(--color-outline);">· {stack.element}</span>{/if}
+                </div>
               </div>
-              <button onclick={() => openEquipModal('power', item)}
+              <button onclick={() => equipFirstOfStack('power', stack)}
                 class="metal-stamp-gold font-mono text-xs px-3 py-1.5 rounded-lg flex-shrink-0">
                 Equip
               </button>
@@ -1788,6 +1895,90 @@
   />
 {/if}
 
+<!-- ── Crystal opening animation overlay ─────────────────────────────────────── -->
+{#if crystalAnim}
+  {@const ca = crystalAnim}
+  {@const gradeColor = CRYSTAL_GRADE_COLORS[ca.grade] ?? '#ffffff'}
+  {@const typeColor = ca.type === 'power' ? '#fb923c' : ca.type === 'weapon' ? '#818cf8' : '#2dd4bf'}
+  {@const typeIcon = ca.type === 'power' ? 'flash_on' : ca.type === 'weapon' ? 'swords' : 'shield'}
+  <div class="fixed inset-0 z-[70] flex items-center justify-center"
+    style="background: rgba(0,0,0,0.92); backdrop-filter: blur(20px);"
+    onclick={ca.phase === 'reveal' ? dismissCrystalAnim : undefined}
+    role="dialog" aria-modal="true">
+
+    {#if ca.phase === 'pulse'}
+      <!-- Pulsing crystal orb -->
+      <div class="flex flex-col items-center gap-6">
+        <div class="crystal-pulse-orb"
+          style="--orb-color: {gradeColor}; --type-color: {typeColor};">
+          <div class="crystal-orb-ring"></div>
+          <div class="crystal-orb-ring crystal-orb-ring-2"></div>
+          <div class="crystal-orb-core">
+            <span class="material-symbols-outlined" style="font-size: 48px; color: {gradeColor}; font-variation-settings: 'FILL' 1;">{typeIcon}</span>
+          </div>
+        </div>
+        <p class="font-mono text-sm tracking-widest uppercase" style="color: {gradeColor}; opacity: 0.8;">{ca.grade} Crystal</p>
+      </div>
+
+    {:else if ca.phase === 'crack'}
+      <!-- Crack/shatter flash -->
+      <div class="crystal-crack-flash"
+        style="--orb-color: {gradeColor};">
+        <div class="crystal-crack-shards">
+          {#each [0,1,2,3,4,5,6,7] as i}
+            <div class="crystal-shard" style="--i: {i}; --orb-color: {gradeColor};"></div>
+          {/each}
+        </div>
+        <div class="crystal-crack-burst" style="--orb-color: {gradeColor};"></div>
+      </div>
+
+    {:else}
+      <!-- Reveal -->
+      <div class="crystal-reveal flex flex-col items-center gap-0 max-w-xs w-full mx-4"
+        onclick={(e) => e.stopPropagation()}>
+        <!-- Grade glow halo -->
+        <div class="relative flex items-center justify-center mb-6">
+          <div style="position:absolute; width:120px; height:120px; border-radius:50%; background: radial-gradient(circle, {gradeColor}30 0%, transparent 70%); filter: blur(12px);"></div>
+          <div class="w-20 h-20 rounded-2xl flex items-center justify-center"
+            style="background: {typeColor}18; border: 2px solid {typeColor}50; position: relative; z-index:1;">
+            <span class="material-symbols-outlined" style="font-size: 40px; color: {typeColor}; font-variation-settings: 'FILL' 1;">{typeIcon}</span>
+          </div>
+        </div>
+
+        <!-- Grade badge -->
+        <div class="crystal-grade-badge font-mono text-xs font-bold px-3 py-1 rounded-full mb-3"
+          style="background: {gradeColor}20; border: 1px solid {gradeColor}60; color: {gradeColor}; letter-spacing: 0.15em;">
+          {ca.grade} Grade
+        </div>
+
+        <!-- Item name -->
+        <h2 class="text-center font-bold mb-2 px-4"
+          style="font-family: var(--font-cinzel); font-size: 22px; color: var(--color-on-surface); line-height: 1.3;">
+          {ca.item.name}
+        </h2>
+
+        <!-- Element badge -->
+        {#if ca.item.element}
+          <span class="font-mono text-xs px-2.5 py-1 rounded-full mb-6"
+            style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: var(--color-outline);">
+            {ca.item.element}
+          </span>
+        {:else}
+          <div class="mb-6"></div>
+        {/if}
+
+        <!-- Dismiss -->
+        <button onclick={dismissCrystalAnim}
+          class="w-full py-3 rounded-xl font-bold font-mono text-sm"
+          style="background: {gradeColor}18; border: 1px solid {gradeColor}50; color: {gradeColor}; cursor: pointer; transition: background 120ms; letter-spacing: 0.05em;">
+          Added to Inventory
+        </button>
+        <p class="font-mono text-xs mt-3" style="color: var(--color-outline); opacity: 0.5;">Tap anywhere to dismiss</p>
+      </div>
+    {/if}
+  </div>
+{/if}
+
 <!-- ── Delete slot confirmation ───────────────────────────────────────────────── -->
 {#if deleteConfirmId !== null}
   <div
@@ -1821,3 +2012,123 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* ── Crystal opening animation ─────────────────────────────────────── */
+
+  /* Pulse phase — pulsing orb */
+  .crystal-pulse-orb {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .crystal-orb-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid var(--orb-color);
+    opacity: 0.5;
+    animation: crystalRingPulse 1.2s ease-in-out infinite;
+  }
+
+  .crystal-orb-ring-2 {
+    inset: -20px;
+    opacity: 0.2;
+    animation-delay: 0.4s;
+  }
+
+  .crystal-orb-core {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, var(--orb-color)40, var(--orb-color)10 60%, transparent);
+    border: 2px solid var(--orb-color);
+    box-shadow: 0 0 30px var(--orb-color)60, 0 0 60px var(--orb-color)30, inset 0 0 20px var(--orb-color)20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: crystalCoreFloat 1.2s ease-in-out infinite;
+  }
+
+  @keyframes crystalRingPulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50%       { transform: scale(1.15); opacity: 0.15; }
+  }
+
+  @keyframes crystalCoreFloat {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 30px var(--orb-color)60, 0 0 60px var(--orb-color)30; }
+    50%       { transform: scale(1.06); box-shadow: 0 0 50px var(--orb-color)80, 0 0 90px var(--orb-color)40; }
+  }
+
+  /* Crack phase — shatter burst */
+  .crystal-crack-flash {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .crystal-crack-burst {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, white 0%, var(--orb-color) 30%, transparent 70%);
+    animation: crystalBurst 0.45s ease-out forwards;
+  }
+
+  .crystal-crack-shards {
+    position: absolute;
+    inset: 0;
+  }
+
+  .crystal-shard {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 18px;
+    background: linear-gradient(to bottom, white, var(--orb-color));
+    border-radius: 2px;
+    transform-origin: 50% 100%;
+    transform: rotate(calc(var(--i) * 45deg)) translateY(-60px);
+    animation: crystalShardFly 0.45s ease-out forwards;
+    animation-delay: calc(var(--i) * 10ms);
+  }
+
+  @keyframes crystalBurst {
+    0%   { opacity: 1; transform: scale(0.2); }
+    40%  { opacity: 1; transform: scale(1.4); }
+    100% { opacity: 0; transform: scale(2); }
+  }
+
+  @keyframes crystalShardFly {
+    0%   { opacity: 1; transform: rotate(calc(var(--i) * 45deg)) translateY(-10px) scaleY(1); }
+    100% { opacity: 0; transform: rotate(calc(var(--i) * 45deg)) translateY(-90px) scaleY(0.4); }
+  }
+
+  /* Reveal phase — slide up */
+  .crystal-reveal {
+    animation: crystalRevealIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes crystalRevealIn {
+    from { opacity: 0; transform: translateY(32px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .crystal-grade-badge {
+    animation: crystalBadgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+  }
+
+  @keyframes crystalBadgePop {
+    from { opacity: 0; transform: scale(0.7); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+</style>

@@ -92,6 +92,8 @@
   type Phase = 'pick' | 'intro' | 'fight' | 'result'
   let phase        = $state<Phase>('pick')
   let selectedTeam = $state<StoryTeam | null>(null)
+  // Tracks char IDs that died mid-run; applied on Next Battle to keep them dead
+  let carryOverDeadIds = $state(new Set<string>())
 
   // Wave + simultaneous team combat
   let allWaves  = $state<Enemy[][]>([])
@@ -306,8 +308,17 @@
     waveIdx  = 0
     allT2Names = new Set()
 
-    // Build player team at full HP
-    t1Chars  = teamMembers.map(m => buildBattleCharacter(m.spins, m.name))
+    // Build player team — dead chars from a previous Next Battle carry stay at 0 HP
+    const dead = carryOverDeadIds
+    carryOverDeadIds = new Set()
+    t1Chars  = teamMembers.map(m => {
+      const bc = buildBattleCharacter(m.spins, m.name, {
+        weapons: m.equippedWeapons ?? [],
+        armors:  m.equippedArmors  ?? [],
+        powers:  m.equippedPowers  ?? [],
+      })
+      return dead.has(m.id) ? { ...bc, hp: 0 } : bc
+    })
     t1DispHp = t1Chars.map(c => c.hp)
 
     // Drops accumulate per-kill during playRound — reset counter here
@@ -352,6 +363,10 @@
     if (!playerWon || !lastDrops) return
     const updated = buildUpdatedSlot()
     onNextBattle?.(updated)
+    // Save which characters died before resetting state
+    const dead = new Set<string>()
+    teamMembers.forEach((m, i) => { if ((t1DispHp[i] ?? 0) <= 0) dead.add(m.id) })
+    carryOverDeadIds = dead
     // Stay in battle view, restart with same team
     resetBattleState()
     phase = 'pick'

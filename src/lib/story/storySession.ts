@@ -36,7 +36,7 @@ export function createStorySession(): StorySessionState {
     sessionId: crypto.randomUUID(),
     startedAt: new Date().toISOString(),
     completedSpins: [],
-    spinQueue: buildInitialQueue().filter(def => def.category !== 'redemptionSpin'),
+    spinQueue: buildInitialQueue(),
     currentSpinIndex: 0,
   }
 }

@@ -30,6 +30,12 @@
     getAbilityTypeColor, getAbilityTypeIcon, ABILITY_BATTLE_EFFECT,
     type AbilityType,
   } from '$lib/content/descriptions'
+  import { weaponMasteryLabels } from '$lib/content/weapon-mastery-labels'
+  import { armorStrengthLabels } from '$lib/content/armor-strength-labels'
+  import { titles } from '$lib/content/titles'
+  import { backstories } from '$lib/content/backstories'
+  import { redemptionProbability } from '$lib/game/redemption'
+  import { computeOverallScore } from '$lib/game/scoreTier'
 
   // ── Category hue map — mirrors main game so wheel colors match ───────────────
   const CATEGORY_HUES: Record<string, number> = {
@@ -61,6 +67,12 @@
     statBonus:          105,
     statPenalty:          0,
     title:               45,
+    redemptionSpin:      90,
+    redemptionOutcome:  160,
+    armorEnchantment:    55,
+    armorType:           28,
+    armor:               32,
+    armorStrength:      216,
   }
 
   // ── Stat tier caps per stage (scores above this are dimmed / unspinnable) ────
@@ -276,14 +288,35 @@
       return (pool ?? getSegmentsForCategory('armor')) as WeightedSegment[]
     }
 
-    // Stat wheels: cap tiers by stage — dim and zero-weight segments above the stage max
+    // Stat wheels: apply racial minimum tier floor + stage max cap
     if (STAT_CATEGORIES.has(currentDef.category)) {
-      const segs = getSegmentsForCategory(currentDef.category as SpinCategory) as (WeightedSegment & { score?: number })[]
-      return segs.map(seg =>
-        (seg.score !== undefined && seg.score > stageMaxStatScore)
-          ? { ...seg, weight: 0, dimmed: true }
-          : seg
-      )
+      const raceResult = results.find(r => r.category === 'race')
+      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const minTierIdx = race?.minStatTier != null ? TIER_ORDER.indexOf(race.minStatTier as import('$lib/game/scoreTier').TierGrade) : -1
+
+      const segs = getSegmentsForCategory(currentDef.category as SpinCategory) as (WeightedSegment & { score?: number; tier?: string })[]
+      return segs
+        .filter(seg => {
+          if (minTierIdx < 0 || !seg.tier) return true
+          const tIdx = TIER_ORDER.indexOf(seg.tier as import('$lib/game/scoreTier').TierGrade)
+          return tIdx < 0 || tIdx >= minTierIdx
+        })
+        .map(seg =>
+          (seg.score !== undefined && seg.score > stageMaxStatScore)
+            ? { ...seg, weight: 0, dimmed: true }
+            : seg
+        )
+    }
+
+    // Redemption spin: weight by current overall score
+    if (currentDef.category === 'redemptionSpin') {
+      const statCats = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','potential','energyLevel']
+      const statScores = Object.fromEntries(statCats.map(cat => [cat, results.find(r => r.category === cat)?.score ?? 0]))
+      const overall = computeOverallScore(statScores)
+      const p = redemptionProbability(overall)
+      const rWeight = Math.max(1, Math.round(p * 100))
+      const nWeight = Math.max(1, 100 - rWeight)
+      return [{ label: 'Redemption', weight: rWeight }, { label: 'No Redemption', weight: nWeight }] as WeightedSegment[]
     }
 
     return getSegmentsForCategory(currentDef.category as SpinCategory)
@@ -469,6 +502,201 @@
               pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType as 'statBonus' | 'statPenalty']
             }
           }
+        }
+      }
+
+      // ── backstory / title: stat bonus grants ─────────────────────────────
+      if (currentDef.category === 'backstory' || currentDef.category === 'title') {
+        const pool = currentDef.category === 'backstory' ? backstories : titles
+        const item = (pool as { label: string; statBonusGrants?: Record<string, string> }[]).find(b => b.label === resultLabel)
+        if (item?.statBonusGrants && Object.keys(item.statBonusGrants).length > 0) {
+          const immediateSlots: SpinDefinition[] = []
+          for (const [stat, bonusType] of Object.entries(item.statBonusGrants)) {
+            const alreadySpun = results.some(r => r.category === stat)
+            if (alreadySpun) {
+              const statName = stat.replace(/([A-Z])/g, ' $1').trim()
+              const capStat = statName.charAt(0).toUpperCase() + statName.slice(1)
+              immediateSlots.push({
+                category: bonusType as 'statBonus' | 'statPenalty',
+                displayName: `${capStat} ${bonusType === 'statBonus' ? 'Bonus' : 'Penalty'}`,
+                targetStat: stat,
+              })
+            } else {
+              pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType as 'statBonus' | 'statPenalty']
+            }
+          }
+          if (immediateSlots.length > 0) queue.splice(currentIndex + 1, 0, ...immediateSlots)
+        }
+      }
+
+      // ── weaponMastery: splice enchantment spins ───────────────────────────
+      if (currentDef.category === 'weaponMastery') {
+        const fl = weaponMasteryLabels.find(s => s.label === resultLabel)
+        const tierIdx    = fl != null ? TIER_ORDER.indexOf(fl.tier) : -1
+        const bMinusIdx  = TIER_ORDER.indexOf('B-' as import('$lib/game/scoreTier').TierGrade)
+        const ssMinusIdx = TIER_ORDER.indexOf('SS-' as import('$lib/game/scoreTier').TierGrade)
+        const zzMinusIdx = TIER_ORDER.indexOf('ZZ-' as import('$lib/game/scoreTier').TierGrade)
+        let enchantsPerWeapon = 0
+        if (tierIdx >= bMinusIdx)  enchantsPerWeapon = 1
+        if (tierIdx >= ssMinusIdx) enchantsPerWeapon = 2
+        if (tierIdx >= zzMinusIdx) enchantsPerWeapon = 3
+        const weaponResults = results.filter(r => r.category === 'weapon' && r.resultLabel !== 'No Weapon (Unarmed)' && r.resultLabel !== 'No Weapon')
+        const totalEnchants = weaponResults.length * enchantsPerWeapon
+        if (totalEnchants > 0) {
+          const enchantSlots: SpinDefinition[] = []
+          let n = 1
+          for (const wr of weaponResults) {
+            const wName = wr.resultLabel.length > 18 ? wr.resultLabel.slice(0, 16) + '…' : wr.resultLabel
+            for (let e = 0; e < enchantsPerWeapon; e++) {
+              enchantSlots.push({
+                category: 'weaponEnchantment' as const,
+                displayName: totalEnchants > 1 ? `Enchantment ${n++} — ${wName}` : 'Weapon Enchantment',
+              })
+            }
+          }
+          queue.splice(currentIndex + 1, 0, ...enchantSlots)
+        }
+      }
+
+      // ── armorStrength: splice enchantment spins ───────────────────────────
+      if (currentDef.category === 'armorStrength') {
+        const fl = armorStrengthLabels.find(s => s.label === resultLabel)
+        const tierIdx    = fl != null ? TIER_ORDER.indexOf(fl.tier) : -1
+        const bMinusIdx  = TIER_ORDER.indexOf('B-' as import('$lib/game/scoreTier').TierGrade)
+        const ssMinusIdx = TIER_ORDER.indexOf('SS-' as import('$lib/game/scoreTier').TierGrade)
+        const zzMinusIdx = TIER_ORDER.indexOf('ZZ-' as import('$lib/game/scoreTier').TierGrade)
+        let enchantsPerArmor = 0
+        if (tierIdx >= bMinusIdx)  enchantsPerArmor = 1
+        if (tierIdx >= ssMinusIdx) enchantsPerArmor = 2
+        if (tierIdx >= zzMinusIdx) enchantsPerArmor = 3
+        const armorResults = results.filter(r => r.category === 'armor' && r.resultLabel !== 'No Armor')
+        const totalArmorEnchants = armorResults.length * enchantsPerArmor
+        if (totalArmorEnchants > 0) {
+          const slots: SpinDefinition[] = []
+          let n = 1
+          for (const ar of armorResults) {
+            const aName = ar.resultLabel.length > 18 ? ar.resultLabel.slice(0, 16) + '…' : ar.resultLabel
+            for (let e = 0; e < enchantsPerArmor; e++) {
+              slots.push({
+                category: 'armorEnchantment' as const,
+                displayName: totalArmorEnchants > 1 ? `Armor Enchant ${n++} — ${aName}` : 'Armor Enchantment',
+              })
+            }
+          }
+          queue.splice(currentIndex + 1, 0, ...slots)
+        }
+      }
+
+      // ── redemptionSpin: splice outcome on win ─────────────────────────────
+      if (currentDef.category === 'redemptionSpin' && resultLabel === 'Redemption') {
+        queue.splice(currentIndex + 1, 0, { category: 'redemptionOutcome' as const, displayName: 'Redemption Outcome' })
+      }
+
+      // ── redemptionOutcome: apply effect ───────────────────────────────────
+      if (currentDef.category === 'redemptionOutcome') {
+        const STAT_CATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','potential','energyLevel','powerMastery','weaponMastery']
+
+        const shiftStat = (cat: string, tiers: number) => {
+          let idx = -1
+          for (let i = results.length - 1; i >= 0; i--) { if (results[i].category === cat) { idx = i; break } }
+          if (idx === -1 || !results[idx].tier) return
+          const { tier: ng, score: ns, displayLabel: ndl } = applyStatShift(results[idx], tiers, cat)
+          const segs = getSegmentsForCategory(cat as SpinCategory)
+          const newLbl = ndl ? results[idx].resultLabel : (segs as { label?: string; tier?: string }[]).find(s => s.tier === ng)?.label ?? results[idx].resultLabel
+          results[idx] = { ...results[idx], tier: ng, score: ns, resultLabel: newLbl, displayLabel: ndl }
+        }
+
+        if (resultLabel === 'All Stats +1 Tier') {
+          for (const cat of STAT_CATS) shiftStat(cat, 1)
+        } else if (resultLabel === 'Demigod Status (Unofficial)') {
+          for (const cat of STAT_CATS) shiftStat(cat, 3)
+        } else if (resultLabel === 'The DM Sighs and Gives You One Thing You Want') {
+          for (const cat of STAT_CATS) shiftStat(cat, 2)
+          queue.splice(currentIndex + 1, 0, { category: 'power' as const, displayName: "DM's Reluctant Gift" })
+        } else if (resultLabel === 'Reroll Your Worst Stat') {
+          const worstStat = STAT_CATS.reduce((worst, cat) => {
+            const r = results.find(r => r.category === cat); const wr = results.find(r => r.category === worst)
+            if (!r) return worst; if (!wr) return cat
+            return (r.score ?? 0) < (wr.score ?? 0) ? cat : worst
+          }, STAT_CATS[0])
+          const worstIdx = results.findIndex(r => r.category === worstStat)
+          if (worstIdx !== -1) results.splice(worstIdx, 1)
+          queue.splice(currentIndex + 1, 0, { category: worstStat as SpinCategory, displayName: `Reroll: ${worstStat.replace(/([A-Z])/g, ' $1').trim().replace(/^\w/, c => c.toUpperCase())}`, isReroll: true })
+        } else if (resultLabel === 'Double Your Best Stat') {
+          const bestStat = STAT_CATS.reduce((best, cat) => {
+            const r = results.find(r => r.category === cat); const br = results.find(r => r.category === best)
+            if (!r) return best; if (!br) return cat
+            return (r.score ?? 0) > (br.score ?? 0) ? cat : best
+          }, STAT_CATS[0])
+          shiftStat(bestStat, 5)
+        } else if (resultLabel === 'God Tier Potential (One Use)') {
+          const potIdx = results.findIndex(r => r.category === 'potential')
+          if (potIdx !== -1) {
+            const segs = getSegmentsForCategory('potential')
+            const godLbl = (segs as { label?: string; tier?: string }[]).find(s => s.tier === 'God')?.label ?? 'God Tier Potential'
+            results[potIdx] = { ...results[potIdx], tier: 'God', score: 100, resultLabel: godLbl }
+          }
+        } else if (resultLabel === 'Free God Tier Strength') {
+          const strIdx = results.findIndex(r => r.category === 'strength')
+          if (strIdx !== -1) {
+            const segs = getSegmentsForCategory('strength')
+            const godLbl = (segs as { label?: string; tier?: string }[]).find(s => s.tier === 'God')?.label ?? 'Lifts Reality Itself'
+            results[strIdx] = { ...results[strIdx], tier: 'God', score: 100, resultLabel: godLbl }
+          }
+        } else if (resultLabel === 'Gain a Bonus Power' || resultLabel === 'Free Power Reroll') {
+          queue.splice(currentIndex + 1, 0, { category: 'power' as const, displayName: 'Redemption Power' })
+        } else if (resultLabel === 'Lose One Weakness') {
+          const weakIdx = results.map((r, i) => ({ r, i })).reverse().find(({ r }) => r.category === 'weakness')?.i ?? -1
+          if (weakIdx !== -1) results.splice(weakIdx, 1)
+        } else if (resultLabel === 'Bonus Archetype Ability') {
+          queue.splice(currentIndex + 1, 0, { category: 'archetypeAbility' as const, displayName: 'Redemption Archetype Ability' })
+        } else if (resultLabel === 'Secret Fourth Racial Ability') {
+          queue.splice(currentIndex + 1, 0, { category: 'racialAbility' as const, displayName: 'Secret Racial Ability' })
+        } else if (resultLabel === 'Plot Armour (Permanent)') {
+          shiftStat('durability', 4)
+        } else if (resultLabel === 'Your Weakness Becomes a Strength (Somehow)') {
+          const weakIdx = results.map((r, i) => ({ r, i })).reverse().find(({ r }) => r.category === 'weakness')?.i ?? -1
+          if (weakIdx !== -1) results.splice(weakIdx, 1)
+          queue.splice(currentIndex + 1, 0, { category: 'archetypeAbility' as const, displayName: 'Strength Born from Weakness' })
+        } else if (resultLabel === 'Immunity to Your Own Weaknesses') {
+          const weakIdxs: number[] = []; results.forEach((r, i) => { if (r.category === 'weakness') weakIdxs.push(i) })
+          for (let i = weakIdxs.length - 1; i >= 0; i--) results.splice(weakIdxs[i], 1)
+        } else if (resultLabel === 'Swap Race Abilities (Narrator Chooses)') {
+          const count = Math.max(1, results.filter(r => r.category === 'racialAbility').length)
+          const raIdxs: number[] = []; results.forEach((r, i) => { if (r.category === 'racialAbility') raIdxs.push(i) })
+          for (let i = raIdxs.length - 1; i >= 0; i--) results.splice(raIdxs[i], 1)
+          usedRacialAbilities = new Set()
+          for (let i = 0; i < count; i++) queue.splice(currentIndex + 1 + i, 0, { category: 'racialAbility' as const, displayName: count > 1 ? `New Racial Ability ${i + 1}` : 'New Racial Ability' })
+        } else if (resultLabel === 'Stat of Your Choice: S Tier') {
+          const worstStat = STAT_CATS.reduce((worst, cat) => {
+            const r = results.find(r => r.category === cat); const wr = results.find(r => r.category === worst)
+            if (!r) return worst; if (!wr) return cat
+            return (r.score ?? 0) < (wr.score ?? 0) ? cat : worst
+          }, STAT_CATS[0])
+          const targetIdx = results.findIndex(r => r.category === worstStat)
+          if (targetIdx !== -1) {
+            const segs = getSegmentsForCategory(worstStat as SpinCategory)
+            const sLbl = (segs as { label?: string; tier?: string }[]).find(s => s.tier === 'S')?.label ?? 'S Tier'
+            results[targetIdx] = { ...results[targetIdx], tier: 'S', score: gradeToScore('S'), resultLabel: sLbl }
+          }
+        } else if (resultLabel === 'Retroactive Legendary Race Upgrade') {
+          queue.splice(currentIndex + 1, 0, { category: 'racialAbility' as const, displayName: 'Legendary Racial Ability' })
+          queue.splice(currentIndex + 2, 0, { category: 'power' as const, displayName: 'Legendary Race Power' })
+        } else if (resultLabel === 'The Universe Owes You One') {
+          const bestStat = STAT_CATS.reduce((best, cat) => {
+            const r = results.find(r => r.category === cat); const br = results.find(r => r.category === best)
+            if (!r) return best; if (!br) return cat
+            return (r.score ?? 0) > (br.score ?? 0) ? cat : best
+          }, STAT_CATS[0])
+          shiftStat(bestStat, 2)
+          queue.splice(currentIndex + 1, 0, { category: 'power' as const, displayName: 'Universal Debt Power' })
+        } else if (resultLabel === 'Reroll Everything (Chaos Edition)') {
+          for (const cat of STAT_CATS) { const idx = results.findIndex(r => r.category === cat); if (idx !== -1) results.splice(idx, 1) }
+          queue.splice(currentIndex + 1, 0, ...STAT_CATS.map(cat => ({
+            category: cat as SpinCategory,
+            displayName: `Reroll: ${cat.replace(/([A-Z])/g, ' $1').trim().replace(/^\w/, c => c.toUpperCase())}`,
+            isReroll: true,
+          })))
         }
       }
 

@@ -300,7 +300,18 @@ export function formatHp(hp: number): string {
 
 // ─── Build ────────────────────────────────────────────────────────────────────
 
-export function buildBattleCharacter(results: SpinResult[], name: string): BattleCharacter {
+interface CrystalEquipInput { grade: string; name: string }
+interface EquippedCrystals {
+  weapons?: CrystalEquipInput[]
+  armors?:  CrystalEquipInput[]
+  powers?:  CrystalEquipInput[]
+}
+
+export function buildBattleCharacter(
+  results: SpinResult[],
+  name: string,
+  equipped?: EquippedCrystals,
+): BattleCharacter {
   const rs = results
   const durTier    = getDisplayTier(rs, 'durability')
   const strTier    = getDisplayTier(rs, 'strength')
@@ -330,9 +341,13 @@ export function buildBattleCharacter(results: SpinResult[], name: string): Battl
   const topPowerGrade  = highestGrade(powerLabels.map(l => _powerMap.get(l)?.grade))
   const weaponGradeVal = _weaponMap.get(weaponLabel)?.grade ?? 'F'
   const armorGradeVal  = _armorMap.get(armorLabel)?.grade  ?? 'F'
-  const powerGradeMult  = 1 + ITEM_GRADE_INFO[topPowerGrade].battleBonus  / 100
-  const weaponGradeMult = 1 + ITEM_GRADE_INFO[weaponGradeVal].battleBonus / 100
-  const armorGradeFlat  = ITEM_GRADE_INFO[armorGradeVal].battleBonus * 0.003
+  let powerGradeMult  = 1 + ITEM_GRADE_INFO[topPowerGrade].battleBonus  / 100
+  let weaponGradeMult = 1 + ITEM_GRADE_INFO[weaponGradeVal].battleBonus / 100
+  let armorGradeFlat  = ITEM_GRADE_INFO[armorGradeVal].battleBonus * 0.003
+  // Crystal-equipped gear adds 25% of its grade bonus on top of the base spin gear
+  for (const ew of equipped?.weapons ?? []) { const info = ITEM_GRADE_INFO[ew.grade as import('$lib/content/types').ItemGrade]; if (info) weaponGradeMult += info.battleBonus / 100 * 0.25 }
+  for (const ep of equipped?.powers  ?? []) { const info = ITEM_GRADE_INFO[ep.grade as import('$lib/content/types').ItemGrade]; if (info) powerGradeMult  += info.battleBonus / 100 * 0.25 }
+  for (const ea of equipped?.armors  ?? []) { const info = ITEM_GRADE_INFO[ea.grade as import('$lib/content/types').ItemGrade]; if (info) armorGradeFlat  += info.battleBonus * 0.003 * 0.25 }
 
   const strScore = rs.find(r => r.category === 'strength')?.score ?? 28
   const fskScore = rs.find(r => r.category === 'fightingSkill')?.score ?? 28
