@@ -28,6 +28,7 @@
   import { powers as powersPool } from '$lib/content/powers'
   import Tutorial from '../components/Tutorial.svelte'
   import { appendSpinHistory } from '$lib/spinHistory'
+  import { randomCharacterName } from '$lib/story/naming'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   const _powerLookup      = new Map(powersPool.map(p => [p.label, p]))
@@ -1979,15 +1980,25 @@
               {rivalMode ? (rivalPhase === 'p1' ? 'Player 1 is ready. Name your warrior.' : 'Player 2 is ready. Name your challenger.') : 'Give your fate-spun hero a name to be remembered by.'}
             </p>
           </div>
-          <input
-            type="text"
-            bind:value={characterName}
-            placeholder="Enter a name…"
-            maxlength="40"
-            class="w-full carved-groove rounded-lg px-4 py-3 text-center text-lg outline-none transition-all"
-            style="border: 1px solid rgba(240,192,64,0.25); color: #e4e1ee; font-family: 'Cinzel', serif; caret-color: #f0c040;"
-            onkeydown={(e) => e.key === 'Enter' && handleNameSubmit()}
-          />
+          <div class="flex gap-2 items-center">
+            <input
+              type="text"
+              bind:value={characterName}
+              placeholder="Enter a name…"
+              maxlength="40"
+              class="flex-1 carved-groove rounded-lg px-4 py-3 text-center text-lg outline-none transition-all"
+              style="border: 1px solid rgba(240,192,64,0.25); color: #e4e1ee; font-family: 'Cinzel', serif; caret-color: #f0c040;"
+              onkeydown={(e) => e.key === 'Enter' && handleNameSubmit()}
+            />
+            {#if !rivalMode}
+              <button
+                onclick={() => { characterName = randomCharacterName() }}
+                class="obsidian-slab rounded-lg px-3 py-3 flex-shrink-0"
+                style="border: 1px solid rgba(240,192,64,0.2); color: var(--gold-bright); font-size: 20px; cursor: pointer; line-height: 1;"
+                title="Randomize name"
+              >⟳</button>
+            {/if}
+          </div>
           <button
             onclick={handleNameSubmit}
             class="{rivalMode ? 'metal-stamp-crimson' : 'metal-stamp-gold'} w-full px-10 py-3 rounded-lg relative"

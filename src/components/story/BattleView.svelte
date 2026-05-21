@@ -14,6 +14,7 @@
   } from '$lib/story/saveSlots'
   import type { StoryRosterEntry, StoryTeam } from '$lib/story/types'
   import AttackFX from '../AttackFX.svelte'
+  import { settings } from '$lib/settings.svelte'
 
   let { slot, world, onBattleComplete, onNextBattle, onBack, onGoToTeams }: {
     slot: StorySaveSlot
@@ -117,7 +118,10 @@
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
   let timeoutId:     ReturnType<typeof setTimeout> | null = null
 
-  const LOG_DELAY = 600
+  function speedDelay(ms: number): number {
+    if (settings.battleSpeed >= 99) return 10
+    return Math.max(50, ms / settings.battleSpeed)
+  }
 
   let battleNumber   = $derived((slot.worldProgress[world]?.battlesCompleted ?? 0) + 1)
   let previewWaves   = $derived(getBattleWaves(world, battleNumber))
@@ -216,7 +220,7 @@
     scrollLog()
     const anim = detectAnim(head)
     if (anim) showAnim(anim.type, anim.color, anim.direction)
-    const delay = head.startsWith('──') ? 350 : LOG_DELAY
+    const delay = speedDelay(head.startsWith('──') ? 350 : 600)
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
   }
 
@@ -245,7 +249,7 @@
       if (round.winner !== undefined) {
         onWaveComplete(round.winner)
       } else {
-        timeoutId = setTimeout(playRound, 700)
+        timeoutId = setTimeout(playRound, speedDelay(700))
       }
     })
   }
@@ -263,7 +267,7 @@
     waveIdx = waveIdx + 1
     logLines = [...logLines, `── Wave ${waveIdx} cleared! Team restores 50% HP ──`]
     scrollLog()
-    timeoutId = setTimeout(startWave, 1400)
+    timeoutId = setTimeout(startWave, speedDelay(1400))
   }
 
   function finishBattle(winner: 'team1' | 'team2' | 'draw') {

@@ -70,3 +70,10 @@ export function generateCharacterName(overallScore: number, raceLabel: string): 
   const noun = NOUNS[Math.floor(rand() * NOUNS.length)]
   return `${adj} ${noun}`
 }
+
+/** Returns a random fantasy name using Math.random() — for the Randomize button. */
+export function randomCharacterName(): string {
+  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
+  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)]
+  return `${adj} ${noun}`
+}

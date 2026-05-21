@@ -23,6 +23,7 @@
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   import { settings } from '$lib/settings.svelte'
+  import { randomCharacterName } from '$lib/story/naming'
   import {
     classifyAbility, generatePowerDescription, generateWeaponDescription,
     generateArmorDescription, generateAbilityDescription, generateRaceDescription, generateArchetypeDescription,
@@ -116,6 +117,8 @@
   let currentIndex = $state(session.currentSpinIndex ?? 0)
   let showResumePrompt = $state(false)
   let showModeIndicator = $state(true)
+  let showNamingScreen = $state(false)
+  let namingInput = $state('')
 
   // Track used abilities for greyed-out deduplication (mirrors main game pattern)
   let usedRacialAbilities = $state<Set<string>>(new Set())
@@ -531,10 +534,17 @@
   function handleContinue() {
     pendingResult = null
     if (isSessionDone && doneEntry) {
-      onSessionComplete(doneEntry)
+      namingInput = doneEntry.name
+      showNamingScreen = true
       return
     }
     currentIndex = currentIndex + 1
+  }
+
+  function handleNamingSubmit() {
+    if (!doneEntry) return
+    const finalName = namingInput.trim() || doneEntry.name
+    onSessionComplete({ ...doneEntry, name: finalName })
   }
 </script>
 
@@ -693,11 +703,11 @@
 {#if results.length > 0 && !showResumePrompt && !pendingResult}
   <div class="fixed bottom-0 left-0 right-0 z-10"
     style="background: rgba(7,7,13,0.93); border-top: 1px solid rgba(240,192,64,0.12); backdrop-filter: blur(12px); padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));">
-    <p class="pt-2 font-mono tracking-widest uppercase text-center" style="color: #9a907b; font-size: 9px; letter-spacing: 0.18em;">Obtained this spin</p>
-    <div class="px-4 pb-1.5 flex flex-col gap-0.5 overflow-y-auto" style="max-height: 220px;">
+    <p class="px-4 pt-2 font-mono tracking-widest uppercase" style="color: #9a907b; font-size: 9px; letter-spacing: 0.18em;">Obtained this spin</p>
+    <div class="px-4 pb-1.5 flex flex-col gap-0.5 overflow-y-auto" style="max-height: 160px;">
       {#each [...results].filter(r => r.category !== 'statBonus' && r.category !== 'statPenalty').reverse() as r}
-        <div class="flex items-center justify-center gap-2 min-w-0">
-          <span class="font-mono flex-shrink-0" style="color: hsl({CATEGORY_HUES[r.category] ?? 45}, 60%, 62%); font-size: 9px; min-width: 80px; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;">{formatCategory(r.category)}</span>
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="font-mono flex-shrink-0" style="color: hsl({CATEGORY_HUES[r.category] ?? 45}, 60%, 62%); font-size: 9px; min-width: 80px; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{formatCategory(r.category)}</span>
           <span class="font-mono truncate" style="color: var(--color-on-surface); font-size: 10px;">{r.displayLabel ?? r.resultLabel}</span>
           {#if r.tier}
             <span class="font-mono font-bold flex-shrink-0" style="color: hsl({CATEGORY_HUES[r.category] ?? 45}, 65%, 65%); font-size: 9px;">{r.tier}</span>
@@ -743,6 +753,46 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
+{/if}
+
+<!-- ── Naming screen ─────────────────────────────────────────────────────────── -->
+{#if showNamingScreen && doneEntry}
+  <div class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    style="background: rgba(7,7,13,0.97); backdrop-filter: blur(16px);">
+    <div class="w-full max-w-sm flex flex-col gap-5">
+      <div class="text-center">
+        <p class="font-mono text-xs tracking-widest uppercase mb-1" style="color: #9a907b; letter-spacing: 0.18em;">Character Created</p>
+        <h2 class="font-bold" style="font-family: var(--font-cinzel); font-size: 1.5rem; color: #ffdf96; text-shadow: 0 0 14px rgba(240,192,64,0.3);">Name Your Legend</h2>
+        <p class="text-sm mt-1" style="color: #9a907b;">Give your fate-spun hero a name to be remembered by.</p>
+      </div>
+
+      <div class="flex gap-2 items-center">
+        <input
+          type="text"
+          bind:value={namingInput}
+          placeholder="Enter a name…"
+          maxlength="40"
+          class="flex-1 carved-groove rounded-lg px-4 py-3 text-center text-base outline-none transition-all"
+          style="border: 1px solid rgba(240,192,64,0.25); color: #e4e1ee; font-family: var(--font-cinzel); caret-color: #f0c040;"
+          onkeydown={(e) => e.key === 'Enter' && handleNamingSubmit()}
+        />
+        <button
+          onclick={() => { namingInput = randomCharacterName() }}
+          class="obsidian-slab rounded-lg px-3 py-3 flex-shrink-0"
+          style="border: 1px solid rgba(240,192,64,0.2); color: var(--gold-bright); font-size: 18px; cursor: pointer;"
+          title="Randomize name"
+        >⟳</button>
+      </div>
+
+      <button
+        onclick={handleNamingSubmit}
+        class="metal-stamp-gold w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest"
+        style="font-family: var(--font-cinzel);"
+      >
+        {namingInput.trim() ? 'Save & Continue' : 'Use Generated Name'}
+      </button>
     </div>
   </div>
 {/if}

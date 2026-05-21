@@ -4,6 +4,7 @@
     buildBattleCharacter, simulateTeamBattle, formatHp,
     type BattleCharacter, type TeamBattleRound,
   } from '$lib/game/battle'
+  import { settings } from '$lib/settings.svelte'
   import AttackFX from './AttackFX.svelte'
   import type { SpinResult } from '$lib/session/types'
 
@@ -57,7 +58,10 @@
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
   let timeoutId:     ReturnType<typeof setTimeout> | null = null
 
-  const LOG_DELAY = 600
+  function speedDelay(ms: number): number {
+    if (settings.battleSpeed >= 99) return 10
+    return Math.max(50, ms / settings.battleSpeed)
+  }
 
   let t1Names  = $derived(new Set(t1Chars.map(c => c.name)))
   let t2Names  = $derived(new Set(t2Chars.map(c => c.name)))
@@ -80,7 +84,7 @@
     allRounds  = simulateTeamBattle(t1Chars, t2Chars)
     roundIdx   = 0
     logLines   = []
-    timeoutId  = setTimeout(() => { phase = 'fight'; playRound() }, 2600)
+    timeoutId  = setTimeout(() => { phase = 'fight'; playRound() }, speedDelay(2600))
   })
 
   onDestroy(() => {
@@ -140,7 +144,7 @@
     scrollLog()
     const anim = detectAnim(head)
     if (anim) showAnim(anim.type, anim.color, anim.direction)
-    const delay = head.startsWith('──') ? 350 : LOG_DELAY
+    const delay = speedDelay(head.startsWith('──') ? 350 : 600)
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
   }
 
@@ -154,7 +158,7 @@
       if (round.winner !== undefined) {
         finishBattle(round.winner)
       } else {
-        timeoutId = setTimeout(playRound, 700)
+        timeoutId = setTimeout(playRound, speedDelay(700))
       }
     })
   }
