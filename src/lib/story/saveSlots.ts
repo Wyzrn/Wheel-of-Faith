@@ -376,7 +376,7 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     roster: (raw.roster ?? []).map(r => {
       const base = {
         ...r,
-        level: r.level ?? 1,
+        level: Math.min(100, r.level ?? 1),
         xp: r.xp ?? 0,
         statBonuses: {} as Record<string, number>,
         equippedWeapons: r.equippedWeapons ?? [],
@@ -889,12 +889,14 @@ export function deleteTeamInSlot(slot: StorySaveSlot, teamId: string): StorySave
   return { ...slot, teams: slot.teams.filter(t => t.id !== teamId) }
 }
 
-/** Adds XP to a character. Each level grants +1% power boost (applied in battle). */
+export const MAX_CHARACTER_LEVEL = 100
+
+/** Adds XP to a character. Each level grants +1% power boost (applied in battle). Level cap: 100. */
 export function addCharacterXp(slot: StorySaveSlot, characterId: string, xp: number): StorySaveSlot {
   const roster = slot.roster.map(r => {
     if (r.id !== characterId) return r
     const newXp = r.xp + xp
-    const newLevel = Math.floor(1 + Math.sqrt(newXp / 200))
+    const newLevel = Math.min(MAX_CHARACTER_LEVEL, Math.floor(1 + Math.sqrt(newXp / 200)))
     return { ...r, xp: newXp, level: newLevel }
   })
   return { ...slot, roster }

@@ -93,7 +93,7 @@
   <!-- Level / power boost -->
   <div class="flex items-center gap-2 mt-0.5">
     <span class="font-mono text-[10px]" style="color: var(--color-on-surface-variant);">
-      Lv {entry.level ?? 1}
+      Lv {entry.level ?? 1}{#if (entry.level ?? 1) >= 100} <span style="color: #f0c040;">MAX</span>{:else}/100{/if}
     </span>
     {#if (entry.level ?? 1) > 1}
       <span class="font-mono text-[10px] px-1.5 py-0.5 rounded"
