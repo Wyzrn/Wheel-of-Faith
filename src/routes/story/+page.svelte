@@ -187,14 +187,14 @@
         body: JSON.stringify({ slotData: slot }),
       })
       if (res.status === 401) {
-        shareSlotError = 'Log in to share a save slot.'
+        shareSlotError = 'Log in to link a save slot to your account.'
         return
       }
       if (!res.ok) throw new Error('Server error')
       const { url } = await res.json() as { url: string }
       shareSlotUrl = `${window.location.origin}${url}`
     } catch {
-      shareSlotError = 'Failed to save. Try again.'
+      shareSlotError = 'Failed to link. Try again.'
     } finally {
       shareSlotSaving = false
     }
@@ -788,8 +788,8 @@
                 style="color: #9a907b; background: none; border: none; cursor: pointer;"
                 onclick={(e) => { e.stopPropagation(); shareSlot(slotId) }}
               >
-                <span class="material-symbols-outlined" style="font-size: 13px;">link</span>
-                Share
+                <span class="material-symbols-outlined" style="font-size: 13px;">cloud_upload</span>
+                Link
               </button>
               <button
                 class="font-mono text-xs"
@@ -2323,24 +2323,24 @@
     <div class="obsidian-slab w-full max-w-sm rounded-xl p-7 text-center"
       style="border: 1px solid rgba(240,192,64,0.25);"
       onclick={(e) => e.stopPropagation()}>
-      <span class="material-symbols-outlined block text-4xl mb-3" style="color: #f0c040; font-variation-settings: 'FILL' 1;">link</span>
-      <p class="font-bold mb-1" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Share Save Slot {shareSlotId}</p>
+      <span class="material-symbols-outlined block text-4xl mb-3" style="color: #f0c040; font-variation-settings: 'FILL' 1;">cloud_upload</span>
+      <p class="font-bold mb-1" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Link Save Slot {shareSlotId}</p>
       {#if shareSlotSaving}
-        <p class="font-mono text-sm my-4" style="color: #9a907b;">Saving…</p>
+        <p class="font-mono text-sm my-4" style="color: #9a907b;">Linking to your account…</p>
       {:else if shareSlotError}
         <p class="font-mono text-sm my-4" style="color: #ef4444;">{shareSlotError}</p>
       {:else if shareSlotUrl}
-        <p class="font-mono text-xs mb-3" style="color: #9a907b;">Anyone with this link can view your slot.</p>
-        <div class="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
-          <span class="font-mono text-xs flex-1 truncate text-left" style="color: #7dd3fc; user-select: text; cursor: text;">{shareSlotUrl}</span>
-          <button onclick={copyShareSlotUrl}
-            class="font-mono text-xs flex-shrink-0 px-2 py-1 rounded"
-            style="background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.25); color: #f0c040; cursor: pointer;">
-            Copy
-          </button>
+        <div class="flex items-center justify-center gap-2 my-4">
+          <span class="material-symbols-outlined" style="color: #34d399; font-size: 28px; font-variation-settings: 'FILL' 1;">check_circle</span>
+          <p class="font-mono text-sm" style="color: #34d399;">Linked to your account!</p>
         </div>
+        <a href={shareSlotUrl} target="_blank" rel="noopener"
+          class="block font-mono text-xs mb-4 px-3 py-2 rounded-lg text-center"
+          style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #7dd3fc; text-decoration: none;">
+          View online →
+        </a>
       {:else}
-        <p class="font-mono text-sm my-4" style="color: #9a907b;">Generating link…</p>
+        <p class="font-mono text-sm my-4" style="color: #9a907b;">Linking…</p>
       {/if}
       <button onclick={() => { shareSlotId = null; shareSlotUrl = null; shareSlotError = null }}
         class="w-full py-2.5 rounded-lg text-sm font-bold"
