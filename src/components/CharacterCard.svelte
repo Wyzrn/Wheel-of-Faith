@@ -12,12 +12,15 @@
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
 
-  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, onNewCharacter, onBackToMenu }: {
+  interface EquippedItemProp { id: string; grade: string; name: string }
+
+  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, equippedItems, onNewCharacter, onBackToMenu }: {
     results: SpinResult[]
     name?: string
     startedAt: string
     readonly?: boolean
     rivalsWins?: number
+    equippedItems?: { weapons: EquippedItemProp[]; armors: EquippedItemProp[]; powers: EquippedItemProp[] }
     onNewCharacter: () => void
     onBackToMenu?: () => void
   } = $props()
@@ -317,6 +320,37 @@
           <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[armorGrade].label} · +{ITEM_GRADE_INFO[armorGrade].battleBonus}</p>
         </div>
       {/if}
+    </div>
+  {/if}
+
+  <!-- Equipped Gear -->
+  {#if equippedItems && (equippedItems.weapons.length > 0 || equippedItems.armors.length > 0 || equippedItems.powers.length > 0)}
+    {@const GRADE_COLORS: Record<string, string> = { F:'#9ca3af', E:'#6ee7b7', D:'#93c5fd', C:'#a78bfa', B:'#fb923c', A:'#fbbf24', S:'#f472b6', SS:'#e879f9', SSS:'#c084fc', God:'#fde68a' }}
+    <div>
+      <p class="text-xs tracking-[0.18em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Equipped Gear</p>
+      <div class="flex flex-col gap-1.5">
+        {#each equippedItems.weapons as w}
+          <div class="obsidian-slab rounded-lg px-3 py-2 flex items-center gap-2" style="border-left: 3px solid {GRADE_COLORS[w.grade] ?? '#4e4635'};">
+            <span class="text-xs font-bold px-1.5 py-0.5 rounded shrink-0" style="color: {GRADE_COLORS[w.grade] ?? '#9a907b'}; background: {GRADE_COLORS[w.grade] ?? '#9a907b'}22; border: 1px solid {GRADE_COLORS[w.grade] ?? '#4e4635'}66;">{w.grade}</span>
+            <span class="text-[10px] shrink-0" style="color: #9a907b; width: 3.5rem;">Weapon</span>
+            <span class="text-xs truncate" style="color: #e4e1ee;">{w.name}</span>
+          </div>
+        {/each}
+        {#each equippedItems.armors as a}
+          <div class="obsidian-slab rounded-lg px-3 py-2 flex items-center gap-2" style="border-left: 3px solid {GRADE_COLORS[a.grade] ?? '#4e4635'};">
+            <span class="text-xs font-bold px-1.5 py-0.5 rounded shrink-0" style="color: {GRADE_COLORS[a.grade] ?? '#9a907b'}; background: {GRADE_COLORS[a.grade] ?? '#9a907b'}22; border: 1px solid {GRADE_COLORS[a.grade] ?? '#4e4635'}66;">{a.grade}</span>
+            <span class="text-[10px] shrink-0" style="color: #9a907b; width: 3.5rem;">Armor</span>
+            <span class="text-xs truncate" style="color: #e4e1ee;">{a.name}</span>
+          </div>
+        {/each}
+        {#each equippedItems.powers as p}
+          <div class="obsidian-slab rounded-lg px-3 py-2 flex items-center gap-2" style="border-left: 3px solid {GRADE_COLORS[p.grade] ?? '#4e4635'};">
+            <span class="text-xs font-bold px-1.5 py-0.5 rounded shrink-0" style="color: {GRADE_COLORS[p.grade] ?? '#9a907b'}; background: {GRADE_COLORS[p.grade] ?? '#9a907b'}22; border: 1px solid {GRADE_COLORS[p.grade] ?? '#4e4635'}66;">{p.grade}</span>
+            <span class="text-[10px] shrink-0" style="color: #9a907b; width: 3.5rem;">Power</span>
+            <span class="text-xs truncate" style="color: #e4e1ee;">{p.name}</span>
+          </div>
+        {/each}
+      </div>
     </div>
   {/if}
 

@@ -2,7 +2,7 @@
 // roster, gems, shards, world progression, spin credits, inventory, and daily shop limits.
 // Keys are story_slot_1 … story_slot_4; never overlaps the legacy story_roster/story_shards keys.
 
-import type { StoryRosterEntry, StoryTeam } from './types'
+import type { StoryRosterEntry, StoryTeam, EquippedItem } from './types'
 import type { WorldGrade } from './worlds'
 import { WORLD_GRADES, BATTLES_PER_WORLD, getPlayerLevelFromWorlds } from './worlds'
 import { scoreTier, computeOverallScore, extendedTierFromScore } from '../game/scoreTier'
@@ -172,6 +172,8 @@ export interface StorySaveSlot {
   gems: number
   shards: number
   spinsRemaining: number
+  /** Bonus spins earned from enemy drops and battle milestones (every 5 battles). */
+  bonusSpins: number
   /** ISO timestamp of last spin refresh check. Used to award spins every 3 hours. */
   spinsLastRefreshedAt: string
   /** Endless Mode keys — each key grants one Endless Mode run. Unlocked at player level 3. */
@@ -238,6 +240,7 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
     gems: 0,
     shards: 0,
     spinsRemaining: INITIAL_SPIN_CREDITS,
+    bonusSpins: 0,
     spinsLastRefreshedAt: new Date().toISOString(),
     endlessKeys: 0,
     inventory: freshInventory(),
@@ -273,6 +276,7 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     rosterCapacity: raw.rosterCapacity ?? INITIAL_ROSTER_CAPACITY,
     rosterUpgradeCount: raw.rosterUpgradeCount ?? 0,
     gems: raw.gems ?? 0,
+    bonusSpins: raw.bonusSpins ?? 0,
     spinsLastRefreshedAt: raw.spinsLastRefreshedAt ?? new Date().toISOString(),
     inventory: migrateInventory(raw.inventory ?? {}),
     dailyCrystalPurchases: raw.dailyCrystalPurchases ?? freshDailyPurchases(),
@@ -285,9 +289,9 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
         level: r.level ?? 1,
         xp: r.xp ?? 0,
         statBonuses: {} as Record<string, number>,
-        equippedWeapon: r.equippedWeapon ?? null,
-        equippedArmor: r.equippedArmor ?? null,
-        equippedPower: r.equippedPower ?? null,
+        equippedWeapons: r.equippedWeapons ?? [],
+        equippedArmors:  r.equippedArmors  ?? [],
+        equippedPowers:  r.equippedPowers  ?? [],
       }
       const bonuses: Record<string, number> = r.statBonuses ?? {}
       if (Object.keys(bonuses).length === 0) return base
@@ -363,7 +367,15 @@ export function addCharacterToSlot(
   entry: StoryRosterEntry,
 ): StorySaveSlot | null {
   if (slot.roster.length >= slot.rosterCapacity) return null
-  const roster = [{ ...entry, level: entry.level ?? 1, xp: entry.xp ?? 0, statBonuses: entry.statBonuses ?? {} }, ...slot.roster]
+  const roster = [{
+    ...entry,
+    level: entry.level ?? 1,
+    xp: entry.xp ?? 0,
+    statBonuses: entry.statBonuses ?? {},
+    equippedWeapons: entry.equippedWeapons ?? [],
+    equippedArmors:  entry.equippedArmors  ?? [],
+    equippedPowers:  entry.equippedPowers  ?? [],
+  }, ...slot.roster]
   return { ...slot, roster }
 }
 
@@ -393,7 +405,7 @@ export function sellCharacterFromSlot(
 }
 
 /** Purchases spin credits using shards. Returns updated slot or null if insufficient shards. */
-export const SHARD_COST_PER_SPIN = 100
+export const SHARD_COST_PER_SPIN = 50
 export function purchaseSpin(slot: StorySaveSlot): StorySaveSlot | null {
   if (slot.shards < SHARD_COST_PER_SPIN) return null
   return { ...slot, shards: slot.shards - SHARD_COST_PER_SPIN, spinsRemaining: slot.spinsRemaining + 1 }
@@ -403,6 +415,12 @@ export function purchaseSpin(slot: StorySaveSlot): StorySaveSlot | null {
 export function consumeSpin(slot: StorySaveSlot): StorySaveSlot | null {
   if (slot.spinsRemaining <= 0) return null
   return { ...slot, spinsRemaining: slot.spinsRemaining - 1 }
+}
+
+/** Consumes one bonus spin (from drops or milestones). Returns updated slot or null if none remaining. */
+export function consumeBonusSpin(slot: StorySaveSlot): StorySaveSlot | null {
+  if (slot.bonusSpins <= 0) return null
+  return { ...slot, bonusSpins: slot.bonusSpins - 1 }
 }
 
 /**
@@ -462,7 +480,13 @@ export function recordBattleWin(slot: StorySaveSlot, world: WorldGrade): StorySa
   const playerLevel = getPlayerLevelFromWorlds(beatenSet)
   const stage = getStageForPlayerLevel(playerLevel)
 
-  return { ...slot, worldProgress, playerLevel, stage }
+  // Award 2 bonus spins every 5 battles completed in this world
+  const prevCompleted = prev.battlesCompleted
+  const milestonesCrossed =
+    Math.floor(battlesCompleted / 5) - Math.floor(prevCompleted / 5)
+  const bonusSpins = slot.bonusSpins + milestonesCrossed * 2
+
+  return { ...slot, worldProgress, playerLevel, stage, bonusSpins }
 }
 
 export interface BattleDrops {
@@ -478,6 +502,7 @@ export interface BattleDrops {
 export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops): StorySaveSlot {
   let shards = slot.shards
   let endlessKeys = slot.endlessKeys
+  let bonusSpins = slot.bonusSpins
   const inventory = { ...slot.inventory }
 
   for (const drop of drops.chanceDrops) {
@@ -493,10 +518,12 @@ export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops): Story
       inventory.armorCrystals = { ...inventory.armorCrystals, F: inventory.armorCrystals.F + 1 }
     } else if (drop === 'endlessKey') {
       endlessKeys++
+    } else if (drop === 'spin') {
+      bonusSpins++
     }
   }
 
-  return { ...slot, gems: slot.gems + drops.gems, shards, endlessKeys, inventory }
+  return { ...slot, gems: slot.gems + drops.gems, shards, endlessKeys, bonusSpins, inventory }
 }
 
 /**
@@ -670,7 +697,7 @@ export function useStatCrystal(
   }
 }
 
-/** Equips an opened item to a roster character, removing it from the opened items list. */
+/** Equips an opened item to a roster character, appending it to the character's equipped list. */
 export function equipOpenedItem(
   slot: StorySaveSlot,
   characterId: string,
@@ -682,10 +709,15 @@ export function equipOpenedItem(
   const item = list.find(i => i.id === itemId)
   if (!item) return 'no_item'
   if (!slot.roster.some(r => r.id === characterId)) return 'char_not_found'
-  const equipField = `equipped${type.charAt(0).toUpperCase() + type.slice(1)}` as 'equippedWeapon' | 'equippedArmor' | 'equippedPower'
+  const equippedField = type === 'weapon' ? 'equippedWeapons' : type === 'armor' ? 'equippedArmors' : 'equippedPowers'
+  const equippedItem: EquippedItem = { id: item.id, grade: item.grade, name: item.name }
   return {
     ...slot,
     inventory: { ...slot.inventory, [listKey]: list.filter(i => i.id !== itemId) },
-    roster: slot.roster.map(r => r.id === characterId ? { ...r, [equipField]: item.grade } : r),
+    roster: slot.roster.map(r =>
+      r.id === characterId
+        ? { ...r, [equippedField]: [...(r[equippedField] ?? []), equippedItem] }
+        : r
+    ),
   }
 }

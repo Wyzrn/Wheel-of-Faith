@@ -106,6 +106,7 @@ export const CHANCE_DROP_RATES = {
   statCrystal:   0.06,
   weaponCrystal: 0.07,
   armorCrystal:  0.07,
+  spin:          0.03,   // 3% — rare character spin drop
 } as const
 
 /** Endless Key drop rate — only applies at player level 3+ (caller must check). */

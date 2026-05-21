@@ -4,6 +4,13 @@
 import type { SpinResult } from '$lib/session/types'
 import type { TierGrade } from '$lib/game/scoreTier'
 
+/** An item equipped on a roster character (from opening a graded crystal). */
+export interface EquippedItem {
+  id: string
+  grade: string
+  name: string
+}
+
 /** A single entry in the Story Mode roster — snapshot of a completed character. */
 export interface StoryRosterEntry {
   /** Unique identifier, populated by `crypto.randomUUID()` at write time. */
@@ -26,12 +33,12 @@ export interface StoryRosterEntry {
   xp: number
   /** Stat bonuses applied from Stat Crystals, keyed by stat category name. */
   statBonuses: Record<string, number>
-  /** Equipped weapon crystal grade (e.g. 'F', 'S'), or null if none. Consumed from inventory on equip. */
-  equippedWeapon: string | null
-  /** Equipped armor crystal grade, or null. */
-  equippedArmor: string | null
-  /** Equipped power crystal grade, or null. */
-  equippedPower: string | null
+  /** All weapons equipped to this character. Items are added, never replaced. */
+  equippedWeapons: EquippedItem[]
+  /** All armor pieces equipped to this character. */
+  equippedArmors: EquippedItem[]
+  /** All powers equipped to this character. */
+  equippedPowers: EquippedItem[]
   /** ISO timestamp of when this entry was added to the roster. */
   createdAt: string
   /** ISO timestamp captured when the story spin session began; passed as the `startedAt` prop to CharacterCard. */

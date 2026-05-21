@@ -3,7 +3,7 @@
   import { storyHomeSignal } from '$lib/menuState.svelte'
   import {
     loadAllSlots, loadSaveSlot, saveSaveSlot, createSaveSlot, deleteSaveSlot,
-    addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin,
+    addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin, consumeBonusSpin,
     buyStatCrystal, getDailyBought, applySpinRefresh, msUntilNextRefresh,
     upgradeRosterCapacity, rosterUpgradeCost, buyFCrystal, buyEndlessKey,
     createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
@@ -76,6 +76,8 @@
   let stage = $derived(currentSlot?.stage ?? 1)
   let playerLevel = $derived(currentSlot?.playerLevel ?? 0)
   let spinsRemaining = $derived(currentSlot?.spinsRemaining ?? 0)
+  let bonusSpins     = $derived(currentSlot?.bonusSpins ?? 0)
+  let hasAnySpin     = $derived(spinsRemaining > 0 || bonusSpins > 0)
   let rosterCapacity = $derived(currentSlot?.rosterCapacity ?? 5)
   let rosterUpgradeCount = $derived(currentSlot?.rosterUpgradeCount ?? 0)
   let nextUpgradeCost = $derived(rosterUpgradeCost(rosterUpgradeCount))
@@ -156,10 +158,25 @@
   }
 
   // ── Hub actions ────────────────────────────────────────────────────────────
-  function startSpin() {
-    if (!currentSlot || currentSlot.spinsRemaining <= 0) return
-    const updated = consumeSpin($state.snapshot(currentSlot) as StorySaveSlot)
+  let spinTypeModal = $state(false)
+  let lastSpinType = $state<'refresh' | 'bonus'>('refresh')
+
+  function handleWheelClick() {
+    if (!currentSlot || !hasAnySpin) return
+    if (bonusSpins > 0 && spinsRemaining > 0) {
+      spinTypeModal = true
+    } else {
+      startSpin(bonusSpins > 0 ? 'bonus' : 'refresh')
+    }
+  }
+
+  function startSpin(type: 'refresh' | 'bonus') {
+    if (!currentSlot) return
+    spinTypeModal = false
+    const snapshot = $state.snapshot(currentSlot) as StorySaveSlot
+    const updated = type === 'bonus' ? consumeBonusSpin(snapshot) : consumeSpin(snapshot)
     if (!updated) return
+    lastSpinType = type
     currentSlot = updated
     view = 'spin'
   }
@@ -235,10 +252,10 @@
 
   function handleSpinCancel() {
     if (!currentSlot) { view = 'hub'; return }
-    currentSlot = {
-      ...($state.snapshot(currentSlot) as StorySaveSlot),
-      spinsRemaining: currentSlot.spinsRemaining + 1,
-    }
+    const snap = $state.snapshot(currentSlot) as StorySaveSlot
+    currentSlot = lastSpinType === 'bonus'
+      ? { ...snap, bonusSpins: snap.bonusSpins + 1 }
+      : { ...snap, spinsRemaining: snap.spinsRemaining + 1 }
     view = 'hub'
   }
 
@@ -488,7 +505,7 @@
                   <span>·</span>
                   <span style="color: #34d399;">{(slot.gems ?? 0).toLocaleString()} gems</span>
                   <span>·</span>
-                  <span>{slot.spinsRemaining} spin{slot.spinsRemaining === 1 ? '' : 's'}</span>
+                  <span>{slot.spinsRemaining} spin{slot.spinsRemaining === 1 ? '' : 's'}{(slot.bonusSpins ?? 0) > 0 ? ` +${slot.bonusSpins} bonus` : ''}</span>
                 </div>
               </div>
             {:else}
@@ -583,10 +600,10 @@
       <!-- Wheel (primary CTA) -->
       <div class="obsidian-slab rounded-xl overflow-hidden">
         <button
-          class="w-full px-5 py-5 flex items-center gap-4 {spinsRemaining > 0 ? '' : 'opacity-40 cursor-not-allowed'}"
-          style="background: none; border: none; cursor: {spinsRemaining > 0 ? 'pointer' : 'not-allowed'};"
-          onclick={startSpin}
-          disabled={spinsRemaining <= 0}
+          class="w-full px-5 py-5 flex items-center gap-4 {hasAnySpin ? '' : 'opacity-40 cursor-not-allowed'}"
+          style="background: none; border: none; cursor: {hasAnySpin ? 'pointer' : 'not-allowed'};"
+          onclick={handleWheelClick}
+          disabled={!hasAnySpin}
         >
           <div
             class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
@@ -597,13 +614,16 @@
           <div class="flex-1 text-left">
             <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Wheel</div>
             <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              {spinsRemaining}/{MAX_DAILY_SPINS} spins
+              {spinsRemaining}/{MAX_DAILY_SPINS} refresh
+              {#if bonusSpins > 0}
+                · <span style="color: #a78bfa;">{bonusSpins} bonus</span>
+              {/if}
               {#if spinsRemaining < MAX_DAILY_SPINS && refreshMs > 0}
                 · +1 in {formatRefreshTime(refreshMs)}
               {/if}
             </div>
           </div>
-          {#if spinsRemaining > 0}
+          {#if hasAnySpin}
             <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
           {/if}
         </button>
@@ -648,7 +668,7 @@
           <div class="flex-1 text-left">
             <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Shop</div>
             <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              Buy spins · {SHARD_COST_PER_SPIN} shards each
+              Spins · crystals · upgrades
             </div>
           </div>
           <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
@@ -762,16 +782,28 @@
     {/if}
 
     <!-- Spin credits -->
-    <div class="obsidian-slab w-full rounded-xl px-5 py-4 text-center">
-      <p class="font-mono text-xs mb-1" style="color: var(--color-outline);">Current spin credits</p>
-      <p class="font-bold text-3xl" style="font-family: var(--font-cinzel); color: var(--gold-bright);">{spinsRemaining}</p>
+    <div class="obsidian-slab w-full rounded-xl px-5 py-4">
+      <p class="font-mono text-xs mb-2" style="color: var(--color-outline);">Spin Credits</p>
+      <div class="flex items-center justify-around gap-4">
+        <div class="text-center">
+          <p class="font-mono text-xs" style="color: var(--color-outline);">Refresh</p>
+          <p class="font-bold text-2xl" style="font-family: var(--font-cinzel); color: var(--gold-bright);">{spinsRemaining}</p>
+          <p class="font-mono text-[10px]" style="color: var(--color-outline);">/ {MAX_DAILY_SPINS} daily</p>
+        </div>
+        <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.06);"></div>
+        <div class="text-center">
+          <p class="font-mono text-xs" style="color: var(--color-outline);">Bonus</p>
+          <p class="font-bold text-2xl" style="font-family: var(--font-cinzel); color: #a78bfa;">{bonusSpins}</p>
+          <p class="font-mono text-[10px]" style="color: var(--color-outline);">drops &amp; milestones</p>
+        </div>
+      </div>
     </div>
 
     <!-- Buy spin -->
     <div class="obsidian-slab w-full rounded-xl px-5 py-5 flex items-center gap-4">
       <div class="flex-1">
-        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Fate Spin</p>
-        <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Generate one new character</p>
+        <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Buy Refresh Spin</p>
+        <p class="font-mono text-xs mt-1" style="color: var(--color-outline);">Adds one spin to your daily refresh pool</p>
         <p class="font-mono text-xs mt-1" style="color: var(--gold-bright);">{SHARD_COST_PER_SPIN} shards</p>
       </div>
       <button
@@ -903,7 +935,7 @@
       <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.06);"></div>
     </div>
     <p class="font-mono text-xs text-center" style="color: var(--color-outline); line-height: 1.6; margin-top: -8px;">
-      Used to fuse and upgrade power, weapon, and armor items.
+      Open these to unlock gear you can equip to any character. Higher grades drop from harder worlds.
     </p>
 
     <!-- Power Crystal (F) -->
@@ -1142,6 +1174,7 @@
           name={expandedEntry.name}
           startedAt={expandedEntry.sessionStartedAt}
           readonly={true}
+          equippedItems={{ weapons: expandedEntry.equippedWeapons, armors: expandedEntry.equippedArmors, powers: expandedEntry.equippedPowers }}
           onNewCharacter={() => {}}
         />
       </div>
@@ -1568,6 +1601,48 @@
   </div>
 {/if}
 
+<!-- ── Spin type selection modal ──────────────────────────────────────────── -->
+{#if spinTypeModal && currentSlot}
+  <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
+    style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(24px, calc(env(safe-area-inset-bottom,0px) + 24px));"
+    onclick={() => spinTypeModal = false}
+    role="dialog" aria-modal="true">
+    <div class="w-full max-w-sm rounded-2xl overflow-hidden obsidian-slab"
+      style="border: 1px solid rgba(240,192,64,0.25); animation: resultReveal 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;"
+      onclick={(e) => e.stopPropagation()}>
+      <div class="px-5 py-5">
+        <p class="font-mono text-xs mb-1 tracking-widest uppercase" style="color: var(--color-outline);">Choose Spin Type</p>
+        <h3 class="font-bold text-sm mb-4" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Which spin pool to use?</h3>
+        <div class="flex flex-col gap-3">
+          <button onclick={() => startSpin('refresh')}
+            class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left metal-stamp-gold"
+            style="cursor: pointer;">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">casino</span>
+            <div class="flex-1">
+              <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Refresh Spin</p>
+              <p class="font-mono text-xs" style="color: var(--color-outline);">{spinsRemaining} remaining · restores every 3h</p>
+            </div>
+          </button>
+          <button onclick={() => startSpin('bonus')}
+            class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left"
+            style="background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3); cursor: pointer;">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: #a78bfa; font-variation-settings: 'FILL' 1;">stars</span>
+            <div class="flex-1">
+              <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #a78bfa;">Bonus Spin</p>
+              <p class="font-mono text-xs" style="color: var(--color-outline);">{bonusSpins} remaining · from drops &amp; milestones</p>
+            </div>
+          </button>
+        </div>
+        <button onclick={() => spinTypeModal = false}
+          class="mt-4 w-full py-2.5 rounded-xl font-bold font-mono text-sm"
+          style="border: 1px solid rgba(255,255,255,0.08); color: var(--color-outline); background: transparent; cursor: pointer;">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <!-- ── Equip opened item modal ─────────────────────────────────────────────── -->
 {#if equipModal && currentSlot}
   {@const et = equipModal.type}
@@ -1586,26 +1661,25 @@
           {item.name}
           <span class="font-mono text-xs ml-2" style="color: {CRYSTAL_GRADE_COLORS[item.grade]};">{item.grade}</span>
         </h3>
-        <p class="font-mono text-xs mb-4" style="color: var(--color-outline);">Select a character. This item is consumed from inventory.</p>
+        <p class="font-mono text-xs mb-4" style="color: var(--color-outline);">Select a character to add this item to. Items stack — nothing is replaced.</p>
 
         {#if roster.length === 0}
           <p class="font-mono text-xs" style="color: var(--color-outline);">No characters in roster.</p>
         {:else}
           <div class="flex flex-col gap-2 max-h-64 overflow-y-auto">
             {#each sortedRoster as char (char.id)}
-              {@const equipped = et === 'weapon' ? char.equippedWeapon : et === 'armor' ? char.equippedArmor : char.equippedPower}
+              {@const equippedList = et === 'weapon' ? char.equippedWeapons : et === 'armor' ? char.equippedArmors : char.equippedPowers}
               <button onclick={() => doEquip(char.id)}
                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left"
                 style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); cursor: pointer;">
                 <div class="flex-1 min-w-0">
                   <p class="font-bold text-xs truncate" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{char.name}</p>
                   <p class="font-mono text-xs" style="color: var(--color-outline);">{char.race} · {char.overallTier} · Lv {char.level}</p>
+                  {#if equippedList.length > 0}
+                    <p class="font-mono text-[10px] mt-0.5" style="color: #f59e0b;">{equippedList.length} {typeLabel.toLowerCase()}{equippedList.length > 1 ? 's' : ''} equipped</p>
+                  {/if}
                 </div>
-                {#if equipped}
-                  <span class="font-mono text-xs flex-shrink-0" style="color: #f59e0b;">{equipped} equipped → replace</span>
-                {:else}
-                  <span class="font-mono text-xs flex-shrink-0" style="color: #34d399;">Equip →</span>
-                {/if}
+                <span class="font-mono text-xs flex-shrink-0" style="color: #34d399;">+ Add →</span>
               </button>
             {/each}
           </div>

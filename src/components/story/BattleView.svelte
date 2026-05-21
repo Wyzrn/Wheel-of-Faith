@@ -366,6 +366,7 @@
     weaponCrystal:'Weapon Crystal (F)',
     armorCrystal: 'Armor Crystal (F)',
     endlessKey:   'Endless Key',
+    spin:         '✦ Bonus Spin',
   }
 </script>
 
@@ -641,8 +642,11 @@
                   {/each}
                 </div>
               {/if}
+              {#if battleNumber % 5 === 0}
+                <p class="font-mono text-xs mt-3 text-center font-bold" style="color: #a78bfa;">✦ Milestone: +2 Bonus Spins!</p>
+              {/if}
               {#if battleNumber === BATTLES_PER_WORLD}
-                <p class="font-mono text-sm mt-3 text-center font-bold" style="color: #4ade80;">World Cleared!</p>
+                <p class="font-mono text-sm mt-1 text-center font-bold" style="color: #4ade80;">World Cleared!</p>
               {/if}
             </div>
           {/if}
