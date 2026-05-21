@@ -4,7 +4,8 @@
 
 import type { StoryRosterEntry, StoryTeam, EquippedItem } from './types'
 import type { WorldGrade } from './worlds'
-import { WORLD_GRADES, BATTLES_PER_WORLD, getPlayerLevelFromWorlds } from './worlds'
+import { WORLD_GRADES, BATTLES_PER_WORLD, MAX_ABSOLUTE_PLUS, getPlayerLevelFromWorlds } from './worlds'
+export { MAX_ABSOLUTE_PLUS } from './worlds'
 import { scoreTier, computeOverallScore, extendedTierFromScore, boostedTier } from '../game/scoreTier'
 import type { TierGrade } from '../game/scoreTier'
 import type { SpinResult } from '../session/types'
@@ -219,6 +220,10 @@ export interface StorySaveSlot {
   spinsLastRefreshedAt: string
   /** Endless Mode keys — each key grants one Endless Mode run. Unlocked at player level 3. */
   endlessKeys: number
+  /** How many complete Absolute+ runs have been finished (0–MAX_ABSOLUTE_PLUS). */
+  absolutePlusCompleted: number
+  /** Battles finished in the currently-active Absolute+ run (resets to 0 when a run completes). */
+  absolutePlusBattles: number
   inventory: StoryInventory
   dailyCrystalPurchases: DailyCrystalPurchases
   createdAt: string
@@ -284,6 +289,8 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
     bonusSpins: 0,
     spinsLastRefreshedAt: new Date().toISOString(),
     endlessKeys: 0,
+    absolutePlusCompleted: 0,
+    absolutePlusBattles: 0,
     inventory: freshInventory(),
     dailyCrystalPurchases: freshDailyPurchases(),
     createdAt: new Date().toISOString(),
@@ -322,6 +329,8 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     inventory: migrateInventory(raw.inventory ?? {}),
     dailyCrystalPurchases: raw.dailyCrystalPurchases ?? freshDailyPurchases(),
     endlessKeys: raw.endlessKeys ?? 0,
+    absolutePlusCompleted: raw.absolutePlusCompleted ?? 0,
+    absolutePlusBattles: raw.absolutePlusBattles ?? 0,
     teams: raw.teams ?? [],
     // Migrate roster entries — add missing fields and burn any accumulated statBonuses into spins
     roster: (raw.roster ?? []).map(r => {
@@ -720,6 +729,28 @@ export function buyStatCrystalWithShards(
 /** Grants one Endless Key. */
 export function addEndlessKey(slot: StorySaveSlot): StorySaveSlot {
   return { ...slot, endlessKeys: slot.endlessKeys + 1 }
+}
+
+/**
+ * Records a won battle in the current Absolute+ run.
+ * When all 20 battles are cleared the run counter increments and battle progress resets.
+ * Awards milestone bonus spins every 5 battles, same as regular worlds.
+ */
+export function recordAbsolutePlusWin(slot: StorySaveSlot): StorySaveSlot {
+  const prev = slot.absolutePlusBattles ?? 0
+  const battles = prev + 1
+  const milestonesCrossed = Math.floor(battles / 5) - Math.floor(prev / 5)
+  const bonusSpins = slot.bonusSpins + milestonesCrossed * 2
+
+  if (battles >= BATTLES_PER_WORLD) {
+    return {
+      ...slot,
+      absolutePlusCompleted: Math.min(MAX_ABSOLUTE_PLUS, (slot.absolutePlusCompleted ?? 0) + 1),
+      absolutePlusBattles: 0,
+      bonusSpins,
+    }
+  }
+  return { ...slot, absolutePlusBattles: battles, bonusSpins }
 }
 
 /** Consumes one Endless Key. Returns null if none remaining. */

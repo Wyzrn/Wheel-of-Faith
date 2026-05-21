@@ -1,12 +1,20 @@
 <script lang="ts">
-  import { WORLD_GRADES, BATTLES_PER_WORLD, PLAYER_LEVEL_WORLDS, type WorldGrade } from '$lib/story/worlds'
+  import { WORLD_GRADES, BATTLES_PER_WORLD, MAX_ABSOLUTE_PLUS, PLAYER_LEVEL_WORLDS, type WorldGrade } from '$lib/story/worlds'
   import type { StorySaveSlot } from '$lib/story/saveSlots'
 
-  let { slot, onEnterWorld, onBack }: {
+  let { slot, onEnterWorld, onEnterAbsolutePlus, onBack }: {
     slot: StorySaveSlot
     onEnterWorld: (world: WorldGrade) => void
+    onEnterAbsolutePlus?: (level: number) => void
     onBack: () => void
   } = $props()
+
+  let absoluteBeaten = $derived(slot.worldProgress['Absolute']?.beaten ?? false)
+  let absCompleted   = $derived(slot.absolutePlusCompleted ?? 0)
+  let absBattles     = $derived(slot.absolutePlusBattles ?? 0)
+  let absMaxed       = $derived(absCompleted >= MAX_ABSOLUTE_PLUS)
+  // The plus level the player is currently on (1-based; e.g. 1 = "Absolute +1")
+  let currentPlusLevel = $derived(absCompleted + 1)
 
   const GRADE_COLORS: Record<string, string> = {
     F: '#6b7280', E: '#78716c', D: '#a3a3a3', C: '#4ade80',
@@ -117,7 +125,7 @@
     {@const color = GRADE_COLORS[world] ?? '#9a907b'}
     {@const pct = prog.beaten ? 100 : Math.round((prog.battlesCompleted / BATTLES_PER_WORLD) * 100)}
     {@const levelUnlock = Object.entries(LEVEL_WORLD).find(([, w]) => w === world)?.[0]}
-    {@const isActive = world === activeWorld}
+    {@const isActive = world === activeWorld && !absoluteBeaten}
 
     <div
       class="rounded-xl overflow-hidden"
@@ -183,5 +191,71 @@
       </div>
     </div>
   {/each}
+
+  <!-- ── Absolute+ Section ──────────────────────────────────────────────── -->
+  {#if absoluteBeaten}
+    {@const plusColor = '#ffffff'}
+    <div class="flex items-center gap-3 my-1 mt-3">
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+      <p class="font-mono text-xs tracking-widest uppercase" style="color: var(--color-outline);">Absolute +</p>
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+    </div>
+
+    <div class="rounded-xl overflow-hidden"
+      style="border: 1px solid rgba(255,255,255,{absMaxed ? '0.3' : '0.18'});
+             background: rgba(255,255,255,0.04);">
+      <div class="px-4 py-3.5 flex items-center gap-3">
+        <!-- Badge -->
+        <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-bold"
+          style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25);
+                 color: #fff; font-family: var(--font-cinzel); font-size: 8px; text-align: center; line-height: 1.2;">
+          ABS<br>+{absMaxed ? MAX_ABSOLUTE_PLUS : currentPlusLevel}
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">
+              Absolute +{absMaxed ? MAX_ABSOLUTE_PLUS : currentPlusLevel}
+            </span>
+            {#if absMaxed}
+              <span class="font-mono text-xs px-1.5 py-0.5 rounded"
+                style="background: rgba(255,215,0,0.12); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); font-size: 9px;">
+                MAXED
+              </span>
+            {:else}
+              <span class="font-mono text-xs" style="color: var(--color-outline); font-size: 10px;">
+                {absCompleted}/{MAX_ABSOLUTE_PLUS} cleared
+              </span>
+            {/if}
+          </div>
+          <div class="font-mono text-xs" style="color: var(--color-outline); font-size: 10px;">
+            {#if absMaxed}
+              All tiers conquered
+            {:else}
+              Run {absBattles}/{BATTLES_PER_WORLD} battles
+            {/if}
+          </div>
+          {#if !absMaxed}
+            <div class="mt-1.5 rounded-full overflow-hidden" style="height: 2px; background: rgba(255,255,255,0.06);">
+              <div class="h-full rounded-full"
+                style="width: {Math.round((absBattles / BATTLES_PER_WORLD) * 100)}%;
+                       background: rgba(255,255,255,0.7);"></div>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Enter / Maxed -->
+        {#if absMaxed}
+          <span class="material-symbols-outlined flex-shrink-0" style="font-size: 18px; color: #ffd700; font-variation-settings: 'FILL' 1;">emoji_events</span>
+        {:else}
+          <button onclick={() => onEnterAbsolutePlus?.(currentPlusLevel)}
+            class="flex-shrink-0 rounded-lg px-2.5 py-1.5 font-bold font-mono"
+            style="font-size: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.3); color: #fff; cursor: pointer; letter-spacing: 0.05em;">
+            Enter
+          </button>
+        {/if}
+      </div>
+    </div>
+  {/if}
 
 </div>

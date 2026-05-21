@@ -146,6 +146,26 @@
   let armorGrade     = $derived((armorMap.get(armor)?.grade ?? 'F') as ItemGrade)
   let armorElement   = $derived(armorMap.get(armor)?.element)
 
+  // Effective grades — take highest between spin-derived grade and any equipped crystal items
+  let effectivePowerGrade = $derived(
+    equippedItems?.powers.length
+      ? highestGrade([topPowerGrade, ...equippedItems.powers.map(p => p.grade as ItemGrade)])
+      : topPowerGrade
+  )
+  let effectiveWeaponGrade = $derived(
+    equippedItems?.weapons.length
+      ? highestGrade([topWeaponGrade, ...equippedItems.weapons.map(w => w.grade as ItemGrade)])
+      : topWeaponGrade
+  )
+  let effectiveArmorGrade = $derived(
+    equippedItems?.armors.length
+      ? highestGrade([armorGrade, ...equippedItems.armors.map(a => a.grade as ItemGrade)])
+      : armorGrade
+  )
+  let powerBoosted  = $derived(effectivePowerGrade !== topPowerGrade)
+  let weaponBoosted = $derived(effectiveWeaponGrade !== topWeaponGrade)
+  let armorBoosted  = $derived(effectiveArmorGrade !== armorGrade)
+
   // ── Save & Share state ────────────────────────────────────────────────────
 
   let saving         = $state(false)
@@ -300,24 +320,33 @@
   {#if powers.length > 0 || weapons.length > 0 || armor !== '—'}
     <div class="flex gap-3">
       {#if powers.length > 0}
-        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center" style="border: 1px solid {ITEM_GRADE_INFO[topPowerGrade].color}44;">
+        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center relative" style="border: 1px solid {ITEM_GRADE_INFO[effectivePowerGrade].color}44;">
+          {#if powerBoosted}
+            <span class="absolute top-1 right-1.5 text-[8px] font-bold" style="color: #34d399;">↑equip</span>
+          {/if}
           <p class="text-[9px] tracking-[0.18em] uppercase mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Power Grade</p>
-          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[topPowerGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[topPowerGrade].glow});">{topPowerGrade}</p>
-          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[topPowerGrade].label} · +{ITEM_GRADE_INFO[topPowerGrade].battleBonus}</p>
+          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[effectivePowerGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[effectivePowerGrade].glow});">{effectivePowerGrade}</p>
+          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[effectivePowerGrade].label} · +{ITEM_GRADE_INFO[effectivePowerGrade].battleBonus}</p>
         </div>
       {/if}
       {#if weapons.length > 0}
-        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center" style="border: 1px solid {ITEM_GRADE_INFO[topWeaponGrade].color}44;">
+        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center relative" style="border: 1px solid {ITEM_GRADE_INFO[effectiveWeaponGrade].color}44;">
+          {#if weaponBoosted}
+            <span class="absolute top-1 right-1.5 text-[8px] font-bold" style="color: #34d399;">↑equip</span>
+          {/if}
           <p class="text-[9px] tracking-[0.18em] uppercase mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Weapon Grade</p>
-          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[topWeaponGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[topWeaponGrade].glow});">{topWeaponGrade}</p>
-          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[topWeaponGrade].label} · +{ITEM_GRADE_INFO[topWeaponGrade].battleBonus}</p>
+          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[effectiveWeaponGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[effectiveWeaponGrade].glow});">{effectiveWeaponGrade}</p>
+          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[effectiveWeaponGrade].label} · +{ITEM_GRADE_INFO[effectiveWeaponGrade].battleBonus}</p>
         </div>
       {/if}
       {#if armor !== '—'}
-        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center" style="border: 1px solid {ITEM_GRADE_INFO[armorGrade].color}44;">
+        <div class="flex-1 obsidian-slab rounded-lg px-3 py-2.5 text-center relative" style="border: 1px solid {ITEM_GRADE_INFO[effectiveArmorGrade].color}44;">
+          {#if armorBoosted}
+            <span class="absolute top-1 right-1.5 text-[8px] font-bold" style="color: #34d399;">↑equip</span>
+          {/if}
           <p class="text-[9px] tracking-[0.18em] uppercase mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Armor Grade</p>
-          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[armorGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[armorGrade].glow});">{armorGrade}</p>
-          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[armorGrade].label} · +{ITEM_GRADE_INFO[armorGrade].battleBonus}</p>
+          <p class="text-base font-black leading-none" style="color: {ITEM_GRADE_INFO[effectiveArmorGrade].color}; font-family: 'Cinzel', serif; filter: drop-shadow(0 0 8px {ITEM_GRADE_INFO[effectiveArmorGrade].glow});">{effectiveArmorGrade}</p>
+          <p class="text-[9px] mt-1" style="color: #9a907b;">{ITEM_GRADE_INFO[effectiveArmorGrade].label} · +{ITEM_GRADE_INFO[effectiveArmorGrade].battleBonus}</p>
         </div>
       {/if}
     </div>

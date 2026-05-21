@@ -10,6 +10,9 @@ export const WORLD_GRADES: readonly WorldGrade[] = [
 
 export const BATTLES_PER_WORLD = 20
 
+/** Maximum number of Absolute+ difficulty tiers available beyond the base Absolute world. */
+export const MAX_ABSOLUTE_PLUS = 20
+
 export type EnemyType = 'normal' | 'elite' | 'boss'
 
 /** A group of enemies of one type within a wave. */

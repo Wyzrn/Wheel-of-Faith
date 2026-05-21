@@ -40,6 +40,7 @@
   let currentSlot = $state<StorySaveSlot | null>(null)
   let deleteConfirmId = $state<SlotId | null>(null)
   let activeWorld = $state<WorldGrade | null>(null)
+  let activePlusLevel = $state(0)
 
   // ── Roster/sort/dialog state ───────────────────────────────────────────────
   let sortBy = $state<'tier' | 'race' | 'archetype'>('tier')
@@ -263,6 +264,13 @@
   // ── Worlds / battle ────────────────────────────────────────────────────────
   function enterWorld(world: WorldGrade) {
     activeWorld = world
+    activePlusLevel = 0
+    view = 'battle'
+  }
+
+  function enterAbsolutePlus(level: number) {
+    activeWorld = 'Absolute'
+    activePlusLevel = level
     view = 'battle'
   }
 
@@ -1256,6 +1264,7 @@
   <WorldsView
     slot={currentSlot}
     onEnterWorld={enterWorld}
+    onEnterAbsolutePlus={enterAbsolutePlus}
     onBack={backToHub}
   />
 {/if}
@@ -1265,6 +1274,7 @@
   <BattleView
     slot={currentSlot}
     world={activeWorld}
+    absolutePlusLevel={activePlusLevel}
     onBattleComplete={handleBattleComplete}
     onNextBattle={handleNextBattle}
     onBack={() => view = 'worlds'}

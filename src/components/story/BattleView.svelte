@@ -9,21 +9,24 @@
     type BattleCharacter, type TeamBattleRound,
   } from '$lib/game/battle'
   import {
-    recordBattleWin, applyBattleDrops, addTeamXp,
+    recordBattleWin, recordAbsolutePlusWin, applyBattleDrops, addTeamXp,
     type StorySaveSlot, type BattleDrops,
   } from '$lib/story/saveSlots'
   import type { StoryRosterEntry, StoryTeam } from '$lib/story/types'
   import AttackFX from '../AttackFX.svelte'
   import { settings } from '$lib/settings.svelte'
 
-  let { slot, world, onBattleComplete, onNextBattle, onBack, onGoToTeams }: {
+  let { slot, world, absolutePlusLevel = 0, onBattleComplete, onNextBattle, onBack, onGoToTeams }: {
     slot: StorySaveSlot
     world: WorldGrade
+    absolutePlusLevel?: number
     onBattleComplete: (updated: StorySaveSlot) => void
     onNextBattle?: (updated: StorySaveSlot) => void
     onBack: () => void
     onGoToTeams: () => void
   } = $props()
+
+  let plusMode = $derived(absolutePlusLevel > 0)
 
   // ── Grade colors ──────────────────────────────────────────────────────────
   const GRADE_COLORS: Record<string, string> = {
@@ -55,7 +58,8 @@
     const idx     = WORLD_GRADES.indexOf(enemy.grade)
     const baseHp  = ENEMY_BASE_HP[enemy.grade] ?? 100
     const mult    = enemy.type === 'boss' ? 2.5 : enemy.type === 'elite' ? 1.5 : 1.0
-    const hp      = Math.round(baseHp * mult)
+    const plusScale = plusMode ? 1 + absolutePlusLevel * 0.3 : 1
+    const hp      = Math.round(baseHp * mult * plusScale)
     const agilityRank       = randRank(minR, maxR)
     const speedRank         = randRank(minR, maxR)
     const fightingSkillRank = randRank(minR, maxR)
@@ -125,7 +129,9 @@
     return Math.max(50, ms / settings.battleSpeed)
   }
 
-  let battleNumber   = $derived((slot.worldProgress[world]?.battlesCompleted ?? 0) + 1)
+  let battleNumber   = $derived(plusMode
+    ? (slot.absolutePlusBattles ?? 0) + 1
+    : (slot.worldProgress[world]?.battlesCompleted ?? 0) + 1)
   let previewWaves   = $derived(getBattleWaves(world, battleNumber))
   let previewEnemies = $derived(previewWaves.flat())
   let ec = $derived(previewEnemies[0] ? gradeColor(previewEnemies[0].grade) : '#9a907b')
@@ -333,7 +339,7 @@
   }
 
   function buildUpdatedSlot(): StorySaveSlot {
-    let updated = recordBattleWin(slot, world)
+    let updated = plusMode ? recordAbsolutePlusWin(slot) : recordBattleWin(slot, world)
     updated = applyBattleDrops(updated, lastDrops!)
     if (teamCharIds.length > 0) {
       updated = addTeamXp(updated, teamCharIds, lastDrops!.xp)
@@ -403,7 +409,7 @@
     <div style="width: 36px;"></div>
   {/if}
   <h2 class="font-bold flex-1 text-center" style="font-family: var(--font-cinzel); font-size: 15px; color: var(--color-on-surface);">
-    {world} World — Battle {battleNumber}/{BATTLES_PER_WORLD}
+    {plusMode ? `Absolute +${absolutePlusLevel}` : `${world} World`} — Battle {battleNumber}/{BATTLES_PER_WORLD}
   </h2>
   {#if phase === 'fight'}
     <div class="flex items-center gap-1.5">
@@ -669,7 +675,9 @@
                 <p class="font-mono text-xs mt-3 text-center font-bold" style="color: #a78bfa;">✦ Milestone: +2 Bonus Spins!</p>
               {/if}
               {#if battleNumber === BATTLES_PER_WORLD}
-                <p class="font-mono text-sm mt-1 text-center font-bold" style="color: #4ade80;">World Cleared!</p>
+                <p class="font-mono text-sm mt-1 text-center font-bold" style="color: #4ade80;">
+                  {plusMode ? `Absolute +${absolutePlusLevel} Cleared!` : 'World Cleared!'}
+                </p>
               {/if}
             </div>
           {/if}
