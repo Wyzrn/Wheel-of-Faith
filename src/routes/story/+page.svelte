@@ -323,7 +323,8 @@
 
   // ── Teams state ────────────────────────────────────────────────────────────
   let teams = $derived(currentSlot?.teams ?? [])
-  let teamMaxSize = $derived(maxTeamSize(playerLevel))
+  let fWorldBeaten = $derived(currentSlot?.worldProgress?.['F']?.beaten ?? false)
+  let teamMaxSize  = $derived(maxTeamSize(playerLevel, fWorldBeaten))
 
   type TeamFormMode = 'none' | 'create' | 'edit'
   let teamFormMode = $state<TeamFormMode>('none')
@@ -1211,7 +1212,10 @@
       style="color: var(--color-outline); background: none; border: none; cursor: pointer;"
       onclick={() => { view = 'hub'; cancelTeamForm() }}>←</button>
     <h2 class="font-bold flex-1" style="font-family: var(--font-cinzel); font-size: 18px; color: var(--color-on-surface);">Teams</h2>
-    <span class="font-mono text-xs" style="color: var(--color-outline);">max {teamMaxSize}/team</span>
+    <span class="font-mono text-xs" style="color: var(--color-outline);">
+      {teamMaxSize}/team
+      {#if !fWorldBeaten}· Beat F World to unlock slot 2{:else if teamMaxSize < 4}· Lv {teamMaxSize - 1} → {teamMaxSize + 1} slots{/if}
+    </span>
   </header>
 
   <div class="pt-20 pb-24 px-4 flex flex-col gap-4 max-w-md mx-auto w-full">

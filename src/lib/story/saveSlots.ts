@@ -566,9 +566,14 @@ export function buyEndlessKey(slot: StorySaveSlot): StorySaveSlot | 'insufficien
   return { ...slot, gems: slot.gems - ENDLESS_KEY_GEM_COST, endlessKeys: slot.endlessKeys + 1 }
 }
 
-/** Max characters allowed in a team at a given player level. Level 0–1 = 1, then +1 per level up to 4. */
-export function maxTeamSize(playerLevel: number): number {
-  return Math.min(4, Math.max(1, playerLevel))
+/**
+ * Max characters allowed in a team.
+ * Beating F world unlocks the 2nd slot. Each player level after that adds one more (cap 4).
+ * Auto-detected from worldProgress — no migration needed for existing saves.
+ */
+export function maxTeamSize(playerLevel: number, fWorldBeaten: boolean): number {
+  if (!fWorldBeaten) return 1
+  return Math.min(4, 2 + playerLevel)
 }
 
 /** Creates a new named team in the slot. */
