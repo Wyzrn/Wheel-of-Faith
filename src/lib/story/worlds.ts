@@ -1,5 +1,5 @@
 // Story Mode worlds system.
-// 16 worlds (F → Absolute), 20 battles each. Enemies scale ±1 tier around world grade.
+// 16 worlds (F → Absolute), 20 battles each. All enemies match world grade; type multipliers handle difficulty.
 // Player level (1–5) is unlocked by beating specific worlds.
 
 export type WorldGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'Z' | 'ZZ' | 'ZZZ' | 'Celestial' | 'Godly' | 'Primordial' | 'Absolute'
@@ -120,8 +120,7 @@ export function worldIndex(grade: WorldGrade): number {
 }
 
 /** Returns the enemy grade for battle N (1-based) in a world.
- *  Battle 20 is the boss (same grade as world). Battles 10, 15 are elite (+1 tier from world, capped).
- *  All other battles alternate between world-1 and world grade.
+ *  All enemies use the world grade. Type multipliers (normal=1×, elite=1.5×, boss=2.5×) handle difficulty.
  */
 export type EnemyType = 'normal' | 'elite' | 'boss'
 export interface Enemy {
@@ -132,7 +131,8 @@ export interface Enemy {
 
 /**
  * Expands a battle spec into concrete Enemy arrays for each wave.
- * normal = world-1 grade, elite = world+1 (capped), boss = world grade.
+ * All enemy types use the world grade. Difficulty difference comes from HP/damage
+ * multipliers in buildEnemyChar (normal=1×, elite=1.5×, boss=2.5×), not grade offsets.
  */
 export function getBattleWaves(worldGrade: WorldGrade, battleNumber: number): Enemy[][] {
   const idx = worldIndex(worldGrade)
@@ -140,10 +140,7 @@ export function getBattleWaves(worldGrade: WorldGrade, battleNumber: number): En
   return spec.map(wave =>
     wave.flatMap(({ type, count }) =>
       Array.from({ length: count }, (_, i) => {
-        let gradeIdx: number
-        if (type === 'boss') gradeIdx = idx
-        else if (type === 'elite') gradeIdx = Math.min(idx + 1, WORLD_GRADES.length - 1)
-        else gradeIdx = Math.max(0, idx - 1)
+        const gradeIdx = idx
         const grade = WORLD_GRADES[gradeIdx]
         const suffix = count > 1 ? ` ${i + 1}` : ''
         const name = type === 'boss' ? `${worldGrade} Overlord`
