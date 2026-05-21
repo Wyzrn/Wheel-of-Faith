@@ -23,6 +23,12 @@
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   import { settings } from '$lib/settings.svelte'
+  import {
+    classifyAbility, generatePowerDescription, generateWeaponDescription,
+    generateArmorDescription, generateAbilityDescription, generateRaceDescription, generateArchetypeDescription,
+    getAbilityTypeColor, getAbilityTypeIcon, ABILITY_BATTLE_EFFECT,
+    type AbilityType,
+  } from '$lib/content/descriptions'
 
   // ── Category hue map — mirrors main game so wheel colors match ───────────────
   const CATEGORY_HUES: Record<string, number> = {
@@ -118,6 +124,40 @@
   // Pending stat bonus/penalty spins — keyed by stat category, consumed when that stat is spun
   let pendingStatBonuses = $state<Record<string, Array<'statBonus' | 'statPenalty'>>>({})
 
+  // ── Spin meta helpers ─────────────────────────────────────────────────────────
+  const STAT_EFFECTS: Record<string, string> = {
+    strength:      'Contributes to Physical Damage (25%)',
+    speed:         'Increases Initiative and multi-hit chance',
+    agility:       'Increases Dodge Chance',
+    durability:    'Contributes to Max HP (55%)',
+    iq:            'Enables armor pierce, reduces stupidity chance',
+    charisma:      'Enables Charm and Intimidate effects',
+    fightingSkill: 'Primary contributor to Physical Damage (55%)',
+    powerMastery:  'Primary contributor to Power Damage (60%)',
+    weaponMastery: 'Contributes to Physical Damage (20%)',
+    armorStrength: 'Increases Armor Reduction',
+    potential:     'Enables burst damage, contributes to HP (10%)',
+    energyLevel:   'Contributes to Power Damage (40%) and HP (15%)',
+  }
+
+  function getSpinMeta(category: string, label: string, element?: ElementType, grade?: ItemGrade): { description?: string; abilityType?: AbilityType; statEffect?: string } {
+    if (category === 'power' || category === 'racialAbility' || category === 'archetypeAbility') {
+      const abilityType = classifyAbility(label, element)
+      const description = category === 'power'
+        ? generatePowerDescription(label, element, grade)
+        : generateAbilityDescription(label, element, grade)
+      return { abilityType, description, statEffect: ABILITY_BATTLE_EFFECT[abilityType] }
+    }
+    if (category === 'weapon')    return { description: generateWeaponDescription(label, element, grade), statEffect: 'Increases Physical Damage in battle' }
+    if (category === 'armor')     return { description: generateArmorDescription(label, element, grade), statEffect: 'Reduces incoming damage (Armor Reduction)' }
+    if (category === 'race')      return { description: generateRaceDescription(label), statEffect: 'Determines racial abilities, stat tendencies, and weaknesses' }
+    if (category === 'archetype') return { description: generateArchetypeDescription(label), statEffect: 'Defines combat role, ability pool, and power orientation' }
+    if (category === 'raceSubType' || category === 'raceClass') return { statEffect: 'May grant stat bonus spins based on variant' }
+    const statEffect = STAT_EFFECTS[category]
+    if (statEffect) return { statEffect }
+    return {}
+  }
+
   // Result popup state — shown after each spin before advancing to the next
   let pendingResult = $state<{
     label: string
@@ -126,6 +166,9 @@
     color: string
     element?: ElementType
     grade?: ItemGrade
+    description?: string
+    abilityType?: AbilityType
+    statEffect?: string
   } | null>(null)
   let isSessionDone = $state(false)
   let doneEntry = $state<StoryRosterEntry | null>(null)
@@ -459,6 +502,7 @@
         color: resultColor,
         element: resultElement,
         grade: resultGrade,
+        ...getSpinMeta(currentDef.category, resultLabel, resultElement, resultGrade),
       }
     }
 
@@ -598,6 +642,34 @@
                 {pendingResult.grade} · {gradeInfo.label}
               </span>
             {/if}
+          </div>
+        {/if}
+
+        <!-- Ability type badge (powers, racial/archetype abilities) -->
+        {#if pendingResult.abilityType}
+          {@const aColor = getAbilityTypeColor(pendingResult.abilityType)}
+          {@const aIcon  = getAbilityTypeIcon(pendingResult.abilityType)}
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-xs font-semibold"
+            style="background: {aColor}1a; border: 1px solid {aColor}55; color: {aColor};">
+            <span class="material-symbols-outlined" style="font-size: 12px; font-variation-settings: 'FILL' 1;">{aIcon}</span>
+            {pendingResult.abilityType}
+          </div>
+        {/if}
+
+        <!-- Description text -->
+        {#if pendingResult.description}
+          <p class="text-xs leading-relaxed text-center"
+            style="color: #9a907b; max-width: 260px; font-family: 'JetBrains Mono', monospace;">
+            {pendingResult.description}
+          </p>
+        {/if}
+
+        <!-- Battle stat effect -->
+        {#if pendingResult.statEffect}
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-xs"
+            style="background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.18); color: #9a907b;">
+            <span class="material-symbols-outlined" style="font-size: 11px; color: #f0c040; font-variation-settings: 'FILL' 1;">bolt</span>
+            {pendingResult.statEffect}
           </div>
         {/if}
 
