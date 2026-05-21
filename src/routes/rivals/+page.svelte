@@ -4,7 +4,7 @@
   import { page } from '$app/stores'
   import { auth } from '$lib/stores/auth.svelte'
   import { normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
-  import TeamBattleScreen from '../../components/TeamBattleScreen.svelte'
+  import QuickBattleView from '../../components/QuickBattleView.svelte'
   import type { SpinResult } from '$lib/session/types'
 
   // ── Phase state machine ────────────────────────────────────────────────────
@@ -497,10 +497,17 @@
 
 <!-- ── Battle screen (outside main container for full-screen layout) ──────── -->
 {#if phase === 'battle'}
-  <TeamBattleScreen
-    team1={[{ results: myResults as SpinResult[], name: auth.user?.username ?? 'You' }]}
-    team2={[{ results: partnerResults as SpinResult[], name: partnerName || 'Opponent' }]}
-    onRematch={() => { phase = 'mode'; myResults = []; partnerResults = [] }}
-    onBackToMenu={() => { phase = 'mode'; myResults = []; partnerResults = [] }}
-  />
+  <div style="background: #07070d; min-height: 100dvh;">
+    <QuickBattleView
+      team1={[{ results: myResults as SpinResult[], name: auth.user?.username ?? 'You' }]}
+      team2={[{ results: partnerResults as SpinResult[], name: partnerName || 'Opponent' }]}
+      team1Label={auth.user?.username ?? 'You'}
+      team2Label={partnerName || 'Opponent'}
+      title={partnerName === 'BOT' ? 'vs BOT' : `${auth.user?.username ?? 'You'} vs ${partnerName}`}
+      team2Color="#f9a8d4"
+      onRematch={() => { phase = 'mode'; myResults = []; partnerResults = [] }}
+      onBack={() => { phase = 'mode'; myResults = []; partnerResults = [] }}
+      backLabel="Back to Rivals"
+    />
+  </div>
 {/if}

@@ -5,7 +5,7 @@
   import TierBadge from '../components/TierBadge.svelte'
   import CharacterCard from '../components/CharacterCard.svelte'
   import SettingsPanel from '../components/SettingsPanel.svelte'
-  import BattleScreen from '../components/BattleScreen.svelte'
+  import QuickBattleView from '../components/QuickBattleView.svelte'
   import { loadSession, saveSession, clearSession, createSession } from '$lib/session/store'
   import type { SessionState, SpinResult } from '$lib/session/types'
   import { buildInitialQueue, getSegmentsForCategory } from '$lib/game/spinQueue'
@@ -2010,18 +2010,21 @@
 
   <!-- Rivals battle screen -->
   {#if rivalMode && rivalPhase === 'battle'}
-    <div class="pt-14 min-h-screen">
-      <BattleScreen
-        p1Results={p1Results}
-        p1Name={p1Name}
-        p1StartedAt={p1StartedAt}
-        p1ShareId={p1ShareId}
-        p2Results={results}
-        p2Name={characterName}
-        p2StartedAt={p2StartedAt}
+    <div style="background: #07070d; min-height: 100dvh;">
+      <QuickBattleView
+        team1={[{ results, name: characterName }]}
+        team2={[{ results: p1Results, name: p1Name }]}
+        team1Label={characterName}
+        team2Label={p1Name}
+        title={`${characterName} vs ${p1Name}`}
+        team2Color="#f9a8d4"
+        onComplete={(winner) => {
+          if (winner === 'team1') handleChallengeWinner(results, characterName, '')
+          else if (winner === 'team2') handleChallengeWinner(p1Results, p1Name, p1ShareId)
+        }}
         onRematch={handleRematch}
-        onBackToMenu={handleBackToMenu}
-        onChallengeWinner={handleChallengeWinner}
+        onBack={handleBackToMenu}
+        backLabel="Back to Menu"
       />
     </div>
   {/if}
