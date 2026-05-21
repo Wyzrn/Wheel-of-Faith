@@ -301,11 +301,14 @@ export function formatHp(hp: number): string {
 // ─── Build ────────────────────────────────────────────────────────────────────
 
 export function buildBattleCharacter(results: SpinResult[], name: string, statBonuses?: Record<string, number>): BattleCharacter {
-  // Apply stat bonuses by boosting the score of matching spin results
+  // Apply stat bonuses: boost score AND recompute tier so getDisplayTier/getTier
+  // don't fall through to the stale r.tier that was stored at spin time.
   const effective = statBonuses && Object.keys(statBonuses).length > 0
     ? results.map(r => {
         const bonus = statBonuses[r.category]
-        return bonus && r.score != null ? { ...r, score: r.score + bonus } : r
+        if (!bonus || r.score == null) return r
+        const newScore = r.score + bonus
+        return { ...r, score: newScore, tier: scoreTier(newScore), displayLabel: undefined }
       })
     : results
   const rs = effective

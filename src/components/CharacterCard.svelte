@@ -97,9 +97,12 @@
   let stats = $derived(statCategories.map(cat => {
     const r = results.find(r => r.category === cat)
     const bonus = statBonuses?.[cat] ?? 0
-    const boostedScore = r?.score != null ? r.score + bonus : r?.score
-    const boostedTier = bonus > 0 && r?.score != null ? scoreTier(r.score + bonus) : r?.tier
-    return { cat, label: r?.resultLabel ?? '—', tier: boostedTier, score: boostedScore, displayLabel: r?.displayLabel }
+    if (r && bonus > 0 && r.score != null) {
+      const newScore = r.score + bonus
+      // Null out displayLabel so the template uses the recomputed tier, not the stale stored label
+      return { cat, label: r.resultLabel ?? '—', tier: scoreTier(newScore), score: newScore, displayLabel: undefined }
+    }
+    return { cat, label: r?.resultLabel ?? '—', tier: r?.tier, score: r?.score, displayLabel: r?.displayLabel }
   }))
 
   let overallScore = $derived(computeOverallScore(
