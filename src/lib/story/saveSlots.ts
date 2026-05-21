@@ -377,7 +377,21 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     absolutePlusCompleted: raw.absolutePlusCompleted ?? 0,
     absolutePlusBattles: raw.absolutePlusBattles ?? 0,
     endlessHighestWave: raw.endlessHighestWave ?? 0,
-    milestonesAwarded: raw.milestonesAwarded ?? {},
+    milestonesAwarded: (() => {
+      const base = raw.milestonesAwarded ?? {}
+      const result: Partial<Record<WorldGrade, number[]>> = { ...base }
+      // For beaten worlds with incomplete milestone tracking, mark all as awarded
+      for (const [world, prog] of Object.entries(raw.worldProgress ?? {})) {
+        if (prog?.beaten) {
+          const existing = result[world as WorldGrade] ?? []
+          const all = [5, 10, 15, 20]
+          if (!all.every(m => existing.includes(m))) {
+            result[world as WorldGrade] = [...new Set([...existing, ...all])]
+          }
+        }
+      }
+      return result
+    })(),
     absolutePlusMilestonesAwarded: raw.absolutePlusMilestonesAwarded ?? [],
     teams: raw.teams ?? [],
     // Migrate roster entries — add missing fields and burn any accumulated statBonuses into spins
@@ -865,11 +879,11 @@ export function consumeEndlessKey(slot: StorySaveSlot): StorySaveSlot | null {
 /** Cost in gems to buy one Endless Key from the shop (available at player level 3+). */
 export const ENDLESS_KEY_GEM_COST = 50_000
 
-/** Gem cost for one Hero Spin (unlocked at player level 2). 2× luck boost + 2× stat multiplier in battle. */
-export const HERO_SPIN_GEM_COST = 500
+/** Fate Shard cost for one Hero Spin (unlocked at player level 2). 2× luck boost + 2× stat multiplier in battle. */
+export const HERO_SPIN_SHARD_COST = 100
 
-/** Gem cost for one Legend Spin (unlocked at player level 4). 4× luck boost + 4× stat multiplier in battle. */
-export const LEGEND_SPIN_GEM_COST = 2_000
+/** Fate Shard cost for one Legend Spin (unlocked at player level 4). 4× luck boost + 4× stat multiplier in battle. */
+export const LEGEND_SPIN_SHARD_COST = 500
 
 /** Purchases one Endless Key. Returns updated slot or 'insufficient_gems'. */
 export function buyEndlessKey(slot: StorySaveSlot): StorySaveSlot | 'insufficient_gems' {
@@ -877,18 +891,18 @@ export function buyEndlessKey(slot: StorySaveSlot): StorySaveSlot | 'insufficien
   return { ...slot, gems: slot.gems - ENDLESS_KEY_GEM_COST, endlessKeys: slot.endlessKeys + 1 }
 }
 
-/** Purchases one Hero Spin. Returns updated slot or 'insufficient_gems' / 'locked'. */
-export function buyHeroSpin(slot: StorySaveSlot): StorySaveSlot | 'insufficient_gems' | 'locked' {
+/** Purchases one Hero Spin. Returns updated slot or 'insufficient_shards' / 'locked'. */
+export function buyHeroSpin(slot: StorySaveSlot): StorySaveSlot | 'insufficient_shards' | 'locked' {
   if (slot.playerLevel < 2) return 'locked'
-  if (slot.gems < HERO_SPIN_GEM_COST) return 'insufficient_gems'
-  return { ...slot, gems: slot.gems - HERO_SPIN_GEM_COST, heroSpins: (slot.heroSpins ?? 0) + 1 }
+  if ((slot.shards ?? 0) < HERO_SPIN_SHARD_COST) return 'insufficient_shards'
+  return { ...slot, shards: (slot.shards ?? 0) - HERO_SPIN_SHARD_COST, heroSpins: (slot.heroSpins ?? 0) + 1 }
 }
 
-/** Purchases one Legend Spin. Returns updated slot or 'insufficient_gems' / 'locked'. */
-export function buyLegendSpin(slot: StorySaveSlot): StorySaveSlot | 'insufficient_gems' | 'locked' {
+/** Purchases one Legend Spin. Returns updated slot or 'insufficient_shards' / 'locked'. */
+export function buyLegendSpin(slot: StorySaveSlot): StorySaveSlot | 'insufficient_shards' | 'locked' {
   if (slot.playerLevel < 4) return 'locked'
-  if (slot.gems < LEGEND_SPIN_GEM_COST) return 'insufficient_gems'
-  return { ...slot, gems: slot.gems - LEGEND_SPIN_GEM_COST, legendSpins: (slot.legendSpins ?? 0) + 1 }
+  if ((slot.shards ?? 0) < LEGEND_SPIN_SHARD_COST) return 'insufficient_shards'
+  return { ...slot, shards: (slot.shards ?? 0) - LEGEND_SPIN_SHARD_COST, legendSpins: (slot.legendSpins ?? 0) + 1 }
 }
 
 /** Consumes one Hero Spin. Returns updated slot or null if none remaining. */

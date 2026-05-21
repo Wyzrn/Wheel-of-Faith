@@ -140,6 +140,64 @@
   // Pending stat bonus/penalty spins — keyed by stat category, consumed when that stat is spun
   let pendingStatBonuses = $state<Record<string, Array<'statBonus' | 'statPenalty'>>>({})
 
+  // ── Wildcard state ────────────────────────────────────────────────────────
+  let wildcardPhase = $state<'idle' | 'flashing' | 'reveal'>('idle')
+  let wildcardOutcomeType = $state('')
+  let wildcardOutcomeLabel = $state('')
+  let wildcardOutcomeDesc = $state('')
+  let wildcardPendingLabel = $state('')
+  let wildcardPendingIndex = $state(0)
+  let skipWildcard = false
+
+  const STAT_WILDCARD_OUTCOMES = [
+    { type: 'blessing',    weight: 12, outcomeLabel: "FATE'S BLESSING",       desc: '+3 tiers above your roll. The wheel smiles upon you.' },
+    { type: 'curse',       weight: 10, outcomeLabel: "FATE'S CURSE",          desc: '-3 tiers below your roll. The wheel mocks you.' },
+    { type: 'reroll',      weight: 14, outcomeLabel: 'CHAOS REROLL',          desc: 'Fate discards this roll and gives you another spin immediately.' },
+    { type: 'mirror',      weight: 10, outcomeLabel: 'MIRROR OF GLORY',       desc: 'This stat mirrors your highest result so far.' },
+    { type: 'chaos',       weight: 10, outcomeLabel: 'PURE CHAOS',            desc: 'All modifiers ignored. Fate rolls the dice alone.' },
+    { type: 'power_gift',  weight: 10, outcomeLabel: 'GIFT OF POWER',         desc: 'Your roll stands — and fate grants you a bonus power spin.' },
+    { type: 'c_tier',      weight:  8, outcomeLabel: 'FROZEN MEDIOCRITY',     desc: 'Neither cursed nor blessed. This stat is locked to C tier.' },
+    { type: 'double_edge', weight: 10, outcomeLabel: 'DOUBLE-EDGED FATE',     desc: '+4 tiers on this stat — but a new weakness awaits.' },
+    { type: 'shared',      weight: 12, outcomeLabel: 'SHARED FATE',           desc: 'This stat bonds to the one before it — matching tier.' },
+    { type: 'primordial',  weight:  2, outcomeLabel: 'PRIMORDIAL ASCENSION',  desc: 'This stat transcends all limits. Primordial tier granted.' },
+    { type: 'forgotten',   weight:  2, outcomeLabel: 'FORGOTTEN BY FATE',     desc: 'This stat is erased. F- tier locked in.' },
+  ]
+
+  function pickWeighted<T extends { weight: number }>(table: T[]): T {
+    const total = table.reduce((s, o) => s + o.weight, 0)
+    let r = Math.random() * total
+    for (const o of table) { r -= o.weight; if (r <= 0) return o }
+    return table[table.length - 1]
+  }
+
+  function shiftTierLabel(currentLabel: string, shift: number, statSegs: { label: string; tier?: string }[]): string {
+    const currentSeg = statSegs.find(s => s.label === currentLabel)
+    if (!currentSeg?.tier) return currentLabel
+    const curIdx = TIER_ORDER.indexOf(currentSeg.tier as import('$lib/game/scoreTier').TierGrade)
+    if (curIdx < 0) return currentLabel
+    const newIdx = Math.max(0, Math.min(TIER_ORDER.length - 1, curIdx + shift))
+    return statSegs.find(s => s.tier === TIER_ORDER[newIdx])?.label ?? currentLabel
+  }
+
+  function handleWildcardContinue() {
+    const label = wildcardPendingLabel
+    const index = wildcardPendingIndex
+    const type = wildcardOutcomeType
+
+    if (type === 'itemBonus' && currentDef) {
+      queue.splice(currentIndex + 1, 0, { category: currentDef.category as SpinCategory, displayName: `Bonus: ${currentDef.displayName}` })
+    }
+
+    wildcardPhase = 'idle'
+    wildcardOutcomeType = ''
+    wildcardOutcomeLabel = ''
+    wildcardOutcomeDesc = ''
+    wildcardPendingLabel = ''
+
+    skipWildcard = true
+    handleSpinComplete(index, label)
+  }
+
   // ── Spin meta helpers ─────────────────────────────────────────────────────────
   const STAT_EFFECTS: Record<string, string> = {
     strength:      'Contributes to Physical Damage (25%)',
@@ -352,6 +410,71 @@
   function handleSpinComplete(resultIndex: number, resultLabel: string) {
     if (!currentDef) return
 
+    // ── Wildcard interrupt ────────────────────────────────────────────────────
+    if (!skipWildcard) {
+      const isStatSpin = STAT_CATEGORIES.has(currentDef.category) && !currentDef.isReroll
+      const isItemSpin = currentDef.category === 'power' || currentDef.category === 'weapon' || currentDef.category === 'armor'
+
+      if (isStatSpin && Math.random() < 0.05) {
+        const outcome = pickWeighted(STAT_WILDCARD_OUTCOMES)
+        const statSegs = getSegmentsForCategory(currentDef.category as SpinCategory) as { label: string; tier?: string; weight: number }[]
+
+        let modifiedLabel = resultLabel
+        let outcomeDesc = outcome.desc
+
+        if (outcome.type === 'blessing') {
+          modifiedLabel = shiftTierLabel(resultLabel, 2, statSegs)
+          outcomeDesc = `+2 tier shift → ${modifiedLabel}`
+        } else if (outcome.type === 'curse') {
+          modifiedLabel = shiftTierLabel(resultLabel, -2, statSegs)
+          outcomeDesc = `-2 tier shift → ${modifiedLabel}`
+        } else if (outcome.type === 'c_tier') {
+          const cSeg = statSegs.find(s => s.tier === 'C')
+          if (cSeg) modifiedLabel = cSeg.label
+          outcomeDesc = `Locked to C-tier → ${modifiedLabel}`
+        } else if (outcome.type === 'double_edge') {
+          modifiedLabel = shiftTierLabel(resultLabel, 3, statSegs)
+          outcomeDesc = `+3 tier shift → ${modifiedLabel} (penalty incoming)`
+        } else if (outcome.type === 'primordial') {
+          const godSeg = statSegs.find(s => s.tier === 'God')
+          if (godSeg) modifiedLabel = godSeg.label
+          outcomeDesc = `Primordial force — God tier → ${modifiedLabel}`
+        } else if (outcome.type === 'forgotten') {
+          const fSeg = statSegs.find(s => s.tier === 'F-' || s.tier === 'F')
+          if (fSeg) modifiedLabel = fSeg.label
+          outcomeDesc = `Forgotten — F tier → ${modifiedLabel}`
+        }
+
+        wildcardPendingLabel = modifiedLabel
+        wildcardPendingIndex = resultIndex
+        wildcardOutcomeType = outcome.type
+        wildcardOutcomeLabel = outcome.outcomeLabel
+        wildcardOutcomeDesc = outcomeDesc
+        wildcardPhase = 'flashing'
+        setTimeout(() => { wildcardPhase = 'reveal' }, 3000)
+        return
+      }
+
+      if (isItemSpin && Math.random() < 0.20) {
+        // Award a bonus extra item spin of the same type
+        const bonusDef: SpinDefinition = {
+          category: currentDef.category,
+          displayName: `Bonus ${currentDef.displayName}`,
+        }
+        queue.splice(currentIndex + 1, 0, bonusDef)
+        wildcardOutcomeType = 'item_bonus'
+        wildcardOutcomeLabel = 'Item Wildcard!'
+        wildcardOutcomeDesc = `Bonus ${currentDef.displayName} spin incoming!`
+        wildcardPendingLabel = resultLabel
+        wildcardPendingIndex = resultIndex
+        wildcardPhase = 'flashing'
+        setTimeout(() => { wildcardPhase = 'reveal' }, 3000)
+        return
+      }
+    }
+    skipWildcard = false
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Grab element + grade from the landed segment before any queue mutation
     const landedSegment = currentSegments.find(s => s.label === resultLabel)
     const resultElement = landedSegment?.element
@@ -369,6 +492,8 @@
     if (currentDef.category === 'statBonus' || currentDef.category === 'statPenalty') {
       const tierShift = parseInt(resultLabel)
       const targetStat = currentDef.targetStat
+      let resultingLabel: string | undefined
+      let resultingTier: string | undefined
       if (targetStat) {
         let targetIdx = -1
         for (let i = results.length - 1; i >= 0; i--) {
@@ -383,14 +508,19 @@
             : (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === newGrade)?.label
               ?? results[targetIdx].resultLabel
           results[targetIdx] = { ...results[targetIdx], tier: newGrade, score: newScore, resultLabel: newLabel, displayLabel: newDisplayLabel }
+          resultingLabel = newLabel
+          resultingTier = newGrade
         }
       }
       results.push(spinResult)
       const isBonus = currentDef.category === 'statBonus'
+      const shiftSign = isBonus ? '+' : ''
+      const resultingInfo = resultingLabel && resultingTier ? ` → ${resultingTier} · ${resultingLabel}` : ''
       pendingResult = {
-        label: `${resultLabel} to ${formatCategory(targetStat ?? 'Stat')}`,
-        categoryDisplayName: currentDef.displayName,
+        label: `${shiftSign}${tierShift} tier${resultingInfo}`,
+        categoryDisplayName: currentDef.displayName ?? formatCategory(targetStat ?? 'Stat'),
         color: isBonus ? '#34d399' : '#ef4444',
+        tier: resultingTier as import('$lib/game/scoreTier').TierGrade | undefined,
       }
     } else {
       // Enrich stat spins with tier + score from segment data
@@ -635,14 +765,14 @@
           if (potIdx !== -1) {
             const segs = getSegmentsForCategory('potential')
             const godLbl = (segs as { label?: string; tier?: string }[]).find(s => s.tier === 'God')?.label ?? 'God Tier Potential'
-            results[potIdx] = { ...results[potIdx], tier: 'God', score: 100, resultLabel: godLbl }
+            results[potIdx] = { ...results[potIdx], tier: 'God' as import('$lib/game/scoreTier').TierGrade, score: 100, resultLabel: godLbl }
           }
         } else if (resultLabel === 'Free God Tier Strength') {
           const strIdx = results.findIndex(r => r.category === 'strength')
           if (strIdx !== -1) {
             const segs = getSegmentsForCategory('strength')
             const godLbl = (segs as { label?: string; tier?: string }[]).find(s => s.tier === 'God')?.label ?? 'Lifts Reality Itself'
-            results[strIdx] = { ...results[strIdx], tier: 'God', score: 100, resultLabel: godLbl }
+            results[strIdx] = { ...results[strIdx], tier: 'God' as import('$lib/game/scoreTier').TierGrade, score: 100, resultLabel: godLbl }
           }
         } else if (resultLabel === 'Gain a Bonus Power' || resultLabel === 'Free Power Reroll') {
           queue.splice(currentIndex + 1, 0, { category: 'power' as const, displayName: 'Redemption Power' })
@@ -810,7 +940,7 @@
 
   <!-- Spin wheel (remounts on each new spin via {#key}) -->
   {#if currentDef && !showResumePrompt}
-    <div class="flex flex-col items-center gap-4">
+    <div class="relative z-[2] flex flex-col items-center gap-4">
       {#key currentIndex}
         <SpinWheel
           segments={currentSegments}
@@ -834,6 +964,34 @@
     </div>
   {/if}
 </div>
+
+<!-- ── Wildcard overlay ───────────────────────────────────────────────────────── -->
+{#if wildcardPhase !== 'idle'}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    style="background: rgba(7,7,13,0.92); backdrop-filter: blur(14px);"
+  >
+    <div
+      class="relative flex flex-col items-center gap-5 rounded-2xl px-8 py-8 max-w-sm w-full text-center"
+      style="border: 1px solid #f59e0b44; box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 40px #f59e0b22;"
+    >
+      {#if wildcardPhase === 'flashing'}
+        <div class="text-5xl animate-pulse">🎲</div>
+        <p class="text-amber-300 font-bold text-xl tracking-widest uppercase" style="font-family: var(--font-cinzel,'Cinzel',serif);">Wildcard!</p>
+        <p class="text-zinc-400 text-sm">Fate intervenes…</p>
+      {:else}
+        <div class="text-5xl">{wildcardOutcomeType === 'item_bonus' ? '🎁' : '⚡'}</div>
+        <p class="text-amber-300 font-bold text-xl tracking-widest uppercase" style="font-family: var(--font-cinzel,'Cinzel',serif);">{wildcardOutcomeLabel}</p>
+        <p class="text-zinc-300 text-sm leading-relaxed">{wildcardOutcomeDesc}</p>
+        <button
+          onclick={handleWildcardContinue}
+          class="mt-2 px-6 py-2 rounded-lg font-semibold text-sm tracking-wide transition-colors"
+          style="background: #f59e0b; color: #07070d;"
+        >Continue</button>
+      {/if}
+    </div>
+  </div>
+{/if}
 
 <!-- ── Result popup — shown after every spin before advancing ────────────────── -->
 {#if pendingResult}
@@ -940,7 +1098,7 @@
 
 <!-- ── Running spin log ───────────────────────────────────────────────────────── -->
 {#if results.length > 0 && !showResumePrompt && !pendingResult}
-  <div class="fixed left-0 top-0 bottom-0 z-10 flex flex-col"
+  <div class="fixed left-0 top-0 bottom-0 z-[1] flex flex-col"
     style="width: 160px; background: rgba(7,7,13,0.93); border-right: 1px solid rgba(240,192,64,0.12); backdrop-filter: blur(12px);">
     <p class="px-3 pt-3 pb-2 font-mono tracking-widest uppercase" style="color: #9a907b; font-size: 9px; letter-spacing: 0.18em;">Obtained this spin</p>
     <div class="px-3 pb-3 flex flex-col gap-2 overflow-y-auto flex-1">

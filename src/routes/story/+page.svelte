@@ -15,7 +15,7 @@
     STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, STAT_CRYSTAL_SHARD_COSTS,
     CRYSTAL_BUY_PRICES_GEMS, CRYSTAL_BUY_PRICES_SHARDS, CRYSTAL_SELL_PRICES, CRYSTAL_GRADE_LIST,
     STAT_CRYSTAL_SELL_PRICES, ENDLESS_KEY_GEM_COST,
-    HERO_SPIN_GEM_COST, LEGEND_SPIN_GEM_COST, BONUS_SPIN_SELL_PRICE,
+    HERO_SPIN_SHARD_COST, LEGEND_SPIN_SHARD_COST, BONUS_SPIN_SELL_PRICE,
     BOOSTABLE_STATS, BOOSTABLE_STAT_LABELS, STAT_CRYSTAL_BOOST,
     type StorySaveSlot, type SlotId, type StatCrystalType, type CrystalGrade, type BoostableStat,
     type OpenedItem,
@@ -218,20 +218,23 @@
       if (res.status === 401) { syncMessage = 'Log in to sync save slots.'; return }
       if (!res.ok) { syncMessage = 'Sync failed. Try again.'; return }
       const serverSlots = await res.json() as Array<{ slotData: StorySaveSlot }>
-      let filled = 0
+      let synced = 0
       const seen = new Set<SlotId>()
+      // Server returns newest-first; take the most recent save per slot and override local
       for (const ss of serverSlots) {
         const data = ss.slotData
         const sid = data?.id as SlotId
         if (!sid || seen.has(sid)) continue
         seen.add(sid)
-        if (!loadSaveSlot(sid)) {
-          saveSaveSlot(data)
-          filled++
-        }
+        saveSaveSlot(data)
+        synced++
       }
       slots = loadAllSlots()
-      syncMessage = filled > 0 ? `Restored ${filled} slot${filled > 1 ? 's' : ''} from your account.` : 'All slots already have local data.'
+      // If currentSlot was overridden, reload it
+      if (currentSlot && seen.has(currentSlot.id)) {
+        currentSlot = loadSaveSlot(currentSlot.id)
+      }
+      syncMessage = synced > 0 ? `Synced ${synced} slot${synced > 1 ? 's' : ''} from your account.` : 'No linked slots found on your account.'
     } catch {
       syncMessage = 'Sync failed. Try again.'
     } finally {
@@ -363,9 +366,9 @@
 
   const LEVEL_UNLOCKS: Record<number, { unlocks: string[]; statCap: string }> = {
     1: { unlocks: ['Team size increased to 3', 'Stat cap raised to SS+'], statCap: 'SS+' },
-    2: { unlocks: ['Team size increased to 4', 'Hero Spins unlocked (500 gems each)', '2× stat multiplier + luck boost in battle'], statCap: 'SSS+' },
+    2: { unlocks: ['Team size increased to 4', 'Hero Spins unlocked (100 shards each)', '2× stat multiplier + luck boost in battle'], statCap: 'SSS+' },
     3: { unlocks: ['Endless Mode unlocked', 'Stat cap raised to Z'], statCap: 'Z' },
-    4: { unlocks: ['Legend Spins unlocked (2,000 gems each)', '4× stat multiplier + luck boost in battle', 'Stat cap raised to ZZZ'], statCap: 'ZZZ' },
+    4: { unlocks: ['Legend Spins unlocked (500 shards each)', '4× stat multiplier + luck boost in battle', 'Stat cap raised to ZZZ'], statCap: 'ZZZ' },
     5: { unlocks: ['Stat cap removed — no more limits', 'All systems at maximum'], statCap: 'Uncapped' },
   }
 
@@ -507,8 +510,8 @@
       setTimeout(() => { heroSpinBuyError = null }, 2500)
       return
     }
-    if (result === 'insufficient_gems') {
-      heroSpinBuyError = 'Not enough gems.'
+    if (result === 'insufficient_shards') {
+      heroSpinBuyError = `Need ${HERO_SPIN_SHARD_COST} fate shards.`
       setTimeout(() => { heroSpinBuyError = null }, 2500)
       return
     }
@@ -523,8 +526,8 @@
       setTimeout(() => { legendSpinBuyError = null }, 2500)
       return
     }
-    if (result === 'insufficient_gems') {
-      legendSpinBuyError = 'Not enough gems.'
+    if (result === 'insufficient_shards') {
+      legendSpinBuyError = `Need ${LEGEND_SPIN_SHARD_COST} fate shards.`
       setTimeout(() => { legendSpinBuyError = null }, 2500)
       return
     }
@@ -1232,15 +1235,15 @@
         <div class="flex-1 min-w-0">
           <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #f97316;">Hero Spin</p>
           <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">2× luck boost · 2× battle stats · {heroSpins} owned</p>
-          <p class="font-mono text-xs mt-0.5" style="color: #34d399;">{HERO_SPIN_GEM_COST.toLocaleString()} gems
+          <p class="font-mono text-xs mt-0.5" style="color: var(--gold-bright);">{HERO_SPIN_SHARD_COST} fate shards
             {#if playerLevel < 2}<span style="color: #f97316;"> · Unlocks at Level 2</span>{/if}
           </p>
         </div>
         <button
-          class="{playerLevel >= 2 && gems >= HERO_SPIN_GEM_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-4 py-2 font-bold font-mono text-sm flex-shrink-0"
-          style="{playerLevel < 2 || gems < HERO_SPIN_GEM_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
+          class="{playerLevel >= 2 && shards >= HERO_SPIN_SHARD_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-4 py-2 font-bold font-mono text-sm flex-shrink-0"
+          style="{playerLevel < 2 || shards < HERO_SPIN_SHARD_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
           onclick={handleBuyHeroSpin}
-          disabled={playerLevel < 2 || gems < HERO_SPIN_GEM_COST}
+          disabled={playerLevel < 2 || shards < HERO_SPIN_SHARD_COST}
         >
           Buy
         </button>
@@ -1258,15 +1261,15 @@
         <div class="flex-1 min-w-0">
           <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #fbbf24;">Legend Spin</p>
           <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">4× luck boost · 4× battle stats · {legendSpins} owned</p>
-          <p class="font-mono text-xs mt-0.5" style="color: #34d399;">{LEGEND_SPIN_GEM_COST.toLocaleString()} gems
+          <p class="font-mono text-xs mt-0.5" style="color: var(--gold-bright);">{LEGEND_SPIN_SHARD_COST} fate shards
             {#if playerLevel < 4}<span style="color: #fbbf24;"> · Unlocks at Level 4</span>{/if}
           </p>
         </div>
         <button
-          class="{playerLevel >= 4 && gems >= LEGEND_SPIN_GEM_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-4 py-2 font-bold font-mono text-sm flex-shrink-0"
-          style="{playerLevel < 4 || gems < LEGEND_SPIN_GEM_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
+          class="{playerLevel >= 4 && shards >= LEGEND_SPIN_SHARD_COST ? 'metal-stamp-gold' : 'obsidian-slab'} rounded-lg px-4 py-2 font-bold font-mono text-sm flex-shrink-0"
+          style="{playerLevel < 4 || shards < LEGEND_SPIN_SHARD_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
           onclick={handleBuyLegendSpin}
-          disabled={playerLevel < 4 || gems < LEGEND_SPIN_GEM_COST}
+          disabled={playerLevel < 4 || shards < LEGEND_SPIN_SHARD_COST}
         >
           Buy
         </button>
