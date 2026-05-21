@@ -91,7 +91,9 @@
   let phase        = $state<Phase>('pick')
   let selectedTeam = $state<StoryTeam | null>(null)
 
-  // Simultaneous team combat
+  // Wave + simultaneous team combat
+  let allWaves  = $state<Enemy[][]>([])
+  let waveIdx   = $state(0)
   let t1Chars   = $state<BattleCharacter[]>([])
   let t2Chars   = $state<BattleCharacter[]>([])
   let t1DispHp  = $state<number[]>([])
@@ -101,6 +103,8 @@
   let playerWon = $state(false)
   let accDrops  = $state<BattleDrops>({ gems: 0, xp: 0, chanceDrops: [] })
   let lastDrops = $state<BattleDrops | null>(null)
+  // Accumulate all enemy names seen across waves for log coloring
+  let allT2Names = $state(new Set<string>())
 
   let logLines  = $state<string[]>([])
   let logEl     = $state<HTMLDivElement | null>(null)
@@ -113,8 +117,9 @@
 
   const LOG_DELAY = 600
 
-  let battleNumber = $derived((slot.worldProgress[world]?.battlesCompleted ?? 0) + 1)
-  let previewEnemies = $derived(getBattleWaves(world, battleNumber).flat())
+  let battleNumber   = $derived((slot.worldProgress[world]?.battlesCompleted ?? 0) + 1)
+  let previewWaves   = $derived(getBattleWaves(world, battleNumber))
+  let previewEnemies = $derived(previewWaves.flat())
   let ec = $derived(previewEnemies[0] ? gradeColor(previewEnemies[0].grade) : '#9a907b')
 
   let t1Names = $derived(new Set(t1Chars.map(c => c.name)))
@@ -215,7 +220,7 @@
 
   function playRound() {
     if (roundIdx >= rounds.length) {
-      finishBattle('draw')
+      onWaveComplete('draw')
       return
     }
     const round = rounds[roundIdx]
@@ -224,11 +229,27 @@
       t1DispHp = [...round.t1Hp]
       t2DispHp = [...round.t2Hp]
       if (round.winner !== undefined) {
-        finishBattle(round.winner)
+        onWaveComplete(round.winner)
       } else {
         timeoutId = setTimeout(playRound, 700)
       }
     })
+  }
+
+  function onWaveComplete(result: 'team1' | 'team2' | 'draw') {
+    if (result !== 'team1') { finishBattle(result); return }
+    if (waveIdx + 1 >= allWaves.length) { finishBattle('team1'); return }
+    // Restore 50% max HP to living players, carry into next wave
+    t1DispHp = t1Chars.map((c, i) => {
+      const cur = t1DispHp[i] ?? 0
+      if (cur <= 0) return 0
+      return Math.min(c.maxHp, cur + Math.round(c.maxHp * 0.5))
+    })
+    t1Chars = t1Chars.map((c, i) => ({ ...c, hp: t1DispHp[i] }))
+    waveIdx = waveIdx + 1
+    logLines = [...logLines, `── Wave ${waveIdx} cleared! Team restores 50% HP ──`]
+    scrollLog()
+    timeoutId = setTimeout(startWave, 1400)
   }
 
   function finishBattle(winner: 'team1' | 'team2' | 'draw') {
@@ -244,33 +265,43 @@
     phase = 'result'
   }
 
+  function startWave() {
+    const waveEnemies = allWaves[waveIdx] ?? []
+    t2Chars  = waveEnemies.map(e => buildEnemyChar(e))
+    t2DispHp = t2Chars.map(c => c.hp)
+    allT2Names = new Set([...allT2Names, ...t2Chars.map(c => c.name)])
+    // t1Chars.hp already reflects current HP (full on wave 1, restored on subsequent waves)
+    rounds   = simulateTeamBattle(t1Chars, t2Chars)
+    roundIdx = 0
+    if (allWaves.length > 1) {
+      logLines = [...logLines, `══ Wave ${waveIdx + 1} / ${allWaves.length} ══`]
+      scrollLog()
+    }
+    playRound()
+  }
+
   function startFight() {
     if (!selectedTeam || teamMembers.length === 0) return
 
-    // Build all player team characters
+    allWaves = getBattleWaves(world, battleNumber)
+    waveIdx  = 0
+    allT2Names = new Set()
+
+    // Build player team at full HP
     t1Chars  = teamMembers.map(m => buildBattleCharacter(m.spins, m.name))
     t1DispHp = t1Chars.map(c => c.hp)
 
-    // Flatten all enemies across all battle waves into a single opposing team
-    const allEnemies = getBattleWaves(world, battleNumber).flat()
-    t2Chars  = allEnemies.map(e => buildEnemyChar(e))
-    t2DispHp = t2Chars.map(c => c.hp)
-
-    // Pre-roll drops for all enemies
-    accDrops = allEnemies.reduce<BattleDrops>((acc, e) => {
+    // Pre-roll drops for all enemies across all waves
+    accDrops = allWaves.flat().reduce<BattleDrops>((acc, e) => {
       const d = rollDrops(e)
       return { gems: acc.gems + d.gems, xp: acc.xp + d.xp, chanceDrops: [...acc.chanceDrops, ...d.chanceDrops] }
     }, { gems: 0, xp: 0, chanceDrops: [] })
 
-    // Simulate simultaneous team battle — no round cap
-    rounds   = simulateTeamBattle(t1Chars, t2Chars)
-    roundIdx = 0
     logLines = []
-
-    phase = 'intro'
+    phase    = 'intro'
     timeoutId = setTimeout(() => {
       phase = 'fight'
-      playRound()
+      startWave()
     }, 2600)
   }
 
@@ -278,9 +309,9 @@
     if (!playerWon || !lastDrops) {
       phase = 'pick'
       selectedTeam = null
-      t1Chars = []; t2Chars = []
+      t1Chars = []; t2Chars = []; allWaves = []
       t1DispHp = []; t2DispHp = []
-      logLines = []
+      logLines = []; waveIdx = 0; allT2Names = new Set()
       return
     }
     let updated = recordBattleWin(slot, world)
@@ -314,9 +345,16 @@
     {world} World — Battle {battleNumber}/{BATTLES_PER_WORLD}
   </h2>
   {#if phase === 'fight'}
-    <span class="font-mono text-xs px-2 py-1 rounded" style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.2); color: var(--gold-bright);">
-      Rnd {roundIdx}/{rounds.length}
-    </span>
+    <div class="flex items-center gap-1.5">
+      {#if allWaves.length > 1}
+        <span class="font-mono text-xs px-2 py-1 rounded" style="background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.2); color: #a78bfa;">
+          W{waveIdx + 1}/{allWaves.length}
+        </span>
+      {/if}
+      <span class="font-mono text-xs px-2 py-1 rounded" style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.2); color: var(--gold-bright);">
+        R{roundIdx}/{rounds.length}
+      </span>
+    </div>
   {:else}
     <div style="width: 36px;"></div>
   {/if}
@@ -331,16 +369,27 @@
     <div class="mb-5">
       <p class="font-mono text-xs mb-2 tracking-widest uppercase" style="color: var(--color-outline);">Battle Preview</p>
       <div class="obsidian-slab rounded-xl px-3 py-2.5" style="border: 1px solid {ec}33;">
-        <div class="flex flex-wrap gap-1">
-          {#each previewEnemies as e}
-            <span class="font-mono text-xs px-1.5 py-0.5 rounded"
-              style="background: {gradeColor(e.grade)}14; border: 1px solid {gradeColor(e.grade)}33;
-                     color: {e.type === 'boss' ? '#fbbf24' : e.type === 'elite' ? '#a78bfa' : gradeColor(e.grade)};">
-              {e.type === 'boss' ? '☆' : e.type === 'elite' ? '★' : '•'} {e.name}
-            </span>
+        <div class="flex flex-col gap-2">
+          {#each previewWaves as wave, wi}
+            <div>
+              {#if previewWaves.length > 1}
+                <p class="font-mono mb-1" style="color: #9a907b; font-size: 10px;">Wave {wi + 1}</p>
+              {/if}
+              <div class="flex flex-wrap gap-1">
+                {#each wave as e}
+                  <span class="font-mono text-xs px-1.5 py-0.5 rounded"
+                    style="background: {gradeColor(e.grade)}14; border: 1px solid {gradeColor(e.grade)}33;
+                           color: {e.type === 'boss' ? '#fbbf24' : e.type === 'elite' ? '#a78bfa' : gradeColor(e.grade)};">
+                    {e.type === 'boss' ? '☆' : e.type === 'elite' ? '★' : '•'} {e.name}
+                  </span>
+                {/each}
+              </div>
+            </div>
           {/each}
         </div>
-        <p class="font-mono text-xs mt-2" style="color: #9a907b; font-size: 10px;">All enemies fight simultaneously</p>
+        <p class="font-mono text-xs mt-2" style="color: #9a907b; font-size: 10px;">
+          {previewWaves.length > 1 ? `${previewWaves.length} waves · 50% HP restored between waves` : 'Enemies fight simultaneously'}
+        </p>
       </div>
     </div>
 
@@ -473,7 +522,7 @@
       <div class="text-center py-6" style="animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
         <p style="font-family: 'Cinzel', serif; font-size: 3rem; font-weight: 900; color: #f0c040; letter-spacing: 0.2em; filter: drop-shadow(0 0 20px rgba(240,192,64,0.5));">VS</p>
         <p class="mt-2 text-sm tracking-[0.2em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">
-          {t1Chars.length}v{t2Chars.length} — Calculating fate…
+          {t1Chars.length}v{previewEnemies.length} · {allWaves.length} wave{allWaves.length > 1 ? 's' : ''} — Calculating fate…
         </p>
       </div>
     {/if}
@@ -503,7 +552,7 @@
               <p class="text-xs mb-1 font-bold" style="color: #ef4444; font-family: 'JetBrains Mono', monospace;">{line}</p>
             {:else if [...t1Names].some(n => line.startsWith(n))}
               <p class="text-xs mb-1" style="color: #fde68a; font-family: 'JetBrains Mono', monospace;">{line}</p>
-            {:else if [...t2Names].some(n => line.startsWith(n))}
+            {:else if [...allT2Names].some(n => line.startsWith(n))}
               <p class="text-xs mb-1" style="color: #e9d5ff; font-family: 'JetBrains Mono', monospace;">{line}</p>
             {:else}
               <p class="text-xs mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-style: italic;">{line}</p>
