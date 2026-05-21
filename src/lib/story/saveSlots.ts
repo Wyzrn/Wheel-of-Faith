@@ -5,6 +5,9 @@
 import type { StoryRosterEntry, StoryTeam } from './types'
 import type { WorldGrade } from './worlds'
 import { WORLD_GRADES, BATTLES_PER_WORLD, getPlayerLevelFromWorlds } from './worlds'
+import { scoreTier, computeOverallScore, extendedTierFromScore } from '../game/scoreTier'
+import type { TierGrade } from '../game/scoreTier'
+import type { SpinResult } from '../session/types'
 
 export type SlotId = 1 | 2 | 3 | 4
 
@@ -275,16 +278,27 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     dailyCrystalPurchases: raw.dailyCrystalPurchases ?? freshDailyPurchases(),
     endlessKeys: raw.endlessKeys ?? 0,
     teams: raw.teams ?? [],
-    // Migrate roster entries to add xp/level/statBonuses/equipped if missing
-    roster: (raw.roster ?? []).map(r => ({
-      ...r,
-      level: r.level ?? 1,
-      xp: r.xp ?? 0,
-      statBonuses: r.statBonuses ?? {},
-      equippedWeapon: r.equippedWeapon ?? null,
-      equippedArmor: r.equippedArmor ?? null,
-      equippedPower: r.equippedPower ?? null,
-    })),
+    // Migrate roster entries — add missing fields and burn any accumulated statBonuses into spins
+    roster: (raw.roster ?? []).map(r => {
+      const base = {
+        ...r,
+        level: r.level ?? 1,
+        xp: r.xp ?? 0,
+        statBonuses: {} as Record<string, number>,
+        equippedWeapon: r.equippedWeapon ?? null,
+        equippedArmor: r.equippedArmor ?? null,
+        equippedPower: r.equippedPower ?? null,
+      }
+      const bonuses: Record<string, number> = r.statBonuses ?? {}
+      if (Object.keys(bonuses).length === 0) return base
+      // Burn accumulated bonuses into the actual spin results, then clear statBonuses
+      const newSpins = (base.spins ?? []).map((spin: SpinResult) => {
+        const bonus = bonuses[spin.category]
+        return bonus ? boostSpin(spin, bonus) : spin
+      })
+      const { overallScore, overallTier } = recomputeOverall(newSpins)
+      return { ...base, spins: newSpins, overallScore, overallTier }
+    }),
   }
 }
 
@@ -603,7 +617,33 @@ export function openCrystal(
   }
 }
 
-/** Uses a stat crystal on a character, consuming the crystal and applying a stat bonus. */
+/**
+ * Applies a boost to a single spin result, updating score, tier, and displayLabel in place.
+ * Handles the extended tier range (score > 150 → "Absolute+N").
+ */
+function boostSpin(r: SpinResult, boost: number): SpinResult {
+  if (r.score == null) return r
+  const newScore = r.score + boost
+  const newTier = scoreTier(newScore) as TierGrade
+  const newDisplayLabel = newScore > 150 ? `Absolute+${newScore - 150}` : undefined
+  return { ...r, score: newScore, tier: newTier, displayLabel: newDisplayLabel }
+}
+
+const OVERALL_STAT_CATS = [
+  'strength','speed','agility','durability','iq','charisma',
+  'fightingSkill','powerMastery','weaponMastery','armorStrength','potential','energyLevel',
+] as const
+
+/** Recomputes overallScore + overallTier from a character's spin array. */
+function recomputeOverall(spins: SpinResult[]): { overallScore: number; overallTier: TierGrade } {
+  const scoreMap = Object.fromEntries(
+    OVERALL_STAT_CATS.map(cat => [cat, spins.find(r => r.category === cat)?.score ?? 0])
+  )
+  const overallScore = computeOverallScore(scoreMap)
+  return { overallScore, overallTier: scoreTier(overallScore) as TierGrade }
+}
+
+/** Uses a stat crystal on a character: consumes it, boosts the spin result directly, updates overall grade. */
 export function useStatCrystal(
   slot: StorySaveSlot,
   characterId: string,
@@ -611,8 +651,11 @@ export function useStatCrystal(
   type: StatCrystalType,
 ): StorySaveSlot | 'no_crystal' | 'char_not_found' {
   if (slot.inventory.statCrystals[type] <= 0) return 'no_crystal'
-  if (!slot.roster.some(r => r.id === characterId)) return 'char_not_found'
+  const char = slot.roster.find(r => r.id === characterId)
+  if (!char) return 'char_not_found'
   const boost = STAT_CRYSTAL_BOOST[type]
+  const newSpins = char.spins.map(r => r.category === stat ? boostSpin(r, boost) : r)
+  const { overallScore, overallTier } = recomputeOverall(newSpins)
   return {
     ...slot,
     inventory: {
@@ -621,7 +664,7 @@ export function useStatCrystal(
     },
     roster: slot.roster.map(r =>
       r.id === characterId
-        ? { ...r, statBonuses: { ...r.statBonuses, [stat]: (r.statBonuses[stat] ?? 0) + boost } }
+        ? { ...r, spins: newSpins, overallScore, overallTier }
         : r
     ),
   }

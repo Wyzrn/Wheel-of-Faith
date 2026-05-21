@@ -76,8 +76,8 @@
   }
 
   onMount(() => {
-    t1Chars    = team1.map(m => buildBattleCharacter(m.results, m.name, m.statBonuses))
-    t2Chars    = team2.map(m => buildBattleCharacter(m.results, m.name, m.statBonuses))
+    t1Chars    = team1.map(m => buildBattleCharacter(m.results, m.name))
+    t2Chars    = team2.map(m => buildBattleCharacter(m.results, m.name))
     t1DispHp   = t1Chars.map(c => c.hp)
     t2DispHp   = t2Chars.map(c => c.hp)
     allT2Names = new Set(t2Chars.map(c => c.name))

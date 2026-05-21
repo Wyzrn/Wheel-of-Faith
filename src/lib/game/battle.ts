@@ -300,18 +300,8 @@ export function formatHp(hp: number): string {
 
 // ─── Build ────────────────────────────────────────────────────────────────────
 
-export function buildBattleCharacter(results: SpinResult[], name: string, statBonuses?: Record<string, number>): BattleCharacter {
-  // Apply stat bonuses: boost score AND recompute tier so getDisplayTier/getTier
-  // don't fall through to the stale r.tier that was stored at spin time.
-  const effective = statBonuses && Object.keys(statBonuses).length > 0
-    ? results.map(r => {
-        const bonus = statBonuses[r.category]
-        if (!bonus || r.score == null) return r
-        const newScore = r.score + bonus
-        return { ...r, score: newScore, tier: scoreTier(newScore), displayLabel: undefined }
-      })
-    : results
-  const rs = effective
+export function buildBattleCharacter(results: SpinResult[], name: string): BattleCharacter {
+  const rs = results
   const durTier    = getDisplayTier(rs, 'durability')
   const strTier    = getDisplayTier(rs, 'strength')
   const elTier     = getDisplayTier(rs, 'energyLevel')

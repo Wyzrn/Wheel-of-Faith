@@ -19,7 +19,7 @@
   import { getStageTierLabel } from '$lib/story/raceTiers'
   import type { WorldGrade } from '$lib/story/worlds'
   import type { StoryRosterEntry } from '$lib/story/types'
-  import { scoreTier } from '$lib/game/scoreTier'
+  import { extendedTierFromScore } from '$lib/game/scoreTier'
   import CharacterCard from '../../components/CharacterCard.svelte'
   import TierBadge from '../../components/TierBadge.svelte'
   import RosterCard from '../../components/story/RosterCard.svelte'
@@ -1141,7 +1141,6 @@
           results={expandedEntry.spins}
           name={expandedEntry.name}
           startedAt={expandedEntry.sessionStartedAt}
-          statBonuses={expandedEntry.statBonuses}
           readonly={true}
           onNewCharacter={() => {}}
         />
@@ -1670,11 +1669,9 @@
           <p class="font-mono text-xs mb-3" style="color: var(--color-outline);">Choose a stat to boost by +{boost}</p>
           <div class="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
             {#each BOOSTABLE_STATS as stat}
-              {@const existingBonus = selectedChar?.statBonuses?.[stat] ?? 0}
               {@const spinResult = selectedChar?.spins.find(r => r.category === stat)}
-              {@const baseScore = spinResult?.score ?? null}
-              {@const currentGrade = baseScore != null ? scoreTier(baseScore + existingBonus) : (spinResult?.tier ?? null)}
-              {@const newGrade = baseScore != null ? scoreTier(baseScore + existingBonus + boost) : null}
+              {@const currentGrade = spinResult?.score != null ? extendedTierFromScore(spinResult.score) : (spinResult?.tier ?? null)}
+              {@const newGrade = spinResult?.score != null ? extendedTierFromScore(spinResult.score + boost) : null}
               <button onclick={() => doUseStat(stat)}
                 class="px-3 py-2.5 rounded-xl text-left"
                 style="background: rgba(255,255,255,0.03); border: 1px solid {color}22; cursor: pointer; transition: border-color 120ms;">
