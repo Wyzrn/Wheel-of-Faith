@@ -167,6 +167,44 @@
     deleteConfirmId = null
   }
 
+  // ── Share slot ─────────────────────────────────────────────────────────────
+  let shareSlotUrl  = $state<string | null>(null)
+  let shareSlotId   = $state<SlotId | null>(null)
+  let shareSlotSaving = $state(false)
+  let shareSlotError  = $state<string | null>(null)
+
+  async function shareSlot(id: SlotId) {
+    const slot = slots[(id as number) - 1]
+    if (!slot) return
+    shareSlotSaving = true
+    shareSlotError = null
+    shareSlotId = id
+    try {
+      const res = await fetch('/api/story-slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ slotData: slot }),
+      })
+      if (res.status === 401) {
+        shareSlotError = 'Log in to share a save slot.'
+        return
+      }
+      if (!res.ok) throw new Error('Server error')
+      const { url } = await res.json() as { url: string }
+      shareSlotUrl = `${window.location.origin}${url}`
+    } catch {
+      shareSlotError = 'Failed to save. Try again.'
+    } finally {
+      shareSlotSaving = false
+    }
+  }
+
+  function copyShareSlotUrl() {
+    if (!shareSlotUrl) return
+    navigator.clipboard.writeText(shareSlotUrl)
+  }
+
   // ── Hub actions ────────────────────────────────────────────────────────────
   type SpinType = 'refresh' | 'bonus' | 'hero' | 'legend'
   let spinTypeModal = $state(false)
@@ -742,9 +780,17 @@
             {/if}
           </button>
 
-          <!-- Delete button for occupied slots -->
+          <!-- Action row for occupied slots -->
           {#if slot}
-            <div style="border-top: 1px solid rgba(255,255,255,0.04);" class="px-5 py-2 flex justify-end">
+            <div style="border-top: 1px solid rgba(255,255,255,0.04);" class="px-5 py-2 flex items-center justify-between">
+              <button
+                class="font-mono text-xs flex items-center gap-1"
+                style="color: #9a907b; background: none; border: none; cursor: pointer;"
+                onclick={(e) => { e.stopPropagation(); shareSlot(slotId) }}
+              >
+                <span class="material-symbols-outlined" style="font-size: 13px;">link</span>
+                Share
+              </button>
               <button
                 class="font-mono text-xs"
                 style="color: var(--color-outline); background: none; border: none; cursor: pointer; opacity: 0.6;"
@@ -2268,6 +2314,43 @@
 {/if}
 
 <!-- ── Delete slot confirmation ───────────────────────────────────────────────── -->
+<!-- ── Share slot modal ──────────────────────────────────────────────────────── -->
+{#if shareSlotId !== null}
+  <div class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    style="background: rgba(7,7,13,0.9); backdrop-filter: blur(12px);"
+    onclick={() => { shareSlotId = null; shareSlotUrl = null; shareSlotError = null }}
+    role="dialog" aria-modal="true">
+    <div class="obsidian-slab w-full max-w-sm rounded-xl p-7 text-center"
+      style="border: 1px solid rgba(240,192,64,0.25);"
+      onclick={(e) => e.stopPropagation()}>
+      <span class="material-symbols-outlined block text-4xl mb-3" style="color: #f0c040; font-variation-settings: 'FILL' 1;">link</span>
+      <p class="font-bold mb-1" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Share Save Slot {shareSlotId}</p>
+      {#if shareSlotSaving}
+        <p class="font-mono text-sm my-4" style="color: #9a907b;">Saving…</p>
+      {:else if shareSlotError}
+        <p class="font-mono text-sm my-4" style="color: #ef4444;">{shareSlotError}</p>
+      {:else if shareSlotUrl}
+        <p class="font-mono text-xs mb-3" style="color: #9a907b;">Anyone with this link can view your slot.</p>
+        <div class="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+          <span class="font-mono text-xs flex-1 truncate text-left" style="color: #7dd3fc; user-select: text; cursor: text;">{shareSlotUrl}</span>
+          <button onclick={copyShareSlotUrl}
+            class="font-mono text-xs flex-shrink-0 px-2 py-1 rounded"
+            style="background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.25); color: #f0c040; cursor: pointer;">
+            Copy
+          </button>
+        </div>
+      {:else}
+        <p class="font-mono text-sm my-4" style="color: #9a907b;">Generating link…</p>
+      {/if}
+      <button onclick={() => { shareSlotId = null; shareSlotUrl = null; shareSlotError = null }}
+        class="w-full py-2.5 rounded-lg text-sm font-bold"
+        style="font-family: var(--font-cinzel); color: #9a907b; border: 1px solid #4e4635; background: transparent; cursor: pointer;">
+        Close
+      </button>
+    </div>
+  </div>
+{/if}
+
 {#if deleteConfirmId !== null}
   <div
     class="fixed inset-0 z-50 flex items-center justify-center px-4"
