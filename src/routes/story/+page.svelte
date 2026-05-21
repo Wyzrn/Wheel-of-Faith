@@ -604,29 +604,6 @@
         </button>
       </div>
 
-      <!-- Teams -->
-      <div class="obsidian-slab rounded-xl overflow-hidden">
-        <button
-          class="w-full px-5 py-5 flex items-center gap-4"
-          style="background: none; border: none; cursor: pointer;"
-          onclick={() => view = 'teams'}
-        >
-          <div
-            class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
-            style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.15);"
-          >
-            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">shield_person</span>
-          </div>
-          <div class="flex-1 text-left">
-            <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Teams</div>
-            <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              {teams.length} team{teams.length === 1 ? '' : 's'} · max {teamMaxSize} per team
-            </div>
-          </div>
-          <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
-        </button>
-      </div>
-
       <!-- Inventory -->
       <div class="obsidian-slab rounded-xl overflow-hidden">
         <button

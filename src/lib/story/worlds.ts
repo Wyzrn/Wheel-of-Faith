@@ -155,27 +155,6 @@ export function getBattleWaves(worldGrade: WorldGrade, battleNumber: number): En
   )
 }
 
-export function getEnemy(worldGrade: WorldGrade, battleNumber: number): Enemy {
-  const idx = worldIndex(worldGrade)
-  const isBoss = battleNumber === BATTLES_PER_WORLD
-  const isElite = !isBoss && (battleNumber === 10 || battleNumber === 15)
-  const type: EnemyType = isBoss ? 'boss' : isElite ? 'elite' : 'normal'
-
-  // Normal: alternate between world-1 and world tier; elite: world+1 (capped); boss: world grade
-  let gradeIdx: number
-  if (isBoss) {
-    gradeIdx = idx
-  } else if (isElite) {
-    gradeIdx = Math.min(idx + 1, WORLD_GRADES.length - 1)
-  } else {
-    gradeIdx = battleNumber % 2 === 0 ? idx : Math.max(0, idx - 1)
-  }
-
-  const grade = WORLD_GRADES[gradeIdx]
-  const name = isBoss ? `${worldGrade} Overlord` : isElite ? `${grade} Champion` : `${grade} Warrior`
-  return { grade, type, name }
-}
-
 /** Rolls actual gem/XP drops for an enemy (includes elite/boss multiplier). */
 export function rollDrops(enemy: Enemy): { gems: number; xp: number; chanceDrops: ChanceDrop[] } {
   const table = GRADE_DROPS[enemy.grade]

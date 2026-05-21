@@ -118,7 +118,7 @@
     scrollLog()
     const anim = detectAnim(head)
     if (anim) showAnim(anim.type, anim.color, anim.direction)
-    const delay = head.startsWith('──') ? 550 : 1600
+    const delay = head.startsWith('──') ? 550 : 1000
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
   }
 
@@ -229,7 +229,7 @@
     p2Char = buildBattleCharacter(p2Results, p2Name)
     p1DisplayHp = p1Char.hp
     p2DisplayHp = p2Char.hp
-    rounds = simulateBattle(p1Char, p2Char)
+    rounds = simulateBattle(p1Char, p2Char, 10)
 
     timeoutId = setTimeout(() => {
       phase = 'battle'
