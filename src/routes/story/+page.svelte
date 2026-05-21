@@ -6,7 +6,7 @@
     addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin, consumeBonusSpin,
     buyStatCrystal, buyStatCrystalWithShards, getDailyBought, applySpinRefresh, msUntilNextRefresh,
     upgradeRosterCapacity, rosterUpgradeCost, buyCrystalWithGems, buyCrystalWithShards,
-    sellCrystal, sellStatCrystal, buyEndlessKey,
+    sellCrystal, sellStatCrystal, buyEndlessKey, consumeEndlessKey,
     createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
     openCrystal, equipOpenedItem, useStatCrystal,
     SHARD_COST_PER_SPIN, STAGE_LABELS, MAX_DAILY_SPINS,
@@ -30,9 +30,10 @@
   import StorySpinView from '../../components/story/StorySpinView.svelte'
   import WorldsView from '../../components/story/WorldsView.svelte'
   import BattleView from '../../components/story/BattleView.svelte'
+  import EndlessView from '../../components/story/EndlessView.svelte'
 
   // ── View state machine ─────────────────────────────────────────────────────
-  type View = 'saveSlotSelect' | 'hub' | 'spin' | 'roster' | 'expanded' | 'shop' | 'worlds' | 'battle' | 'inventory' | 'teams'
+  type View = 'saveSlotSelect' | 'hub' | 'spin' | 'roster' | 'expanded' | 'shop' | 'worlds' | 'battle' | 'inventory' | 'teams' | 'endless'
   let view = $state<View>('saveSlotSelect')
 
   // ── Slot state ─────────────────────────────────────────────────────────────
@@ -272,6 +273,19 @@
     activeWorld = 'Absolute'
     activePlusLevel = level
     view = 'battle'
+  }
+
+  function enterEndless() {
+    if (!currentSlot || endlessKeys <= 0) { view = 'shop'; return }
+    const result = consumeEndlessKey($state.snapshot(currentSlot) as StorySaveSlot)
+    if (!result) { view = 'shop'; return }
+    currentSlot = result
+    view = 'endless'
+  }
+
+  function handleEndlessExit(updated: StorySaveSlot) {
+    currentSlot = updated
+    view = 'hub'
   }
 
   function handleBattleComplete(updated: StorySaveSlot) {
@@ -844,7 +858,7 @@
           <button
             class="w-full px-5 py-5 flex items-center gap-4 {endlessKeys > 0 ? '' : 'opacity-50'}"
             style="background: none; border: none; cursor: {endlessKeys > 0 ? 'pointer' : 'default'};"
-            onclick={() => endlessKeys > 0 ? view = 'shop' : view = 'shop'}
+            onclick={() => endlessKeys > 0 ? enterEndless() : view = 'shop'}
           >
             <div
               class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
@@ -1279,6 +1293,14 @@
     onNextBattle={handleNextBattle}
     onBack={() => view = 'worlds'}
     onGoToTeams={() => { view = 'teams'; cancelTeamForm() }}
+  />
+{/if}
+
+<!-- ── Endless view ───────────────────────────────────────────────────────────── -->
+{#if view === 'endless' && currentSlot}
+  <EndlessView
+    slot={currentSlot}
+    onExit={handleEndlessExit}
   />
 {/if}
 

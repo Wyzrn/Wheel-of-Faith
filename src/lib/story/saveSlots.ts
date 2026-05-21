@@ -224,6 +224,8 @@ export interface StorySaveSlot {
   absolutePlusCompleted: number
   /** Battles finished in the currently-active Absolute+ run (resets to 0 when a run completes). */
   absolutePlusBattles: number
+  /** Highest wave ever reached in Endless Mode. */
+  endlessHighestWave: number
   inventory: StoryInventory
   dailyCrystalPurchases: DailyCrystalPurchases
   createdAt: string
@@ -291,6 +293,7 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
     endlessKeys: 0,
     absolutePlusCompleted: 0,
     absolutePlusBattles: 0,
+    endlessHighestWave: 0,
     inventory: freshInventory(),
     dailyCrystalPurchases: freshDailyPurchases(),
     createdAt: new Date().toISOString(),
@@ -331,6 +334,7 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     endlessKeys: raw.endlessKeys ?? 0,
     absolutePlusCompleted: raw.absolutePlusCompleted ?? 0,
     absolutePlusBattles: raw.absolutePlusBattles ?? 0,
+    endlessHighestWave: raw.endlessHighestWave ?? 0,
     teams: raw.teams ?? [],
     // Migrate roster entries — add missing fields and burn any accumulated statBonuses into spins
     roster: (raw.roster ?? []).map(r => {
@@ -729,6 +733,22 @@ export function buyStatCrystalWithShards(
 /** Grants one Endless Key. */
 export function addEndlessKey(slot: StorySaveSlot): StorySaveSlot {
   return { ...slot, endlessKeys: slot.endlessKeys + 1 }
+}
+
+/** Updates highestWave record after an Endless Mode run ends and applies accumulated drops. */
+export function recordEndlessResult(
+  slot: StorySaveSlot,
+  wavesCleared: number,
+  drops: BattleDrops,
+  teamCharIds: string[],
+): StorySaveSlot {
+  let updated: StorySaveSlot = {
+    ...slot,
+    endlessHighestWave: Math.max(slot.endlessHighestWave ?? 0, wavesCleared),
+  }
+  updated = applyBattleDrops(updated, drops)
+  if (teamCharIds.length > 0) updated = addTeamXp(updated, teamCharIds, drops.xp)
+  return updated
 }
 
 /**
