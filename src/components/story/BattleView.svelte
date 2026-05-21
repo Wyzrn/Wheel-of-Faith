@@ -319,11 +319,12 @@
     carryOverDeadIds = new Set()
     t1Chars  = teamMembers.map(m => {
       const spinMult = m.spinClass === 'legend' ? 4 : m.spinClass === 'hero' ? 2 : 1
+      const levelMult = 1 + Math.max(0, (m.level ?? 1) - 1) * 0.01
       const bc = buildBattleCharacter(m.spins, m.name, {
         weapons: m.equippedWeapons ?? [],
         armors:  m.equippedArmors  ?? [],
         powers:  m.equippedPowers  ?? [],
-      }, spinMult)
+      }, spinMult * levelMult)
       return dead.has(m.id) ? { ...bc, hp: 0 } : bc
     })
     t1DispHp = t1Chars.map(c => c.hp)

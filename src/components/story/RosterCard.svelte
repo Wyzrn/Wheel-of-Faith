@@ -64,6 +64,19 @@
     {entry.archetype}
   </p>
 
+  <!-- Level / power boost -->
+  <div class="flex items-center gap-2 mt-0.5">
+    <span class="font-mono text-[10px]" style="color: var(--color-on-surface-variant);">
+      Lv {entry.level ?? 1}
+    </span>
+    {#if (entry.level ?? 1) > 1}
+      <span class="font-mono text-[10px] px-1.5 py-0.5 rounded"
+        style="background: rgba(134,239,172,0.12); border: 1px solid rgba(134,239,172,0.25); color: #86efac;">
+        +{(entry.level - 1)}% Power
+      </span>
+    {/if}
+  </div>
+
   <!-- Equipped gear indicator -->
   {#if (entry.equippedWeapons?.length ?? 0) + (entry.equippedArmors?.length ?? 0) + (entry.equippedPowers?.length ?? 0) > 0}
     <div class="flex gap-1 flex-wrap mt-0.5">

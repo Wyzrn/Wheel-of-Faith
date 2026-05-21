@@ -889,23 +889,15 @@ export function deleteTeamInSlot(slot: StorySaveSlot, teamId: string): StorySave
   return { ...slot, teams: slot.teams.filter(t => t.id !== teamId) }
 }
 
-/** Adds XP to a character. Awards one common stat crystal per level gained. */
+/** Adds XP to a character. Each level grants +1% power boost (applied in battle). */
 export function addCharacterXp(slot: StorySaveSlot, characterId: string, xp: number): StorySaveSlot {
-  let inventory = slot.inventory
   const roster = slot.roster.map(r => {
     if (r.id !== characterId) return r
     const newXp = r.xp + xp
     const newLevel = Math.floor(1 + Math.sqrt(newXp / 200))
-    const levelsGained = Math.max(0, newLevel - r.level)
-    if (levelsGained > 0) {
-      inventory = {
-        ...inventory,
-        statCrystals: { ...inventory.statCrystals, common: inventory.statCrystals.common + levelsGained },
-      }
-    }
     return { ...r, xp: newXp, level: newLevel }
   })
-  return { ...slot, roster, inventory }
+  return { ...slot, roster }
 }
 
 /** Splits totalXp evenly across all characterIds (only IDs present in roster get XP). */
