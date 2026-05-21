@@ -76,9 +76,9 @@
   }
 
   // ── Stat tier caps per stage (scores above this are dimmed / unspinnable) ────
-  // Stage 1 → max B+ (score 54), Stage 2 → A+ (69), Stage 3 → S+ (82),
-  // Stage 4 → SS+ (92), Stage 5 → SSS+ (99), Stage 6 → no limit
-  const STAGE_MAX_STAT_SCORES = [54, 69, 82, 92, 99, Infinity] as const
+  // Stage 1 → max B+ (score 54), Stage 2 → SS+ (92), Stage 3 → SSS+ (99),
+  // Stage 4+ → no limit
+  const STAGE_MAX_STAT_SCORES = [54, 92, 99, Infinity, Infinity, Infinity] as const
 
   // ── STAT_CATEGORIES matching scoreTier.ts STAT_WEIGHTS keys ─────────────────
   const STAT_CATEGORIES = new Set([
