@@ -3,7 +3,7 @@
   import { storyHomeSignal } from '$lib/menuState.svelte'
   import {
     loadAllSlots, loadSaveSlot, saveSaveSlot, createSaveSlot, deleteSaveSlot,
-    addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin, consumeBonusSpin,
+    addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin, consumeBonusSpin, sellBonusSpins,
     buyStatCrystal, buyStatCrystalWithShards, getDailyBought, applySpinRefresh, msUntilNextRefresh,
     upgradeRosterCapacity, rosterUpgradeCost, buyCrystalWithGems, buyCrystalWithShards,
     sellCrystal, sellStatCrystal, buyEndlessKey, consumeEndlessKey,
@@ -15,7 +15,7 @@
     STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, STAT_CRYSTAL_SHARD_COSTS,
     CRYSTAL_BUY_PRICES_GEMS, CRYSTAL_BUY_PRICES_SHARDS, CRYSTAL_SELL_PRICES, CRYSTAL_GRADE_LIST,
     STAT_CRYSTAL_SELL_PRICES, ENDLESS_KEY_GEM_COST,
-    HERO_SPIN_GEM_COST, LEGEND_SPIN_GEM_COST,
+    HERO_SPIN_GEM_COST, LEGEND_SPIN_GEM_COST, BONUS_SPIN_SELL_PRICE,
     BOOSTABLE_STATS, BOOSTABLE_STAT_LABELS, STAT_CRYSTAL_BOOST,
     type StorySaveSlot, type SlotId, type StatCrystalType, type CrystalGrade, type BoostableStat,
     type OpenedItem,
@@ -454,6 +454,14 @@
     if (!currentSlot) return
     const result = sellStatCrystal($state.snapshot(currentSlot) as StorySaveSlot, type)
     if (result === 'insufficient_crystals') return
+    currentSlot = result
+    saveSaveSlot($state.snapshot(result) as StorySaveSlot)
+  }
+
+  function handleSellBonusSpins(count: number) {
+    if (!currentSlot) return
+    const result = sellBonusSpins($state.snapshot(currentSlot) as StorySaveSlot, count)
+    if (result === 'insufficient_spins') return
     currentSlot = result
     saveSaveSlot($state.snapshot(result) as StorySaveSlot)
   }
@@ -1146,6 +1154,16 @@
           <p class="font-mono text-xs" style="color: var(--color-outline);">Bonus</p>
           <p class="font-bold text-2xl" style="font-family: var(--font-cinzel); color: #a78bfa;">{bonusSpins}</p>
           <p class="font-mono text-[10px]" style="color: var(--color-outline);">drops &amp; milestones</p>
+          {#if bonusSpins > 0}
+            <button
+              onclick={() => handleSellBonusSpins(1)}
+              class="mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono"
+              style="background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa; cursor: pointer;"
+              title="Sell 1 bonus spin for {BONUS_SPIN_SELL_PRICE} gems"
+            >
+              Sell +{BONUS_SPIN_SELL_PRICE.toLocaleString()}g
+            </button>
+          {/if}
         </div>
         {#if playerLevel >= 2}
           <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.06);"></div>

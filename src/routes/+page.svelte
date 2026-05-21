@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
   import { getRivalsWs, clearRivalsWs, patchRivalsWs } from '$lib/stores/rivalsWs'
+  import { isOfflineRivalsActive, setOfflineRivalsResult } from '$lib/stores/offlineRivals'
   import SpinWheel from '../components/SpinWheel.svelte'
   import TierBadge from '../components/TierBadge.svelte'
   import CharacterCard from '../components/CharacterCard.svelte'
@@ -136,9 +137,10 @@
   let lastCharResults   = $state<SpinResult[] | null>(null)
   let lastCharName      = $state<string | null>(null)
   let lastCharStartedAt = $state<string | null>(null)
-  // Rivals online relay state
+  // Rivals relay state
   let rivalsOnlineMode    = $state(false)
   let rivalsOnlineWaiting = $state(false)
+  let rivalsBotMode       = $state(false)
   let showLastChar    = $state(false)
 
   // ── Tutorial state ────────────────────────────────────────────────────────
@@ -629,6 +631,13 @@
     // Rivals offline: start local 2-player mode immediately
     if (rivalsParam === 'offline') {
       handleRematch()
+      return
+    }
+    // Rivals bot: spin normally, then route back to rivals with bot battle
+    if (rivalsParam === 'bot' && isOfflineRivalsActive()) {
+      rivalsBotMode = true
+      showMenu = false
+      tutorialStep = -1
       return
     }
 
@@ -1259,17 +1268,17 @@
       } else if (resultLabel === 'God Tier Potential (One Use)') {
         const potIdx = results.findIndex(r => r.category === 'potential')
         if (potIdx !== -1) {
-          const statSegs = getSegmentsForCategory('potential')
-          const godLbl = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === 'God')?.label ?? 'God Tier Potential'
-          results[potIdx] = { ...results[potIdx], tier: 'God', score: 100, resultLabel: godLbl }
+          const statSegs = getSegmentsForCategory('potential') as { label: string; tier: TierGrade; score: number }[]
+          const topSeg = [...statSegs].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0]
+          if (topSeg) results[potIdx] = { ...results[potIdx], tier: topSeg.tier, score: topSeg.score, resultLabel: topSeg.label }
         }
         showAnnouncement = 'Potential raised to God Tier!'
       } else if (resultLabel === 'Free God Tier Strength') {
         const strIdx = results.findIndex(r => r.category === 'strength')
         if (strIdx !== -1) {
-          const statSegs = getSegmentsForCategory('strength')
-          const godLbl = (statSegs as { label?: string; tier?: string }[]).find(s => s.tier === 'God')?.label ?? 'Lifts Reality Itself'
-          results[strIdx] = { ...results[strIdx], tier: 'God', score: 100, resultLabel: godLbl }
+          const statSegs = getSegmentsForCategory('strength') as { label: string; tier: TierGrade; score: number }[]
+          const topSeg = [...statSegs].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0]
+          if (topSeg) results[strIdx] = { ...results[strIdx], tier: topSeg.tier, score: topSeg.score, resultLabel: topSeg.label }
         }
         showAnnouncement = 'Strength raised to God Tier!'
       } else if (resultLabel === 'Gain a Bonus Power' || resultLabel === 'Free Power Reroll') {
@@ -1796,6 +1805,14 @@
       clearSession()
       rivalPhase = 'battle'
       showNameScreen = false
+    } else if (rivalsBotMode) {
+      // Bot rivals: store results then navigate back to rivals for the battle
+      const snapshot = $state.snapshot(results) as SpinResult[]
+      setOfflineRivalsResult(snapshot, characterName)
+      clearSession()
+      showNameScreen = false
+      rivalsBotMode = false
+      goto('/rivals?bot_done=1')
     } else if (rivalsOnlineMode) {
       // Online rivals: send results + character name, wait for battle_start
       const wsData = getRivalsWs()
@@ -1913,18 +1930,14 @@
       <!-- Buttons -->
       <div class="flex flex-col gap-4 w-full max-w-xs">
         <div class="flex items-center gap-3">
-          {#if lastCharResults && lastCharName !== null}
-            <button
-              onclick={() => { showLastChar = true; showMenu = false }}
-              class="flex items-center justify-center rounded-full shrink-0 transition-all active:scale-95"
-              style="width: 44px; height: 44px; background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.3); color: #7dd3fc; cursor: pointer;"
-              title="View Last Character"
-            >
-              <span class="material-symbols-outlined" style="font-size: 18px; font-variation-settings: 'FILL' 1;">person</span>
-            </button>
-          {:else}
-            <div style="width: 44px; height: 44px; flex-shrink: 0;"></div>
-          {/if}
+          <button
+            onclick={() => { if (lastCharResults && lastCharName !== null) { showLastChar = true; showMenu = false } }}
+            class="flex items-center justify-center rounded-full shrink-0 transition-all"
+            style="width: 44px; height: 44px; background: rgba(125,211,252,{lastCharResults ? '0.08' : '0.02'}); border: 1px solid rgba(125,211,252,{lastCharResults ? '0.3' : '0.08'}); color: {lastCharResults ? '#7dd3fc' : '#2a3a4a'}; cursor: {lastCharResults ? 'pointer' : 'default'}; opacity: {lastCharResults ? '1' : '0.35'}; flex-shrink: 0;"
+            title={lastCharResults ? 'View Last Character' : 'Spin a character first'}
+          >
+            <span class="material-symbols-outlined" style="font-size: 18px; font-variation-settings: 'FILL' 1;">person</span>
+          </button>
           <button
             onclick={() => { showMenu = false; if (tutorialStep === 0) tutorialStep = 1 }}
             class="metal-stamp-gold flex-1 py-4 rounded-lg relative"

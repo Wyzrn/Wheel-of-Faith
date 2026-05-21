@@ -155,12 +155,12 @@ export const TYPE_TO_STAT_RARITY: Record<EnemyType, StatCrystalRarity> = {
 export const CHANCE_DROP_RATES = {
   fateShard:     0.05,
   powerCrystal:  0.08,
-  statCrystal:   0.005,  // reduced — were dropping too frequently
+  statCrystal:   0.025,  // 2.5% — stat crystals are useful, should drop reasonably often
   weaponCrystal: 0.07,
   armorCrystal:  0.07,
-  spin:          0.03,   // 3% — rare character spin drop
-  heroSpin:      0.008,  // 0.8% — hero spin drop (unlocked at level 2)
-  legendSpin:    0.002,  // 0.2% — legend spin drop (unlocked at level 4)
+  spin:          0.01,   // 1% — rare bonus spin drop
+  heroSpin:      0.003,  // 0.3% — hero spin drop (unlocked at level 2)
+  legendSpin:    0.0005, // 0.05% — legend spin drop (unlocked at level 4)
 } as const
 
 /** Endless Key drop rate — only applies at player level 3+ (caller must check). */

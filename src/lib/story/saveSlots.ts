@@ -45,9 +45,9 @@ export const STAT_CRYSTAL_COSTS = {
 
 /** Daily purchase limits per stat crystal type. */
 export const STAT_CRYSTAL_DAILY_LIMITS = {
-  common:    5,
-  elite:     3,
-  legendary: 1,
+  common:    10,
+  elite:      5,
+  legendary:  3,
 } as const
 
 /** @deprecated Use CRYSTAL_BUY_PRICES_GEMS['F'] instead. Kept for backward compat. */
@@ -86,25 +86,25 @@ export const CRYSTAL_BUY_PRICES_SHARDS: Record<CrystalGrade, number> = {
   God: 50_000,
 }
 
-/** Gems earned when selling one power/weapon/armor crystal of each grade (~30% of buy price). */
+/** Gems earned when selling one power/weapon/armor crystal of each grade (~10% of buy price). */
 export const CRYSTAL_SELL_PRICES: Record<CrystalGrade, number> = {
-  F:      1_500,
-  E:      3_600,
-  D:      9_000,
-  C:     22_500,
-  B:     60_000,
-  A:    150_000,
-  S:    450_000,
-  SS: 1_500_000,
-  SSS: 4_500_000,
-  God: 15_000_000,
+  F:        500,
+  E:      1_200,
+  D:      3_000,
+  C:      7_500,
+  B:     20_000,
+  A:     50_000,
+  S:    150_000,
+  SS:   500_000,
+  SSS: 1_500_000,
+  God: 5_000_000,
 }
 
-/** Gems earned when selling one stat crystal of each type (~30% of buy price). */
+/** Gems earned when selling one stat crystal of each type (~10% of buy price). */
 export const STAT_CRYSTAL_SELL_PRICES: Record<StatCrystalType, number> = {
-  common:    3_000,
-  elite:    30_000,
-  legendary: 300_000,
+  common:     1_000,
+  elite:     10_000,
+  legendary: 100_000,
 }
 
 /** Fate Shard cost to buy one stat crystal (alternative to gems). Shares the daily limit. */
@@ -258,6 +258,10 @@ export interface StorySaveSlot {
   absolutePlusBattles: number
   /** Highest wave ever reached in Endless Mode. */
   endlessHighestWave: number
+  /** Per-world battle milestones (5, 10, 15, 20) already awarded — prevents re-awarding on replay. */
+  milestonesAwarded: Partial<Record<WorldGrade, number[]>>
+  /** Absolute+ run milestones awarded in the current run — resets to [] when a run completes. */
+  absolutePlusMilestonesAwarded: number[]
   inventory: StoryInventory
   dailyCrystalPurchases: DailyCrystalPurchases
   createdAt: string
@@ -328,6 +332,8 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
     absolutePlusCompleted: 0,
     absolutePlusBattles: 0,
     endlessHighestWave: 0,
+    milestonesAwarded: {},
+    absolutePlusMilestonesAwarded: [],
     inventory: freshInventory(),
     dailyCrystalPurchases: freshDailyPurchases(),
     createdAt: new Date().toISOString(),
@@ -371,6 +377,8 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     absolutePlusCompleted: raw.absolutePlusCompleted ?? 0,
     absolutePlusBattles: raw.absolutePlusBattles ?? 0,
     endlessHighestWave: raw.endlessHighestWave ?? 0,
+    milestonesAwarded: raw.milestonesAwarded ?? {},
+    absolutePlusMilestonesAwarded: raw.absolutePlusMilestonesAwarded ?? [],
     teams: raw.teams ?? [],
     // Migrate roster entries — add missing fields and burn any accumulated statBonuses into spins
     roster: (raw.roster ?? []).map(r => {
@@ -513,6 +521,25 @@ export function consumeBonusSpin(slot: StorySaveSlot): StorySaveSlot | null {
   return { ...slot, bonusSpins: slot.bonusSpins - 1 }
 }
 
+/** Gems earned for selling one bonus spin. */
+export const BONUS_SPIN_SELL_PRICE = 100
+
+/**
+ * Sells one or more bonus spins for gems.
+ * Returns updated slot or 'insufficient_spins' if fewer than count are owned.
+ */
+export function sellBonusSpins(
+  slot: StorySaveSlot,
+  count: number,
+): StorySaveSlot | 'insufficient_spins' {
+  if ((slot.bonusSpins ?? 0) < count) return 'insufficient_spins'
+  return {
+    ...slot,
+    bonusSpins: slot.bonusSpins - count,
+    gems: slot.gems + BONUS_SPIN_SELL_PRICE * count,
+  }
+}
+
 /**
  * Attempts to buy one stat crystal.
  * Returns updated slot, or 'insufficient_gems' / 'daily_limit' on failure.
@@ -570,13 +597,19 @@ export function recordBattleWin(slot: StorySaveSlot, world: WorldGrade): StorySa
   const playerLevel = getPlayerLevelFromWorlds(beatenSet)
   const stage = getStageForPlayerLevel(playerLevel)
 
-  // Award 2 bonus spins every 5 battles completed in this world
+  // Award 2 bonus spins at milestones 5, 10, 15, 20 — each milestone awarded only once per world
   const prevCompleted = prev.battlesCompleted
-  const milestonesCrossed =
-    Math.floor(battlesCompleted / 5) - Math.floor(prevCompleted / 5)
-  const bonusSpins = slot.bonusSpins + milestonesCrossed * 2
+  const worldMilestones = [...(slot.milestonesAwarded?.[world] ?? [])]
+  let bonusSpins = slot.bonusSpins
+  for (const milestone of [5, 10, 15, 20]) {
+    if (battlesCompleted >= milestone && prevCompleted < milestone && !worldMilestones.includes(milestone)) {
+      bonusSpins += 2
+      worldMilestones.push(milestone)
+    }
+  }
+  const milestonesAwarded = { ...(slot.milestonesAwarded ?? {}), [world]: worldMilestones }
 
-  return { ...slot, worldProgress, playerLevel, stage, bonusSpins }
+  return { ...slot, worldProgress, playerLevel, stage, bonusSpins, milestonesAwarded }
 }
 
 export interface BattleDrops {
@@ -802,8 +835,14 @@ export function recordEndlessResult(
 export function recordAbsolutePlusWin(slot: StorySaveSlot): StorySaveSlot {
   const prev = slot.absolutePlusBattles ?? 0
   const battles = prev + 1
-  const milestonesCrossed = Math.floor(battles / 5) - Math.floor(prev / 5)
-  const bonusSpins = slot.bonusSpins + milestonesCrossed * 2
+  const awarded = [...(slot.absolutePlusMilestonesAwarded ?? [])]
+  let bonusSpins = slot.bonusSpins
+  for (const milestone of [5, 10, 15, 20]) {
+    if (battles >= milestone && prev < milestone && !awarded.includes(milestone)) {
+      bonusSpins += 2
+      awarded.push(milestone)
+    }
+  }
 
   if (battles >= BATTLES_PER_WORLD) {
     return {
@@ -811,9 +850,10 @@ export function recordAbsolutePlusWin(slot: StorySaveSlot): StorySaveSlot {
       absolutePlusCompleted: Math.min(MAX_ABSOLUTE_PLUS, (slot.absolutePlusCompleted ?? 0) + 1),
       absolutePlusBattles: 0,
       bonusSpins,
+      absolutePlusMilestonesAwarded: [],  // reset milestones for next run
     }
   }
-  return { ...slot, absolutePlusBattles: battles, bonusSpins }
+  return { ...slot, absolutePlusBattles: battles, bonusSpins, absolutePlusMilestonesAwarded: awarded }
 }
 
 /** Consumes one Endless Key. Returns null if none remaining. */
