@@ -781,6 +781,31 @@
         </button>
       </div>
 
+      <!-- Endless Mode (unlocked at player level 3) -->
+      {#if playerLevel >= 3}
+        <div class="obsidian-slab rounded-xl overflow-hidden" style="border: 1px solid rgba(167,139,250,0.2);">
+          <button
+            class="w-full px-5 py-5 flex items-center gap-4 {endlessKeys > 0 ? '' : 'opacity-50'}"
+            style="background: none; border: none; cursor: {endlessKeys > 0 ? 'pointer' : 'default'};"
+            onclick={() => endlessKeys > 0 ? view = 'shop' : view = 'shop'}
+          >
+            <div
+              class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+              style="background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.3);"
+            >
+              <span class="material-symbols-outlined" style="font-size: 22px; color: #a78bfa; font-variation-settings: 'FILL' 1;">all_inclusive</span>
+            </div>
+            <div class="flex-1 text-left">
+              <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Endless Mode</div>
+              <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
+                {endlessKeys > 0 ? `${endlessKeys} key${endlessKeys === 1 ? '' : 's'} · Ready` : 'No keys — buy one in Shop'}
+              </div>
+            </div>
+            <span class="font-mono text-xs px-2 py-1 rounded" style="background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa;">🗝 {endlessKeys}</span>
+          </button>
+        </div>
+      {/if}
+
     </div>
   </div>
 {/if}
@@ -1456,15 +1481,17 @@
     <!-- ── Crystals tab ── -->
     {#if invTab === 'crystals'}
 
-      <!-- Endless Keys -->
-      <div class="obsidian-slab rounded-xl px-5 py-4">
-        <p class="font-mono text-xs mb-2 tracking-widest uppercase" style="color: var(--color-outline);">Endless Keys</p>
-        <div class="flex items-center gap-3">
-          <span class="text-xl">🗝</span>
-          <span class="font-bold font-mono text-xl" style="color: var(--gold-bright);">{endlessKeys}</span>
-          <span class="font-mono text-xs" style="color: var(--color-outline);">{endlessKeys === 1 ? 'key' : 'keys'}</span>
+      <!-- Endless Keys (level 3+) -->
+      {#if playerLevel >= 3}
+        <div class="obsidian-slab rounded-xl px-5 py-4" style="border: 1px solid rgba(167,139,250,0.15);">
+          <p class="font-mono text-xs mb-2 tracking-widest uppercase" style="color: #a78bfa;">Endless Keys</p>
+          <div class="flex items-center gap-3">
+            <span class="text-xl">🗝</span>
+            <span class="font-bold font-mono text-xl" style="color: var(--gold-bright);">{endlessKeys}</span>
+            <span class="font-mono text-xs" style="color: var(--color-outline);">{endlessKeys === 1 ? 'key' : 'keys'}</span>
+          </div>
         </div>
-      </div>
+      {/if}
 
       <!-- Stat Crystals -->
       <div class="obsidian-slab rounded-xl px-5 py-4">

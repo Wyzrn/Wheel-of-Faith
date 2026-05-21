@@ -365,11 +365,8 @@
     if (!playerWon || !lastDrops) return
     const updated = buildUpdatedSlot()
     onNextBattle?.(updated)
-    // Save which characters died before resetting state
-    const dead = new Set<string>()
-    teamMembers.forEach((m, i) => { if ((t1DispHp[i] ?? 0) <= 0) dead.add(m.id) })
-    carryOverDeadIds = dead
-    // Stay in battle view, restart with same team
+    // Always revive the full team for the next battle round
+    carryOverDeadIds = new Set()
     resetBattleState()
     phase = 'pick'
     // Re-trigger fight immediately with same team still selected
