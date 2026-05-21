@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
+  import { storyHomeSignal } from '$lib/menuState.svelte'
   import {
     loadAllSlots, loadSaveSlot, saveSaveSlot, createSaveSlot, deleteSaveSlot,
     addCharacterToSlot, sellCharacterFromSlot, purchaseSpin, consumeSpin,
@@ -117,6 +118,14 @@
   // ── Persist current slot on every change ──────────────────────────────────
   $effect(() => {
     if (currentSlot) saveSaveSlot($state.snapshot(currentSlot) as StorySaveSlot)
+  })
+
+  // ── Story Home hotbar button → return to hub from anywhere ─────────────────
+  $effect(() => {
+    void storyHomeSignal.count
+    if (currentSlot && view !== 'saveSlotSelect') {
+      view = 'hub'
+    }
   })
 
   // ── Save slot actions ──────────────────────────────────────────────────────
@@ -238,8 +247,12 @@
 
   function handleBattleComplete(updated: StorySaveSlot) {
     currentSlot = updated
-    // Return to worlds view so player can continue next battle
     view = 'worlds'
+  }
+
+  function handleNextBattle(updated: StorySaveSlot) {
+    // Update slot without changing view — BattleView will restart the fight
+    currentSlot = updated
   }
 
   // ── Graded crystal purchases ───────────────────────────────────────────────
@@ -1148,6 +1161,7 @@
     slot={currentSlot}
     world={activeWorld}
     onBattleComplete={handleBattleComplete}
+    onNextBattle={handleNextBattle}
     onBack={() => view = 'worlds'}
     onGoToTeams={() => { view = 'teams'; cancelTeamForm() }}
   />

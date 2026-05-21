@@ -16,6 +16,8 @@
   import type { StoryRosterEntry } from '$lib/story/types'
   import { races } from '$lib/content/races'
   import { archetypes } from '$lib/content/archetypes'
+  import { weaponsByCategory } from '$lib/content/weapons'
+  import { armorsByCategory } from '$lib/content/armors'
   import { getRacesForStage, racesToSegments, getArchetypesForStage, archetypesToSegments } from '$lib/story/raceTiers'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
@@ -212,6 +214,20 @@
       const raceResult = results.find(r => r.category === 'race')
       const race = races.find(r => r.label === raceResult?.resultLabel)
       return (race?.classPool as WeightedSegment[] | undefined) ?? getSegmentsForCategory('raceClass')
+    }
+
+    // Weapon wheel: filter pool by previously-spun weapon type
+    if (currentDef.category === 'weapon') {
+      const typeResult = results.find(r => r.category === 'weaponType')
+      const pool = typeResult ? weaponsByCategory[typeResult.resultLabel] : undefined
+      return (pool ?? getSegmentsForCategory('weapon')) as WeightedSegment[]
+    }
+
+    // Armor wheel: filter pool by previously-spun armor type
+    if (currentDef.category === 'armor') {
+      const typeResult = results.find(r => r.category === 'armorType')
+      const pool = typeResult ? armorsByCategory[typeResult.resultLabel] : undefined
+      return (pool ?? getSegmentsForCategory('armor')) as WeightedSegment[]
     }
 
     // Stat wheels: cap tiers by stage — dim and zero-weight segments above the stage max

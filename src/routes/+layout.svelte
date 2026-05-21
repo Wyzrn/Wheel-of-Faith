@@ -4,7 +4,7 @@
   import SettingsPanel from '../components/SettingsPanel.svelte'
   import { page } from '$app/stores'
   import { goto, onNavigate } from '$app/navigation'
-  import { triggerMenu } from '$lib/menuState.svelte'
+  import { triggerMenu, triggerStoryHome } from '$lib/menuState.svelte'
   import { auth } from '$lib/stores/auth.svelte'
 
   let { children } = $props()
@@ -51,10 +51,14 @@
 <!-- Bottom navigation bar -->
 <nav class="bottom-nav">
   {#if isStoryRoute}
-    <!-- Story mode: Home + Settings only -->
-    <button onclick={handleHomeClick} class="nav-tab" class:active={activeTab === 'home'}>
-      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'home' ? 1 : 0};">home</span>
-      <span class="nav-label">Home</span>
+    <!-- Story mode: Menu + Home + Settings -->
+    <button onclick={() => goto('/')} class="nav-tab">
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' 0;">grid_view</span>
+      <span class="nav-label">Menu</span>
+    </button>
+    <button onclick={triggerStoryHome} class="nav-tab">
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' 1;">castle</span>
+      <span class="nav-label">Hub</span>
     </button>
     <button onclick={() => showSettings = !showSettings} class="nav-tab" class:active={showSettings}>
       <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {showSettings ? 1 : 0};">settings</span>
@@ -98,7 +102,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 100;
+    z-index: 10;
     height: 64px;
     display: flex;
     align-items: stretch;

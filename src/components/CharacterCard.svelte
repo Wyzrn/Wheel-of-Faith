@@ -8,6 +8,7 @@
   import { armors as armorsPool } from '$lib/content/armors'
   import { ITEM_GRADE_INFO, ELEMENT_COLORS, ELEMENT_ICONS, GRADE_ORDER, highestGrade } from '$lib/content/elements'
   import type { ItemGrade } from '$lib/content/types'
+  import { classifyAbility, generatePowerDescription, generateWeaponDescription, generateArmorDescription, generateAbilityDescription, getAbilityTypeColor, getAbilityTypeIcon, ABILITY_BATTLE_EFFECT } from '$lib/content/descriptions'
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
 
@@ -149,6 +150,9 @@
   let saveError      = $state<string | null>(null)
   let copied         = $state(false)
   let shareInGallery = $state(false)
+  // Expandable detail panel — key is "{category}:{label}", null = nothing expanded
+  let expandedItem   = $state<string | null>(null)
+  function toggleItem(key: string) { expandedItem = expandedItem === key ? null : key }
   // now ticks every second so canSave/$derived values update in real time
   let now = $state(Date.now())
 
@@ -348,13 +352,30 @@
             {@const abMeta = abilityMap.get(ab)}
             {@const abColor = abMeta?.element ? ELEMENT_COLORS[abMeta.element] : 'rgba(240,192,64,0.4)'}
             {@const abGradeInfo = abMeta?.grade ? ITEM_GRADE_INFO[abMeta.grade] : null}
-            <li class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e4e1ee; border: 1px solid rgba(240,192,64,0.12); border-left: 2px solid {abColor}55;">
-              {#if abMeta?.element}
-                <img src={ELEMENT_ICONS[abMeta.element]} class="w-4 h-4 object-contain shrink-0" alt={abMeta.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[abMeta.element]});" />
-              {/if}
-              <span class="flex-1">{ab}</span>
-              {#if abGradeInfo}
-                <span class="text-[9px] font-bold px-1 py-0.5 rounded shrink-0" style="background: {abGradeInfo.color}22; color: {abGradeInfo.color}; border: 1px solid {abGradeInfo.color}55;">{abMeta?.grade}</span>
+            {@const abKey = `racial:${ab}`}
+            {@const abExpanded = expandedItem === abKey}
+            {@const abType = classifyAbility(ab, abMeta?.element)}
+            <li>
+              <button onclick={() => toggleItem(abKey)} class="w-full text-left" style="background: none; border: none; cursor: pointer; padding: 0;">
+                <div class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e4e1ee; border: 1px solid rgba(240,192,64,{abExpanded ? '0.25' : '0.12'}); border-left: 2px solid {abColor}55; transition: border-color 0.15s;">
+                  {#if abMeta?.element}
+                    <img src={ELEMENT_ICONS[abMeta.element]} class="w-4 h-4 object-contain shrink-0" alt={abMeta.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[abMeta.element]});" />
+                  {/if}
+                  <span class="flex-1">{ab}</span>
+                  {#if abGradeInfo}
+                    <span class="text-[9px] font-bold px-1 py-0.5 rounded shrink-0" style="background: {abGradeInfo.color}22; color: {abGradeInfo.color}; border: 1px solid {abGradeInfo.color}55;">{abMeta?.grade}</span>
+                  {/if}
+                  <span class="material-symbols-outlined shrink-0" style="font-size: 11px; color: #4e4635; transform: rotate({abExpanded ? 180 : 0}deg); transition: transform 0.15s;">expand_more</span>
+                </div>
+              </button>
+              {#if abExpanded}
+                <div class="mt-0.5 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {abColor}0a; border: 1px solid {abColor}22; border-left: 2px solid {abColor}55;">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="font-bold px-1.5 py-0.5 rounded-full text-[10px]" style="background: {getAbilityTypeColor(abType)}20; color: {getAbilityTypeColor(abType)}; border: 1px solid {getAbilityTypeColor(abType)}44;">{abType}</span>
+                    {#if abMeta?.grade}<span class="text-[10px]" style="color: {abGradeInfo?.color ?? '#9a907b'};">Grade {abMeta.grade}</span>{/if}
+                  </div>
+                  <p style="color: #b8b0a0; line-height: 1.5;">{generateAbilityDescription(ab, abMeta?.element, abMeta?.grade)}</p>
+                </div>
               {/if}
             </li>
           {/each}
@@ -369,13 +390,30 @@
             {@const abMeta = abilityMap.get(ab)}
             {@const abColor = abMeta?.element ? ELEMENT_COLORS[abMeta.element] : 'rgba(139,92,246,0.4)'}
             {@const abGradeInfo = abMeta?.grade ? ITEM_GRADE_INFO[abMeta.grade] : null}
-            <li class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e4e1ee; border: 1px solid rgba(139,92,246,0.15); border-left: 2px solid {abColor}55;">
-              {#if abMeta?.element}
-                <img src={ELEMENT_ICONS[abMeta.element]} class="w-4 h-4 object-contain shrink-0" alt={abMeta.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[abMeta.element]});" />
-              {/if}
-              <span class="flex-1">{ab}</span>
-              {#if abGradeInfo}
-                <span class="text-[9px] font-bold px-1 py-0.5 rounded shrink-0" style="background: {abGradeInfo.color}22; color: {abGradeInfo.color}; border: 1px solid {abGradeInfo.color}55;">{abMeta?.grade}</span>
+            {@const abKey = `archetype:${ab}`}
+            {@const abExpanded = expandedItem === abKey}
+            {@const abType = classifyAbility(ab, abMeta?.element)}
+            <li>
+              <button onclick={() => toggleItem(abKey)} class="w-full text-left" style="background: none; border: none; cursor: pointer; padding: 0;">
+                <div class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e4e1ee; border: 1px solid rgba(139,92,246,{abExpanded ? '0.3' : '0.15'}); border-left: 2px solid {abColor}55; transition: border-color 0.15s;">
+                  {#if abMeta?.element}
+                    <img src={ELEMENT_ICONS[abMeta.element]} class="w-4 h-4 object-contain shrink-0" alt={abMeta.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[abMeta.element]});" />
+                  {/if}
+                  <span class="flex-1">{ab}</span>
+                  {#if abGradeInfo}
+                    <span class="text-[9px] font-bold px-1 py-0.5 rounded shrink-0" style="background: {abGradeInfo.color}22; color: {abGradeInfo.color}; border: 1px solid {abGradeInfo.color}55;">{abMeta?.grade}</span>
+                  {/if}
+                  <span class="material-symbols-outlined shrink-0" style="font-size: 11px; color: #4e4635; transform: rotate({abExpanded ? 180 : 0}deg); transition: transform 0.15s;">expand_more</span>
+                </div>
+              </button>
+              {#if abExpanded}
+                <div class="mt-0.5 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {abColor}0a; border: 1px solid {abColor}22; border-left: 2px solid {abColor}55;">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="font-bold px-1.5 py-0.5 rounded-full text-[10px]" style="background: {getAbilityTypeColor(abType)}20; color: {getAbilityTypeColor(abType)}; border: 1px solid {getAbilityTypeColor(abType)}44;">{abType}</span>
+                    {#if abMeta?.grade}<span class="text-[10px]" style="color: {abGradeInfo?.color ?? '#9a907b'};">Grade {abMeta.grade}</span>{/if}
+                  </div>
+                  <p style="color: #b8b0a0; line-height: 1.5;">{generateAbilityDescription(ab, abMeta?.element, abMeta?.grade)}</p>
+                </div>
               {/if}
             </li>
           {/each}
@@ -390,20 +428,45 @@
       <div class="flex items-center gap-2 mb-2">
         <span class="material-symbols-outlined text-sm" style="color: #a78bfa; font-variation-settings: 'FILL' 1;">bolt</span>
         <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Powers</p>
+        <span class="text-[9px] ml-auto" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">tap to inspect</span>
       </div>
-      <div class="flex flex-wrap gap-1.5">
+      <div class="space-y-1">
         {#each powers as p}
           {@const pInfo = powerMap.get(p)}
           {@const pColor = pInfo?.element ? ELEMENT_COLORS[pInfo.element] : '#8b5cf6'}
           {@const pGrade = pInfo?.grade ?? 'F'}
           {@const pGradeInfo = ITEM_GRADE_INFO[pGrade]}
-          <span class="text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5"
-            style="background: {pColor}18; color: {pColor}dd; border: 1px solid {pColor}44;">
-            {#if pInfo?.element}<img src={ELEMENT_ICONS[pInfo.element]} class="w-4 h-4 object-contain shrink-0" alt={pInfo.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[pInfo.element]});" />{/if}
-            {p}
-            <span class="text-[9px] font-bold px-1 py-0.5 rounded shrink-0"
-              style="background: {pGradeInfo.color}22; color: {pGradeInfo.color}; border: 1px solid {pGradeInfo.color}55;">{pGrade}</span>
-          </span>
+          {@const pKey = `power:${p}`}
+          {@const pExpanded = expandedItem === pKey}
+          {@const pType = classifyAbility(p, pInfo?.element)}
+          {@const pTypeColor = getAbilityTypeColor(pType)}
+          <div>
+            <button onclick={() => toggleItem(pKey)} class="w-full text-left"
+              style="background: none; border: none; cursor: pointer; padding: 0;">
+              <span class="text-xs px-2.5 py-1.5 rounded-full flex items-center gap-1.5 w-full"
+                style="background: {pColor}{pExpanded ? '28' : '18'}; color: {pColor}dd; border: 1px solid {pColor}{pExpanded ? '66' : '44'}; transition: background 0.15s, border-color 0.15s;">
+                {#if pInfo?.element}<img src={ELEMENT_ICONS[pInfo.element]} class="w-4 h-4 object-contain shrink-0" alt={pInfo.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[pInfo.element]});" />{/if}
+                <span class="flex-1">{p}</span>
+                <span class="text-[9px] font-bold px-1 py-0.5 rounded shrink-0"
+                  style="background: {pGradeInfo.color}22; color: {pGradeInfo.color}; border: 1px solid {pGradeInfo.color}55;">{pGrade}</span>
+                <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: {pColor}88; transition: transform 0.15s; transform: rotate({pExpanded ? 180 : 0}deg);">expand_more</span>
+              </span>
+            </button>
+            {#if pExpanded}
+              <div class="mt-1 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {pColor}0d; border: 1px solid {pColor}22; border-left: 2px solid {pColor}66;">
+                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span class="font-bold px-2 py-0.5 rounded-full text-[10px]" style="background: {pTypeColor}20; color: {pTypeColor}; border: 1px solid {pTypeColor}44;">
+                    <span class="material-symbols-outlined" style="font-size: 10px; vertical-align: middle; font-variation-settings: 'FILL' 1;">{getAbilityTypeIcon(pType)}</span>
+                    {pType}
+                  </span>
+                  {#if pInfo?.element}<span class="text-[10px]" style="color: {pColor}88;">{pInfo.element}</span>{/if}
+                  <span class="ml-auto text-[10px]" style="color: {pGradeInfo.color};">Grade {pGrade} · Score ~{pGradeInfo.battleBonus}</span>
+                </div>
+                <p style="color: #b8b0a0; line-height: 1.5;">{generatePowerDescription(p, pInfo?.element, pGrade)}</p>
+                <p class="mt-1" style="color: #6b6358; font-style: italic;">{ABILITY_BATTLE_EFFECT[pType]}</p>
+              </div>
+            {/if}
+          </div>
         {/each}
       </div>
     </div>
@@ -430,26 +493,45 @@
           {@const wGradeInfo = ITEM_GRADE_INFO[wGrade]}
           {@const wElement = wInfo?.element}
           {@const wBorderColor = wElement ? ELEMENT_COLORS[wElement] : 'rgba(240,192,64,0.4)'}
-          <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3"
-            style="border: 1px solid {wBorderColor}33; border-left: 3px solid {wBorderColor};">
-            <span class="text-xs font-bold px-2 py-0.5 rounded"
-              style="background: {wGradeInfo.color}22; color: {wGradeInfo.color}; border: 1px solid {wGradeInfo.color}55;">
-              {wGradeInfo.label} +{wGradeInfo.battleBonus}
-            </span>
-            {#if wElement}
-              <span class="text-xs flex items-center gap-1" style="color: {ELEMENT_COLORS[wElement]};">
-                <img src={ELEMENT_ICONS[wElement]} class="w-3.5 h-3.5 object-contain" alt={wElement} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[wElement]});" />
-                {wElement}
-              </span>
-            {/if}
-            {#if wi === 0 && weaponType !== '—'}
-              <span class="text-xs px-2 py-1 rounded" style="background: rgba(240,192,64,0.08); color: #9a907b; border: 1px solid rgba(240,192,64,0.15);">{weaponType}</span>
-            {/if}
-            <span class="text-sm font-medium" style="color: #e4e1ee;">{w}</span>
-            {#if wi === 0}
-              {#each weaponEnchs as ench}
-                <span class="text-xs" style="color: #f0c040;">✦ {ench}</span>
-              {/each}
+          {@const wKey = `weapon:${w}`}
+          {@const wExpanded = expandedItem === wKey}
+          <div>
+            <button onclick={() => toggleItem(wKey)} class="w-full text-left" style="background: none; border: none; cursor: pointer; padding: 0;">
+              <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3"
+                style="border: 1px solid {wBorderColor}{wExpanded ? '55' : '33'}; border-left: 3px solid {wBorderColor}; transition: border-color 0.15s;">
+                <span class="text-xs font-bold px-2 py-0.5 rounded"
+                  style="background: {wGradeInfo.color}22; color: {wGradeInfo.color}; border: 1px solid {wGradeInfo.color}55;">
+                  {wGradeInfo.label} +{wGradeInfo.battleBonus}
+                </span>
+                {#if wElement}
+                  <span class="text-xs flex items-center gap-1" style="color: {ELEMENT_COLORS[wElement]};">
+                    <img src={ELEMENT_ICONS[wElement]} class="w-3.5 h-3.5 object-contain" alt={wElement} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[wElement]});" />
+                    {wElement}
+                  </span>
+                {/if}
+                {#if wi === 0 && weaponType !== '—'}
+                  <span class="text-xs px-2 py-1 rounded" style="background: rgba(240,192,64,0.08); color: #9a907b; border: 1px solid rgba(240,192,64,0.15);">{weaponType}</span>
+                {/if}
+                <span class="text-sm font-medium flex-1" style="color: #e4e1ee;">{w}</span>
+                {#if wi === 0}
+                  {#each weaponEnchs as ench}
+                    <span class="text-xs" style="color: #f0c040;">✦ {ench}</span>
+                  {/each}
+                {/if}
+                <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #4e4635; transform: rotate({wExpanded ? 180 : 0}deg); transition: transform 0.15s;">expand_more</span>
+              </div>
+            </button>
+            {#if wExpanded}
+              <div class="mt-1 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {wBorderColor}0a; border: 1px solid {wBorderColor}22; border-left: 2px solid {wBorderColor}66;">
+                <div class="flex items-center gap-2 mb-1.5">
+                  <span class="font-bold px-2 py-0.5 rounded-full text-[10px]" style="background: rgba(240,192,64,0.15); color: #f0c040; border: 1px solid rgba(240,192,64,0.3);">
+                    <span class="material-symbols-outlined" style="font-size: 10px; vertical-align: middle; font-variation-settings: 'FILL' 1;">swords</span>
+                    Weapon
+                  </span>
+                  <span class="ml-auto text-[10px]" style="color: {wGradeInfo.color};">Grade {wGrade} · +{wGradeInfo.battleBonus} Physical DMG</span>
+                </div>
+                <p style="color: #b8b0a0; line-height: 1.5;">{generateWeaponDescription(w, wElement, wGrade)}</p>
+              </div>
             {/if}
           </div>
         {/each}
@@ -460,38 +542,55 @@
   <!-- Armor -->
   {#if armor !== '—'}
     {@const aBorderColor = armorElement ? ELEMENT_COLORS[armorElement] : 'rgba(251,146,60,0.4)'}
+    {@const aKey = `armor:${armor}`}
+    {@const aExpanded = expandedItem === aKey}
     <div>
       <div class="flex items-center gap-2 mb-2">
         <span class="material-symbols-outlined text-sm" style="color: #fb923c; font-variation-settings: 'FILL' 1;">shield</span>
         <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Armor</p>
       </div>
-      <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3"
-        style="border: 1px solid {aBorderColor}33; border-left: 3px solid {aBorderColor};">
-        <span class="text-xs font-bold px-2 py-0.5 rounded"
-          style="background: {ITEM_GRADE_INFO[armorGrade].color}22; color: {ITEM_GRADE_INFO[armorGrade].color}; border: 1px solid {ITEM_GRADE_INFO[armorGrade].color}55;">
-          {ITEM_GRADE_INFO[armorGrade].label}
-        </span>
-        {#if armorElement}
-          <span class="text-xs flex items-center gap-1" style="color: {ELEMENT_COLORS[armorElement]};">
-            <img src={ELEMENT_ICONS[armorElement]} class="w-3.5 h-3.5 object-contain" alt={armorElement} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[armorElement]});" />
-            {armorElement}
+      <button onclick={() => toggleItem(aKey)} class="w-full text-left" style="background: none; border: none; cursor: pointer; padding: 0;">
+        <div class="obsidian-slab rounded-lg px-4 py-3 flex flex-wrap items-center gap-3"
+          style="border: 1px solid {aBorderColor}{aExpanded ? '55' : '33'}; border-left: 3px solid {aBorderColor}; transition: border-color 0.15s;">
+          <span class="text-xs font-bold px-2 py-0.5 rounded"
+            style="background: {ITEM_GRADE_INFO[armorGrade].color}22; color: {ITEM_GRADE_INFO[armorGrade].color}; border: 1px solid {ITEM_GRADE_INFO[armorGrade].color}55;">
+            {ITEM_GRADE_INFO[armorGrade].label}
           </span>
-        {/if}
-        {#if armorType !== '—'}
-          <span class="text-xs px-2 py-1 rounded" style="background: rgba(251,146,60,0.08); color: #9a907b; border: 1px solid rgba(251,146,60,0.15);">{armorType}</span>
-        {/if}
-        <span class="text-sm font-medium" style="color: #e4e1ee;">{armor}</span>
-        {#each armorEnchs as ench}
-          <span class="text-xs" style="color: #fb923c;">✦ {ench}</span>
-        {/each}
-        {#if getTierLabel('armorStrength')}
-          {@const asTierColor = TIER_COLORS[getTier('armorStrength') ?? ''] ?? '#9a907b'}
-          <span class="ml-auto text-xs font-bold px-1.5 py-0.5 rounded"
-            style="background: {asTierColor}22; color: {asTierColor}; border: 1px solid {asTierColor}66;">
-            {getTierLabel('armorStrength')}
-          </span>
-        {/if}
-      </div>
+          {#if armorElement}
+            <span class="text-xs flex items-center gap-1" style="color: {ELEMENT_COLORS[armorElement]};">
+              <img src={ELEMENT_ICONS[armorElement]} class="w-3.5 h-3.5 object-contain" alt={armorElement} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[armorElement]});" />
+              {armorElement}
+            </span>
+          {/if}
+          {#if armorType !== '—'}
+            <span class="text-xs px-2 py-1 rounded" style="background: rgba(251,146,60,0.08); color: #9a907b; border: 1px solid rgba(251,146,60,0.15);">{armorType}</span>
+          {/if}
+          <span class="text-sm font-medium flex-1" style="color: #e4e1ee;">{armor}</span>
+          {#each armorEnchs as ench}
+            <span class="text-xs" style="color: #fb923c;">✦ {ench}</span>
+          {/each}
+          {#if getTierLabel('armorStrength')}
+            {@const asTierColor = TIER_COLORS[getTier('armorStrength') ?? ''] ?? '#9a907b'}
+            <span class="ml-auto text-xs font-bold px-1.5 py-0.5 rounded"
+              style="background: {asTierColor}22; color: {asTierColor}; border: 1px solid {asTierColor}66;">
+              {getTierLabel('armorStrength')}
+            </span>
+          {/if}
+          <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #4e4635; transform: rotate({aExpanded ? 180 : 0}deg); transition: transform 0.15s;">expand_more</span>
+        </div>
+      </button>
+      {#if aExpanded}
+        <div class="mt-1 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {aBorderColor}0a; border: 1px solid {aBorderColor}22; border-left: 2px solid {aBorderColor}66;">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="font-bold px-2 py-0.5 rounded-full text-[10px]" style="background: rgba(96,165,250,0.15); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3);">
+              <span class="material-symbols-outlined" style="font-size: 10px; vertical-align: middle; font-variation-settings: 'FILL' 1;">shield</span>
+              Defense
+            </span>
+            <span class="ml-auto text-[10px]" style="color: {ITEM_GRADE_INFO[armorGrade].color};">Grade {armorGrade} · Reduces Incoming Damage</span>
+          </div>
+          <p style="color: #b8b0a0; line-height: 1.5;">{generateArmorDescription(armor, armorElement, armorGrade)}</p>
+        </div>
+      {/if}
     </div>
   {/if}
 

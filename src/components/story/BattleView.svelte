@@ -15,10 +15,11 @@
   import type { StoryRosterEntry, StoryTeam } from '$lib/story/types'
   import AttackFX from '../AttackFX.svelte'
 
-  let { slot, world, onBattleComplete, onBack, onGoToTeams }: {
+  let { slot, world, onBattleComplete, onNextBattle, onBack, onGoToTeams }: {
     slot: StorySaveSlot
     world: WorldGrade
     onBattleComplete: (updated: StorySaveSlot) => void
+    onNextBattle?: (updated: StorySaveSlot) => void
     onBack: () => void
     onGoToTeams: () => void
   } = $props()
@@ -106,8 +107,9 @@
   // Accumulate all enemy names seen across waves for log coloring
   let allT2Names = $state(new Set<string>())
 
-  let logLines  = $state<string[]>([])
-  let logEl     = $state<HTMLDivElement | null>(null)
+  let logLines       = $state<string[]>([])
+  let logEl          = $state<HTMLDivElement | null>(null)
+  let killedThisWave = $state(new Set<number>())
 
   type AnimDir = 'ltr' | 'rtl' | 'center'
   let activeAnim    = $state<{ type: string; color: string; key: number; direction: AnimDir } | null>(null)
@@ -225,8 +227,20 @@
     }
     const round = rounds[roundIdx]
     roundIdx++
+    const prevT2Hp = [...t2DispHp]
     playLines([`── Round ${round.roundNum} ──`, ...round.lines], () => {
       t1DispHp = [...round.t1Hp]
+      // Detect newly-killed enemies and accumulate their drops live
+      round.t2Hp.forEach((hp, i) => {
+        if ((prevT2Hp[i] ?? Infinity) > 0 && hp <= 0 && !killedThisWave.has(i)) {
+          killedThisWave = new Set([...killedThisWave, i])
+          const enemy = allWaves[waveIdx]?.[i]
+          if (enemy) {
+            const d = rollDrops(enemy)
+            accDrops = { gems: accDrops.gems + d.gems, xp: accDrops.xp + d.xp, chanceDrops: [...accDrops.chanceDrops, ...d.chanceDrops] }
+          }
+        }
+      })
       t2DispHp = [...round.t2Hp]
       if (round.winner !== undefined) {
         onWaveComplete(round.winner)
@@ -266,6 +280,7 @@
   }
 
   function startWave() {
+    killedThisWave = new Set()
     const waveEnemies = allWaves[waveIdx] ?? []
     t2Chars  = waveEnemies.map(e => buildEnemyChar(e))
     t2DispHp = t2Chars.map(c => c.hp)
@@ -291,11 +306,8 @@
     t1Chars  = teamMembers.map(m => buildBattleCharacter(m.spins, m.name, m.statBonuses))
     t1DispHp = t1Chars.map(c => c.hp)
 
-    // Pre-roll drops for all enemies across all waves
-    accDrops = allWaves.flat().reduce<BattleDrops>((acc, e) => {
-      const d = rollDrops(e)
-      return { gems: acc.gems + d.gems, xp: acc.xp + d.xp, chanceDrops: [...acc.chanceDrops, ...d.chanceDrops] }
-    }, { gems: 0, xp: 0, chanceDrops: [] })
+    // Drops accumulate per-kill during playRound — reset counter here
+    accDrops = { gems: 0, xp: 0, chanceDrops: [] }
 
     logLines = []
     phase    = 'intro'
@@ -305,21 +317,42 @@
     }, 2600)
   }
 
+  function buildUpdatedSlot(): StorySaveSlot {
+    let updated = recordBattleWin(slot, world)
+    updated = applyBattleDrops(updated, lastDrops!)
+    if (teamCharIds.length > 0) {
+      updated = addTeamXp(updated, teamCharIds, lastDrops!.xp)
+    }
+    return updated
+  }
+
+  function resetBattleState() {
+    t1Chars = []; t2Chars = []; allWaves = []
+    t1DispHp = []; t2DispHp = []
+    logLines = []; waveIdx = 0; allT2Names = new Set()
+    killedThisWave = new Set()
+    accDrops = { gems: 0, xp: 0, chanceDrops: [] }
+  }
+
   function confirmResult() {
     if (!playerWon || !lastDrops) {
       phase = 'pick'
       selectedTeam = null
-      t1Chars = []; t2Chars = []; allWaves = []
-      t1DispHp = []; t2DispHp = []
-      logLines = []; waveIdx = 0; allT2Names = new Set()
+      resetBattleState()
       return
     }
-    let updated = recordBattleWin(slot, world)
-    updated = applyBattleDrops(updated, lastDrops)
-    if (teamCharIds.length > 0) {
-      updated = addTeamXp(updated, teamCharIds, lastDrops.xp)
-    }
-    onBattleComplete(updated)
+    onBattleComplete(buildUpdatedSlot())
+  }
+
+  function continueNextBattle() {
+    if (!playerWon || !lastDrops) return
+    const updated = buildUpdatedSlot()
+    onNextBattle?.(updated)
+    // Stay in battle view, restart with same team
+    resetBattleState()
+    phase = 'pick'
+    // Re-trigger fight immediately with same team still selected
+    timeoutId = setTimeout(() => { if (selectedTeam) startFight() }, 50)
   }
 
   const DROP_LABELS: Record<string, string> = {
@@ -615,10 +648,33 @@
           <p class="mt-1 text-sm" style="color: #9a907b;">{selectedTeam?.name ?? 'Your team'} was defeated. Try again.</p>
         {/if}
 
-        <button onclick={confirmResult}
-          class="mt-5 w-full metal-stamp-gold py-3 rounded-xl font-bold font-mono text-sm tracking-widest">
-          {playerWon && battleNumber < BATTLES_PER_WORLD ? 'Continue' : playerWon ? 'Done' : 'Try Again'}
-        </button>
+        {#if playerWon}
+          <div class="mt-5 flex flex-col gap-2">
+            {#if battleNumber < BATTLES_PER_WORLD && onNextBattle}
+              <button onclick={continueNextBattle}
+                class="w-full metal-stamp-gold py-3 rounded-xl font-bold font-mono text-sm tracking-widest">
+                ⚔ Next Battle (Same Team)
+              </button>
+            {/if}
+            <button onclick={confirmResult}
+              class="w-full obsidian-slab py-2.5 rounded-xl font-mono text-sm tracking-widest"
+              style="border: 1px solid rgba(240,192,64,0.25); color: var(--gold-bright);">
+              {battleNumber >= BATTLES_PER_WORLD ? '✓ Done' : '↩ Back to World'}
+            </button>
+          </div>
+        {:else}
+          <div class="mt-5 flex flex-col gap-2">
+            <button onclick={() => { resetBattleState(); phase = 'pick'; if (selectedTeam) setTimeout(startFight, 50) }}
+              class="w-full metal-stamp-gold py-3 rounded-xl font-bold font-mono text-sm tracking-widest">
+              ↺ Try Again (Same Team)
+            </button>
+            <button onclick={() => { resetBattleState(); selectedTeam = null; phase = 'pick' }}
+              class="w-full obsidian-slab py-2.5 rounded-xl font-mono text-sm tracking-widest"
+              style="border: 1px solid rgba(239,68,68,0.25); color: #f87171;">
+              ↩ Back to World
+            </button>
+          </div>
+        {/if}
       </div>
     </div>
   </div>
