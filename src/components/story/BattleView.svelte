@@ -120,14 +120,23 @@
   let logLines       = $state<string[]>([])
   let logEl          = $state<HTMLDivElement | null>(null)
   let killedThisWave = $state(new Set<number>())
+  let t1PanelEl      = $state<HTMLDivElement | null>(null)
+  let t2PanelEl      = $state<HTMLDivElement | null>(null)
 
   type AnimDir = 'ltr' | 'rtl' | 'center'
-  let activeAnim    = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string } | null>(null)
+  let activeAnim    = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; origin?: { x: number; y: number } } | null>(null)
   let animKey       = 0
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
   let timeoutId:     ReturnType<typeof setTimeout> | null = null
   let currentFxEvents = $state<RoundFxEvent[]>([])
   let fxEventIdx = 0
+
+  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
+    const el = dir === 'ltr' ? t1PanelEl : dir === 'rtl' ? t2PanelEl : null
+    if (!el) return undefined
+    const r = el.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  }
 
   function speedDelay(ms: number): number {
     if (settings.battleSpeed >= 99) return 10
@@ -180,9 +189,9 @@
   })
 
   // ── Attack animation ──────────────────────────────────────────────────────
-  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string) {
+  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, origin?: { x: number; y: number }) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
-    activeAnim = { type, color, key: ++animKey, direction, grade }
+    activeAnim = { type, color, key: ++animKey, direction, grade, origin }
     animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
   }
 
@@ -236,7 +245,8 @@
       const fx = currentFxEvents[fxEventIdx]
       const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
       if (fx && head.includes('damage!')) fxEventIdx++
-      showAnim(anim.type, anim.color, anim.direction, grade)
+      const origin = getPanelOrigin(anim.direction)
+      showAnim(anim.type, anim.color, anim.direction, grade, origin)
     }
     const delay = speedDelay(head.startsWith('──') ? 350 : 600)
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
@@ -536,7 +546,7 @@
       <div class="grid grid-cols-2 gap-2">
 
         <!-- Player team column -->
-        <div class="flex flex-col gap-1.5">
+        <div bind:this={t1PanelEl} class="flex flex-col gap-1.5">
           {#if t1Chars.length > 1}
             <p class="font-mono text-xs text-center tracking-widest uppercase" style="color: rgba(240,192,64,0.6);">Your Team</p>
           {/if}
@@ -561,7 +571,7 @@
         </div>
 
         <!-- Enemy team column -->
-        <div class="flex flex-col gap-1.5">
+        <div bind:this={t2PanelEl} class="flex flex-col gap-1.5">
           {#if t2Chars.length > 1}
             <p class="font-mono text-xs text-center tracking-widest uppercase" style="color: rgba(232,121,249,0.6);">Enemies</p>
           {/if}
@@ -587,12 +597,16 @@
 
       </div>
 
-      <!-- Attack FX overlay -->
+      <!-- Attack FX overlay: fixed to attacker panel center, fly animation travels to target -->
       {#if phase === 'fight' && activeAnim}
         {#key activeAnim.key}
-          <div style="position: absolute; top: 40%; transform: translateY(-50%);
-                      {activeAnim.direction === 'rtl' ? 'right: 8%' : activeAnim.direction === 'center' ? 'left: 50%; transform: translate(-50%, -50%)' : 'left: 8%'};
-                      z-index: 20; pointer-events: none;">
+          {@const ox = activeAnim.origin?.x}
+          {@const oy = activeAnim.origin?.y}
+          <div style="position:fixed;
+                      left:{ox != null ? ox + 'px' : activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw'};
+                      top:{oy != null ? oy + 'px' : '50vh'};
+                      transform:translate(-50%,-50%);
+                      z-index:9999;pointer-events:none;">
             <AttackFX type={activeAnim.type} color={activeAnim.color}
                       direction={activeAnim.direction} size={76} grade={activeAnim.grade} />
           </div>

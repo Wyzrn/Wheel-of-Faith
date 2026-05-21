@@ -9,7 +9,7 @@
   let { type, color = '#ffffff', size = 100, direction = 'center', grade = 'C' }: Props = $props()
 
   // Grade → intensity index (0=F … 9=God)
-  const GRADE_IDX: Record<string, number> = { F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, SS: 7, SSS: 8, God: 9 }
+  const GRADE_IDX: Record<string, number> = { F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, SS: 7, SSS: 8, God: 9, Godly: 9 }
   let gradeIdx = $derived(GRADE_IDX[grade ?? 'C'] ?? 3)
 
   // Scale multipliers by grade

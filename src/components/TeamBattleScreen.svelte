@@ -42,14 +42,21 @@
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
   type AnimDir = 'ltr' | 'rtl' | 'center'
-  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string } | null>(null)
+  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; origin?: { x: number; y: number } } | null>(null)
   let animKey = 0
   let currentFxEvents = $state<RoundFxEvent[]>([])
   let fxEventIdx = 0
 
-  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string) {
+  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
+    const el = dir === 'ltr' ? t1PanelEl : dir === 'rtl' ? t2PanelEl : null
+    if (!el) return undefined
+    const r = el.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  }
+
+  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, origin?: { x: number; y: number }) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
-    activeAnim = { type, color, key: ++animKey, direction, grade }
+    activeAnim = { type, color, key: ++animKey, direction, grade, origin }
     animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
     if (direction !== 'center') emitTrail(direction, color, type)
   }
@@ -546,7 +553,8 @@
       const fx = currentFxEvents[fxEventIdx]
       const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
       if (fx && head.includes('damage!')) fxEventIdx++
-      showAnim(anim.type, anim.color, anim.direction, grade)
+      const origin = getPanelOrigin(anim.direction)
+      showAnim(anim.type, anim.color, anim.direction, grade, origin)
     }
     const base = head.startsWith('──') ? 550 : 1600
     timeoutId = setTimeout(() => playLines(rest, onDone), speedDelay(base))
@@ -715,13 +723,16 @@
   <!-- 3-column battle arena -->
   <div class="battle-grid" style="padding:0 0.75rem 1rem;position:relative;overflow:visible;">
 
-    <!-- Attack FX overlay: flies from T1 (left) to T2 (right) or vice versa -->
+    <!-- Attack FX overlay: fixed to attacker panel center, fly animation travels to target -->
     {#if phase === 'battle' && activeAnim}
       {#key activeAnim.key}
-        <div style="position:absolute;top:35%;z-index:30;pointer-events:none;
-                    {activeAnim.direction === 'rtl'    ? 'right:3%;transform:translateY(-50%)' :
-                     activeAnim.direction === 'center' ? 'left:50%;transform:translate(-50%,-50%)' :
-                                                         'left:3%;transform:translateY(-50%)'}">
+        {@const ox = activeAnim.origin?.x}
+        {@const oy = activeAnim.origin?.y}
+        <div style="position:fixed;
+                    left:{ox != null ? ox + 'px' : activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw'};
+                    top:{oy != null ? oy + 'px' : '50vh'};
+                    transform:translate(-50%,-50%);
+                    z-index:9999;pointer-events:none;">
           <AttackFX type={activeAnim.type} color={activeAnim.color}
                     direction={activeAnim.direction} size={68} grade={activeAnim.grade}/>
         </div>
