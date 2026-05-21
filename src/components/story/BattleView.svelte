@@ -131,11 +131,38 @@
   let currentFxEvents = $state<RoundFxEvent[]>([])
   let fxEventIdx = 0
 
+  const ELEMENT_FX: Record<string, { type: string; color: string }> = {
+    Fire:      { type: 'fire',      color: '#f97316' },
+    Ice:       { type: 'ice',       color: '#7dd3fc' },
+    Lightning: { type: 'lightning', color: '#fbbf24' },
+    Earth:     { type: 'earth',     color: '#a16207' },
+    Wind:      { type: 'wind',      color: '#e2e8f0' },
+    Shadow:    { type: 'shadow',    color: '#8b5cf6' },
+    Light:     { type: 'holy',      color: '#fde68a' },
+    Arcane:    { type: 'energy',    color: '#c084fc' },
+    Nature:    { type: 'poison',    color: '#22c55e' },
+    Void:      { type: 'void',      color: '#6b21a8' },
+    Cosmic:    { type: 'energy',    color: '#818cf8' },
+    Blood:     { type: 'blood',     color: '#dc2626' },
+    Metal:     { type: 'slash',     color: '#94a3b8' },
+    Soul:      { type: 'holy',      color: '#f9a8d4' },
+    Poison:    { type: 'poison',    color: '#84cc16' },
+    Time:      { type: 'time',      color: '#a78bfa' },
+    Water:     { type: 'water',     color: '#38bdf8' },
+    Sound:     { type: 'lightning', color: '#e0f2fe' },
+    Gravity:   { type: 'gravity',   color: '#6366f1' },
+    Psychic:   { type: 'psychic',   color: '#e879f9' },
+    Chaos:     { type: 'cursed',    color: '#f43f5e' },
+    Neutral:   { type: 'slash',     color: '#f87171' },
+  }
+
   function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
     const el = dir === 'ltr' ? t1PanelEl : dir === 'rtl' ? t2PanelEl : null
     if (!el) return undefined
     const r = el.getBoundingClientRect()
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    const x = r.left + r.width / 2
+    const y = Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65))
+    return { x, y }
   }
 
   function speedDelay(ms: number): number {
@@ -243,10 +270,16 @@
     const anim = detectAnim(head)
     if (anim) {
       const fx = currentFxEvents[fxEventIdx]
+      const isDamage = head.includes('damage!')
       const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
-      if (fx && head.includes('damage!')) fxEventIdx++
-      const origin = getPanelOrigin(anim.direction)
-      showAnim(anim.type, anim.color, anim.direction, grade, origin)
+      if (fx && isDamage) fxEventIdx++
+      let { type, color, direction } = anim
+      if (fx && isDamage && type !== 'crit' && type !== 'berserker' && type !== 'dodge') {
+        const elFx = fx.element ? ELEMENT_FX[fx.element] : null
+        if (elFx) { type = elFx.type; color = elFx.color }
+      }
+      const origin = getPanelOrigin(direction)
+      showAnim(type, color, direction, grade, origin)
     }
     const delay = speedDelay(head.startsWith('──') ? 350 : 600)
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
