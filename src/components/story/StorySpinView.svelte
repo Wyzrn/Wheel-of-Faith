@@ -940,17 +940,19 @@
 
 <!-- ── Running spin log ───────────────────────────────────────────────────────── -->
 {#if results.length > 0 && !showResumePrompt && !pendingResult}
-  <div class="fixed bottom-0 left-0 right-0 z-10"
-    style="background: rgba(7,7,13,0.93); border-top: 1px solid rgba(240,192,64,0.12); backdrop-filter: blur(12px); padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));">
-    <p class="px-4 pt-2 font-mono tracking-widest uppercase" style="color: #9a907b; font-size: 9px; letter-spacing: 0.18em;">Obtained this spin</p>
-    <div class="px-4 pb-1.5 flex flex-col gap-0.5 overflow-y-auto" style="max-height: 160px;">
+  <div class="fixed left-0 top-0 bottom-0 z-10 flex flex-col"
+    style="width: 160px; background: rgba(7,7,13,0.93); border-right: 1px solid rgba(240,192,64,0.12); backdrop-filter: blur(12px);">
+    <p class="px-3 pt-3 pb-2 font-mono tracking-widest uppercase" style="color: #9a907b; font-size: 9px; letter-spacing: 0.18em;">Obtained this spin</p>
+    <div class="px-3 pb-3 flex flex-col gap-2 overflow-y-auto flex-1">
       {#each [...results].filter(r => r.category !== 'statBonus' && r.category !== 'statPenalty').reverse() as r}
-        <div class="flex items-center gap-2 min-w-0">
-          <span class="font-mono flex-shrink-0" style="color: hsl({CATEGORY_HUES[r.category] ?? 45}, 60%, 62%); font-size: 9px; min-width: 80px; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{formatCategory(r.category)}</span>
-          <span class="font-mono truncate" style="color: var(--color-on-surface); font-size: 10px;">{r.displayLabel ?? r.resultLabel}</span>
-          {#if r.tier}
-            <span class="font-mono font-bold flex-shrink-0" style="color: hsl({CATEGORY_HUES[r.category] ?? 45}, 65%, 65%); font-size: 9px;">{r.tier}</span>
-          {/if}
+        <div class="flex flex-col min-w-0">
+          <span class="font-mono" style="color: hsl({CATEGORY_HUES[r.category] ?? 45}, 60%, 62%); font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{formatCategory(r.category)}</span>
+          <div class="flex items-center gap-1 min-w-0">
+            <span class="font-mono truncate flex-1" style="color: var(--color-on-surface); font-size: 10px;">{r.displayLabel ?? r.resultLabel}</span>
+            {#if r.tier}
+              <span class="font-mono font-bold flex-shrink-0" style="color: hsl({CATEGORY_HUES[r.category] ?? 45}, 65%, 65%); font-size: 9px;">{r.tier}</span>
+            {/if}
+          </div>
         </div>
       {/each}
     </div>
