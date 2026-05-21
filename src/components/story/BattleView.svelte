@@ -393,7 +393,7 @@
   {/if}
 </header>
 
-<div class="pt-20 px-3 w-full flex flex-col" style="max-width: 800px; margin: 0 auto; min-height: 100dvh; padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 96px));">
+<div class="pt-20 px-4 w-full flex flex-col" style="max-width: 560px; margin: 0 auto; min-height: 100dvh; padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 96px));">
 
   <!-- ══ Phase: pick ══════════════════════════════════════════════════════════ -->
   {#if phase === 'pick'}
@@ -494,15 +494,15 @@
             {@const hp  = t1DispHp[i] ?? 0}
             {@const pct = t1HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
-            <div class="rounded-xl p-2 flex flex-col gap-1"
+            <div class="rounded-xl p-2 flex flex-col gap-1 items-center text-center"
               style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,{dead ? '0.07' : phase === 'result' && playerWon ? '0.6' : '0.22'}); opacity: {dead ? 0.4 : 1}; transition: opacity 0.5s, border-color 0.5s;">
-              <div class="flex items-center gap-1.5 min-w-0">
+              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full">
                 {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
                 {:else if phase === 'result' && playerWon}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
                 {/if}
                 <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.75rem;">{char.name}</p>
               </div>
-              <div class="rounded-full overflow-hidden" style="height: 7px; background: rgba(255,255,255,0.08);">
+              <div class="rounded-full overflow-hidden w-full" style="height: 7px; background: rgba(255,255,255,0.08);">
                 <div class="h-full rounded-full" style="width: {pct * 100}%; background: {hpColor(pct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
               </div>
               <p style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.6rem;">{formatHp(hp)} / {formatHp(char.maxHp)}</p>
@@ -519,15 +519,15 @@
             {@const hp  = t2DispHp[i] ?? 0}
             {@const pct = t2HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
-            <div class="rounded-xl p-2 flex flex-col gap-1"
+            <div class="rounded-xl p-2 flex flex-col gap-1 items-center text-center"
               style="background: {ec}0d; border: 1px solid {ec}{dead ? '11' : phase === 'result' && !playerWon ? '66' : '22'}; opacity: {dead ? 0.4 : 1}; transition: opacity 0.5s, border-color 0.5s;">
-              <div class="flex items-center gap-1.5 min-w-0">
+              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full">
                 {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
                 {:else if phase === 'result' && !playerWon}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: {ec}; font-variation-settings: 'FILL' 1;">workspace_premium</span>
                 {/if}
                 <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: {ec}; font-size: 0.75rem;">{char.name}</p>
               </div>
-              <div class="rounded-full overflow-hidden" style="height: 7px; background: rgba(255,255,255,0.08);">
+              <div class="rounded-full overflow-hidden w-full" style="height: 7px; background: rgba(255,255,255,0.08);">
                 <div class="h-full rounded-full" style="width: {pct * 100}%; background: {hpColor(pct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
               </div>
               <p style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.6rem;">{formatHp(hp)} / {formatHp(char.maxHp)}</p>
