@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
+  import { getRivalsWs, clearRivalsWs, patchRivalsWs } from '$lib/stores/rivalsWs'
   import SpinWheel from '../components/SpinWheel.svelte'
   import TierBadge from '../components/TierBadge.svelte'
   import CharacterCard from '../components/CharacterCard.svelte'
@@ -132,8 +133,12 @@
 
   // ── Last completed character (persisted until next spin starts) ──────────
   const LAST_CHAR_KEY = 'wof_last_char'
-  let lastCharResults = $state<SpinResult[] | null>(null)
-  let lastCharName    = $state<string | null>(null)
+  let lastCharResults   = $state<SpinResult[] | null>(null)
+  let lastCharName      = $state<string | null>(null)
+  let lastCharStartedAt = $state<string | null>(null)
+  // Rivals online relay state
+  let rivalsOnlineMode    = $state(false)
+  let rivalsOnlineWaiting = $state(false)
   let showLastChar    = $state(false)
 
   // ── Tutorial state ────────────────────────────────────────────────────────
@@ -586,11 +591,46 @@
     try {
       const raw = localStorage.getItem(LAST_CHAR_KEY)
       if (raw) {
-        const parsed = JSON.parse(raw) as { results: SpinResult[]; name: string }
+        const parsed = JSON.parse(raw) as { results: SpinResult[]; name: string; startedAt?: string }
         lastCharResults = parsed.results
         lastCharName = parsed.name
+        lastCharStartedAt = parsed.startedAt ?? new Date().toISOString()
       }
     } catch { /* ignore */ }
+
+    // Rivals online: relay spins to existing WS from rivals page
+    const rivalsParam = new URLSearchParams(window.location.search).get('rivals')
+    if (rivalsParam === 'online' && getRivalsWs()) {
+      rivalsOnlineMode = true
+      showMenu = false
+      tutorialStep = -1
+      // Replace rivals page's onmessage — we own the WS now; handle battle_start
+      const wsData = getRivalsWs()!
+      wsData.ws.onmessage = (event: MessageEvent) => {
+        try {
+          const msg = JSON.parse(event.data) as { type: string; [k: string]: unknown }
+          if (msg.type === 'battle_start') {
+            const you = msg.you as { username?: string; results: unknown[] }
+            const opp = msg.opponent as { username?: string; results: unknown[] }
+            patchRivalsWs({
+              pendingBattle: {
+                myResults: you.results,
+                opponentResults: opp.results,
+                myName: you.username,
+                opponentName: opp.username,
+              }
+            })
+            goto('/rivals')
+          }
+        } catch { /* ignore */ }
+      }
+      return
+    }
+    // Rivals offline: start local 2-player mode immediately
+    if (rivalsParam === 'offline') {
+      handleRematch()
+      return
+    }
 
     const saved = loadSession()
     if (saved && saved.completedSpins.length > 0) {
@@ -1446,6 +1486,14 @@
 
     results.push(spinResult)
 
+    // Relay spin to rivals partner when in online rivals mode
+    if (rivalsOnlineMode) {
+      const wsData = getRivalsWs()
+      if (wsData?.ws && wsData.ws.readyState === WebSocket.OPEN) {
+        wsData.ws.send(JSON.stringify({ type: 'spin_result', spinIndex: currentSpinIndex, result: $state.snapshot(spinResult) }))
+      }
+    }
+
     // Re-apply saved bonus offsets so rerolled stats keep their previously earned shifts
     if (def.isReroll && STAT_CATEGORIES.has(def.category) && statBonusOffsets[def.category]) {
       const offset = statBonusOffsets[def.category]
@@ -1748,6 +1796,19 @@
       clearSession()
       rivalPhase = 'battle'
       showNameScreen = false
+    } else if (rivalsOnlineMode) {
+      // Online rivals: send results + character name, wait for battle_start
+      const wsData = getRivalsWs()
+      if (wsData?.ws && wsData.ws.readyState === WebSocket.OPEN) {
+        wsData.ws.send(JSON.stringify({
+          type: 'spins_complete',
+          results: $state.snapshot(results),
+          name: characterName,
+        }))
+      }
+      clearSession()
+      showNameScreen = false
+      rivalsOnlineWaiting = true
     } else {
       // Save to local spin history before clearing
       appendSpinHistory($state.snapshot(results) as SpinResult[], characterName, currentSession.sessionId)
@@ -1758,7 +1819,7 @@
       // Persist last character for "View Last Character" button
       const snapshot = $state.snapshot(results) as SpinResult[]
       try {
-        localStorage.setItem(LAST_CHAR_KEY, JSON.stringify({ results: snapshot, name: characterName }))
+        localStorage.setItem(LAST_CHAR_KEY, JSON.stringify({ results: snapshot, name: characterName, startedAt: currentSession.startedAt }))
         lastCharResults = snapshot
         lastCharName = characterName
       } catch { /* ignore */ }
@@ -1851,14 +1912,28 @@
 
       <!-- Buttons -->
       <div class="flex flex-col gap-4 w-full max-w-xs">
-        <button
-          onclick={() => { showMenu = false; if (tutorialStep === 0) tutorialStep = 1 }}
-          class="metal-stamp-gold w-full py-4 rounded-lg relative"
-          style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;"
-        >
-          <div class="l-bracket" style="color: rgba(255,255,255,0.3);"></div>
-          Spin Your Fate
-        </button>
+        <div class="flex items-center gap-3">
+          {#if lastCharResults && lastCharName !== null}
+            <button
+              onclick={() => { showLastChar = true; showMenu = false }}
+              class="flex items-center justify-center rounded-full shrink-0 transition-all active:scale-95"
+              style="width: 44px; height: 44px; background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.3); color: #7dd3fc; cursor: pointer;"
+              title="View Last Character"
+            >
+              <span class="material-symbols-outlined" style="font-size: 18px; font-variation-settings: 'FILL' 1;">person</span>
+            </button>
+          {:else}
+            <div style="width: 44px; height: 44px; flex-shrink: 0;"></div>
+          {/if}
+          <button
+            onclick={() => { showMenu = false; if (tutorialStep === 0) tutorialStep = 1 }}
+            class="metal-stamp-gold flex-1 py-4 rounded-lg relative"
+            style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;"
+          >
+            <div class="l-bracket" style="color: rgba(255,255,255,0.3);"></div>
+            Spin Your Fate
+          </button>
+        </div>
         <a
           href="/characters"
           class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
@@ -1888,15 +1963,6 @@
         >
           📖 Story Mode
         </a>
-        {#if lastCharResults && lastCharName !== null}
-          <button
-            onclick={() => { showLastChar = true; showMenu = false }}
-            class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
-            style="font-family: 'Cinzel', serif; color: #7dd3fc; border: 1px solid rgba(125,211,252,0.3);"
-          >
-            ← Last Character
-          </button>
-        {/if}
       </div>
 
       <!-- Bottom flavour -->
@@ -1916,7 +1982,7 @@
             style="color: #9a907b; border: 1px solid #4e4635; background: none; font-family: 'JetBrains Mono', monospace; cursor: pointer;"
           >← Back</button>
         </div>
-        <CharacterCard results={lastCharResults} name={lastCharName} startedAt={new Date(0).toISOString()} readonly={true} onNewCharacter={() => { showLastChar = false; showMenu = true }} onBackToMenu={() => { showLastChar = false; showMenu = true }} />
+        <CharacterCard results={lastCharResults} name={lastCharName} startedAt={lastCharStartedAt ?? new Date().toISOString()} readonly={false} onNewCharacter={() => { showLastChar = false; showMenu = true }} onBackToMenu={() => { showLastChar = false; showMenu = true }} />
       </div>
     </div>
   {/if}
@@ -1953,6 +2019,17 @@
             >Start Over</button>
           </div>
         </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Online rivals waiting screen -->
+  {#if rivalsOnlineWaiting}
+    <div class="fixed inset-0 z-40 flex items-center justify-center px-4" style="background: #07070d;">
+      <div class="text-center">
+        <div class="animate-spin mb-6 mx-auto" style="width: 48px; height: 48px; border: 3px solid rgba(240,192,64,0.2); border-top-color: #f0c040; border-radius: 50%;"></div>
+        <p style="font-family: 'Cinzel', serif; font-size: 1.15rem; font-weight: 700; color: #ffdf96; letter-spacing: 0.08em;">Waiting for opponent…</p>
+        <p class="mt-2 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Battle begins when they finish spinning</p>
       </div>
     </div>
   {/if}

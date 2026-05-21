@@ -36,6 +36,16 @@ export const storySlotRoutes: FastifyPluginAsync = async (fastify) => {
     })
   })
 
+  // GET /story-slots/mine — fetch all linked slots for the current user
+  fastify.get('/story-slots/mine', {
+    config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const userId = (request as any).userId
+    if (!userId) return reply.code(401).send({ error: 'Login required' })
+    const slots = await StorySlot.find({ userId }).sort({ created_at: -1 }).lean()
+    return reply.send(slots)
+  })
+
   // GET /story-slots/:shareId — fetch a shared slot snapshot
   fastify.get('/story-slots/:shareId', {
     config: { rateLimit: { max: 60, timeWindow: '1 minute' } },

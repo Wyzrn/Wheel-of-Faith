@@ -6,6 +6,7 @@
   import { normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import QuickBattleView from '../../components/QuickBattleView.svelte'
   import type { SpinResult } from '$lib/session/types'
+  import { setRivalsWs, getRivalsWs, clearRivalsWs } from '$lib/stores/rivalsWs'
 
   // ── Phase state machine ────────────────────────────────────────────────────
   type Phase =
@@ -27,6 +28,7 @@
   let partnerDone   = $state(false)
   let myResults     = $state<any[]>([])
   let partnerResults = $state<any[]>([])
+  let myCharName    = $state<string | null>(null)
   let partnerSpins  = $state<Map<number, any>>(new Map())
   let isP1          = $state(false)
   let mySpinsDone   = $state(false)
@@ -51,7 +53,33 @@
       : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/rivals/ws`
   })()
 
+  // Flag: WS was stored for main-game relay — don't close it in onDestroy
+  let storedWsForSpin = false
+
   onMount(async () => {
+    // Returning from spin: re-attach to the stored WS
+    const stored = getRivalsWs()
+    if (stored) {
+      ws = stored.ws
+      ws.onmessage = handleMessage
+      ws.onclose = () => { ws = null }
+      roomCode = stored.roomCode
+      isP1 = stored.isP1
+      partnerName = stored.opponentName
+      mySpinsDone = true
+      clearRivalsWs()
+      if (stored.pendingBattle) {
+        myResults = stored.pendingBattle.myResults as SpinResult[]
+        partnerResults = stored.pendingBattle.opponentResults as SpinResult[]
+        if (stored.pendingBattle.myName) myCharName = stored.pendingBattle.myName
+        if (stored.pendingBattle.opponentName) partnerName = stored.pendingBattle.opponentName
+        phase = 'battle'
+      } else {
+        // Waiting for partner to finish / battle_start
+        phase = 'battle_ready'
+      }
+      return
+    }
     // Auto-join from URL param (e.g. /rivals?join=CODE)
     const joinParam = $page.url.searchParams.get('join')
     if (joinParam) {
@@ -61,7 +89,7 @@
   })
 
   onDestroy(() => {
-    ws?.close()
+    if (!storedWsForSpin) ws?.close()
     if (searchTimer) clearInterval(searchTimer)
   })
 
@@ -103,10 +131,12 @@
         mySpinsDone = false
         stopSearchTimer()
         phase = isP1 ? 'p1_spinning' : 'p2_spinning'
+        navigateToSpin()
         break
       case 'partner_joined':
         partnerName = msg.username ?? 'Opponent'
         phase = isP1 ? 'p1_spinning' : 'p2_spinning'
+        navigateToSpin()
         break
       case 'partner_spin':
         partnerSpins = new Map(partnerSpins).set(msg.spinIndex, msg.result)
@@ -117,7 +147,9 @@
         break
       case 'battle_start':
         partnerResults = msg.opponent?.results ?? []
+        partnerName = msg.opponent?.username ?? partnerName
         myResults = msg.you?.results ?? []
+        myCharName = msg.you?.username ?? null
         phase = 'battle'
         break
       case 'searching':
@@ -133,6 +165,7 @@
         botResults = generateBotResults()
         isP1 = true
         phase = 'p1_spinning'
+        navigateToSpin()
         break
       case 'partner_disconnected':
         alert('Your opponent disconnected.')
@@ -142,6 +175,14 @@
         joinError = msg.message
         break
     }
+  }
+
+  // ── Navigate to spin (keeps WS alive across navigation) ───────────────────
+  function navigateToSpin() {
+    if (!ws) return
+    storedWsForSpin = true
+    setRivalsWs({ ws, roomCode, isP1, opponentName: partnerName })
+    goto('/?rivals=online')
   }
 
   // ── Matchmaking timer ──────────────────────────────────────────────────────
@@ -456,11 +497,8 @@
             : `${partnerName} is spinning…`}
         </h2>
         {#if (phase === 'p1_spinning' && isP1) || (phase === 'p2_spinning' && !isP1)}
-          <p class="text-xs" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Complete all 23 spins. Your opponent watches in real time.</p>
-          <a href="/?rivals=online" class="metal-stamp-gold px-8 py-3 rounded-xl font-bold uppercase tracking-widest"
-            style="font-family: 'Cinzel', serif; text-decoration: none; font-size: 0.85rem;">
-            Start Spinning
-          </a>
+          <p class="text-xs" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Taking you to the wheel…</p>
+          <div class="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style="border-color: #f0c040; border-top-color: transparent;"></div>
         {:else}
           <p class="text-xs" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Watch their spins appear below as they happen…</p>
           <div class="obsidian-slab w-full mt-4 rounded-xl overflow-hidden">
@@ -499,11 +537,11 @@
 {#if phase === 'battle'}
   <div style="background: #07070d; min-height: 100dvh;">
     <QuickBattleView
-      team1={[{ results: myResults as SpinResult[], name: auth.user?.username ?? 'You' }]}
+      team1={[{ results: myResults as SpinResult[], name: myCharName ?? auth.user?.username ?? 'You' }]}
       team2={[{ results: partnerResults as SpinResult[], name: partnerName || 'Opponent' }]}
-      team1Label={auth.user?.username ?? 'You'}
+      team1Label={myCharName ?? auth.user?.username ?? 'You'}
       team2Label={partnerName || 'Opponent'}
-      title={partnerName === 'BOT' ? 'vs BOT' : `${auth.user?.username ?? 'You'} vs ${partnerName}`}
+      title={partnerName === 'BOT' ? 'vs BOT' : `${myCharName ?? auth.user?.username ?? 'You'} vs ${partnerName}`}
       team2Color="#f9a8d4"
       onRematch={() => { phase = 'mode'; myResults = []; partnerResults = [] }}
       onBack={() => { phase = 'mode'; myResults = []; partnerResults = [] }}

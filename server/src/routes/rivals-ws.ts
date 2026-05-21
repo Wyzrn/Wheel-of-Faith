@@ -159,6 +159,7 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
           if (!player.room) break
           player.done = true
           player.results = (msg.results as object[]) ?? []
+          if (msg.name) player.username = msg.name as string
           const other = getOther(player)
           if (other) send(other.ws, { type: 'partner_complete' })
           if (player.room.p1?.done && player.room.p2?.done) {

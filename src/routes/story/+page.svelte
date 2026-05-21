@@ -205,6 +205,41 @@
     navigator.clipboard.writeText(shareSlotUrl)
   }
 
+  // ── Sync slots from server ─────────────────────────────────────────────────
+  let isSyncing = $state(false)
+  let syncMessage = $state<string | null>(null)
+
+  async function syncSlots() {
+    isSyncing = true
+    syncMessage = null
+    try {
+      const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/?$/, '')
+      const res = await fetch(`${API_URL}/api/story-slots/mine`, { credentials: 'include' })
+      if (res.status === 401) { syncMessage = 'Log in to sync save slots.'; return }
+      if (!res.ok) { syncMessage = 'Sync failed. Try again.'; return }
+      const serverSlots = await res.json() as Array<{ slotData: StorySaveSlot }>
+      let filled = 0
+      const seen = new Set<SlotId>()
+      for (const ss of serverSlots) {
+        const data = ss.slotData
+        const sid = data?.id as SlotId
+        if (!sid || seen.has(sid)) continue
+        seen.add(sid)
+        if (!loadSaveSlot(sid)) {
+          saveSaveSlot(data)
+          filled++
+        }
+      }
+      slots = loadAllSlots()
+      syncMessage = filled > 0 ? `Restored ${filled} slot${filled > 1 ? 's' : ''} from your account.` : 'All slots already have local data.'
+    } catch {
+      syncMessage = 'Sync failed. Try again.'
+    } finally {
+      isSyncing = false
+      setTimeout(() => { syncMessage = null }, 3500)
+    }
+  }
+
   // ── Hub actions ────────────────────────────────────────────────────────────
   type SpinType = 'refresh' | 'bonus' | 'hero' | 'legend'
   let spinTypeModal = $state(false)
@@ -646,6 +681,12 @@
     crystalAnim = null
   }
 
+  function dismissAndEquipCrystal() {
+    const anim = crystalAnim
+    crystalAnim = null
+    if (anim) openEquipModal(anim.type, anim.item)
+  }
+
   // ── Equip opened item modal ────────────────────────────────────────────────
   let equipModal = $state<{ type: 'weapon' | 'armor' | 'power'; item: OpenedItem } | null>(null)
 
@@ -802,6 +843,22 @@
           {/if}
         </div>
       {/each}
+    </div>
+
+    <!-- Sync button -->
+    <div class="flex flex-col items-center gap-2 w-full max-w-xs">
+      <button
+        onclick={syncSlots}
+        disabled={isSyncing}
+        class="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold transition-all active:scale-95"
+        style="background: rgba(125,211,252,0.06); border: 1px solid rgba(125,211,252,0.2); color: #7dd3fc; cursor: pointer; opacity: {isSyncing ? 0.6 : 1};"
+      >
+        <span class="material-symbols-outlined {isSyncing ? 'animate-spin' : ''}" style="font-size: 15px;">sync</span>
+        {isSyncing ? 'Syncing…' : 'Sync Slots from Account'}
+      </button>
+      {#if syncMessage}
+        <p class="font-mono text-xs text-center" style="color: {syncMessage.startsWith('Log in') || syncMessage.startsWith('Sync failed') ? '#ef4444' : '#34d399'};">{syncMessage}</p>
+      {/if}
     </div>
 
   </div>
@@ -2301,13 +2358,19 @@
           <div class="mb-6"></div>
         {/if}
 
-        <!-- Dismiss -->
-        <button onclick={dismissCrystalAnim}
-          class="w-full py-3 rounded-xl font-bold font-mono text-sm"
-          style="background: {gradeColor}18; border: 1px solid {gradeColor}50; color: {gradeColor}; cursor: pointer; transition: background 120ms; letter-spacing: 0.05em;">
-          Added to Inventory
-        </button>
-        <p class="font-mono text-xs mt-3" style="color: var(--color-outline); opacity: 0.5;">Tap anywhere to dismiss</p>
+        <!-- Actions -->
+        <div class="flex gap-2 w-full">
+          <button onclick={dismissAndEquipCrystal}
+            class="flex-1 py-3 rounded-xl font-bold font-mono text-sm"
+            style="background: {gradeColor}28; border: 1px solid {gradeColor}70; color: {gradeColor}; cursor: pointer; transition: background 120ms; letter-spacing: 0.05em;">
+            Equip Now
+          </button>
+          <button onclick={dismissCrystalAnim}
+            class="flex-1 py-3 rounded-xl font-bold font-mono text-sm"
+            style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: var(--color-outline); cursor: pointer; transition: background 120ms; letter-spacing: 0.05em;">
+            Save for Later
+          </button>
+        </div>
       </div>
     {/if}
   </div>
