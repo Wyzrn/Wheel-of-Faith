@@ -7,6 +7,7 @@
     buyStatCrystal, buyStatCrystalWithShards, getDailyBought, applySpinRefresh, msUntilNextRefresh,
     upgradeRosterCapacity, rosterUpgradeCost, buyCrystalWithGems, buyCrystalWithShards,
     sellCrystal, sellStatCrystal, buyEndlessKey, consumeEndlessKey,
+    recordWorldReplayStart, worldReplayCooldownMs, WORLD_REPLAY_COOLDOWN_MS,
     createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
     openCrystal, equipOpenedItem, useStatCrystal,
     SHARD_COST_PER_SPIN, STAGE_LABELS, MAX_DAILY_SPINS,
@@ -266,6 +267,9 @@
   function enterWorld(world: WorldGrade) {
     activeWorld = world
     activePlusLevel = 0
+    if (currentSlot?.worldProgress[world]?.beaten) {
+      currentSlot = recordWorldReplayStart($state.snapshot(currentSlot) as StorySaveSlot, world)
+    }
     view = 'battle'
   }
 
@@ -581,6 +585,11 @@
     if (result === 'char_not_found') {
       useStatError = 'Character not found.'
       setTimeout(() => { useStatError = null }, 2500)
+      return
+    }
+    if (result === 'at_cap') {
+      useStatError = 'This stat is already at your level cap. Beat more worlds to raise the limit.'
+      setTimeout(() => { useStatError = null }, 3500)
       return
     }
     currentSlot = result
@@ -1860,6 +1869,8 @@
 
         {:else}
           {@const selectedChar = roster.find(r => r.id === useStatModal?.charId)}
+          {@const levelMaxScores = [54, 92, 99, 103, 115, Infinity] as const}
+          {@const maxStatScore = levelMaxScores[Math.min(5, playerLevel)]}
           <h3 class="font-bold text-sm mb-1" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">
             {selectedChar?.name ?? '—'}
           </h3>
@@ -1867,12 +1878,19 @@
           <div class="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
             {#each BOOSTABLE_STATS as stat}
               {@const spinResult = selectedChar?.spins.find(r => r.category === stat)}
+              {@const currentScore = spinResult?.score ?? 0}
+              {@const atCap = currentScore >= maxStatScore}
               {@const currentGrade = spinResult?.score != null ? extendedTierFromScore(spinResult.score) : (spinResult?.tier ?? null)}
-              {@const newGrade = spinResult?.score != null ? boostedTier(spinResult.score, boost).grade : null}
-              <button onclick={() => doUseStat(stat)}
+              {@const newGrade = !atCap && spinResult?.score != null ? boostedTier(spinResult.score, boost).grade : null}
+              <button onclick={() => doUseStat(stat)} disabled={atCap}
                 class="px-3 py-2.5 rounded-xl text-left"
-                style="background: rgba(255,255,255,0.03); border: 1px solid {color}22; cursor: pointer; transition: border-color 120ms;">
-                <p class="font-mono text-xs font-bold" style="color: {color};">{BOOSTABLE_STAT_LABELS[stat]}</p>
+                style="background: rgba(255,255,255,0.03); border: 1px solid {atCap ? 'rgba(239,68,68,0.2)' : color + '22'}; cursor: {atCap ? 'not-allowed' : 'pointer'}; opacity: {atCap ? 0.5 : 1}; transition: border-color 120ms;">
+                <div class="flex items-center gap-1.5 mb-0.5">
+                  <p class="font-mono text-xs font-bold" style="color: {atCap ? '#6b7280' : color};">{BOOSTABLE_STAT_LABELS[stat]}</p>
+                  {#if atCap}
+                    <span class="font-mono text-[9px] px-1 py-0.5 rounded" style="background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3);">CAP</span>
+                  {/if}
+                </div>
                 {#if currentGrade}
                   <p class="font-mono text-xs" style="color: var(--color-outline);">
                     {currentGrade}{#if newGrade && newGrade !== currentGrade} → <span style="color: #34d399;">{newGrade}</span>{/if}

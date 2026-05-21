@@ -185,6 +185,32 @@ export interface StoryInventory {
 export interface WorldProgress {
   battlesCompleted: number   // 0–20
   beaten: boolean            // true once battle 20 is won
+  /** ISO timestamp when the last replay of this world was started. Used for 12h cooldown. */
+  lastReplayedAt?: string
+}
+
+/** 12-hour cooldown between replays of a beaten world. */
+export const WORLD_REPLAY_COOLDOWN_MS = 12 * 60 * 60 * 1000
+
+/** Returns remaining cooldown ms for replaying a beaten world (0 = ready). */
+export function worldReplayCooldownMs(slot: StorySaveSlot, world: WorldGrade): number {
+  const prog = slot.worldProgress[world]
+  if (!prog?.beaten || !prog.lastReplayedAt) return 0
+  const elapsed = Date.now() - new Date(prog.lastReplayedAt).getTime()
+  return Math.max(0, WORLD_REPLAY_COOLDOWN_MS - elapsed)
+}
+
+/** Stamps the replay start timestamp and resets battlesCompleted so battles run 1–20 again. */
+export function recordWorldReplayStart(slot: StorySaveSlot, world: WorldGrade): StorySaveSlot {
+  const prev = slot.worldProgress[world]
+  if (!prev?.beaten) return slot
+  return {
+    ...slot,
+    worldProgress: {
+      ...slot.worldProgress,
+      [world]: { ...prev, battlesCompleted: 0, lastReplayedAt: new Date().toISOString() },
+    },
+  }
 }
 
 /** Tracks how many stat crystals have been purchased today (resets at midnight). */
@@ -899,16 +925,22 @@ function recomputeOverall(spins: SpinResult[]): { overallScore: number; overallT
   return { overallScore, overallTier: scoreTier(overallScore) as TierGrade }
 }
 
+// Max stat score per player level (index = playerLevel). Mirrors StorySpinView STAGE_MAX_STAT_SCORES.
+const STAT_LEVEL_MAX_SCORES = [54, 92, 99, 103, 115, Infinity] as const
+
 /** Uses a stat crystal on a character: consumes it, boosts the spin result directly, updates overall grade. */
 export function useStatCrystal(
   slot: StorySaveSlot,
   characterId: string,
   stat: BoostableStat,
   type: StatCrystalType,
-): StorySaveSlot | 'no_crystal' | 'char_not_found' {
+): StorySaveSlot | 'no_crystal' | 'char_not_found' | 'at_cap' {
   if (slot.inventory.statCrystals[type] <= 0) return 'no_crystal'
   const char = slot.roster.find(r => r.id === characterId)
   if (!char) return 'char_not_found'
+  const maxScore = STAT_LEVEL_MAX_SCORES[Math.min(5, slot.playerLevel)]
+  const statSpin = char.spins.find(r => r.category === stat)
+  if (statSpin?.score !== undefined && statSpin.score >= maxScore) return 'at_cap'
   const boost = STAT_CRYSTAL_BOOST[type]
   const newSpins = char.spins.map(r => r.category === stat ? boostSpin(r, boost) : r)
   const { overallScore, overallTier } = recomputeOverall(newSpins)

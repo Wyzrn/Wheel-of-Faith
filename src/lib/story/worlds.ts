@@ -155,7 +155,7 @@ export const TYPE_TO_STAT_RARITY: Record<EnemyType, StatCrystalRarity> = {
 export const CHANCE_DROP_RATES = {
   fateShard:     0.05,
   powerCrystal:  0.08,
-  statCrystal:   0.06,
+  statCrystal:   0.02,
   weaponCrystal: 0.07,
   armorCrystal:  0.07,
   spin:          0.03,   // 3% — rare character spin drop

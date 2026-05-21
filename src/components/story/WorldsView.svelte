@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { onMount, onDestroy } from 'svelte'
   import { WORLD_GRADES, BATTLES_PER_WORLD, MAX_ABSOLUTE_PLUS, PLAYER_LEVEL_WORLDS, type WorldGrade } from '$lib/story/worlds'
+  import { WORLD_REPLAY_COOLDOWN_MS } from '$lib/story/saveSlots'
   import type { StorySaveSlot } from '$lib/story/saveSlots'
 
   let { slot, onEnterWorld, onEnterAbsolutePlus, onBack }: {
@@ -45,6 +47,27 @@
   let activeColor  = $derived(GRADE_COLORS[activeWorld] ?? '#9a907b')
   let activeBattle = $derived(activeProg.battlesCompleted + 1)
   let pctActive    = $derived(activeProg.beaten ? 100 : Math.round((activeProg.battlesCompleted / BATTLES_PER_WORLD) * 100))
+
+  let now = $state(Date.now())
+  let nowTimer: ReturnType<typeof setInterval> | null = null
+  onMount(() => { nowTimer = setInterval(() => { now = Date.now() }, 5000) })
+  onDestroy(() => { if (nowTimer) clearInterval(nowTimer) })
+
+  function replayCooldownMs(w: WorldGrade): number {
+    const prog = slot.worldProgress[w]
+    if (!prog?.beaten || !prog.lastReplayedAt) return 0
+    return Math.max(0, WORLD_REPLAY_COOLDOWN_MS - (now - new Date(prog.lastReplayedAt).getTime()))
+  }
+
+  function formatCooldown(ms: number): string {
+    const totalSec = Math.ceil(ms / 1000)
+    const h = Math.floor(totalSec / 3600)
+    const m = Math.floor((totalSec % 3600) / 60)
+    if (h > 0) return `${h}h ${m}m`
+    return `${m}m`
+  }
+
+  let activeCooldown = $derived(replayCooldownMs(activeWorld))
 </script>
 
 <header class="fixed top-0 left-0 right-0 z-30 flex items-center gap-3 px-4"
@@ -96,17 +119,22 @@
 
       <!-- Big battle button -->
       <button
-        onclick={() => onEnterWorld(activeWorld)}
+        onclick={() => activeCooldown === 0 && onEnterWorld(activeWorld)}
+        disabled={activeCooldown > 0}
         class="w-full py-4 rounded-xl font-bold tracking-widest"
         style="font-family: var(--font-cinzel); font-size: 15px;
-               background: linear-gradient(135deg, {activeColor}28, {activeColor}10);
-               border: 1.5px solid {activeColor}88;
-               color: {activeColor};
+               background: linear-gradient(135deg, {activeColor}{activeCooldown > 0 ? '10' : '28'}, {activeColor}10);
+               border: 1.5px solid {activeColor}{activeCooldown > 0 ? '33' : '88'};
+               color: {activeCooldown > 0 ? 'var(--color-outline)' : activeColor};
                box-shadow: 0 4px 24px {activeColor}22, inset 0 1px 0 rgba(255,255,255,0.08);
-               cursor: pointer; letter-spacing: 0.15em;
-               text-shadow: 0 0 12px {activeColor}88;"
+               cursor: {activeCooldown > 0 ? 'not-allowed' : 'pointer'}; letter-spacing: 0.15em;
+               text-shadow: 0 0 12px {activeCooldown > 0 ? 'transparent' : activeColor + '88'};"
       >
-        {activeProg.beaten ? '↩ Replay World' : '⚔ Enter Battle'}
+        {#if activeCooldown > 0}
+          🕐 Replay in {formatCooldown(activeCooldown)}
+        {:else}
+          {activeProg.beaten ? '↩ Replay World' : '⚔ Enter Battle'}
+        {/if}
       </button>
     </div>
   </div>
@@ -180,11 +208,19 @@
             Enter
           </button>
         {:else if unlocked && prog.beaten}
-          <button onclick={() => onEnterWorld(world)}
-            class="flex-shrink-0 rounded-lg px-2.5 py-1.5 font-bold font-mono"
-            style="font-size: 10px; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.25); color: #4ade80; cursor: pointer;">
-            Replay
-          </button>
+          {@const cd = replayCooldownMs(world)}
+          {#if cd > 0}
+            <span class="flex-shrink-0 font-mono text-[9px] px-2 py-1 rounded text-center"
+              style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #9a907b; min-width: 48px; line-height: 1.3;">
+              🕐 {formatCooldown(cd)}
+            </span>
+          {:else}
+            <button onclick={() => onEnterWorld(world)}
+              class="flex-shrink-0 rounded-lg px-2.5 py-1.5 font-bold font-mono"
+              style="font-size: 10px; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.25); color: #4ade80; cursor: pointer;">
+              Replay
+            </button>
+          {/if}
         {:else if !unlocked}
           <span class="material-symbols-outlined flex-shrink-0" style="font-size: 18px; color: rgba(255,255,255,0.15);">lock</span>
         {/if}
