@@ -634,42 +634,50 @@
   type UseStatPhase = 'pickChar' | 'pickStat'
   let useStatModal = $state<{ type: StatCrystalType; phase: UseStatPhase; charId: string | null } | null>(null)
   let useStatError = $state<string | null>(null)
+  let useStatQty   = $state(1)
+
+  const LEVEL_MAX_SCORES = [54, 92, 99, 103, 115, Infinity] as const
 
   function openUseStatModal(type: StatCrystalType) {
     useStatModal = { type, phase: 'pickChar', charId: null }
+    useStatQty = 1
   }
 
   function selectUseStatChar(charId: string) {
     if (!useStatModal) return
     useStatModal = { ...useStatModal, phase: 'pickStat', charId }
+    useStatQty = 1
+  }
+
+  function clampStatQty(qty: number, stat: BoostableStat): number {
+    if (!currentSlot || !useStatModal) return 0
+    const available = currentSlot.inventory.statCrystals[useStatModal.type]
+    const boost = STAT_CRYSTAL_BOOST[useStatModal.type]
+    const maxScore = LEVEL_MAX_SCORES[Math.min(5, playerLevel)]
+    const char = currentSlot.roster.find(r => r.id === useStatModal!.charId)
+    const currentScore = char?.spins.find(r => r.category === stat)?.score ?? 0
+    const roomLeft = maxScore === Infinity ? available : Math.max(0, Math.floor((maxScore - currentScore) / boost))
+    return Math.max(0, Math.min(qty, available, roomLeft))
   }
 
   function doUseStat(stat: BoostableStat) {
     if (!currentSlot || !useStatModal || !useStatModal.charId) return
-    const result = useStatCrystal(
-      $state.snapshot(currentSlot) as StorySaveSlot,
-      useStatModal.charId,
-      stat,
-      useStatModal.type,
-    )
-    if (result === 'no_crystal') {
-      useStatError = 'No crystals available.'
-      setTimeout(() => { useStatError = null }, 2500)
-      return
-    }
-    if (result === 'char_not_found') {
-      useStatError = 'Character not found.'
-      setTimeout(() => { useStatError = null }, 2500)
-      return
-    }
-    if (result === 'at_cap') {
+    const effectiveQty = clampStatQty(useStatQty, stat)
+    if (effectiveQty === 0) {
       useStatError = 'This stat is already at your level cap. Beat more worlds to raise the limit.'
       setTimeout(() => { useStatError = null }, 3500)
       return
     }
-    currentSlot = result
-    saveSaveSlot($state.snapshot(result) as StorySaveSlot)
+    let updated = $state.snapshot(currentSlot) as StorySaveSlot
+    for (let i = 0; i < effectiveQty; i++) {
+      const result = useStatCrystal(updated, useStatModal.charId!, stat, useStatModal.type)
+      if (typeof result === 'string') break
+      updated = result
+    }
+    currentSlot = updated
+    saveSaveSlot($state.snapshot(updated) as StorySaveSlot)
     useStatModal = null
+    useStatQty = 1
   }
 </script>
 
@@ -2098,26 +2106,48 @@
 
         {:else}
           {@const selectedChar = roster.find(r => r.id === useStatModal?.charId)}
-          {@const levelMaxScores = [54, 92, 99, 103, 115, Infinity] as const}
-          {@const maxStatScore = levelMaxScores[Math.min(5, playerLevel)]}
+          {@const maxStatScore = LEVEL_MAX_SCORES[Math.min(5, playerLevel)]}
+          {@const available = statCrystalInventory[useStatModal.type]}
           <h3 class="font-bold text-sm mb-1" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">
             {selectedChar?.name ?? '—'}
           </h3>
-          <p class="font-mono text-xs mb-3" style="color: var(--color-outline);">Choose a stat to boost by +{boost}</p>
-          <div class="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
+          <p class="font-mono text-xs mb-3" style="color: var(--color-outline);">Choose a stat to boost · +{boost} per crystal</p>
+
+          <!-- Quantity input -->
+          <div class="flex items-center gap-2 mb-3">
+            <span class="font-mono text-xs" style="color: var(--color-outline);">Quantity:</span>
+            <input
+              type="number"
+              min="1"
+              max={available}
+              value={useStatQty}
+              oninput={(e) => {
+                const v = parseInt((e.target as HTMLInputElement).value)
+                useStatQty = isNaN(v) ? 1 : Math.max(1, Math.min(v, available))
+              }}
+              class="font-mono text-sm text-center rounded-lg px-2 py-1"
+              style="width: 64px; background: rgba(255,255,255,0.06); border: 1px solid {color}44; color: var(--color-on-surface); outline: none;"
+            />
+            <span class="font-mono text-xs" style="color: var(--color-outline);">/ {available} available</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
             {#each BOOSTABLE_STATS as stat}
               {@const spinResult = selectedChar?.spins.find(r => r.category === stat)}
               {@const currentScore = spinResult?.score ?? 0}
               {@const atCap = currentScore >= maxStatScore}
+              {@const effective = clampStatQty(useStatQty, stat)}
               {@const currentGrade = spinResult?.score != null ? extendedTierFromScore(spinResult.score) : (spinResult?.tier ?? null)}
-              {@const newGrade = !atCap && spinResult?.score != null ? boostedTier(spinResult.score, boost).grade : null}
-              <button onclick={() => doUseStat(stat)} disabled={atCap}
+              {@const newGrade = !atCap && spinResult?.score != null && effective > 0 ? boostedTier(spinResult.score, boost * effective).grade : null}
+              <button onclick={() => doUseStat(stat)} disabled={atCap || effective === 0}
                 class="px-3 py-2.5 rounded-xl text-left"
-                style="background: rgba(255,255,255,0.03); border: 1px solid {atCap ? 'rgba(239,68,68,0.2)' : color + '22'}; cursor: {atCap ? 'not-allowed' : 'pointer'}; opacity: {atCap ? 0.5 : 1}; transition: border-color 120ms;">
+                style="background: rgba(255,255,255,0.03); border: 1px solid {atCap ? 'rgba(239,68,68,0.2)' : color + '22'}; cursor: {atCap || effective === 0 ? 'not-allowed' : 'pointer'}; opacity: {atCap || effective === 0 ? 0.5 : 1}; transition: border-color 120ms;">
                 <div class="flex items-center gap-1.5 mb-0.5">
                   <p class="font-mono text-xs font-bold" style="color: {atCap ? '#6b7280' : color};">{BOOSTABLE_STAT_LABELS[stat]}</p>
                   {#if atCap}
                     <span class="font-mono text-[9px] px-1 py-0.5 rounded" style="background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3);">CAP</span>
+                  {:else if effective < useStatQty}
+                    <span class="font-mono text-[9px] px-1 py-0.5 rounded" style="background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3);">×{effective}</span>
                   {/if}
                 </div>
                 {#if currentGrade}
