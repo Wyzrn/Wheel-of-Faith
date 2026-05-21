@@ -8,6 +8,7 @@ import { powers as powersPool } from '$lib/content/powers'
 import { weapons as weaponsPool } from '$lib/content/weapons'
 import { armors as armorsPool } from '$lib/content/armors'
 import { ITEM_GRADE_INFO, highestGrade } from '$lib/content/elements'
+import type { AttackType, ElementType } from '$lib/content/types'
 
 // Grade lookup maps — built once at module load
 const _powerMap  = new Map(powersPool.map(p => [p.label, p]))
@@ -40,6 +41,14 @@ const HP_TABLE: Record<string, number> = {
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
+export interface SummonedUnit {
+  name: string
+  hp: number
+  maxHp: number
+  damage: number
+  element?: ElementType
+}
+
 export interface BattleCharacter {
   name: string
   raceLabel: string
@@ -65,6 +74,16 @@ export interface BattleCharacter {
   dodgeChance: number
   initiative: number
   moves: BattleMove[]
+  // Extended fields
+  elementWeaknesses: ElementType[]   // elements that deal +25% damage to this character
+  statusImmunities: string[]         // status types this character cannot receive
+  passiveHealPerRound: number        // HP restored at start of each round (regen passives)
+  powerDamageReduction: number       // 0–0.6; reduces power-type damage taken
+  physicalDamageReduction: number    // 0–0.6; reduces physical-type damage taken
+  damageReductionCap: number         // normally 0.80; "invincible"-type passives raise to 0.88
+  summons: SummonedUnit[]            // currently active summoned allies
+  buffMultiplier: number             // damage multiplier from active buff (1.0 = none)
+  buffRoundsLeft: number             // rounds remaining on buff
 }
 
 export interface BattleMove {
@@ -72,6 +91,19 @@ export interface BattleMove {
   type: 'physical' | 'power' | 'ability'
   effectTag: string | null
   behavior: 'attack' | 'defend' | 'heal'
+  attackType: AttackType             // classified attack behaviour
+  element?: ElementType              // elemental affinity of this move
+  grade?: string                     // item grade (F–God) — drives FX intensity
+}
+
+export interface RoundFxEvent {
+  attackerSide: 'p1' | 'p2' | 'team1' | 'team2'
+  attackerIdx: number
+  targetIdxs: number[]     // always 1 for single-target; multiple for AOE
+  element?: ElementType
+  grade?: string
+  attackType: AttackType
+  isCrit: boolean
 }
 
 export interface BattleRound {
@@ -82,6 +114,9 @@ export interface BattleRound {
   p2HpBefore: number
   lines: string[]
   winner?: 'p1' | 'p2' | 'draw'
+  fxEvents?: RoundFxEvent[]         // visual FX triggers for the UI layer
+  p1SummonHp?: number               // summon HP (-1 if none)
+  p2SummonHp?: number
 }
 
 // ─── Flavor Data ──────────────────────────────────────────────────────────────
@@ -218,6 +253,87 @@ const INTIMIDATE_LINES = [
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
+}
+
+// ─── Attack Type Detection ─────────────────────────────────────────────────────
+
+const PASSIVE_KW = [
+  'invincib', 'invulnerab', 'immortal', 'eternal life', 'undying will', 'undying body',
+  'absolute defense', 'perfect defense', 'unbreakable', 'indestructible existence',
+  'passive', 'always active', 'aura of protection', 'aura of endurance',
+  'absorb damage', 'permanent', 'damage resist', 'power resist', 'magic resist',
+  'nullif', 'immune to', 'immunity', 'nullify poison', 'nullify fire',
+  'infinite regeneration', 'auto-heal', 'auto-repair', 'self-repair', 'regeneration passiv',
+  'natural armor', 'hardened skin', 'iron body', 'titan body', 'body of steel',
+  'divine protection', 'holy aura', 'blessed existence', 'sacred aura',
+  'mana shell', 'ki armor', 'energy armor', 'astral body',
+  'power nullification', 'anti-magic', 'magic immunity', 'anti-demon', 'scripture ward',
+]
+const SUMMON_KW = [
+  'summon', 'conjure', 'manifest ally', 'call forth', 'raise army', 'invoke spirit',
+  'spirit call', 'familiar', 'servant', 'army of', 'horde', 'legion',
+  'minion', 'ally manifestation', 'phantom army', 'undead legion', 'shadow clone',
+  'clone', 'duplicate', 'doppelganger', 'shadow copy', 'echo',
+]
+const AOE_KW = [
+  'eruption', 'explosion', 'tidal wave', 'rain of', 'meteor shower', 'apocalypse',
+  'annihilation wave', 'area', 'widespread', 'scatter', 'barrage', 'cascade',
+  'storm', 'burst', 'shockwave', 'flood', 'blizzard', 'inferno', 'wildfire',
+  'firestorm', 'thunderstorm', 'quake', 'earthquake', 'nova', 'aoe',
+  'world-ending', 'planet-wide', 'all enemies', 'dimensional rift', 'void storm',
+  'stellar detonation', 'galactic', 'cosmic ray', 'reality shatter', 'existence erasure',
+]
+const DEBUFF_KW = [
+  'paralyze', 'paralysis', 'freeze', 'frozen', 'poison', 'corrode', 'corrosion',
+  'wither', 'withering', 'curse', 'hex', 'weaken', 'slow', 'blind', 'silence',
+  'petrify', 'stun', 'cripple', 'rot', 'decay', 'drain', 'sap', 'afflict',
+  'plague', 'disease', 'enervate', 'enfeeble', 'fatigue', 'exhaust',
+  'dark binding', 'terror', 'fear', 'dread', 'despair', 'confusion', 'chaos touch',
+]
+const BUFF_KW = [
+  'enhance', 'empower', 'strengthen', 'haste', 'rally', 'inspire', 'bless',
+  'fortify', 'reinforce', 'speed boost', 'battle cry', 'war cry', 'protect allies',
+  'power boost', 'shield allies', 'cover', 'aura of strength', 'aura of speed',
+  'soul link', 'shared power', 'unity', 'synergy', 'team buff', 'power surge',
+  'limit break', 'overdrive', 'hyper mode', 'power awakening',
+]
+const HEAL_KW = [
+  'healing', 'regenerat', 'mend', 'restor', 'revive', 'resurrect',
+  'life force', 'second wind', 'cure', 'vitality', 'recover', 'phoenix rebirth',
+  'lay on hands', 'blessed healer', 'sacred heal', 'regrowth', 'song of rest',
+  'sanity restoration', 'reverse cursed', 'life drain', 'empathic healing',
+]
+
+export function detectAttackType(label: string, explicitType?: AttackType): AttackType {
+  if (explicitType) return explicitType
+  const l = label.toLowerCase()
+  if (PASSIVE_KW.some(k => l.includes(k))) return 'passive'
+  if (SUMMON_KW.some(k => l.includes(k)))  return 'summon'
+  if (AOE_KW.some(k => l.includes(k)))     return 'aoe'
+  if (DEBUFF_KW.some(k => l.includes(k)))  return 'debuff'
+  if (BUFF_KW.some(k => l.includes(k)))    return 'buff'
+  if (HEAL_KW.some(k => l.includes(k)))    return 'heal'
+  return 'attack'
+}
+
+// Detects which element a weakness label corresponds to
+function detectWeaknessElement(label: string): ElementType | undefined {
+  const lower = label.toLowerCase()
+  const ELEMENTS: ElementType[] = [
+    'Fire','Ice','Lightning','Earth','Wind','Shadow','Light','Arcane','Nature',
+    'Void','Cosmic','Blood','Metal','Soul','Poison','Time','Water','Sound',
+    'Gravity','Psychic','Chaos','Neutral',
+  ]
+  for (const el of ELEMENTS) {
+    if (lower.includes(el.toLowerCase())) return el
+  }
+  return undefined
+}
+
+// Summon stat % by grade
+const SUMMON_STAT_PCT: Record<string, number> = {
+  F: 0.10, E: 0.14, D: 0.20, C: 0.28, B: 0.38, A: 0.50,
+  S: 0.64, SS: 0.78, SSS: 0.92, God: 1.10,
 }
 
 function detectEffectTag(label: string): string | null {
@@ -384,19 +500,85 @@ export function buildBattleCharacter(
   const dodgeChance    = Math.min(0.70, 0.01 + (agilityRank / 41) * 0.69)
   const initiative     = speedRank * 0.7 + agilityRank * 0.3
 
+  // ── Passive & extended stat computation ───────────────────────────────────
+  let damageReductionCap      = 0.80
+  let powerDamageReduction    = 0.0
+  let physicalDamageReduction = 0.0
+  let passiveHealPerRound     = 0
+  const statusImmunities: string[] = []
+
+  const allPowerResults = rs.filter(r => r.category === 'power')
+  const allAbilityResults = rs.filter(r => r.category === 'racialAbility' || r.category === 'archetypeAbility')
+
+  // Process passives first (they modify build stats, not moves)
+  for (const r of [...allPowerResults, ...allAbilityResults]) {
+    const at = detectAttackType(r.resultLabel, _powerMap.get(r.resultLabel)?.attackType)
+    if (at !== 'passive') continue
+    const lower = r.resultLabel.toLowerCase()
+    if (PASSIVE_KW.slice(0, 8).some(k => lower.includes(k))) damageReductionCap = 0.88
+    if (lower.includes('magic resist') || lower.includes('power resist')) powerDamageReduction = Math.min(0.60, powerDamageReduction + 0.30)
+    if (lower.includes('immune to') || lower.includes('nullif') || lower.includes('immunity')) {
+      for (const s of ['poison','burn','freeze','paralyze','wither','bleed']) {
+        if (lower.includes(s) && !statusImmunities.includes(s)) statusImmunities.push(s)
+      }
+    }
+    if (lower.includes('regenerat') || lower.includes('auto-heal') || lower.includes('self-repair')) {
+      passiveHealPerRound += Math.round(hp * 0.03)
+    }
+  }
+
+  // Element weaknesses from weakness spin results
+  const elementWeaknesses: ElementType[] = []
+  for (const r of rs.filter(r => r.category === 'weakness')) {
+    const el = detectWeaknessElement(r.resultLabel)
+    if (el && !elementWeaknesses.includes(el)) elementWeaknesses.push(el)
+  }
+
+  // Build moves (passives excluded)
   const moves: BattleMove[] = []
-  const powers    = rs.filter(r => r.category === 'power').slice(0, 4)
-  const weapons   = rs.filter(r =>
+  const powerSpins = allPowerResults.filter(r => detectAttackType(r.resultLabel, _powerMap.get(r.resultLabel)?.attackType) !== 'passive').slice(0, 5)
+  const weaponSpins = rs.filter(r =>
     r.category === 'weapon' && !r.resultLabel.includes('No Weapon') && !r.resultLabel.includes('Unarmed')
   ).slice(0, 2)
-  const abilities = rs.filter(r =>
-    r.category === 'racialAbility' || r.category === 'archetypeAbility'
-  ).slice(0, 2)
+  const abilitySpins = allAbilityResults.filter(r => detectAttackType(r.resultLabel, _powerMap.get(r.resultLabel)?.attackType) !== 'passive').slice(0, 2)
 
-  for (const r of powers)    moves.push({ name: r.resultLabel, type: 'power',    effectTag: detectEffectTag(r.resultLabel), behavior: detectMoveBehavior(r.resultLabel) })
-  for (const r of weapons)   moves.push({ name: r.resultLabel, type: 'physical', effectTag: detectEffectTag(r.resultLabel), behavior: detectMoveBehavior(r.resultLabel) })
-  for (const r of abilities) moves.push({ name: r.resultLabel, type: 'ability',  effectTag: detectEffectTag(r.resultLabel), behavior: detectMoveBehavior(r.resultLabel) })
-  if (moves.length === 0)    moves.push({ name: 'Desperate Strike', type: 'physical', effectTag: null, behavior: 'attack' })
+  for (const r of powerSpins) {
+    const powerData = _powerMap.get(r.resultLabel)
+    moves.push({
+      name: r.resultLabel,
+      type: 'power',
+      effectTag: detectEffectTag(r.resultLabel),
+      behavior: detectMoveBehavior(r.resultLabel),
+      attackType: detectAttackType(r.resultLabel, powerData?.attackType),
+      element: powerData?.element,
+      grade: powerData?.grade,
+    })
+  }
+  for (const r of weaponSpins) {
+    const wepData = _weaponMap.get(r.resultLabel)
+    moves.push({
+      name: r.resultLabel,
+      type: 'physical',
+      effectTag: detectEffectTag(r.resultLabel),
+      behavior: detectMoveBehavior(r.resultLabel),
+      attackType: 'attack',
+      element: wepData?.element,
+      grade: wepData?.grade,
+    })
+  }
+  for (const r of abilitySpins) {
+    const at = detectAttackType(r.resultLabel)
+    moves.push({
+      name: r.resultLabel,
+      type: 'ability',
+      effectTag: detectEffectTag(r.resultLabel),
+      behavior: detectMoveBehavior(r.resultLabel),
+      attackType: at,
+    })
+  }
+  if (moves.length === 0) {
+    moves.push({ name: 'Desperate Strike', type: 'physical', effectTag: null, behavior: 'attack', attackType: 'attack' })
+  }
 
   const mult = statMultiplier ?? 1
   const finalHp  = Math.round(hp * mult)
@@ -413,20 +595,42 @@ export function buildBattleCharacter(
     agilityRank, speedRank, charismaRank, iqRank, potentialRank, energyRank, fightingSkillRank,
     weaponEnchantTags, armorEnchantTags,
     critChance, critMultiplier, dodgeChance, initiative, moves,
+    elementWeaknesses, statusImmunities, passiveHealPerRound,
+    powerDamageReduction, physicalDamageReduction, damageReductionCap,
+    summons: [], buffMultiplier: 1.0, buffRoundsLeft: 0,
   }
 }
 
 // ─── Attack Resolution ────────────────────────────────────────────────────────
 
+export type StatusType = 'burn' | 'poison' | 'freeze' | 'paralyze' | 'wither' | 'bleed'
+
 interface AttackResult {
   skipped: boolean
   damage: number
+  aoeDamages?: number[]      // per-target damage for AOE (parallel array to targets)
   heal: number
-  reflected: number   // damage returned to the attacker
-  stun: boolean       // skip defender's retaliation this round
+  reflected: number          // damage returned to the attacker
+  stun: boolean              // skip defender's retaliation this round
   shieldFraction: number
-  applyStatus?: 'burn' | 'poison' | 'freeze'  // status to inflict on the target
+  applyStatus?: StatusType   // status to inflict on the target
+  buffApplied?: boolean      // applied a team buff
+  summonedUnit?: SummonedUnit
+  fxEvent?: RoundFxEvent
   lines: string[]
+}
+
+// Debuff preference by element
+const ELEMENT_DEBUFF: Partial<Record<ElementType, StatusType>> = {
+  Fire:      'burn',
+  Ice:       'freeze',
+  Lightning: 'paralyze',
+  Poison:    'poison',
+  Shadow:    'wither',
+  Blood:     'bleed',
+  Wind:      'paralyze',
+  Nature:    'poison',
+  Void:      'wither',
 }
 
 function doAction(
@@ -435,51 +639,71 @@ function doAction(
   attackerCurrentHp?: number,
 ): AttackResult {
   const lines: string[] = []
+  const empty = (): AttackResult => ({ skipped: true, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines })
 
   // IQ low: stupid mistake (lose own turn)
   if (attacker.iqRank <= 5 && Math.random() < 0.09) {
     lines.push(pick(STUPID_MISTAKES).replace('{name}', attacker.name))
-    return { skipped: true, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines }
+    return empty()
   }
 
   // Defender high charisma: talks attacker out of it
   if (defender.charismaRank >= 30 && Math.random() < 0.06) {
-    lines.push(pick(CHARM_LINES)
-      .replace('{attacker}', attacker.name)
-      .replace('{defender}', defender.name))
-    return { skipped: true, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines }
+    lines.push(pick(CHARM_LINES).replace('{attacker}', attacker.name).replace('{defender}', defender.name))
+    return empty()
   }
 
   // Attacker low charisma: fumbles
   if (attacker.charismaRank <= 5 && Math.random() < 0.08) {
     lines.push(pick(CHARISMA_FUMBLES).replace('{name}', attacker.name))
-    return { skipped: true, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines }
+    return empty()
   }
 
-  // Attacker high charisma: intimidate (halves defender armor this attack)
+  // Attacker high charisma: intimidate
   let intimidated = false
   if (attacker.charismaRank >= 30 && Math.random() < 0.07) {
-    lines.push(pick(INTIMIDATE_LINES)
-      .replace('{attacker}', attacker.name)
-      .replace('{defender}', defender.name))
+    lines.push(pick(INTIMIDATE_LINES).replace('{attacker}', attacker.name).replace('{defender}', defender.name))
     intimidated = true
   }
 
-  // Ancient weapon: erratic — 20% extra miss chance
+  // Ancient weapon erratic miss
   if (attacker.weaponType === 'Ancient' && Math.random() < 0.20) {
     lines.push(`The ancient power is erratic — ${attacker.name}'s strike goes wide!`)
     return { skipped: false, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines }
   }
 
   // Select move (energy restriction can force physical moves)
-  let available = [...attacker.moves]
+  let available = attacker.moves.filter(m => m.attackType !== 'passive')
   if (attacker.energyRank <= 5 && Math.random() < 0.35) {
     const nonPower = available.filter(m => m.type !== 'power')
     if (nonPower.length > 0) available = nonPower
   }
+  if (available.length === 0) available = attacker.moves
   const move = pick(available)
 
-  // Defend behavior: no damage, partial self-heal, shield vs next incoming hit
+  // ── Buff — team damage boost, no direct damage ────────────────────────────
+  if (move.attackType === 'buff') {
+    attacker.buffMultiplier = 1.25
+    attacker.buffRoundsLeft = 2
+    lines.push(`${attacker.name} channels ${move.name} — the team's power surges!`)
+    return { skipped: false, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, buffApplied: true, lines }
+  }
+
+  // ── Summon ────────────────────────────────────────────────────────────────
+  if (move.attackType === 'summon') {
+    const pct = SUMMON_STAT_PCT[move.grade ?? 'F'] ?? 0.10
+    const summoned: SummonedUnit = {
+      name: `${move.name} Summon`,
+      hp: Math.round(attacker.maxHp * pct),
+      maxHp: Math.round(attacker.maxHp * pct),
+      damage: Math.round(attacker.powerDamage * pct),
+      element: move.element,
+    }
+    lines.push(`${attacker.name} summons ${summoned.name}! (${formatHp(summoned.hp)} HP, ${Math.round(pct * 100)}% stats)`)
+    return { skipped: false, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, summonedUnit: summoned, lines }
+  }
+
+  // ── Defend behavior ───────────────────────────────────────────────────────
   if (move.behavior === 'defend') {
     const selfHeal = Math.round(attacker.maxHp * 0.08)
     lines.push(pick(DEFEND_PHRASES).replace('{name}', attacker.name) + ` [${move.name}]`)
@@ -487,46 +711,63 @@ function doAction(
     return { skipped: false, damage: 0, heal: selfHeal, reflected: 0, stun: false, shieldFraction: 0.55, lines }
   }
 
-  // Heal behavior: no damage, significant self-heal
-  if (move.behavior === 'heal') {
+  // ── Heal behavior / attackType ────────────────────────────────────────────
+  if (move.behavior === 'heal' || move.attackType === 'heal') {
     const selfHeal = Math.round(attacker.maxHp * 0.22)
     lines.push(pick(HEAL_PHRASES).replace('{name}', attacker.name) + ` [${move.name}]`)
     lines.push(`${attacker.name} restores ${formatHp(selfHeal)} HP!`)
     return { skipped: false, damage: 0, heal: selfHeal, reflected: 0, stun: false, shieldFraction: 0, lines }
   }
 
-  // Dodge check (attack moves only)
-  if (Math.random() < defender.dodgeChance) {
+  // ── Debuff — apply status, minimal damage ────────────────────────────────
+  if (move.attackType === 'debuff') {
+    const preferred = move.element ? (ELEMENT_DEBUFF[move.element] ?? null) : null
+    const fallback: StatusType[] = ['poison', 'wither', 'burn', 'freeze', 'paralyze', 'bleed']
+    const statusToApply = preferred ?? pick(fallback)
+    if (!defender.statusImmunities.includes(statusToApply)) {
+      lines.push(`${attacker.name} curses ${defender.name} with ${move.name}!`)
+      lines.push(pick(STATUS_APPLY_LINES[statusToApply] ?? STATUS_APPLY_LINES.poison ?? ['{name} is afflicted!']).replace('{name}', defender.name))
+      const tickDmg = Math.round(defender.maxHp * 0.02)
+      return { skipped: false, damage: tickDmg, heal: 0, reflected: 0, stun: false, shieldFraction: 0, applyStatus: statusToApply, lines }
+    }
+    lines.push(`${defender.name} resists ${attacker.name}'s ${move.name}!`)
+    return { skipped: false, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines }
+  }
+
+  // ── Attack / AOE (damage moves) ───────────────────────────────────────────
+
+  // Dodge check (AOE cannot be fully dodged — 50% reduced chance)
+  const dodgeChance = move.attackType === 'aoe' ? defender.dodgeChance * 0.5 : defender.dodgeChance
+  if (Math.random() < dodgeChance) {
     lines.push(`${defender.name} ${pick(DODGE_PHRASES)} ${attacker.name}'s ${move.name}!`)
-    // Riposte: skilled defenders punish the whiff
     if (defender.fightingSkillRank >= 12 && Math.random() < 0.40) {
       const riposteDmg = Math.max(1, Math.round(
         defender.physicalDamage * (0.20 + Math.random() * 0.28) * (1 - attacker.armorReduction)
       ))
-      lines.push(pick(RIPOSTE_LINES)
-        .replace('{name}', defender.name)
-        .replace('{dmg}', formatHp(riposteDmg)))
+      lines.push(pick(RIPOSTE_LINES).replace('{name}', defender.name).replace('{dmg}', formatHp(riposteDmg)))
       return { skipped: false, damage: 0, heal: 0, reflected: riposteDmg, stun: false, shieldFraction: 0, lines }
     }
     return { skipped: false, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines }
   }
 
-  // Berserker fury: near-death triggers desperate power surge
+  // Berserker fury
   const hpFraction = (attackerCurrentHp ?? attacker.hp) / attacker.maxHp
   const isBerserker = hpFraction < 0.30 && Math.random() < 0.28
-  if (isBerserker) {
-    lines.push(pick(BERSERKER_LINES).replace('{name}', attacker.name))
-  }
+  if (isBerserker) lines.push(pick(BERSERKER_LINES).replace('{name}', attacker.name))
 
-  // Base damage by move type
+  // Base damage by move type; AOE hits at 65% per target
   const baseDmg = move.type === 'power' ? attacker.powerDamage : attacker.physicalDamage
+  const aoeMult = move.attackType === 'aoe' ? 0.65 : 1.0
 
-  // Move multiplier
-  let mult: number
+  // Buff multiplier from active buff
+  const selfBuffMult = attacker.buffRoundsLeft > 0 ? attacker.buffMultiplier : 1.0
+
+  // Move variance multiplier
+  let moveMult: number
   if (attacker.weaponType === 'Exotic' && move.type !== 'power') {
-    mult = 0.60 + Math.random() * 0.80   // high variance for Exotic
+    moveMult = 0.60 + Math.random() * 0.80
   } else {
-    mult = move.type === 'power'
+    moveMult = move.type === 'power'
       ? 0.55 + Math.random() * 0.50
       : move.type === 'physical'
         ? 0.60 + Math.random() * 0.45
@@ -546,10 +787,9 @@ function doAction(
     }
   }
 
-  // Energy boost for power moves at high energy rank
   const energyMult = move.type === 'power' && attacker.energyRank >= 30 ? 1.25 : 1.0
 
-  // IQ high: 5% chance to pierce all armor (precision read)
+  // IQ precision pierce
   let fullPierce = false
   if (attacker.iqRank >= 18 && Math.random() < 0.05) {
     fullPierce = true
@@ -560,26 +800,30 @@ function doAction(
   const isCrit   = Math.random() < attacker.critChance
   const critMult = isCrit ? attacker.critMultiplier : 1.0
 
-  // Effective armor (reduced by intimidate, weapon pierce, or full IQ pierce)
-  // Power moves bypass 60% of armor — energy/ability attacks ignore physical defenses
+  // Effective armor — power moves bypass 60%; power resist reduces further
   let effectiveArmor = move.type === 'power'
-    ? defender.armorReduction * 0.40
-    : defender.armorReduction
+    ? Math.min(defender.damageReductionCap, defender.armorReduction * 0.40 + defender.powerDamageReduction)
+    : Math.min(defender.damageReductionCap, defender.armorReduction + defender.physicalDamageReduction)
   if (fullPierce) {
     effectiveArmor = 0
   } else {
     if (intimidated) effectiveArmor *= 0.50
     effectiveArmor *= (1 - armorPierceFraction)
+    effectiveArmor = Math.min(effectiveArmor, defender.damageReductionCap)
   }
 
-  // Variance + final damage (berserker multiplier applies when HP is critical)
+  // Elemental weakness: +25% damage
+  const weaknessMult = (move.element && defender.elementWeaknesses.includes(move.element)) ? 1.25 : 1.0
+  if (weaknessMult > 1) lines.push(`${defender.name} is weak to ${move.element}! Damage amplified!`)
+
+  // Final damage
   const berserkerMult = isBerserker ? 2.2 + Math.random() * 0.8 : 1.0
   const variance = 0.85 + Math.random() * 0.30
   let damage = Math.max(1, Math.round(
-    baseDmg * mult * weaponBonus * energyMult * critMult * berserkerMult * (1 - effectiveArmor) * variance
+    baseDmg * moveMult * weaponBonus * energyMult * critMult * berserkerMult * aoeMult * selfBuffMult * weaknessMult * (1 - effectiveArmor) * variance
   ))
 
-  // Divine armor enchant: absorbs a slice of incoming damage
+  // Divine armor absorb
   if (defender.armorEnchantTags.includes('heal')) {
     const divineAbsorb = Math.round(damage * 0.08)
     damage = Math.max(1, damage - divineAbsorb)
@@ -589,10 +833,11 @@ function doAction(
   // Battle log line
   let logLine = `${attacker.name} ${pick(ATTACK_VERBS)} ${move.name}`
   if (isCrit) logLine += ` — ${pick(CRIT_LABELS)}`
+  if (move.attackType === 'aoe') logLine += ` (AOE)`
   logLine += ` ${formatHp(damage)} damage!`
   lines.push(logLine)
 
-  // Move effect flavors + healing
+  // Move effect healing
   let heal = 0
   if (move.effectTag && EFFECT_FLAVOR[move.effectTag]) {
     if (move.effectTag === 'lifesteal') heal = Math.round(damage * 0.35)
@@ -603,18 +848,18 @@ function doAction(
       .replace('{heal}', formatHp(heal)))
   }
 
-  // Weapon enchantment lifesteal
   if (attacker.weaponEnchantTags.includes('lifesteal')) {
     const eHeal = Math.round(damage * 0.10)
     heal += eHeal
     lines.push(`${attacker.name}'s weapon drains ${formatHp(eHeal)} HP!`)
   }
 
-  // Reflected damage (goes back to the attacker)
+  // Reflected damage
   let reflected = 0
   if (attacker.weaponType === 'Cursed') {
-    reflected += Math.round(damage * 0.08)
-    lines.push(`${attacker.name}'s cursed weapon bites back — ${formatHp(Math.round(damage * 0.08))} reflected!`)
+    const rb = Math.round(damage * 0.08)
+    reflected += rb
+    lines.push(`${attacker.name}'s cursed weapon bites back — ${formatHp(rb)} reflected!`)
   }
   if (defender.armorType === 'Cursed') {
     const r = Math.round(damage * 0.06)
@@ -627,7 +872,7 @@ function doAction(
     lines.push(`${defender.name}'s flaming armor scorches ${attacker.name} for ${formatHp(b)}!`)
   }
 
-  // IQ high: strategic strike can stun (skip defender retaliation)
+  // IQ stun
   let stun = false
   if (attacker.iqRank >= 30 && Math.random() < 0.08) {
     stun = true
@@ -636,8 +881,7 @@ function doAction(
 
   // Speed multi-hit
   if (attacker.speedRank >= 30) {
-    const multiChance = attacker.speedRank >= 36 ? 0.22 : 0.15
-    if (Math.random() < multiChance) {
+    if (Math.random() < (attacker.speedRank >= 36 ? 0.22 : 0.15)) {
       const bonusDmg = Math.max(1, Math.round(damage * (0.40 + Math.random() * 0.30)))
       damage += bonusDmg
       lines.push(`${attacker.name} blurs — a follow-up strike adds ${formatHp(bonusDmg)} more!`)
@@ -651,19 +895,28 @@ function doAction(
     lines.push(`${attacker.name}'s dormant power explodes — ${formatHp(burstDmg)} bonus damage!`)
   }
 
-  // Combo finisher: very high fighting skill occasionally chains a second weaker hit
+  // Combo finisher
   if (attacker.fightingSkillRank >= 28 && Math.random() < 0.18) {
     const comboDmg = Math.max(1, Math.round(damage * (0.35 + Math.random() * 0.25) * (1 - effectiveArmor)))
     damage += comboDmg
     lines.push(`${attacker.name} doesn't stop — combo finisher for ${formatHp(comboDmg)} more!`)
   }
 
-  // Status effect application based on effectTag
-  let applyStatus: 'burn' | 'poison' | 'freeze' | undefined = undefined
-  if (!isBerserker) {  // berserker attacks are too wild for precision status
-    if (move.effectTag === 'burn'    && Math.random() < 0.38) applyStatus = 'burn'
-    else if (move.effectTag === 'poison' && Math.random() < 0.32) applyStatus = 'poison'
-    else if (move.effectTag === 'slow'   && Math.random() < 0.25) applyStatus = 'freeze'
+  // Status application — element-preferred debuff, expanded to 6 types
+  let applyStatus: StatusType | undefined = undefined
+  if (!isBerserker) {
+    const tag = move.effectTag
+    const el  = move.element
+    if (tag === 'burn'    && Math.random() < 0.38) applyStatus = 'burn'
+    else if (tag === 'poison' && Math.random() < 0.32) applyStatus = 'poison'
+    else if (tag === 'slow'   && Math.random() < 0.25) applyStatus = 'freeze'
+    else if (tag === 'stun'   && Math.random() < 0.22) applyStatus = 'paralyze'
+    else if (el) {
+      const preferred = ELEMENT_DEBUFF[el]
+      if (preferred && Math.random() < 0.20) applyStatus = preferred
+    }
+    // Check immunity
+    if (applyStatus && defender.statusImmunities.includes(applyStatus)) applyStatus = undefined
   }
 
   return { skipped: false, damage, heal, reflected, stun, shieldFraction: 0, applyStatus, lines }
@@ -677,6 +930,7 @@ export interface TeamBattleRound {
   t2Hp: number[]   // HP snapshot per team-2 member at end of round
   lines: string[]
   winner?: 'team1' | 'team2' | 'draw'
+  fxEvents?: RoundFxEvent[]
 }
 
 export function simulateTeamBattle(
@@ -689,7 +943,6 @@ export function simulateTeamBattle(
   const hp2 = team2.map(c => c.hp)
 
   // Status effect tracking: keyed by "team-idx"
-  type StatusType = 'burn' | 'poison' | 'freeze'
   interface Status { intensity: number; duration: number }
   const statuses: Record<string, Partial<Record<StatusType, Status>>> = {}
 
@@ -700,12 +953,36 @@ export function simulateTeamBattle(
   for (let roundNum = 1; roundNum <= maxRounds; roundNum++) {
     const lines: string[] = []
     const stunned = new Set<string>()
+    const skippedParalyze = new Set<string>()
     const shields: Record<string, number> = {}
+    const fxEvents: RoundFxEvent[] = []
 
     // ── Environmental event ──
     if (roundNum === eventRound && eventLine) lines.push(eventLine)
 
-    // ── Status effect ticks (burn / poison) ──
+    // ── Passive regen tick ──
+    for (let i = 0; i < team1.length; i++) {
+      if (hp1[i] > 0 && team1[i].passiveHealPerRound > 0) {
+        hp1[i] = Math.min(team1[i].maxHp, hp1[i] + team1[i].passiveHealPerRound)
+        lines.push(`${team1[i].name} regenerates ${formatHp(team1[i].passiveHealPerRound)} HP!`)
+      }
+    }
+    for (let i = 0; i < team2.length; i++) {
+      if (hp2[i] > 0 && team2[i].passiveHealPerRound > 0) {
+        hp2[i] = Math.min(team2[i].maxHp, hp2[i] + team2[i].passiveHealPerRound)
+        lines.push(`${team2[i].name} regenerates ${formatHp(team2[i].passiveHealPerRound)} HP!`)
+      }
+    }
+
+    // ── Buff countdown ──
+    for (const char of [...team1, ...team2]) {
+      if (char.buffRoundsLeft > 0) {
+        char.buffRoundsLeft--
+        if (char.buffRoundsLeft === 0) char.buffMultiplier = 1.0
+      }
+    }
+
+    // ── Status effect ticks ──
     for (const key of Object.keys(statuses)) {
       const s = statuses[key]
       const [teamStr, idxStr] = key.split('-')
@@ -717,25 +994,40 @@ export function simulateTeamBattle(
       if (s.burn) {
         const dmg = Math.max(1, Math.round(charArr[idx].maxHp * 0.06 * s.burn.intensity))
         hpArr[idx] = Math.max(0, hpArr[idx] - dmg)
-        lines.push(pick(STATUS_TICK_LINES.burn)
-          .replace('{name}', charArr[idx].name)
-          .replace('{dmg}', formatHp(dmg)))
+        lines.push(pick(STATUS_TICK_LINES.burn).replace('{name}', charArr[idx].name).replace('{dmg}', formatHp(dmg)))
         s.burn.duration--
         if (s.burn.duration <= 0) delete s.burn
       }
       if (s.poison) {
         const dmg = Math.max(1, Math.round(charArr[idx].maxHp * 0.04 * s.poison.intensity))
         hpArr[idx] = Math.max(0, hpArr[idx] - dmg)
-        lines.push(pick(STATUS_TICK_LINES.poison)
-          .replace('{name}', charArr[idx].name)
-          .replace('{dmg}', formatHp(dmg)))
+        lines.push(pick(STATUS_TICK_LINES.poison).replace('{name}', charArr[idx].name).replace('{dmg}', formatHp(dmg)))
         s.poison.duration--
         if (s.poison.duration <= 0) delete s.poison
+      }
+      if (s.wither) {
+        const dmg = Math.max(1, Math.round(charArr[idx].maxHp * 0.03 * s.wither.intensity))
+        hpArr[idx] = Math.max(0, hpArr[idx] - dmg)
+        lines.push(`💀 ${charArr[idx].name} withers — ${formatHp(dmg)} damage!`)
+        s.wither.duration--
+        if (s.wither.duration <= 0) delete s.wither
+      }
+      if (s.bleed) {
+        const dmg = Math.max(1, Math.round(charArr[idx].maxHp * 0.05 * s.bleed.intensity))
+        hpArr[idx] = Math.max(0, hpArr[idx] - dmg)
+        lines.push(`🩸 ${charArr[idx].name} bleeds — ${formatHp(dmg)} damage!`)
+        s.bleed.duration--
+        if (s.bleed.duration <= 0) delete s.bleed
       }
       if (s.freeze) {
         stunned.add(key)
         s.freeze.duration--
         if (s.freeze.duration <= 0) delete s.freeze
+      }
+      if (s.paralyze) {
+        if (Math.random() < 0.50) skippedParalyze.add(key)
+        s.paralyze.duration--
+        if (s.paralyze.duration <= 0) delete s.paralyze
       }
     }
 
@@ -752,21 +1044,62 @@ export function simulateTeamBattle(
       const actorKey  = `${actor.team}-${actor.idx}`
       const actorHpArr = actor.team === 1 ? hp1 : hp2
       if (actorHpArr[actor.idx] <= 0) continue
-      if (stunned.has(actorKey)) {
-        lines.push(`${actor.char.name} is frozen — can't move this round!`)
-        continue
-      }
+      if (stunned.has(actorKey)) { lines.push(`${actor.char.name} is frozen — can't move this round!`); continue }
+      if (skippedParalyze.has(actorKey)) { lines.push(`${actor.char.name} is paralyzed — can't move this turn!`); continue }
 
+      const allyTeam    = actor.team === 1 ? team1 : team2
+      const allyHpArr   = actor.team === 1 ? hp1 : hp2
       const enemyTeam   = actor.team === 1 ? team2 : team1
       const enemyHpArr  = actor.team === 1 ? hp2 : hp1
       const enemyTeamId = actor.team === 1 ? 2 : 1
       const livingIdxs  = enemyHpArr.map((h, i) => h > 0 ? i : -1).filter(i => i >= 0)
       if (livingIdxs.length === 0) break
 
+      // Pick a move to check attackType before targeting
+      const available = actor.char.moves.filter(m => m.attackType !== 'passive')
+      const peekMove = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : null
+
+      // Heal: target most injured ally
+      if (peekMove?.attackType === 'heal') {
+        const injuredIdx = allyHpArr
+          .map((h, i) => ({ ratio: allyTeam[i].maxHp > 0 ? h / allyTeam[i].maxHp : 1, i }))
+          .filter(x => allyHpArr[x.i] > 0)
+          .sort((a, b) => a.ratio - b.ratio)[0]?.i ?? actor.idx
+        const healAmt = Math.round(allyTeam[actor.idx].maxHp * 0.22)
+        allyHpArr[injuredIdx] = Math.min(allyTeam[injuredIdx].maxHp, allyHpArr[injuredIdx] + healAmt)
+        lines.push(`${actor.char.name} heals ${allyTeam[injuredIdx].name} for ${formatHp(healAmt)} HP! [${peekMove.name}]`)
+        fxEvents.push({ attackerSide: actor.team === 1 ? 'team1' : 'team2', attackerIdx: actor.idx, targetIdxs: [injuredIdx], element: peekMove.element, grade: peekMove.grade, attackType: 'heal', isCrit: false })
+        continue
+      }
+
+      // AOE: attack all living enemies
+      if (peekMove?.attackType === 'aoe') {
+        const result = doAction(actor.char, enemyTeam[livingIdxs[0]], actorHpArr[actor.idx])
+        lines.push(...result.lines)
+        const aoeTargets: number[] = []
+        for (const ti of livingIdxs) {
+          const shield = shields[`${enemyTeamId}-${ti}`] ?? 0
+          const dmg = Math.round(result.damage * (1 - shield))
+          const was = enemyHpArr[ti] > 0
+          enemyHpArr[ti] = Math.max(0, enemyHpArr[ti] - dmg)
+          if (was && enemyHpArr[ti] <= 0) lines.push(`${enemyTeam[ti].name} has been defeated!`)
+          aoeTargets.push(ti)
+        }
+        actorHpArr[actor.idx] = Math.min(actor.char.maxHp, actorHpArr[actor.idx] + result.heal)
+        fxEvents.push({ attackerSide: actor.team === 1 ? 'team1' : 'team2', attackerIdx: actor.idx, targetIdxs: aoeTargets, element: peekMove.element, grade: peekMove.grade, attackType: 'aoe', isCrit: false })
+        continue
+      }
+
       const targetIdx = livingIdxs[Math.floor(Math.random() * livingIdxs.length)]
       const targetKey  = `${enemyTeamId}-${targetIdx}`
       const result = doAction(actor.char, enemyTeam[targetIdx], actorHpArr[actor.idx])
       lines.push(...result.lines)
+
+      // Summon
+      if (result.summonedUnit) {
+        actor.char.summons.push(result.summonedUnit)
+        continue
+      }
 
       if (!result.skipped) {
         const shield    = shields[targetKey] ?? 0
@@ -778,24 +1111,27 @@ export function simulateTeamBattle(
         if (result.shieldFraction > 0) shields[actorKey] = result.shieldFraction
         if (result.stun) stunned.add(targetKey)
 
+        const usedMove = actor.char.moves.find(m => m.attackType !== 'passive')
+        fxEvents.push({
+          attackerSide: actor.team === 1 ? 'team1' : 'team2',
+          attackerIdx: actor.idx,
+          targetIdxs: [targetIdx],
+          element: usedMove?.element,
+          grade: usedMove?.grade,
+          attackType: usedMove?.attackType ?? 'attack',
+          isCrit: false,
+        })
+
         // Apply status effect to target
-        if (result.applyStatus && netDamage > 0) {
+        if (result.applyStatus) {
           if (!statuses[targetKey]) statuses[targetKey] = {}
           const st = statuses[targetKey]
-          switch (result.applyStatus) {
-            case 'burn':
-              st.burn = { intensity: 1 + (st.burn?.intensity ?? 0) * 0.4, duration: 2 }
-              lines.push(pick(STATUS_APPLY_LINES.burn).replace('{name}', enemyTeam[targetIdx].name))
-              break
-            case 'poison':
-              st.poison = { intensity: 1 + (st.poison?.intensity ?? 0) * 0.4, duration: 3 }
-              lines.push(pick(STATUS_APPLY_LINES.poison).replace('{name}', enemyTeam[targetIdx].name))
-              break
-            case 'freeze':
-              st.freeze = { intensity: 1, duration: 1 }
-              lines.push(pick(STATUS_APPLY_LINES.freeze).replace('{name}', enemyTeam[targetIdx].name))
-              break
-          }
+          const existing = st[result.applyStatus]
+          const newIntensity = 1 + (existing?.intensity ?? 0) * 0.4
+          const durations: Record<StatusType, number> = { burn: 2, poison: 3, freeze: 1, paralyze: 1, wither: 4, bleed: 3 }
+          st[result.applyStatus] = { intensity: newIntensity, duration: durations[result.applyStatus] }
+          const applyLines = STATUS_APPLY_LINES[result.applyStatus] ?? STATUS_APPLY_LINES.poison
+          lines.push(pick(applyLines ?? ['{name} is afflicted!']).replace('{name}', enemyTeam[targetIdx].name))
         }
 
         if (wasAlive && enemyHpArr[targetIdx] <= 0) {
@@ -812,7 +1148,7 @@ export function simulateTeamBattle(
       !t1Alive ? 'team2' :
       undefined
 
-    rounds.push({ roundNum, t1Hp: [...hp1], t2Hp: [...hp2], lines, winner: roundWinner })
+    rounds.push({ roundNum, t1Hp: [...hp1], t2Hp: [...hp2], lines, winner: roundWinner, fxEvents })
     if (roundWinner !== undefined) break
   }
 
@@ -841,41 +1177,137 @@ export function simulateBattle(p1: BattleCharacter, p2: BattleCharacter, maxRoun
   let p1Hp = p1.hp
   let p2Hp = p2.hp
 
+  interface Status { intensity: number; duration: number }
+  const p1Statuses: Partial<Record<StatusType, Status>> = {}
+  const p2Statuses: Partial<Record<StatusType, Status>> = {}
+
+  function tickStatuses(statuses: Partial<Record<StatusType, Status>>, char: BattleCharacter, hpRef: { v: number }, lines: string[]) {
+    if (statuses.burn) {
+      const dmg = Math.max(1, Math.round(char.maxHp * 0.06 * statuses.burn.intensity))
+      hpRef.v = Math.max(0, hpRef.v - dmg)
+      lines.push(pick(STATUS_TICK_LINES.burn).replace('{name}', char.name).replace('{dmg}', formatHp(dmg)))
+      statuses.burn.duration--
+      if (statuses.burn.duration <= 0) delete statuses.burn
+    }
+    if (statuses.poison) {
+      const dmg = Math.max(1, Math.round(char.maxHp * 0.04 * statuses.poison.intensity))
+      hpRef.v = Math.max(0, hpRef.v - dmg)
+      lines.push(pick(STATUS_TICK_LINES.poison).replace('{name}', char.name).replace('{dmg}', formatHp(dmg)))
+      statuses.poison.duration--
+      if (statuses.poison.duration <= 0) delete statuses.poison
+    }
+    if (statuses.wither) {
+      const dmg = Math.max(1, Math.round(char.maxHp * 0.03 * statuses.wither.intensity))
+      hpRef.v = Math.max(0, hpRef.v - dmg)
+      lines.push(`💀 ${char.name} withers — ${formatHp(dmg)} damage!`)
+      statuses.wither.duration--
+      if (statuses.wither.duration <= 0) delete statuses.wither
+    }
+    if (statuses.bleed) {
+      const dmg = Math.max(1, Math.round(char.maxHp * 0.05 * statuses.bleed.intensity))
+      hpRef.v = Math.max(0, hpRef.v - dmg)
+      lines.push(`🩸 ${char.name} bleeds — ${formatHp(dmg)} damage!`)
+      statuses.bleed.duration--
+      if (statuses.bleed.duration <= 0) delete statuses.bleed
+    }
+  }
+
+  function applyStatus(statuses: Partial<Record<StatusType, Status>>, type: StatusType, char: BattleCharacter, lines: string[]) {
+    const existing = statuses[type]
+    const newIntensity = 1 + (existing?.intensity ?? 0) * 0.4
+    const durations: Record<StatusType, number> = { burn: 2, poison: 3, freeze: 1, paralyze: 1, wither: 4, bleed: 3 }
+    statuses[type] = { intensity: newIntensity, duration: durations[type] }
+    const applyLines = STATUS_APPLY_LINES[type] ?? STATUS_APPLY_LINES.poison
+    lines.push(pick(applyLines ?? ['{name} is afflicted!']).replace('{name}', char.name))
+  }
+
   for (let i = 1; i <= maxRounds; i++) {
     const p1HpBefore = p1Hp
     const p2HpBefore = p2Hp
     const lines: string[] = []
+    const fxEvents: RoundFxEvent[] = []
+
+    // Passive regen
+    if (p1.passiveHealPerRound > 0 && p1Hp > 0) { p1Hp = Math.min(p1.maxHp, p1Hp + p1.passiveHealPerRound); lines.push(`${p1.name} regenerates ${formatHp(p1.passiveHealPerRound)} HP!`) }
+    if (p2.passiveHealPerRound > 0 && p2Hp > 0) { p2Hp = Math.min(p2.maxHp, p2Hp + p2.passiveHealPerRound); lines.push(`${p2.name} regenerates ${formatHp(p2.passiveHealPerRound)} HP!`) }
+
+    // Buff countdown
+    if (p1.buffRoundsLeft > 0) { p1.buffRoundsLeft--; if (p1.buffRoundsLeft === 0) p1.buffMultiplier = 1.0 }
+    if (p2.buffRoundsLeft > 0) { p2.buffRoundsLeft--; if (p2.buffRoundsLeft === 0) p2.buffMultiplier = 1.0 }
+
+    // Status ticks
+    const p1Ref = { v: p1Hp }; tickStatuses(p1Statuses, p1, p1Ref, lines); p1Hp = p1Ref.v
+    const p2Ref = { v: p2Hp }; tickStatuses(p2Statuses, p2, p2Ref, lines); p2Hp = p2Ref.v
+
+    const p1Frozen = p1Statuses.freeze && p1Statuses.freeze.duration > 0
+    const p2Frozen = p2Statuses.freeze && p2Statuses.freeze.duration > 0
+    if (p1Frozen) { p1Statuses.freeze!.duration--; if (p1Statuses.freeze!.duration <= 0) delete p1Statuses.freeze }
+    if (p2Frozen) { p2Statuses.freeze!.duration--; if (p2Statuses.freeze!.duration <= 0) delete p2Statuses.freeze }
+    const p1Paralyzed = !!(p1Statuses.paralyze && Math.random() < 0.5)
+    const p2Paralyzed = !!(p2Statuses.paralyze && Math.random() < 0.5)
+    if (p1Statuses.paralyze) { p1Statuses.paralyze.duration--; if (p1Statuses.paralyze.duration <= 0) delete p1Statuses.paralyze }
+    if (p2Statuses.paralyze) { p2Statuses.paralyze.duration--; if (p2Statuses.paralyze.duration <= 0) delete p2Statuses.paralyze }
 
     const initiativeDiff = (p1.initiative - p2.initiative) / Math.max(p1.initiative, p2.initiative, 1)
     const p1First = Math.random() < 0.50 + initiativeDiff * 0.30
 
     const firstAtk  = p1First ? p1 : p2
     const secondAtk = p1First ? p2 : p1
-    let firstHp     = p1First ? p1Hp : p2Hp
-    let secondHp    = p1First ? p2Hp : p1Hp
+    const firstStatuses  = p1First ? p1Statuses : p2Statuses
+    const secondStatuses = p1First ? p2Statuses : p1Statuses
+    const firstFrozen    = p1First ? p1Frozen : p2Frozen
+    const secondFrozen   = p1First ? p2Frozen : p1Frozen
+    const firstParalyzed = p1First ? p1Paralyzed : p2Paralyzed
+    const secondParalyzed= p1First ? p2Paralyzed : p1Paralyzed
+    let firstHp  = p1First ? p1Hp : p2Hp
+    let secondHp = p1First ? p2Hp : p1Hp
 
     // First actor's turn
-    const r1 = doAction(firstAtk, secondAtk)
-    lines.push(...r1.lines)
-    if (!r1.skipped) {
-      secondHp = Math.max(0, secondHp - r1.damage)
-      firstHp  = Math.min(firstAtk.maxHp, firstHp + r1.heal)
-      firstHp  = Math.max(0, firstHp - r1.reflected)
-    }
-
-    // Second actor retaliates (only if alive and not stunned)
-    if (secondHp > 0 && !r1.stun) {
-      const r2 = doAction(secondAtk, firstAtk)
-      lines.push(...r2.lines)
-      if (!r2.skipped) {
-        // r1.shieldFraction: if first actor defended, reduce damage they take from r2
-        const shieldedDmg = Math.round(r2.damage * (1 - r1.shieldFraction))
-        firstHp  = Math.max(0, firstHp - shieldedDmg)
-        secondHp = Math.min(secondAtk.maxHp, secondHp + r2.heal)
-        secondHp = Math.max(0, secondHp - r2.reflected)
+    if (!firstFrozen && !firstParalyzed && firstHp > 0) {
+      const r1 = doAction(firstAtk, secondAtk, firstHp)
+      lines.push(...r1.lines)
+      if (!r1.skipped) {
+        secondHp = Math.max(0, secondHp - r1.damage)
+        firstHp  = Math.min(firstAtk.maxHp, firstHp + r1.heal)
+        firstHp  = Math.max(0, firstHp - r1.reflected)
+        if (r1.applyStatus) applyStatus(secondStatuses, r1.applyStatus, secondAtk, lines)
+        const fxMove = firstAtk.moves.find(m => m.attackType !== 'passive')
+        fxEvents.push({ attackerSide: p1First ? 'p1' : 'p2', attackerIdx: 0, targetIdxs: [0], element: fxMove?.element, grade: fxMove?.grade, attackType: fxMove?.attackType ?? 'attack', isCrit: false })
       }
-    } else if (secondHp > 0 && r1.stun) {
-      lines.push(`${secondAtk.name} is too stunned to retaliate!`)
+
+      // Second actor retaliates
+      if (secondHp > 0 && !r1.stun && !secondFrozen && !secondParalyzed) {
+        const r2 = doAction(secondAtk, firstAtk, secondHp)
+        lines.push(...r2.lines)
+        if (!r2.skipped) {
+          const shieldedDmg = Math.round(r2.damage * (1 - r1.shieldFraction))
+          firstHp  = Math.max(0, firstHp - shieldedDmg)
+          secondHp = Math.min(secondAtk.maxHp, secondHp + r2.heal)
+          secondHp = Math.max(0, secondHp - r2.reflected)
+          if (r2.applyStatus) applyStatus(firstStatuses, r2.applyStatus, firstAtk, lines)
+          const fxMove2 = secondAtk.moves.find(m => m.attackType !== 'passive')
+          fxEvents.push({ attackerSide: p1First ? 'p2' : 'p1', attackerIdx: 0, targetIdxs: [0], element: fxMove2?.element, grade: fxMove2?.grade, attackType: fxMove2?.attackType ?? 'attack', isCrit: false })
+        }
+      } else if (secondHp > 0 && r1.stun) {
+        lines.push(`${secondAtk.name} is too stunned to retaliate!`)
+      } else if (secondFrozen) {
+        lines.push(`${secondAtk.name} is frozen — can't move this round!`)
+      } else if (secondParalyzed) {
+        lines.push(`${secondAtk.name} is paralyzed — can't move this turn!`)
+      }
+    } else {
+      if (firstFrozen) lines.push(`${firstAtk.name} is frozen — can't act this round!`)
+      else if (firstParalyzed) lines.push(`${firstAtk.name} is paralyzed — can't act this turn!`)
+      // Second still attacks if first is frozen/paralyzed
+      if (secondHp > 0 && !secondFrozen && !secondParalyzed) {
+        const r2 = doAction(secondAtk, firstAtk, secondHp)
+        lines.push(...r2.lines)
+        if (!r2.skipped) {
+          firstHp  = Math.max(0, firstHp - r2.damage)
+          secondHp = Math.min(secondAtk.maxHp, secondHp + r2.heal)
+          if (r2.applyStatus) applyStatus(firstStatuses, r2.applyStatus, firstAtk, lines)
+        }
+      }
     }
 
     p1Hp = p1First ? firstHp : secondHp
@@ -893,6 +1325,7 @@ export function simulateBattle(p1: BattleCharacter, p2: BattleCharacter, maxRoun
       p1HpBefore, p2HpBefore,
       lines,
       winner: roundWinner,
+      fxEvents,
     })
     if (roundWinner !== undefined) break
   }

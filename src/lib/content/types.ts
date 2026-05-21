@@ -14,6 +14,10 @@ export type StatBonusGrants = Record<string, 'statBonus' | 'statPenalty'>
 // F = Common, E = Weak, D = Uncommon, C = Rare, B = Epic, A = Legendary, S = Mythic, SS = Divine, SSS = Primordial, God = God-Tier
 export type ItemGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'God'
 
+// Attack type — how a power/ability behaves in battle.
+// passive = applied at character build time, never triggered as a move.
+export type AttackType = 'attack' | 'aoe' | 'summon' | 'heal' | 'buff' | 'debuff' | 'passive'
+
 // Element type — thematic elemental affinity for powers, weapons, armor, and race classes.
 export type ElementType =
   | 'Fire' | 'Ice' | 'Lightning' | 'Earth' | 'Wind' | 'Shadow' | 'Light'
@@ -90,12 +94,15 @@ export interface SimpleItem {
   statBonusGrants?: StatBonusGrants  // maps stat category → statBonus/statPenalty; spliced immediately after this item resolves
   element?: ElementType   // thematic elemental affinity
   grade?: ItemGrade       // rarity/power tier (F=Common → SSS=Primordial)
+  attackType?: AttackType // explicit override; if absent, auto-detected in buildBattleCharacter
 }
 
-// Weakness extends SimpleItem — adds a severity flag for race-modulated drawing.
-// severe: true entries are drawn preferentially for high-modifier races (CONT-05).
+// Weakness extends SimpleItem — adds a severity flag and elemental type.
+// All weaknesses are now elemental (an element the character takes +25% damage from).
+// severe: true entries are the default; kept for backward compat with race drawing logic.
 export interface Weakness extends SimpleItem {
   severe: boolean
+  element?: ElementType  // which element deals +25% damage to this character
 }
 
 // Flavor label for stat wheels (Strength, Speed, Agility, Durability, IQ, Charisma,

@@ -4,8 +4,30 @@
     color?: string
     size?: number
     direction?: 'ltr' | 'rtl' | 'center'
+    grade?: string   // F | E | D | C | B | A | S | SS | SSS | God
   }
-  let { type, color = '#ffffff', size = 100, direction = 'center' }: Props = $props()
+  let { type, color = '#ffffff', size = 100, direction = 'center', grade = 'C' }: Props = $props()
+
+  // Grade → intensity index (0=F … 9=God)
+  const GRADE_IDX: Record<string, number> = { F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, SS: 7, SSS: 8, God: 9 }
+  let gradeIdx = $derived(GRADE_IDX[grade ?? 'C'] ?? 3)
+
+  // Scale multipliers by grade
+  const GRADE_SCALE  = [0.75, 0.85, 0.95, 1.0, 1.15, 1.30, 1.60, 2.00, 2.50, 3.20]
+  const GRADE_SPREAD = [0.80, 0.85, 0.90, 1.0, 1.10, 1.20, 1.40, 1.60, 2.00, 2.50]
+  let scaleMult  = $derived(GRADE_SCALE[gradeIdx] ?? 1.0)
+  let spreadMult = $derived(GRADE_SPREAD[gradeIdx] ?? 1.0)
+
+  // Shockwave count: 0 for < S, 1 for S, 2 for SSS, 3 for God
+  let shockwaveCount = $derived(gradeIdx >= 6 ? Math.min(3, gradeIdx - 5) : 0)
+
+  // Grade CSS class for filter/brightness effects
+  let gradeClass = $derived(
+    gradeIdx >= 9 ? 'fx-grade-god' :
+    gradeIdx >= 8 ? 'fx-grade-sss' :
+    gradeIdx >= 7 ? 'fx-grade-ss' :
+    gradeIdx >= 6 ? 'fx-grade-s' : ''
+  )
 
   let isRtl = $derived(direction === 'rtl')
 
@@ -232,10 +254,31 @@
     p(CI+'impact_4.png',  50, 50,   0,   0,   0, 1.3, 0.18, 30),
   ]
 
-  let particleSprites = $derived(PARTICLES[type] ?? GENERIC_PARTICLES)
+  // Base sprites, filtered by grade (F/E drops lower-weight trailing particles)
+  let particleSprites = $derived.by((): Sprite[] => {
+    const base = PARTICLES[type] ?? GENERIC_PARTICLES
+    if (gradeIdx <= 1) return base.filter(s => s.delay <= 0.10)   // F/E: only early particles
+    if (gradeIdx <= 2) return base.filter(s => s.delay <= 0.16)   // D
+    // Apply grade scale to size and spread
+    return base.map(s => ({
+      ...s,
+      size: Math.round(s.size * scaleMult),
+      tx: s.tx * spreadMult,
+      ty: s.ty * spreadMult,
+    }))
+  })
 </script>
 
-<div class="fx-root {flyClass}" style="width:{size}px;height:{size}px;--c:{color};">
+<div class="fx-root {flyClass} {gradeClass}" style="width:{size}px;height:{size}px;--c:{color};">
+  {#if shockwaveCount >= 1}
+    <div class="fx-shockwave sw1" style="border-color:{color}66;"></div>
+  {/if}
+  {#if shockwaveCount >= 2}
+    <div class="fx-shockwave sw2" style="border-color:{color}44;animation-delay:0.08s;"></div>
+  {/if}
+  {#if shockwaveCount >= 3}
+    <div class="fx-shockwave sw3" style="border-color:{color}33;animation-delay:0.16s;"></div>
+  {/if}
 
   {#if type === 'slash'}
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
@@ -1411,4 +1454,33 @@
 .gs2 { animation-delay: 0.18s; }
 .gs3 { animation-delay: 0.20s; }
 .gs4 { animation-delay: 0.22s; }
+
+/* ─── GRADE INTENSITY ──────────────────────────────────────────────── */
+.fx-grade-s   { filter: brightness(1.4) saturate(1.3); }
+.fx-grade-ss  { filter: brightness(1.7) saturate(1.6); animation: fx-grade-shake 0.25s ease both; }
+.fx-grade-sss { filter: brightness(2.0) saturate(2.0); animation: fx-grade-shake 0.35s ease both; }
+.fx-grade-god { filter: brightness(2.5) saturate(2.5) contrast(1.15); animation: fx-grade-shake 0.45s ease both; }
+@keyframes fx-grade-shake {
+  0%,100% { transform: translate(0,0); }
+  20%     { transform: translate(-3px, 2px); }
+  40%     { transform: translate(3px, -2px); }
+  60%     { transform: translate(-2px, 3px); }
+  80%     { transform: translate(2px, -1px); }
+}
+
+/* ─── SHOCKWAVE ────────────────────────────────────────────────────── */
+.fx-shockwave {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 0; height: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transform: translate(-50%, -50%);
+  animation: fx-shockwave-expand 0.55s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes fx-shockwave-expand {
+  0%   { width: 0; height: 0; opacity: 1; }
+  100% { width: 160px; height: 160px; opacity: 0; }
+}
 </style>

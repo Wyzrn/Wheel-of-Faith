@@ -47,13 +47,13 @@
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
 
   type AnimDir = 'ltr' | 'rtl' | 'center'
-  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir } | null>(null)
+  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string } | null>(null)
   let animKey = 0
   let dodgeDir = $state<'ltr' | 'rtl' | null>(null)
 
-  function showAnim(type: string, color: string, direction: AnimDir = 'center') {
+  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
-    activeAnim = { type, color, key: ++animKey, direction }
+    activeAnim = { type, color, key: ++animKey, direction, grade }
     dodgeDir = type === 'dodge' ? (direction === 'ltr' ? 'ltr' : direction === 'rtl' ? 'rtl' : null) : null
     animTimeoutId = setTimeout(() => { activeAnim = null; dodgeDir = null }, 950)
   }
@@ -111,13 +111,23 @@
     if (logEl) logEl.scrollTop = logEl.scrollHeight
   }
 
+  // fxEvents from current round — used by detectAnim to pull grade/element
+  let currentFxEvents = $state<import('$lib/game/battle').RoundFxEvent[]>([])
+  let fxEventIdx = 0
+
   function playLines(lines: string[], onDone: () => void) {
     if (lines.length === 0) { onDone(); return }
     const [head, ...rest] = lines
     logLines = [...logLines, head]
     scrollLog()
     const anim = detectAnim(head)
-    if (anim) showAnim(anim.type, anim.color, anim.direction)
+    if (anim) {
+      // Pull grade from next fxEvent if it's an attack line
+      const fx = currentFxEvents[fxEventIdx]
+      const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
+      if (fx && head.includes('damage!')) fxEventIdx++
+      showAnim(anim.type, anim.color, anim.direction, grade)
+    }
     const delay = head.startsWith('──') ? 550 : 1000
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
   }
@@ -132,11 +142,12 @@
 
     const round = rounds[roundIdx]
     roundIdx++
+    currentFxEvents = round.fxEvents ?? []
+    fxEventIdx = 0
 
     const lines = [`── Round ${round.roundNum} ──`, ...round.lines]
 
     playLines(lines, () => {
-      // HP bars update after all round lines have played — so the log explains the damage first
       p1DisplayHp = round.p1Hp
       p2DisplayHp = round.p2Hp
 
@@ -317,7 +328,7 @@
                     {activeAnim.direction === 'rtl' ? 'right:8%' : 'left:8%'};
                     z-index:20;pointer-events:none;">
           <AttackFX type={activeAnim.type} color={activeAnim.color}
-                    direction={activeAnim.direction} size={76}/>
+                    direction={activeAnim.direction} size={76} grade={activeAnim.grade}/>
         </div>
       {/key}
     {/if}
