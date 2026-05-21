@@ -7,6 +7,19 @@
     onExpand: (id: string) => void
     onSell: (entry: StoryRosterEntry) => void
   } = $props()
+
+  const isHero   = entry.spinClass === 'hero'
+  const isLegend = entry.spinClass === 'legend'
+
+  // Hero: amber glow   Legend: violet glow   Normal: subtle gold
+  const borderIdle  = isLegend ? 'rgba(168,85,247,0.5)'  : isHero ? 'rgba(251,191,36,0.5)'  : 'rgba(255,223,150,0.08)'
+  const borderHover = isLegend ? 'rgba(168,85,247,0.9)'  : isHero ? 'rgba(251,191,36,0.9)'  : 'rgba(240,192,64,0.25)'
+  const shadowIdle  = isLegend ? '0 0 14px rgba(168,85,247,0.35), 0 2px 8px rgba(0,0,0,0.5)'
+                    : isHero   ? '0 0 14px rgba(251,191,36,0.3),  0 2px 8px rgba(0,0,0,0.5)'
+                    :            '0 2px 8px rgba(0,0,0,0.4)'
+  const shadowHover = isLegend ? '0 0 22px rgba(168,85,247,0.55), 0 4px 16px rgba(0,0,0,0.6)'
+                    : isHero   ? '0 0 22px rgba(251,191,36,0.45), 0 4px 16px rgba(0,0,0,0.6)'
+                    :            '0 4px 16px rgba(0,0,0,0.6)'
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -17,26 +30,26 @@
   class="relative rounded-lg p-2 cursor-pointer flex flex-col gap-1"
   style="
     background: var(--color-surface-container-low);
-    border: 1px solid rgba(255,223,150,0.08);
+    border: 1px solid {borderIdle};
     transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    box-shadow: {shadowIdle};
   "
   onclick={() => onExpand(entry.id)}
   onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onExpand(entry.id); } }}
   onmouseenter={(e) => {
     const el = e.currentTarget as HTMLElement;
-    el.style.borderColor = 'rgba(240,192,64,0.25)';
+    el.style.borderColor = borderHover;
     el.style.transform = 'translateY(-2px)';
-    el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.6)';
+    el.style.boxShadow = shadowHover;
   }}
   onmouseleave={(e) => {
     const el = e.currentTarget as HTMLElement;
-    el.style.borderColor = 'rgba(255,223,150,0.08)';
+    el.style.borderColor = borderIdle;
     el.style.transform = 'translateY(0)';
-    el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
+    el.style.boxShadow = shadowIdle;
   }}
   onfocus={(e) => {
-    (e.currentTarget as HTMLElement).style.outline = '2px solid #f0c040';
+    (e.currentTarget as HTMLElement).style.outline = `2px solid ${borderHover}`;
     (e.currentTarget as HTMLElement).style.outlineOffset = '2px';
   }}
   onblur={(e) => {
@@ -44,13 +57,26 @@
     (e.currentTarget as HTMLElement).style.outlineOffset = '';
   }}
 >
+  <!-- Spin class badge (top-left) -->
+  {#if isLegend}
+    <span class="absolute top-2 left-2 font-mono font-bold"
+      style="font-size: 8px; letter-spacing: 0.12em; color: #c084fc; text-shadow: 0 0 8px rgba(168,85,247,0.7);">
+      LEGEND
+    </span>
+  {:else if isHero}
+    <span class="absolute top-2 left-2 font-mono font-bold"
+      style="font-size: 8px; letter-spacing: 0.12em; color: #fbbf24; text-shadow: 0 0 8px rgba(251,191,36,0.6);">
+      HERO
+    </span>
+  {/if}
+
   <!-- TierBadge absolute top-right -->
   <div class="absolute top-2 right-2">
     <TierBadge grade={entry.overallTier} />
   </div>
 
-  <!-- Name -->
-  <p class="text-sm font-mono font-bold truncate pr-14" style="color: var(--color-on-surface);">
+  <!-- Name (indent when badge present) -->
+  <p class="text-sm font-mono font-bold truncate pr-14" style="color: var(--color-on-surface); {isHero || isLegend ? 'padding-top: 14px;' : ''}">
     {entry.name}
   </p>
 
