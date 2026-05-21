@@ -12,12 +12,13 @@
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
 
-  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, onNewCharacter, onBackToMenu }: {
+  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, statBonuses = {}, onNewCharacter, onBackToMenu }: {
     results: SpinResult[]
     name?: string
     startedAt: string
     readonly?: boolean
     rivalsWins?: number
+    statBonuses?: Record<string, number>
     onNewCharacter: () => void
     onBackToMenu?: () => void
   } = $props()
@@ -31,12 +32,19 @@
   }
 
   function getTier(category: string) {
-    return results.find(r => r.category === category)?.tier
+    const r = results.find(r => r.category === category)
+    if (!r) return undefined
+    const bonus = statBonuses?.[category] ?? 0
+    if (bonus > 0 && r.score != null) return scoreTier(r.score + bonus)
+    return r.tier
   }
 
   // Returns normalized displayLabel (e.g. "Absolute+5"), else falls back to tier string.
   function getTierLabel(category: string): string | undefined {
     const r = results.find(r => r.category === category)
+    if (!r) return undefined
+    const bonus = statBonuses?.[category] ?? 0
+    if (bonus > 0 && r.score != null) return scoreTier(r.score + bonus)
     return normalizeLegacyDisplayLabel(r?.displayLabel) ?? r?.tier
   }
 
@@ -88,11 +96,17 @@
   const statCategories = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','armorStrength','potential','energyLevel'] as const
   let stats = $derived(statCategories.map(cat => {
     const r = results.find(r => r.category === cat)
-    return { cat, label: r?.resultLabel ?? '—', tier: r?.tier, score: r?.score, displayLabel: r?.displayLabel }
+    const bonus = statBonuses?.[cat] ?? 0
+    const boostedScore = r?.score != null ? r.score + bonus : r?.score
+    const boostedTier = bonus > 0 && r?.score != null ? scoreTier(r.score + bonus) : r?.tier
+    return { cat, label: r?.resultLabel ?? '—', tier: boostedTier, score: boostedScore, displayLabel: r?.displayLabel }
   }))
 
   let overallScore = $derived(computeOverallScore(
-    Object.fromEntries(statCategories.map(cat => [cat, results.find(r => r.category === cat)?.score ?? 0]))
+    Object.fromEntries(statCategories.map(cat => {
+      const r = results.find(r => r.category === cat)
+      return [cat, (r?.score ?? 0) + (statBonuses?.[cat] ?? 0)]
+    }))
   ))
   let overallGrade = $derived(scoreTier(overallScore))
 
