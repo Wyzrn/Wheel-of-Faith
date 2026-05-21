@@ -5,7 +5,7 @@
 import type { StoryRosterEntry, StoryTeam, EquippedItem } from './types'
 import type { WorldGrade } from './worlds'
 import { WORLD_GRADES, BATTLES_PER_WORLD, getPlayerLevelFromWorlds } from './worlds'
-import { scoreTier, computeOverallScore, extendedTierFromScore } from '../game/scoreTier'
+import { scoreTier, computeOverallScore, extendedTierFromScore, boostedTier } from '../game/scoreTier'
 import type { TierGrade } from '../game/scoreTier'
 import type { SpinResult } from '../session/types'
 
@@ -52,7 +52,7 @@ export const F_CRYSTAL_COST = 5_000
 export type StatCrystalType = 'common' | 'elite' | 'legendary'
 export type CrystalGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'God'
 
-/** Stat boost amount per crystal type. */
+/** Tier levels advanced per crystal type (not score points). */
 export const STAT_CRYSTAL_BOOST: Record<StatCrystalType, number> = {
   common: 1, elite: 3, legendary: 5,
 }
@@ -508,18 +508,24 @@ export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops): Story
   for (const drop of drops.chanceDrops) {
     if (drop === 'fateShard') {
       shards++
-    } else if (drop === 'statCrystal') {
-      inventory.statCrystals = { ...inventory.statCrystals, common: inventory.statCrystals.common + 1 }
-    } else if (drop === 'powerCrystal') {
-      inventory.powerCrystals = { ...inventory.powerCrystals, F: inventory.powerCrystals.F + 1 }
-    } else if (drop === 'weaponCrystal') {
-      inventory.weaponCrystals = { ...inventory.weaponCrystals, F: inventory.weaponCrystals.F + 1 }
-    } else if (drop === 'armorCrystal') {
-      inventory.armorCrystals = { ...inventory.armorCrystals, F: inventory.armorCrystals.F + 1 }
     } else if (drop === 'endlessKey') {
       endlessKeys++
     } else if (drop === 'spin') {
       bonusSpins++
+    } else if (drop.startsWith('statCrystal:')) {
+      const rarity = drop.slice('statCrystal:'.length) as StatCrystalType
+      if (rarity in inventory.statCrystals) {
+        inventory.statCrystals = { ...inventory.statCrystals, [rarity]: inventory.statCrystals[rarity] + 1 }
+      }
+    } else if (drop.startsWith('powerCrystal:')) {
+      const grade = drop.slice('powerCrystal:'.length) as CrystalGrade
+      inventory.powerCrystals = { ...inventory.powerCrystals, [grade]: (inventory.powerCrystals[grade] ?? 0) + 1 }
+    } else if (drop.startsWith('weaponCrystal:')) {
+      const grade = drop.slice('weaponCrystal:'.length) as CrystalGrade
+      inventory.weaponCrystals = { ...inventory.weaponCrystals, [grade]: (inventory.weaponCrystals[grade] ?? 0) + 1 }
+    } else if (drop.startsWith('armorCrystal:')) {
+      const grade = drop.slice('armorCrystal:'.length) as CrystalGrade
+      inventory.armorCrystals = { ...inventory.armorCrystals, [grade]: (inventory.armorCrystals[grade] ?? 0) + 1 }
     }
   }
 
@@ -650,15 +656,14 @@ export function openCrystal(
 }
 
 /**
- * Applies a boost to a single spin result, updating score, tier, and displayLabel in place.
- * Handles the extended tier range (score > 150 → "Absolute+N").
+ * Advances a spin result by N tier levels (not raw score points).
+ * Sets the new score to the minimum of the target tier band so repeated boosts
+ * always cross the next boundary. Clears displayLabel (all TIER_THRESHOLDS entries ≤ 150).
  */
-function boostSpin(r: SpinResult, boost: number): SpinResult {
+function boostSpin(r: SpinResult, tierLevels: number): SpinResult {
   if (r.score == null) return r
-  const newScore = r.score + boost
-  const newTier = scoreTier(newScore) as TierGrade
-  const newDisplayLabel = newScore > 150 ? `Absolute+${newScore - 150}` : undefined
-  return { ...r, score: newScore, tier: newTier, displayLabel: newDisplayLabel }
+  const { grade, score: newScore } = boostedTier(r.score, tierLevels)
+  return { ...r, score: newScore, tier: grade, displayLabel: undefined }
 }
 
 const OVERALL_STAT_CATS = [

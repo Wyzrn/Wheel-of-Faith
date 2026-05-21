@@ -10,6 +10,8 @@ export const WORLD_GRADES: readonly WorldGrade[] = [
 
 export const BATTLES_PER_WORLD = 20
 
+export type EnemyType = 'normal' | 'elite' | 'boss'
+
 /** A group of enemies of one type within a wave. */
 export interface WaveEnemySpec { type: EnemyType; count: number }
 /** One battle = array of waves, each wave = array of enemy groups. */
@@ -99,9 +101,27 @@ export const GRADE_DROPS: Record<WorldGrade, GradeDropTable> = {
 export const ELITE_DROP_MULT = 3
 export const BOSS_DROP_MULT = 5
 
+/** Crystal grades for dropped gear (worlds beyond SSS cap at 'God'). */
+export type CrystalDropGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'God'
+/** Stat crystal rarity: normal enemies → common, elites → elite, bosses → legendary. */
+export type StatCrystalRarity = 'common' | 'elite' | 'legendary'
+
+/** Maps a world grade to the crystal grade dropped by its enemies. */
+export const WORLD_TO_CRYSTAL_GRADE: Record<WorldGrade, CrystalDropGrade> = {
+  F: 'F', E: 'E', D: 'D', C: 'C', B: 'B', A: 'A', S: 'S', SS: 'SS', SSS: 'SSS',
+  Z: 'God', ZZ: 'God', ZZZ: 'God', Celestial: 'God', Godly: 'God', Primordial: 'God', Absolute: 'God',
+}
+
+/** Maps enemy type to the stat crystal rarity they drop. */
+export const TYPE_TO_STAT_RARITY: Record<EnemyType, StatCrystalRarity> = {
+  normal: 'common',
+  elite:  'elite',
+  boss:   'legendary',
+}
+
 /** Chance drops per kill (roll independently). */
 export const CHANCE_DROP_RATES = {
-  fateShard:     0.05,   // 5% per kill
+  fateShard:     0.05,
   powerCrystal:  0.08,
   statCrystal:   0.06,
   weaponCrystal: 0.07,
@@ -112,8 +132,17 @@ export const CHANCE_DROP_RATES = {
 /** Endless Key drop rate — only applies at player level 3+ (caller must check). */
 export const ENDLESS_KEY_DROP_RATE = 0.08
 
-/** ChanceDrop: regular drops from CHANCE_DROP_RATES. 'endlessKey' is rolled separately by the caller. */
-export type ChanceDrop = keyof typeof CHANCE_DROP_RATES | 'endlessKey'
+/**
+ * A drop from a killed enemy. Crystal drops carry the grade/rarity as a colon-separated suffix:
+ * e.g. 'powerCrystal:E', 'statCrystal:elite', 'weaponCrystal:God'.
+ * Simple drops have no suffix: 'fateShard', 'spin', 'endlessKey'.
+ */
+export type ChanceDrop =
+  | 'fateShard' | 'spin' | 'endlessKey'
+  | `statCrystal:${StatCrystalRarity}`
+  | `powerCrystal:${CrystalDropGrade}`
+  | `weaponCrystal:${CrystalDropGrade}`
+  | `armorCrystal:${CrystalDropGrade}`
 
 /** Returns world index (0-based) for a given grade. */
 export function worldIndex(grade: WorldGrade): number {
@@ -123,7 +152,6 @@ export function worldIndex(grade: WorldGrade): number {
 /** Returns the enemy grade for battle N (1-based) in a world.
  *  All enemies use the world grade. Type multipliers (normal=1×, elite=1.5×, boss=2.5×) handle difficulty.
  */
-export type EnemyType = 'normal' | 'elite' | 'boss'
 export interface Enemy {
   grade: WorldGrade
   type: EnemyType
@@ -159,10 +187,16 @@ export function rollDrops(enemy: Enemy): { gems: number; xp: number; chanceDrops
   const mult = enemy.type === 'boss' ? BOSS_DROP_MULT : enemy.type === 'elite' ? ELITE_DROP_MULT : 1
   const roll = (r: DropRange) => Math.floor((r.min + Math.random() * (r.max - r.min + 1)) * mult)
 
-  const chanceDrops: ChanceDrop[] = [];
-  (Object.keys(CHANCE_DROP_RATES) as Array<keyof typeof CHANCE_DROP_RATES>).forEach(key => {
-    if (Math.random() < CHANCE_DROP_RATES[key]) chanceDrops.push(key)
-  })
+  const cg = WORLD_TO_CRYSTAL_GRADE[enemy.grade]
+  const sr = TYPE_TO_STAT_RARITY[enemy.type]
+
+  const chanceDrops: ChanceDrop[] = []
+  if (Math.random() < CHANCE_DROP_RATES.fateShard)     chanceDrops.push('fateShard')
+  if (Math.random() < CHANCE_DROP_RATES.powerCrystal)  chanceDrops.push(`powerCrystal:${cg}`)
+  if (Math.random() < CHANCE_DROP_RATES.statCrystal)   chanceDrops.push(`statCrystal:${sr}`)
+  if (Math.random() < CHANCE_DROP_RATES.weaponCrystal) chanceDrops.push(`weaponCrystal:${cg}`)
+  if (Math.random() < CHANCE_DROP_RATES.armorCrystal)  chanceDrops.push(`armorCrystal:${cg}`)
+  if (Math.random() < CHANCE_DROP_RATES.spin)           chanceDrops.push('spin')
 
   return { gems: roll(table.gems), xp: roll(table.xp), chanceDrops }
 }

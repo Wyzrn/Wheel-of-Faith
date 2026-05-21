@@ -124,6 +124,17 @@ export function extendedTierFromScore(score: number): string {
   return `Absolute+${Math.min(20, score - 150)}`
 }
 
+// Advances a score by N tier levels and returns the new grade + score (at band minimum).
+// Used by stat crystal boosts: common=+1 tier, elite=+3 tiers, legendary=+5 tiers.
+export function boostedTier(score: number, tierLevels: number): { grade: TierGrade; score: number } {
+  const clamped = Math.max(1, Math.min(150, score))
+  const currentIdx = TIER_THRESHOLDS.findIndex(t => clamped >= t.min && clamped <= t.max)
+  const fromIdx = Math.max(0, currentIdx)
+  const newIdx = Math.min(TIER_THRESHOLDS.length - 1, fromIdx + tierLevels)
+  const band = TIER_THRESHOLDS[newIdx]
+  return { grade: band.grade, score: band.min }
+}
+
 // Converts legacy "Primordial+N" display labels to "Absolute+N".
 // Old characters stored these before Absolute tiers were added; the N maps 1:1.
 export function normalizeLegacyDisplayLabel(label: string | undefined): string | undefined {

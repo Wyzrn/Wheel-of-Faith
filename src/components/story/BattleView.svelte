@@ -359,14 +359,19 @@
     timeoutId = setTimeout(() => { if (selectedTeam) startFight() }, 50)
   }
 
-  const DROP_LABELS: Record<string, string> = {
-    fateShard:    'Fate Shard',
-    powerCrystal: 'Power Crystal (F)',
-    statCrystal:  'Stat Crystal (Common)',
-    weaponCrystal:'Weapon Crystal (F)',
-    armorCrystal: 'Armor Crystal (F)',
-    endlessKey:   'Endless Key',
-    spin:         '✦ Bonus Spin',
+  function getDropLabel(drop: string): string {
+    if (drop === 'fateShard')   return 'Fate Shard'
+    if (drop === 'endlessKey')  return 'Endless Key'
+    if (drop === 'spin')        return '✦ Bonus Spin'
+    const colon = drop.indexOf(':')
+    if (colon === -1) return drop
+    const [type, suffix] = [drop.slice(0, colon), drop.slice(colon + 1)]
+    const cap = suffix.charAt(0).toUpperCase() + suffix.slice(1)
+    if (type === 'statCrystal')   return `Stat Crystal (${cap})`
+    if (type === 'powerCrystal')  return `Power Crystal (${suffix})`
+    if (type === 'weaponCrystal') return `Weapon Crystal (${suffix})`
+    if (type === 'armorCrystal')  return `Armor Crystal (${suffix})`
+    return drop
   }
 </script>
 
@@ -637,7 +642,7 @@
                   {#each lastDrops.chanceDrops as drop}
                     <span class="font-mono text-xs px-2 py-1 rounded"
                       style="background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.25); color: var(--gold-bright);">
-                      {DROP_LABELS[drop] ?? drop}
+                      {getDropLabel(drop)}
                     </span>
                   {/each}
                 </div>
