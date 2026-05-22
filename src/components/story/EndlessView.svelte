@@ -6,7 +6,7 @@
   } from '$lib/story/worlds'
   import {
     buildBattleCharacter, simulateTeamBattle, formatHp,
-    type BattleCharacter, type TeamBattleRound,
+    type BattleCharacter, type TeamBattleRound, type RoundFxEvent,
   } from '$lib/game/battle'
   import {
     recordEndlessResult, applyBattleDrops,
@@ -20,6 +20,31 @@
     slot: StorySaveSlot
     onExit: (updated: StorySaveSlot) => void
   } = $props()
+
+  const ELEMENT_FX: Record<string, { type: string; color: string }> = {
+    Fire:      { type: 'fire',      color: '#f97316' },
+    Ice:       { type: 'ice',       color: '#7dd3fc' },
+    Lightning: { type: 'lightning', color: '#fbbf24' },
+    Earth:     { type: 'earth',     color: '#a16207' },
+    Wind:      { type: 'wind',      color: '#e2e8f0' },
+    Shadow:    { type: 'shadow',    color: '#8b5cf6' },
+    Light:     { type: 'holy',      color: '#fde68a' },
+    Arcane:    { type: 'energy',    color: '#c084fc' },
+    Nature:    { type: 'poison',    color: '#22c55e' },
+    Void:      { type: 'void',      color: '#6b21a8' },
+    Cosmic:    { type: 'energy',    color: '#818cf8' },
+    Blood:     { type: 'blood',     color: '#dc2626' },
+    Metal:     { type: 'slash',     color: '#94a3b8' },
+    Soul:      { type: 'holy',      color: '#f9a8d4' },
+    Poison:    { type: 'poison',    color: '#84cc16' },
+    Time:      { type: 'time',      color: '#a78bfa' },
+    Water:     { type: 'water',     color: '#38bdf8' },
+    Sound:     { type: 'lightning', color: '#e0f2fe' },
+    Gravity:   { type: 'gravity',   color: '#6366f1' },
+    Psychic:   { type: 'psychic',   color: '#e879f9' },
+    Chaos:     { type: 'cursed',    color: '#f43f5e' },
+    Neutral:   { type: 'slash',     color: '#f87171' },
+  }
 
   // ── Grade colors ───────────────────────────────────────────────────────────
   const GRADE_COLORS: Record<string, string> = {
@@ -144,10 +169,13 @@
   let allT2Names   = $state(new Set<string>())
 
   type AnimDir = 'ltr' | 'rtl' | 'center'
-  let activeAnim   = $state<{ type: string; color: string; key: number; direction: AnimDir } | null>(null)
+  let activeAnim   = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; attackType?: string } | null>(null)
   let animKey      = 0
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
   let timeoutId:    ReturnType<typeof setTimeout> | null = null
+  let currentFxEvents = $state<RoundFxEvent[]>([])
+  let fxEventIdx = 0
+  let aoeRemainingHits = 0
 
   function speedDelay(ms: number): number {
     if (settings.battleSpeed >= 99) return 10
@@ -196,9 +224,9 @@
   }
 
   // ── Attack animation ───────────────────────────────────────────────────────
-  function showAnim(type: string, color: string, direction: AnimDir = 'center') {
+  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, attackType?: string) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
-    activeAnim = { type, color, key: ++animKey, direction }
+    activeAnim = { type, color, key: ++animKey, direction, grade, attackType }
     animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
   }
 
@@ -215,7 +243,7 @@
     if (/CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)) return { type: 'crit', color: '#fde047', direction }
     if (/berserk|frenzy/i.test(line)) return { type: 'berserker', color: '#ef4444', direction }
     if (/combo finisher|follow-up/i.test(line)) return { type: 'combo', color: '#f59e0b', direction }
-    if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction: 'center' }
+    if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction }
     if (/fire|flame|blaze|inferno|burn|ember|magma|lava|heat/i.test(line)) return { type: 'fire', color: '#f97316', direction }
     if (/shadow|void|abyss|soul drain|leech/i.test(line)) return { type: 'shadow', color: '#8b5cf6', direction }
     if (/blood|crimson/i.test(line)) return { type: 'blood', color: '#dc2626', direction }
@@ -246,7 +274,33 @@
     logLines = [...logLines, head]
     scrollLog()
     const anim = detectAnim(head)
-    if (anim) showAnim(anim.type, anim.color, anim.direction)
+    if (anim) {
+      const fx = currentFxEvents[fxEventIdx]
+      const isDamage = head.includes('damage!')
+      const isHealLine = /restores|recovers.*HP|vital force|mends/i.test(head)
+      const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
+      let aoeSkip = false
+      if (isDamage && aoeRemainingHits > 0) {
+        aoeRemainingHits--
+        aoeSkip = true
+      } else if (fx && (isDamage || isHealLine)) {
+        fxEventIdx++
+        if (isDamage && fx.attackType === 'aoe' && fx.targetIdxs) {
+          aoeRemainingHits = Math.max(0, fx.targetIdxs.length - 1)
+        }
+      }
+      if (!aoeSkip) {
+        let { type, color, direction } = anim
+        if (fx && isDamage && type !== 'crit' && type !== 'berserker' && type !== 'dodge') {
+          const elFx = fx.element ? ELEMENT_FX[fx.element] : null
+          if (elFx) { type = elFx.type; color = elFx.color }
+        }
+        const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
+        const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
+        const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
+        showAnim(type, color, originDir, grade, fxAttackType)
+      }
+    }
     const delay = speedDelay(head.startsWith('──') ? 350 : 600)
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
   }
@@ -255,6 +309,9 @@
     if (roundIdx >= rounds.length) { onSubWaveComplete('draw'); return }
     const round = rounds[roundIdx]
     roundIdx++
+    currentFxEvents = round.fxEvents ?? []
+    fxEventIdx = 0
+    aoeRemainingHits = 0
     const prevT2Hp = [...t2DispHp]
     playLines([`── Round ${round.roundNum} ──`, ...round.lines], () => {
       t1DispHp = [...round.t1Hp]
@@ -544,7 +601,7 @@
           <div style="position: absolute; top: 40%; transform: translateY(-50%);
                       {activeAnim.direction === 'rtl' ? 'right: 8%' : activeAnim.direction === 'center' ? 'left: 50%; transform: translate(-50%, -50%)' : 'left: 8%'};
                       z-index: 20; pointer-events: none;">
-            <AttackFX type={activeAnim.type} color={activeAnim.color} direction={activeAnim.direction} size={76} />
+            <AttackFX type={activeAnim.type} color={activeAnim.color} direction={activeAnim.direction} size={76} grade={activeAnim.grade} attackType={activeAnim.attackType} />
           </div>
         {/key}
       {/if}
