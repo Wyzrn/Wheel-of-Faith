@@ -973,7 +973,7 @@
   >
     <div
       class="relative flex flex-col items-center gap-5 rounded-2xl px-8 py-8 max-w-sm w-full text-center"
-      style="border: 1px solid #f59e0b44; box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 40px #f59e0b22;"
+      style="border: 1px solid #f59e0b66; box-shadow: 0 0 100px rgba(0,0,0,0.98), 0 0 60px rgba(245,158,11,0.22), 0 0 20px rgba(245,158,11,0.08), inset 0 1px 0 rgba(255,255,255,0.04);"
     >
       {#if wildcardPhase === 'flashing'}
         <div class="text-5xl animate-pulse">🎲</div>
@@ -1001,13 +1001,13 @@
   >
     <div
       class="obsidian-slab w-full max-w-sm rounded-xl p-7 text-center relative overflow-hidden"
-      style="border: 1px solid {pendingResult.color}44; box-shadow: 0 0 60px rgba(0,0,0,0.9), 0 0 40px {pendingResult.color}18;"
+      style="border: 1px solid {pendingResult.color}55; box-shadow: 0 0 80px rgba(0,0,0,0.98), 0 0 50px {pendingResult.color}22, 0 0 18px {pendingResult.color}0e, inset 0 1px 0 rgba(255,255,255,0.04);"
     >
       <div class="noise-overlay"></div>
-      <div class="absolute top-3 left-3 w-7 h-7" style="border-top: 2px solid {pendingResult.color}55; border-left: 2px solid {pendingResult.color}55;"></div>
-      <div class="absolute top-3 right-3 w-7 h-7" style="border-top: 2px solid {pendingResult.color}55; border-right: 2px solid {pendingResult.color}55;"></div>
-      <div class="absolute bottom-3 left-3 w-7 h-7" style="border-bottom: 2px solid {pendingResult.color}55; border-left: 2px solid {pendingResult.color}55;"></div>
-      <div class="absolute bottom-3 right-3 w-7 h-7" style="border-bottom: 2px solid {pendingResult.color}55; border-right: 2px solid {pendingResult.color}55;"></div>
+      <div class="absolute top-3 left-3 w-8 h-8" style="border-top: 2px solid {pendingResult.color}66; border-left: 2px solid {pendingResult.color}66; box-shadow: -1px -1px 8px {pendingResult.color}22;"></div>
+      <div class="absolute top-3 right-3 w-8 h-8" style="border-top: 2px solid {pendingResult.color}66; border-right: 2px solid {pendingResult.color}66; box-shadow: 1px -1px 8px {pendingResult.color}22;"></div>
+      <div class="absolute bottom-3 left-3 w-8 h-8" style="border-bottom: 2px solid {pendingResult.color}66; border-left: 2px solid {pendingResult.color}66; box-shadow: -1px 1px 8px {pendingResult.color}22;"></div>
+      <div class="absolute bottom-3 right-3 w-8 h-8" style="border-bottom: 2px solid {pendingResult.color}66; border-right: 2px solid {pendingResult.color}66; box-shadow: 1px 1px 8px {pendingResult.color}22;"></div>
 
       <div class="relative z-10 flex flex-col items-center gap-3">
         <!-- Category label -->
@@ -1099,7 +1099,7 @@
 <!-- ── Running spin log ───────────────────────────────────────────────────────── -->
 {#if results.length > 0 && !showResumePrompt && !pendingResult}
   <div class="fixed left-0 top-0 bottom-0 z-[1] flex flex-col"
-    style="width: 160px; background: rgba(7,7,13,0.93); border-right: 1px solid rgba(240,192,64,0.12); backdrop-filter: blur(12px);">
+    style="width: 160px; background: linear-gradient(180deg, rgba(10,8,22,0.97) 0%, rgba(7,6,14,0.96) 100%); border-right: 1px solid rgba(240,192,64,0.16); backdrop-filter: blur(16px); box-shadow: 4px 0 32px rgba(0,0,0,0.85), inset -1px 0 0 rgba(255,223,150,0.04);">
     <p class="px-3 pt-3 pb-2 font-mono tracking-widest uppercase" style="color: #9a907b; font-size: 9px; letter-spacing: 0.18em;">Obtained this spin</p>
     <div class="px-3 pb-3 flex flex-col gap-2 overflow-y-auto flex-1">
       {#each [...results].filter(r => r.category !== 'statBonus' && r.category !== 'statPenalty').reverse() as r}
@@ -1125,13 +1125,13 @@
   >
     <div
       class="obsidian-slab w-full max-w-sm rounded-xl p-7 text-center relative overflow-hidden"
-      style="border: 1px solid rgba(240,192,64,0.3); box-shadow: 0 0 60px rgba(0,0,0,0.9), 0 0 40px rgba(240,192,64,0.06);"
+      style="border: 1px solid rgba(240,192,64,0.38); box-shadow: 0 0 80px rgba(0,0,0,0.98), 0 0 50px rgba(240,192,64,0.12), inset 0 1px 0 rgba(255,255,255,0.04);"
     >
       <div class="noise-overlay"></div>
-      <div class="absolute top-3 left-3 w-7 h-7" style="border-top: 2px solid rgba(240,192,64,0.4); border-left: 2px solid rgba(240,192,64,0.4);"></div>
-      <div class="absolute top-3 right-3 w-7 h-7" style="border-top: 2px solid rgba(240,192,64,0.4); border-right: 2px solid rgba(240,192,64,0.4);"></div>
-      <div class="absolute bottom-3 left-3 w-7 h-7" style="border-bottom: 2px solid rgba(240,192,64,0.4); border-left: 2px solid rgba(240,192,64,0.4);"></div>
-      <div class="absolute bottom-3 right-3 w-7 h-7" style="border-bottom: 2px solid rgba(240,192,64,0.4); border-right: 2px solid rgba(240,192,64,0.4);"></div>
+      <div class="absolute top-3 left-3 w-8 h-8" style="border-top: 2px solid rgba(240,192,64,0.5); border-left: 2px solid rgba(240,192,64,0.5); box-shadow: -1px -1px 8px rgba(240,192,64,0.15);"></div>
+      <div class="absolute top-3 right-3 w-8 h-8" style="border-top: 2px solid rgba(240,192,64,0.5); border-right: 2px solid rgba(240,192,64,0.5); box-shadow: 1px -1px 8px rgba(240,192,64,0.15);"></div>
+      <div class="absolute bottom-3 left-3 w-8 h-8" style="border-bottom: 2px solid rgba(240,192,64,0.5); border-left: 2px solid rgba(240,192,64,0.5); box-shadow: -1px 1px 8px rgba(240,192,64,0.15);"></div>
+      <div class="absolute bottom-3 right-3 w-8 h-8" style="border-bottom: 2px solid rgba(240,192,64,0.5); border-right: 2px solid rgba(240,192,64,0.5); box-shadow: 1px 1px 8px rgba(240,192,64,0.15);"></div>
 
       <div class="relative z-10">
         <span class="material-symbols-outlined block text-4xl mb-3" style="color: #f0c040; font-variation-settings: 'FILL' 1;">history</span>
@@ -1174,7 +1174,7 @@
           placeholder="Enter a name…"
           maxlength="40"
           class="flex-1 carved-groove rounded-lg px-4 py-3 text-center text-base outline-none transition-all"
-          style="border: 1px solid rgba(240,192,64,0.25); color: #e4e1ee; font-family: var(--font-cinzel); caret-color: #f0c040;"
+          style="border: 1px solid rgba(240,192,64,0.30); color: #e4e1ee; font-family: var(--font-cinzel); caret-color: #f0c040; background: linear-gradient(180deg, rgba(22,17,38,0.92), rgba(10,8,18,0.96)); box-shadow: inset 0 2px 10px rgba(0,0,0,0.6), 0 0 0 0 transparent;"
           onkeydown={(e) => e.key === 'Enter' && handleNamingSubmit()}
         />
         <button

@@ -11,6 +11,13 @@
   const WHEEL_RADIUS = 230
   const POINTER_SIZE = 24
 
+  // Pointer geometry — computed from wheel constants
+  const PTR_TIP_Y   = CENTER - WHEEL_RADIUS - 3   // 17  blade tip (at wheel rim)
+  const PTR_BASE_Y  = PTR_TIP_Y - 28              // -11 guard bottom
+  const PTR_GUARD_Y = PTR_BASE_Y - 7              // -18 guard top
+  const PTR_POMMEL  = PTR_GUARD_Y - 11            // -29 pommel apex
+  const PTR_GW      = 22                          // guard half-width
+
   const COLORS = ['#E63946','#457B9D','#2A9D8F','#E9C46A','#F4A261','#264653','#6A0572','#0077B6']
 
   let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0 }: {
@@ -171,7 +178,7 @@
     isStar: boolean
   }
 
-  const SPARKLE_COLORS = ['#f0c040', '#ffdf96', '#ffffff', '#ffd700', '#ff9f43', '#fff0a0']
+  const SPARKLE_COLORS = ['#f0c040', '#ffdf96', '#ffffff', '#ffd700', '#ff9f43', '#fff0a0', '#48c8e0', '#b47aec', '#e8b84b']
   let particles: Particle[] = []
   let rafId: number | null = null
   let lastFrameTime = 0
@@ -412,7 +419,7 @@
   <!-- Shake wrapper — GSAP applies translate() here during spin -->
   <div bind:this={shakeEl} class="flex justify-center w-full">
   <!-- Wheel + canvas wrapper — CSS Grid overlay so canvas and SVG share identical pixel bounds -->
-  <div style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: drop-shadow(0 0 28px rgba(0,0,0,0.92)) drop-shadow(0 0 14px rgba(240,192,64,0.22));">
+  <div style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: drop-shadow(0 0 48px rgba(0,0,0,0.97)) drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(72,200,224,0.15));">
     <svg
       bind:this={svgEl}
       viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
@@ -421,25 +428,67 @@
       role="img"
     >
       <defs>
-        <linearGradient id="pointerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#9a907b" />
-          <stop offset="45%" stop-color="#ffdf96" />
-          <stop offset="100%" stop-color="#f0c040" />
+        <!-- Blade gradient: silver tip → deep gold base -->
+        <linearGradient id="pointerGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%"   stop-color="#d0c8a8" />
+          <stop offset="20%"  stop-color="#ffdf96" />
+          <stop offset="60%"  stop-color="#e8b84b" />
+          <stop offset="100%" stop-color="#9a6a10" />
         </linearGradient>
-        <radialGradient id="hubGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#1f1f28" />
-          <stop offset="100%" stop-color="#0d0d16" />
+        <!-- Guard / pommel gradient: bright top face → dark bottom -->
+        <linearGradient id="guardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stop-color="#ffdf96" />
+          <stop offset="100%" stop-color="#8a5e08" />
+        </linearGradient>
+        <!-- Hub background: deep purple-black stone -->
+        <radialGradient id="hubGrad" cx="50%" cy="45%" r="55%">
+          <stop offset="0%"   stop-color="#2e2244" />
+          <stop offset="55%"  stop-color="#18112e" />
+          <stop offset="100%" stop-color="#080612" />
         </radialGradient>
+        <!-- Center gem: arcane teal jewel -->
+        <radialGradient id="jewelGrad" cx="38%" cy="32%" r="58%">
+          <stop offset="0%"   stop-color="#b8f0ff" />
+          <stop offset="40%"  stop-color="#48c8e0" />
+          <stop offset="100%" stop-color="#0e4858" />
+        </radialGradient>
+        <!-- Vignette: edge darkening on wheel face -->
         <radialGradient id="vignetteGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="65%" stop-color="transparent" />
-          <stop offset="100%" stop-color="rgba(0,0,0,0.45)" />
+          <stop offset="62%" stop-color="transparent" />
+          <stop offset="100%" stop-color="rgba(0,0,0,0.52)" />
         </radialGradient>
+        <!-- Subtle glow filter for rim ring + hub ring -->
+        <filter id="runeGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <!-- Stronger glow for hub center jewel -->
+        <filter id="hubGlow" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="5" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
       </defs>
 
-      <!-- Outer decorative gold rings -->
-      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 12} fill="none" stroke="#f0c040" stroke-width="0.5" opacity="0.2" />
-      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 6}  fill="none" stroke="#f0c040" stroke-width="1.5" opacity="0.55" />
-      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 3}  fill="none" stroke="#ffdf96" stroke-width="0.5" opacity="0.3" />
+      <!-- Outer decorative rings — layered bronze-gold rim with arcane ghost -->
+      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 20} fill="none" stroke="#48c8e0"  stroke-width="1.0" opacity="0.05" />
+      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 14} fill="none" stroke="#e8b84b"  stroke-width="0.6" opacity="0.18" class="rune-ring-slow" />
+      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 8}  fill="none" stroke="#f0c040"  stroke-width="2.2" opacity="0.70" filter="url(#runeGlow)" class="rune-ring-main" />
+      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 4}  fill="none" stroke="#ffdf96"  stroke-width="1.0" opacity="0.40" />
+      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 1}  fill="none" stroke="#b88d2a"  stroke-width="0.5" opacity="0.22" />
+      <!-- Runic tick marks — 8 major (cardinal+diagonal) + 16 minor -->
+      {#each Array.from({length: 24}, (_, i) => i) as i}
+        {@const isMajor = i % 3 === 0}
+        {@const angle = (i * 15 - 90) * Math.PI / 180}
+        {@const r1 = WHEEL_RADIUS + (isMajor ? 10 : 13)}
+        {@const r2 = WHEEL_RADIUS + (isMajor ? 19 : 17)}
+        <line
+          x1={CENTER + r1 * Math.cos(angle)} y1={CENTER + r1 * Math.sin(angle)}
+          x2={CENTER + r2 * Math.cos(angle)} y2={CENTER + r2 * Math.sin(angle)}
+          stroke={isMajor ? '#e8b84b' : '#c0882a'}
+          stroke-width={isMajor ? 1.4 : 0.65}
+          opacity={isMajor ? 0.75 : 0.28}
+        />
+      {/each}
 
       <!-- Rotating wheel group -->
       <g bind:this={wheelGroupEl} style="will-change: transform;">
@@ -469,9 +518,16 @@
           {#if isRevealed && lastResult?.index === i}
             <path
               d={slicePath(CENTER, CENTER, WHEEL_RADIUS, seg.startDeg, seg.endDeg)}
-              fill="rgba(240,192,64,0.16)"
+              fill="rgba(240,192,64,0.18)"
               stroke="#f0c040"
-              stroke-width="2.5"
+              stroke-width="3.0"
+            />
+            <path
+              d={slicePath(CENTER, CENTER, WHEEL_RADIUS, seg.startDeg, seg.endDeg)}
+              fill="none"
+              stroke="#48c8e0"
+              stroke-width="1.0"
+              opacity="0.45"
             />
           {/if}
           {#if fontSize > 0}
@@ -493,36 +549,97 @@
       <!-- Vignette overlay (non-rotating) -->
       <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS} fill="url(#vignetteGrad)" />
 
-      <!-- Hub decoration (non-rotating) -->
-      <circle cx={CENTER} cy={CENTER} r="38" fill="url(#hubGrad)" />
-      <circle cx={CENTER} cy={CENTER} r="36" fill="none" stroke="#f0c040" stroke-width="1.5" opacity="0.85" />
-      <circle cx={CENTER} cy={CENTER} r="28" fill="none" stroke="#f0c040" stroke-width="0.5" opacity="0.4" />
-      <circle cx={CENTER} cy={CENTER} r="18" fill="none" stroke="#9a907b" stroke-width="0.5" opacity="0.45" />
-      <circle cx={CENTER} cy={CENTER} r="9"  fill="#f0c040" opacity="0.75" />
-      <circle cx={CENTER} cy={CENTER} r="4.5" fill="#ffdf96" />
+      <!-- Hub decoration (non-rotating) — deep stone boss with arcane jewel -->
+      <!-- Outer ghost glow -->
+      <circle cx={CENTER} cy={CENTER} r="46" fill="none" stroke="#48c8e0" stroke-width="1.2" opacity="0.07" filter="url(#hubGlow)" />
+      <!-- Hub stone body -->
+      <circle cx={CENTER} cy={CENTER} r="42" fill="url(#hubGrad)" />
+      <!-- Outer hub ring (animated gold) -->
+      <circle cx={CENTER} cy={CENTER} r="40" fill="none" stroke="#e8b84b" stroke-width="2.2" opacity="0.92" filter="url(#runeGlow)" class="rune-ring-main" />
+      <!-- Cardinal compass spokes -->
+      {#each [0, 90, 180, 270] as deg}
+        {@const rad = (deg - 90) * Math.PI / 180}
+        <line
+          x1={CENTER + 13 * Math.cos(rad)} y1={CENTER + 13 * Math.sin(rad)}
+          x2={CENTER + 33 * Math.cos(rad)} y2={CENTER + 33 * Math.sin(rad)}
+          stroke="#e8b84b" stroke-width="1.0" opacity="0.50"
+        />
+      {/each}
+      <!-- Diagonal spokes (thinner) -->
+      {#each [45, 135, 225, 315] as deg}
+        {@const rad = (deg - 90) * Math.PI / 180}
+        <line
+          x1={CENTER + 13 * Math.cos(rad)} y1={CENTER + 13 * Math.sin(rad)}
+          x2={CENTER + 29 * Math.cos(rad)} y2={CENTER + 29 * Math.sin(rad)}
+          stroke="#b88d2a" stroke-width="0.6" opacity="0.28"
+        />
+      {/each}
+      <!-- Secondary inner ring -->
+      <circle cx={CENTER} cy={CENTER} r="32" fill="none" stroke="#f0c040" stroke-width="0.8" opacity="0.38" />
+      <!-- Inner ring -->
+      <circle cx={CENTER} cy={CENTER} r="19" fill="none" stroke="#b88d2a" stroke-width="0.5" opacity="0.40" />
+      <!-- Center arcane gem (animated glow) -->
+      <circle cx={CENTER} cy={CENTER} r="11" fill="url(#jewelGrad)" filter="url(#hubGlow)" class="hub-jewel" />
+      <!-- Gem highlight: internal refraction glint -->
+      <ellipse cx={CENTER - 3.5} cy={CENTER - 3.5} rx="4" ry="2.5" fill="rgba(255,255,255,0.28)" transform={`rotate(-30, ${CENTER}, ${CENTER})`} />
 
-      <!-- Dagger pointer (fixed, non-rotating) -->
-      <!-- Blade tip: (CENTER, CENTER - WHEEL_RADIUS - 3); base: goes upward -->
-      <polygon
-        points="{CENTER},{CENTER - WHEEL_RADIUS - 3} {CENTER - 13},{CENTER - WHEEL_RADIUS - POINTER_SIZE - 10} {CENTER + 13},{CENTER - WHEEL_RADIUS - POINTER_SIZE - 10}"
+      <!-- Dagger pointer (fixed, non-rotating) — tip at wheel rim, pommel above -->
+      <!-- Blade: concave quadratic bezier profile for dagger silhouette -->
+      <path
+        d={`M ${CENTER} ${PTR_TIP_Y} Q ${CENTER - 7} ${PTR_TIP_Y - 11}, ${CENTER - 8} ${PTR_BASE_Y} L ${CENTER + 8} ${PTR_BASE_Y} Q ${CENTER + 7} ${PTR_TIP_Y - 11}, ${CENTER} ${PTR_TIP_Y} Z`}
         fill="url(#pointerGrad)"
-        stroke="#9a907b"
-        stroke-width="0.5"
+        stroke="rgba(184,141,42,0.55)"
+        stroke-width="0.7"
       />
-      <!-- Blade spine highlight -->
+      <!-- Blade spine highlight (3D edge) -->
       <line
-        x1="{CENTER}" y1="{CENTER - WHEEL_RADIUS - 3}"
-        x2="{CENTER}" y2="{CENTER - WHEEL_RADIUS - POINTER_SIZE - 10}"
-        stroke="rgba(255,255,255,0.45)"
-        stroke-width="1.5"
+        x1={CENTER} y1={PTR_TIP_Y}
+        x2={CENTER} y2={PTR_BASE_Y}
+        stroke="rgba(255,255,255,0.58)"
+        stroke-width="1.2"
         stroke-linecap="round"
       />
-      <!-- Crossguard -->
+      <!-- Crossguard main face -->
       <rect
-        x="{CENTER - 17}" y="{CENTER - WHEEL_RADIUS - POINTER_SIZE - 12}"
-        width="34" height="5" rx="2.5"
-        fill="#f0c040"
+        x={CENTER - PTR_GW} y={PTR_GUARD_Y}
+        width={PTR_GW * 2} height={PTR_BASE_Y - PTR_GUARD_Y}
+        rx={2.5}
+        fill="url(#guardGrad)"
+        stroke="rgba(184,141,42,0.5)" stroke-width="0.6"
       />
+      <!-- Guard top face — bright 3D highlight strip -->
+      <rect
+        x={CENTER - PTR_GW + 1} y={PTR_GUARD_Y}
+        width={PTR_GW * 2 - 2} height={2}
+        rx={1} fill="rgba(255,245,210,0.72)"
+      />
+      <!-- Guard end gems (arcane teal) -->
+      <circle cx={CENTER - PTR_GW + 4.5} cy={(PTR_GUARD_Y + PTR_BASE_Y) / 2} r={2.8}
+        fill="#48c8e0" stroke="rgba(200,255,255,0.35)" stroke-width="0.5"
+      />
+      <circle cx={CENTER + PTR_GW - 4.5} cy={(PTR_GUARD_Y + PTR_BASE_Y) / 2} r={2.8}
+        fill="#48c8e0" stroke="rgba(200,255,255,0.35)" stroke-width="0.5"
+      />
+      <!-- Center guard gem (gold) -->
+      <circle cx={CENTER} cy={(PTR_GUARD_Y + PTR_BASE_Y) / 2} r={3.5}
+        fill="#f0c040" stroke="rgba(255,245,200,0.45)" stroke-width="0.5"
+      />
+      <!-- Handle -->
+      <rect
+        x={CENTER - 4.5} y={PTR_POMMEL}
+        width={9} height={PTR_GUARD_Y - PTR_POMMEL}
+        rx={2} fill="url(#guardGrad)"
+        stroke="rgba(184,141,42,0.4)" stroke-width="0.5"
+      />
+      <!-- Pommel cap (oval) -->
+      <ellipse
+        cx={CENTER} cy={PTR_POMMEL}
+        rx={9} ry={5.5}
+        fill="url(#guardGrad)"
+        stroke="#ffdf96" stroke-width="0.8"
+      />
+      <!-- Pommel center jewel -->
+      <circle cx={CENTER} cy={PTR_POMMEL} r={2.8} fill="#e8b84b" opacity={0.88} />
     </svg>
 
     <!-- Particle canvas — grid-area: 1/1 overlays the SVG exactly; no absolute positioning needed -->
@@ -545,3 +662,17 @@
   </button>
 
 </div>
+
+<style>
+  @keyframes runeRingPulse {
+    0%, 100% { opacity: 0.70; }
+    50%       { opacity: 1.00; }
+  }
+  @keyframes hubJewelPulse {
+    0%, 100% { filter: url(#hubGlow) brightness(1.0); }
+    50%       { filter: url(#hubGlow) brightness(1.45); }
+  }
+  .rune-ring-main { animation: runeRingPulse 3.5s ease-in-out infinite; }
+  .rune-ring-slow  { animation: runeRingPulse 7s   ease-in-out infinite 2s; }
+  .hub-jewel       { animation: hubJewelPulse 2.4s ease-in-out infinite; }
+</style>
