@@ -153,7 +153,7 @@
   // Auto-advance based on the current spin category so the right card shows
   // without the player needing to manually navigate.
   $effect(() => {
-    if (tutorialStep <= 0 || tutorialStep >= 14) return
+    if (tutorialStep <= 0 || tutorialStep >= 15) return
     const cat = currentDef?.category
     if (!cat) return
     const CAT_STEP: Record<string, number> = {
@@ -169,7 +169,8 @@
       armor: 9, armorStrength: 9,
       weakness: 10,
       redemptionSpin: 11,
-      title: 12,
+      backstory: 12,
+      title: 13,
     }
     const needed = CAT_STEP[cat]
     if (needed !== undefined && tutorialStep < needed) {
@@ -185,8 +186,8 @@
   })
 
   function handleTutorialGotIt(nextStep: number) {
-    if (nextStep > 12) {
-      tutorialStep = 13   // triggers completion toast
+    if (nextStep > 14) {
+      tutorialStep = 15   // triggers completion toast
     } else {
       tutorialStep = nextStep
     }
@@ -716,7 +717,7 @@
       const isStatSpin = STAT_CATEGORIES.has(def.category) && !def.isReroll
       const isItemSpin = def.category === 'weapon' || def.category === 'armor' || def.category === 'power'
 
-      const forceTutorialWildcard = isStatSpin && def.category === 'strength' && tutorialStep > 0 && tutorialStep < 14 && !tutorialWildcardDone
+      const forceTutorialWildcard = isStatSpin && def.category === 'strength' && tutorialStep > 0 && tutorialStep < 15 && !tutorialWildcardDone
       if (forceTutorialWildcard) tutorialWildcardDone = true
       const hasDoubleLuck = auth.user?.gamepasses.includes('double_luck') ?? false
       if (isStatSpin && (Math.random() < (hasDoubleLuck ? 0.10 : 0.05) || forceTutorialWildcard)) {
@@ -1608,7 +1609,7 @@
     }
 
     // After tutorial wildcard on strength resolves, advance to wildcard explanation card
-    if (tutorialWildcardDone && cat === 'strength' && tutorialStep >= 1 && tutorialStep < 14) {
+    if (tutorialWildcardDone && cat === 'strength' && tutorialStep >= 1 && tutorialStep < 15) {
       tutorialStep = Math.max(tutorialStep, 6)
     }
 
@@ -1846,9 +1847,9 @@
     } else {
       // Save to local spin history before clearing
       appendSpinHistory($state.snapshot(results) as SpinResult[], characterName, currentSession.sessionId)
-      // Mark tutorial complete on first full run
+      // Advance tutorial to the post-reveal "what to do next" card
       if (tutorialStep >= 0) {
-        tutorialStep = 9
+        tutorialStep = 14
       }
       // Persist last character for "View Last Character" button
       const snapshot = $state.snapshot(results) as SpinResult[]

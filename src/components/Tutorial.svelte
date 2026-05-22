@@ -1,9 +1,9 @@
 <script lang="ts">
   // Tutorial overlay — shown to first-time players.
   // step -1 = tutorial inactive (done / skipped)
-  // step  0 = welcome modal (fullscreen)
-  // step 1–12 = category-keyed bottom cards
-  // step 13 = completion toast
+  // step  0 = welcome modal (multi-page)
+  // step 1–14 = category-keyed bottom cards during the spin
+  // step 15 = completion toast
 
   interface Props {
     step: number
@@ -11,11 +11,69 @@
     isRevealed?: boolean
     onGotIt: (nextStep: number) => void
     onSkip: () => void
-    onStartGame: () => void  // called by welcome "Let's go!"
+    onStartGame: () => void
   }
 
   let { step, currentCategory, isRevealed = false, onGotIt, onSkip, onStartGame }: Props = $props()
 
+  // ── Welcome modal pages ───────────────────────────────────────────────────
+  let welcomePage = $state(0)
+  const WELCOME_PAGES = 6
+
+  type WelcomePage = {
+    icon: string
+    iconColor: string
+    label: string
+    title: string
+    body: string
+  }
+
+  const WELCOME: WelcomePage[] = [
+    {
+      icon: 'casino',
+      iconColor: '#f0c040',
+      label: 'Welcome',
+      title: 'Welcome to\nWheel of Fate',
+      body: 'A character creation engine driven entirely by chance.\n\nYou spin ~23 sequential wheels that decide your race, class, powers, stats, weapons, weaknesses, and title — in that order. Every result is permanent. The only strategy is acceptance.\n\nThis tutorial walks you through every system before your first spin, then gives you context cards at each stage of the game as it appears.',
+    },
+    {
+      icon: 'rotate_right',
+      iconColor: '#a78bfa',
+      label: 'The Spin',
+      title: 'How the Spin Works',
+      body: 'The 23+ wheels fire in sequence:\n\n① Race — your species, stat multipliers, and power pool\n② Racial features — subtype, class, transformation, abilities (1–3 spins)\n③ Archetype — your role (Combat, Magic, Stealth, Support, Chaos)\n④ 11 Stats — Strength, Speed, Agility, Durability, IQ, Charisma, Fighting Skill, Potential, Energy Level, Power Mastery, Weapon Mastery\n⑤ Powers — 1–3+ spins based on race and archetype\n⑥ Weapon + Armor + Armor Strength\n⑦ Weaknesses — 0–3 based on your race\n⑧ Redemption Spin — 25% chance to alter your fate\n⑨ Backstory — generated origin story\n⑩ Title — your final designation\n\nEvery stat spin carries a 5% Wildcard chance that rewrites the result mid-spin. Watch for the flash.',
+    },
+    {
+      icon: 'menu_book',
+      iconColor: '#34d399',
+      label: 'Story Mode',
+      title: 'Story Mode',
+      body: 'A full progression mode with 4 independent save slots.\n\nEach slot gives you:\n• 10 free spins/day (refreshing every 3 hrs). Daily Booster gamepass doubles this to 20.\n• A roster of characters you build by spending spins — Hero and Legend spins give multiplied stats\n• 16 Worlds: F → E → D → C → B → A → S → SS → SSS → Z → ZZ → ZZZ → Celestial → Godly → Primordial → Absolute\n• 20 battles per world. Win them to earn Gems, XP, and crystal drops.\n• Crystal inventory — open grade-based crystals to get random powers, weapons, and armor to equip\n• Stat Crystals — spend Gems or Fate Shards to boost individual stats permanently\n\n⚑ Endless Mode unlocks at Level 3 — infinite scaling waves, global leaderboard by highest wave cleared.',
+    },
+    {
+      icon: 'swords',
+      iconColor: '#f87171',
+      label: 'Rivals',
+      title: 'Rivals Mode',
+      body: 'Battle your characters against others. Two formats:\n\n⚔ Local — fight a friend on the same device. Each player picks a character from your shared collection and they fight in an auto-battle simulator. Stats, powers, weapons, armor, and equipped crystals all factor in.\n\n🌐 Online — real-time matchmaking pairs you with another player. Your selected character fights theirs in an auto-battle. Wins tracked on your profile and the Rivals leaderboard.\n\n🤖 Bot Battle — no match found? A bot fills in. Wins still count.\n\n⚑ Revenge Protocol gamepass: if you lose a battle you still earn 50% of the gem drops.\n⚑ Crit Surge gamepass: +10% critical hit chance in all battles.\n⚑ Legend Tag gamepass: [LEGEND] prefix shown next to your name in online matches.',
+    },
+    {
+      icon: 'diamond',
+      iconColor: '#f0c040',
+      label: 'Shards & Shop',
+      title: 'Fate Shards, Shop & Clans',
+      body: 'Fate Shards are your global account currency — they never reset across save slots or sessions.\n\nEarn them by:\n• Winning battles in Story Mode (chance drops, doubled with 2× Shard Drop gamepass)\n• Selling characters from your roster (+25% with Sell Bonus gamepass)\n• Daily Challenges — up to 175 shards/day from 3 rotating tasks\n\nSpend them in the Arcane Shop on:\n• Gamepasses — permanent upgrades: 2× Luck, Reroll Insurance, Expanded Roster, Daily Booster, Boss Magnet, Cursed Wheel, Gold Roster Frame, and more\n• Stat Crystals — buy Common (50 ◆), Elite (500 ◆), or Legendary (1,000 ◆) crystals directly, no daily limit\n\n⚑ Clans — team up with up to 9 other players. Clan leaderboard ranks by total combined Rivals wins. Join from the Clan page on the main menu.',
+    },
+    {
+      icon: 'workspace_premium',
+      iconColor: '#f0c040',
+      label: "Let's Go",
+      title: "You're Ready",
+      body: 'After your 23 spins, you receive an Overall Tier Grade:\n\nF– → F → F+ → E → D → C → B → A → S → SS → SSS → God\n\nDerived from a weighted score across all 11 stats, powers, and equipment. Fighting Skill is weighted heaviest. God tier is extremely rare.\n\nYour completed character card can be:\n• Shared — a unique URL anyone can open\n• Published to the Public Gallery\n• Added to your Profile Hall of Fame (top 5 characters you\'ve ever rolled)\n• Replayed — step through all 23 spins in a viewer\n\nContext cards will appear during the spin to explain each system as it comes up. You can end the tutorial at any time by clicking "End tutorial" on any card.\n\nThe wheel has no memory. Every spin is fresh.',
+    },
+  ]
+
+  // ── In-game step card definitions ─────────────────────────────────────────
   type CardContent = {
     id: number
     icon: string
@@ -32,30 +90,32 @@
   ])
 
   const STAT_DETAILS: Record<string, string> = {
-    strength:     'Raw physical force — how hard you hit, what you can lift, and how many walls you walk through.',
-    speed:        'Reaction time and movement speed. Also affects how fast your powers activate in combat.',
-    agility:      'Flexibility, acrobatics, and evasion. Higher agility = harder to land a hit on you.',
-    durability:   'How much punishment you can absorb. Cannot go below zero — you\'re either surviving or you\'re not.',
-    iq:           'Intelligence and tactical thinking. Affects magic complexity, trap detection, and how many bad decisions you make.',
-    charisma:     'Social presence — persuasion, intimidation, and how quickly people trust (or are terrified of) you.',
-    fightingSkill:'Combat technique — the most heavily weighted stat in your overall score. Raw power without skill is just noise.',
-    potential:    'Your untapped ceiling — how much stronger you can become with training. Important to fans. Rarely decides fights.',
-    energyLevel:  'Ki, mana, chakra, aura — whatever fuels your abilities. More energy = more uses before you run dry.',
-    powerMastery: 'How precisely you control your powers. Low mastery = destructive but unstable. High mastery = efficient and lethal.',
-    weaponMastery:'Skill with weapons. Race and archetype can bias specific weapon types on top of this base score.',
+    strength:     'Raw physical force — how hard you hit, what you can lift, and how many walls you walk through. Determines melee damage output in Story Mode battles.',
+    speed:        'Reaction time, movement speed, and initiative. High Speed characters act first in combat and activate abilities faster.',
+    agility:      'Flexibility, evasion, and aerial mobility. High Agility makes you harder to hit and improves dodge chance in battle.',
+    durability:   'How much punishment your body absorbs. Your passive damage reduction — the difference between tanking a hit and being deleted.',
+    iq:           'Intelligence and tactical depth. Affects magic complexity, ability to counter enemy powers, and how effectively you exploit openings in battle.',
+    charisma:     'Social force — persuasion, intimidation, and battlefield presence. Heavily weighted in Support archetypes. Affects how quickly allies rally.',
+    fightingSkill:'Combat technique and instincts. The most heavily weighted stat in your overall score. Raw power without this is just a liability.',
+    potential:    'Your untapped ceiling — how much stronger training can make you. Critical for long-term Story Mode progression scaling and character growth.',
+    energyLevel:  'Ki, mana, chakra, aura — whatever fuels your abilities. More energy = sustained ability use without running dry in extended fights.',
+    powerMastery: 'Precision and control over your powers. Low = powerful but unstable and costly. High = efficient, stable, and lethal on demand.',
+    weaponMastery:'Skill with whatever weapon the wheel gives you. Your archetype and race bias which weapon types appear — this determines how well you use them.',
+    armorStrength:'The protective power of your armor independent of type. Even a basic Helmet at SSS+ is divine protection.',
   }
 
-  // Maps current game state → which tutorial card to show (null = none).
+  const TOTAL_STEPS = 14
+
   function resolveCard(s: number, cat: string | undefined, revealed: boolean): CardContent | null {
-    if (s <= 0 || s >= 13) return null
+    if (s <= 0 || s >= 15) return null
     if (!cat) return null
 
-    // Step 1 — Race (before spin)
+    // Step 1 — Race wheel (before spin)
     if (cat === 'race' && !revealed && s <= 1) return {
       id: 1,
       icon: 'diversity_3',
-      title: 'Spin 1: Race',
-      body: '50+ races available — from Humans and Halflings to Saiyans, Hollow Arrancars, Eldritch Beings, and literal Gods. Rarer races (lower spawn odds) carry higher stat multipliers, more racial ability spins, and access to exclusive power pools. The wheel decides. Accept it.',
+      title: 'Spin 1 — Race',
+      body: '50+ races: Humans, Elves, Dwarves, Saiyans, Hollow Arrancars, Elder Dragons, Primordial Entities, Cosmic Gods, and many more.\n\nYour race sets the foundation for everything:\n• Stat multipliers — Dragon boosts Strength 1.8×; Goblin penalises Durability 0.7×\n• Power pool access — exclusive powers that only your race can receive\n• Racial ability count — 1 to 3 spins of birthright traits\n• Weakness modifier — powerful races pay with more weaknesses (0–3)\n• Transformation eligibility — some races roll a 0.9× to 2.2× multiplier on ALL stats\n\nRarer races (lower spawn weight on the wheel) carry stronger multipliers and bigger exclusive ability pools. Common races are reliable; rare races are volatile in the best way.\n\nThe wheel has already decided. Spin it.',
       cta: 'Got it — spin!',
       accent: '#f0c040',
     }
@@ -65,17 +125,17 @@
       id: 2,
       icon: 'check_circle',
       title: 'Race Locked In',
-      body: 'Your race shapes everything ahead:\n\n• Racial Abilities — passive or active traits unique to your race (1–3 spins incoming)\n• Class / Subtype — your racial variant (e.g., Wood Elf vs. High Elf vs. Drow vs. Eladrin). Each unlocks different abilities and stat bonuses\n• Transformation — some races roll a power multiplier: 0.9× to 2.2× on ALL future stats\n• Stat Multipliers — hidden modifiers on your stat wheels (Dragon gets Strength 1.8×; Goblin gets Durability 0.7×)\n• SYNERGY — certain race × archetype combos trigger bonus spins mid-session',
+      body: 'Permanent. Here\'s what your race now determines for every spin ahead:\n\n• Racial Abilities — 1–3 upcoming spins of traits unique to your species\n• Subtype / Class — your variant within the race (Pure Saiyan vs. Half-Blood; Wood Elf vs. Drow)\n• Transformation — if eligible, a global stat multiplier (0.9× to 2.2×) is applied to all 11 stats after they\'re rolled\n• Hidden stat weights — your race silently shifts the probability curves on every stat wheel without showing you numbers\n• Synergy triggers — specific race × archetype combinations fire bonus spins automatically mid-session\n\nThe spins coming up are all racial features. They expand your race into a full identity.',
       cta: 'Next spin →',
       accent: '#22c55e',
     }
 
-    // Step 3 — Racial features (class, subtype, transformation, ability)
+    // Step 3 — Racial features
     if (RACIAL_CATS.has(cat) && s <= 3) return {
       id: 3,
       icon: 'auto_awesome',
       title: 'Racial Features',
-      body: 'These spins build your racial identity:\n\n• Class / Subtype — your variant within the race. Each has unique abilities and grants a stat bonus (e.g., Berserker Orc = Strength bonus; Runic Dwarf = Power Mastery bonus)\n• Racial Abilities — passive and active traits. Separate from regular Powers — these are your birthright\n• Transformation (some races) — scales all your stats by a multiplier. Higher transformation = stronger overall character\n\nRarer subtype picks tend to grant better abilities and larger bonuses. The wheel decides which variant you are.',
+      body: 'These spins build your identity within your race:\n\nSubtype / Class — your racial variant. Berserker Orc gets +2 Strength tiers; Runic Dwarf gets +2 Power Mastery; Pure Saiyan accesses a larger transformation pool. Each subtype unlocks its own exclusive abilities on top of this.\n\nRacial Abilities — your birthright. Separate from regular Powers — these are innate to your species and are not affected by Wildcards. They appear on your card and carry into Story Mode battles.\n\nTransformation (if eligible) — picked from a tiered pool. Higher tiers multiply all your stat scores after they are calculated. A God transformation on a rare race is devastating.\n\nSynergy note: if your race + the archetype you\'ll spin next form a known combo, a bonus spin fires automatically. Watch the announcement bar at the top.',
       cta: 'Got it — spin!',
       accent: '#a78bfa',
     }
@@ -84,41 +144,42 @@
     if (cat === 'archetype' && s <= 4) return {
       id: 4,
       icon: 'military_tech',
-      title: 'Spin: Archetype',
-      body: 'Your class — what role you fill. Archetypes have types:\n\n• Combat (Warrior, Gladiator, Berserker) — Fighting Skill + Strength\n• Magic (Mage, Warlock, Sorcerer) — Power Mastery + IQ\n• Stealth (Rogue, Assassin, Shinobi) — Agility + Speed\n• Support / Aura (Paladin, Healer, Bard) — Charisma + Potential\n• Chaos (Chaos Gremlin, Berserker, Anti-Hero) — wild bonuses across the board\n\nYour archetype also has its own ability pool and can grant bonus stat spins. Specific race × archetype combos trigger SYNERGY bonuses — watch the announcement bar.',
+      title: 'Spin — Archetype',
+      body: 'Your combat role. Archetypes are grouped into types:\n\nCombat (Warrior, Gladiator, Berserker, Warlord)\n→ Fighting Skill + Strength bonuses, melee ability pools\n\nMagic (Mage, Warlock, Sorcerer, Mystic)\n→ Power Mastery + IQ bonuses, spell and curse ability pools\n\nStealth (Rogue, Assassin, Shinobi, Phantom)\n→ Agility + Speed bonuses, ambush ability pools\n\nSupport / Aura (Paladin, Healer, Tactician, Bard)\n→ Charisma + Potential bonuses, buff and healing pools\n\nChaos (Anti-Hero, Chaos Gremlin, Wild Card)\n→ Unpredictable stat bonuses across the board\n\nYour archetype adds 1–2 exclusive ability spins and can trigger race synergy bonus spins. A Combat archetype on a Dragon race = absurd strength. A Magic archetype on a Human = reliable but capped.',
       cta: 'Got it — spin!',
       accent: '#a78bfa',
     }
 
-    // Step 5 — First stat (shown on any stat category)
+    // Step 5 — First stat spin
     if (STAT_CATS.has(cat) && !revealed && s <= 5) {
-      const statDetail = STAT_DETAILS[cat] ?? ''
+      const statName = cat.replace(/([A-Z])/g, ' $1').trim()
+      const detail = STAT_DETAILS[cat] ?? ''
       return {
         id: 5,
         icon: 'bar_chart',
-        title: `Stat: ${cat.replace(/([A-Z])/g, ' $1').trim()}`,
-        body: `${statDetail}\n\nStats run 42 grades:\nF–, F, F+ → E, D, C, B, A, S, SS, SSS → Z, ZZ, ZZZ, Celestial, Godly, Primordial\n\nThe label you land on IS your tier — score is embedded in it. Your race shifts the odds: common races average C–B, rare races skew toward S–SSS+. You have 11 stats total.\n\n⚡ Every stat spin has a 5% WILDCARD chance. Watch for it.`,
+        title: `Stat — ${statName}`,
+        body: `${detail}\n\nThe grade system runs 28 levels:\nF–, F, F+\nE–, E, E+\nD–, D, D+\nC–, C, C+\nB–, B, B+\nA–, A, A+\nS–, S, S+\nSS–, SS, SS+\nSSS–, SSS, SSS+\nGod\n\nThe label you land on IS your tier. Score is embedded in it. Your race silently shifts the probability of landing higher tiers. You spin all 11 stats in this section.\n\n⚡ Every stat spin has a 5% Wildcard chance (10% with 2× Luck gamepass) that can rewrite your result entirely — up, down, or sideways. Next card explains how Wildcards work.`,
         cta: 'Got it — spin!',
         accent: '#f0c040',
       }
     }
 
-    // Step 6 — Wildcard (shown after forced wildcard resolves on strength)
+    // Step 6 — Wildcard explanation (fires after the forced tutorial wildcard on strength)
     if (cat === 'strength' && revealed && s === 6) return {
       id: 6,
       icon: 'bolt',
-      title: '⚡ That Was a Wildcard',
-      body: 'A 5% chance on every stat spin that overwrites fate. Possible outcomes:\n\n• Fate\'s Blessing — +3 tiers above your roll\n• Fate\'s Curse — −3 tiers below your roll\n• Chaos Reroll — immediate re-spin, no modifiers\n• Mirror of Glory — copy your highest stat so far\n• Gift of Power — keep your roll AND get a bonus power spin\n• Double-Edged Fate — +4 tiers but a new weakness is added\n• Primordial Ascension — max tier, instantly\n• Frozen Mediocrity — locked to C, no argument\n• Forgotten by Fate — F–, no argument\n\nItem spins (powers, weapons) have a 20% bonus extra-spin wildcard instead.',
+      title: '⚡ Wildcards Explained',
+      body: 'A 5% proc on every stat spin (10% with the 2× Luck gamepass). When it fires, the screen flashes and a Wildcard outcome replaces your result:\n\n• Fate\'s Blessing — your roll +3 tiers\n• Fate\'s Curse — your roll −3 tiers\n• Chaos Reroll — immediate re-spin, no modifiers\n• Mirror of Glory — copy your highest stat rolled so far\n• Gift of Power — keep your roll AND receive a bonus power spin\n• Double-Edged Fate — +4 tiers, but a weakness is added\n• Primordial Ascension — forced to the absolute maximum tier\n• Frozen Mediocrity — locked to C (the punishment tier)\n• Forgotten by Fate — locked to F– (the floor)\n• Shared Destiny — copy your most recently rolled stat\n\nItem spins (powers, weapons, armor) have a 20% chance (40% with 2× Luck) of triggering a bonus extra spin of the same category instead of a stat override.',
       cta: 'Got it →',
       accent: '#f0c040',
     }
 
-    // Step 7 — Powers and elements
+    // Step 7 — Powers
     if (cat === 'power' && s <= 7) return {
       id: 7,
       icon: 'bolt',
       title: 'Powers & Elements',
-      body: 'Powers are your special abilities. You spin 1–3+ based on race and archetype.\n\nEvery power, ability, and weapon has an Element and Grade:\n\nElements: Fire, Ice, Lightning, Shadow, Arcane, Light, Nature, Poison, Gravity, Time, Cosmic, Soul, Chaos, Blood, Psychic, Sound, Water, Metal, Earth\n\nGrades:\n• D / C — functional, reliable\n• B / A — strong with unique effects\n• S / SS — game-defining\n• SSS+ — world-ending\n• God — you are now the problem\n\nYour race gates which powers can appear. Rarer races unlock exclusive pools.',
+      body: 'You spin 1–3+ powers based on your race and archetype. Each power has two attributes:\n\nElement — determines battle type matching:\nFire, Ice, Lightning, Shadow, Arcane, Holy, Nature, Poison, Gravity, Time, Cosmic, Soul, Chaos, Blood, Psychic, Sound, Water, Metal, Earth, Void, Wind\n\nGrade — determines power level:\nD / C — functional and reliable\nB / A — strong, often fight-defining\nS / SS — exceptional and story-altering\nSSS / SSS+ — world-ending capability\nGod — you are now the problem\n\nYour race strictly gates which powers appear. Dragon-race characters access draconic power pools unavailable to Humans. Rarer races = rarer, more exclusive power pools.\n\nIn Story Mode: powers become active abilities with elemental bonus damage vs. enemy weaknesses. Higher-grade powers deal significantly more damage.',
       cta: 'Got it — spin!',
       accent: '#fb923c',
     }
@@ -128,7 +189,7 @@
       id: 8,
       icon: 'swords',
       title: 'Weapons',
-      body: 'Weapon types: Melee, Ranged, Magical, Ancient, Exotic, Cursed, and None.\n\nEach weapon has an Element and Grade — higher grade = more broken.\n\nYour race and archetype bias certain types:\n• Dwarves → Ancient melee\n• Goblins → Cursed / Exotic\n• Elves → Ranged / Magical\n• Kryptonians → their bare hands (None)\n\nWeapon Mastery (a stat you\'ll spin soon) measures how well you use whatever you\'re holding. Even a god-tier weapon needs someone competent to hold it.',
+      body: 'Weapon categories: Melee, Ranged, Magical, Ancient, Exotic, Cursed, and None.\n\nEach weapon has an Element and Grade — higher grade = more broken. The rarity of your race biases which weapon categories can appear.\n\nRace-weapon tendencies:\n• Dwarves → Ancient melee weapons\n• Goblins → Cursed / Exotic\n• Elves → Ranged / Magical\n• Kryptonians → None (they ARE the weapon)\n• Dragons → Ancient or Exotic\n\nWeapon Mastery (spinning very soon) determines how effectively you use whatever the wheel gives you. A God-grade sword still needs someone competent to hold it.\n\nIn Story Mode: equip weapons to roster characters from the inventory screen. Higher-grade equipped weapons raise your team\'s damage output in battle. The Gold Roster Frame gamepass adds a visual gold border to all your roster cards.',
       cta: 'Got it — spin!',
       accent: '#64748b',
     }
@@ -137,8 +198,8 @@
     if ((cat === 'armor' || cat === 'armorStrength') && s <= 9) return {
       id: 9,
       icon: 'shield',
-      title: 'Armor',
-      body: 'Armor types: None, Helmet Only, Half-Suit, Full-Suit, Ancient, Exotic, Cursed.\n\nArmor has its own strength tier — land on B+ or above and you unlock armor enchantments. SS+ unlocks multiple enchantments.\n\nArmor Strength is a separate stat wheel that determines the protective power of your armor — even basic armor can be supernaturally durable at high tiers.\n\nHigher-tier armors from rare races have type biases — Orcs tend toward Full-Suit ancient plating, Elves toward Half-Suit or None.',
+      title: 'Armor & Armor Strength',
+      body: 'Armor types: None, Helmet Only, Half-Suit, Full-Suit, Ancient, Exotic, Cursed.\n\nArmor Grade determines enchantment slots:\n• B+ grade → 1 enchantment slot added\n• SS+ grade → multiple enchantments possible\n\nArmor Strength is a separate spin — it measures the raw protective power of your armor independently of its type. Basic Helmet at SSS+ is divine protection. Full-Suit at F– is decorative tin.\n\nRace biases:\n• Orcs → Full-Suit ancient plating\n• Elves → Half-Suit or None (they rely on agility)\n• Kryptonians → almost never wear armor\n\nIn Story Mode: equip armor to roster characters from your inventory. Equipped armor reduces incoming damage in battles. Higher-grade armor stacks meaningfully.',
       cta: 'Got it — spin!',
       accent: '#94a3b8',
     }
@@ -148,7 +209,7 @@
       id: 10,
       icon: 'broken_image',
       title: 'Weaknesses',
-      body: 'How many weaknesses you roll depends on your race\'s weakness modifier — anywhere from 0 to 3.\n\nThey\'re permanent. They\'re real. They\'re yours.\n\nMore powerful races tend to have more weaknesses — cosmic balance demands payment. A God-tier character is still vulnerable to something humiliating.\n\nRace-specific weaknesses can be tailored to the race. Some are funnier than others. You\'ll see.',
+      body: 'Your race determines how many weaknesses you roll: 0 to 3. More powerful races pay with more weaknesses as cosmic balance.\n\nWeaknesses are:\n• Permanent — they cannot be removed except via Redemption Spin ("Lose One Weakness" outcome)\n• Public — visible on your character card to anyone who views it\n• Thematic — some are race-specific, others are universal\n• Sometimes humiliating — the wheel makes no apologies\n\nIn Story Mode battles: enemies can deal bonus damage against you by hitting your weakness element. Boss enemies are significantly more likely to target weakness angles. A God-tier character with a weakness to salt is still weak to salt.\n\nThe Revenge Protocol gamepass softens losses — you still earn 50% of gem drops even when defeated.',
       cta: 'Got it — spin!',
       accent: '#f87171',
     }
@@ -158,18 +219,38 @@
       id: 11,
       icon: 'casino',
       title: 'The Redemption Spin',
-      body: '25% chance to land Redemption. If you do, a second wheel activates:\n\n• Reroll Your Worst Stat\n• Gain a Bonus Power\n• Lose One Weakness\n• All Stats +1 Tier\n• Double Your Best Stat\n• Demigod Status — all stats +3 tiers (very rare)\n• Reroll Everything: Chaos Edition\n• Plot Armour (Permanent)\n• The Universe Owes You One\n\nEven fate gives second chances. Sometimes.',
+      body: '25% base chance to trigger Redemption. If it fires, a second wheel appears:\n\n• Reroll Your Worst Stat — identifies and re-spins your lowest stat automatically\n• Gain a Bonus Power — extra power spin added immediately\n• Lose One Weakness — one weakness permanently removed\n• All Stats +1 Tier — every one of your 11 stats bumps up one grade\n• Double Your Best Stat — your highest-scoring stat is doubled\n• Demigod Status — ALL stats +3 tiers (very rare)\n• Reroll Everything: Chaos Edition — all 11 stats re-spin from scratch (bonuses preserved)\n• Plot Armour (Permanent) — a universal passive defensive trait is added\n• The Universe Owes You One — a chaotic and powerful bonus applied randomly\n\nIf Redemption does NOT trigger (75% chance), the wheel moves on. No retry, no fallback.',
       cta: 'Got it — spin!',
       accent: '#c084fc',
     }
 
-    // Step 12 — Title (final spin)
-    if (cat === 'title' && s <= 12) return {
+    // Step 12 — Backstory
+    if (cat === 'backstory' && s <= 12) return {
       id: 12,
+      icon: 'history_edu',
+      title: 'Backstory',
+      body: 'A generated origin that ties your race, archetype, and powers into a narrative snapshot. It\'s flavour — not mechanical — but it gives your character context.\n\nSome backstories are dramatic. Some are tragic. Some are deeply ironic given your actual stats. The wheel picks without consulting you.\n\nYour backstory appears on your final character card and is visible to anyone you share your character with. It also appears in the Public Gallery if you choose to publish your character.\n\nThis is the second-to-last spin. One more to go.',
+      cta: 'Got it — one more!',
+      accent: '#9a907b',
+    }
+
+    // Step 13 — Title (final spin)
+    if (cat === 'title' && !revealed && s <= 13) return {
+      id: 13,
       icon: 'workspace_premium',
-      title: 'Final Spin: Title',
-      body: 'Your Title is the capstone of your identity — an honorary designation that wraps up who your character is. Their legacy, their reputation, their vibe.\n\nAfter this spin, you\'ll name your legend and your complete character card will be revealed with your overall tier grade.\n\nThe wheel has spoken. Own it.',
+      title: 'Final Spin — Title',
+      body: 'Your honorary designation. The capstone of your identity.\n\nTitles range from grand and heroic to absurd and self-defeating. Some are race-weighted; many are universal. Permanent and visible on your character card forever.\n\nAfter this spin, you\'ll name your character. Then your complete card is revealed with your Overall Tier Grade:\n\nF– → F → F+ → E → D → C → B → A → S → SS → SSS → God\n\nThis grade is calculated from a weighted score across all 11 stats, powers, weapons, and armor. Fighting Skill is weighted heaviest. God tier is extremely rare — fewer than 1% of spins reach it.\n\nThis is it. Spin.',
       cta: 'Last spin — let\'s go!',
+      accent: '#f0c040',
+    }
+
+    // Step 14 — post-reveal / what to do next
+    if (cat === 'title' && revealed && s <= 14) return {
+      id: 14,
+      icon: 'stars',
+      title: 'Character Complete — What Next?',
+      body: 'Your fate is decided. Here\'s what you can do with your character:\n\n⚔ Rivals Mode — battle this character against friends (local) or real opponents (online). Wins climb the Rivals leaderboard on your profile.\n\n📖 Story Mode — build a full roster. Spin more characters (including Hero and Legend-class variants), battle through Worlds, collect and equip crystal drops, and unlock Endless Mode at Level 3.\n\n◆ Fate Shards — earn from battles and selling characters. Complete Daily Challenges (up to 175 shards/day). Spend in the Arcane Shop on permanent Gamepass upgrades that apply across all modes.\n\n⚑ Clans — team up with up to 9 players and compete on the Clan leaderboard by combined Rivals wins.\n\n🔗 Share — copy your character\'s link and send it to anyone. No account needed to view.',
+      cta: 'Done — I\'m ready!',
       accent: '#f0c040',
     }
 
@@ -178,66 +259,96 @@
 
   let card = $derived(resolveCard(step, currentCategory, isRevealed))
 
-  // Completion toast: briefly visible when step hits 13
+  // Completion toast: briefly visible when step hits 15
   let toastVisible = $state(false)
   $effect(() => {
-    if (step === 13) {
+    if (step === 15) {
       toastVisible = true
-      const t = setTimeout(() => { toastVisible = false; onSkip() }, 2200)
+      const t = setTimeout(() => { toastVisible = false; onSkip() }, 2400)
       return () => clearTimeout(t)
     }
   })
 </script>
 
-<!-- ─── Welcome modal (step 0) ────────────────────────────────────────────── -->
+<!-- ─── Welcome modal (step 0) — multi-page ────────────────────────────────── -->
 {#if step === 0}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center px-4"
-    style="background: rgba(7,7,13,0.96); backdrop-filter: blur(20px);"
-  >
-    <div
-      class="obsidian-slab w-full max-w-sm rounded-2xl p-8 text-center relative overflow-hidden"
-      style="border: 1px solid rgba(240,192,64,0.3); box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 40px rgba(240,192,64,0.06);"
-    >
+  {@const pg = WELCOME[welcomePage]}
+  <div class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    style="background: rgba(7,7,13,0.97); backdrop-filter: blur(20px);">
+    <div class="obsidian-slab w-full max-w-sm rounded-2xl relative overflow-hidden"
+      style="border: 1px solid rgba(240,192,64,0.25); box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 40px rgba(240,192,64,0.05);">
       <div class="noise-overlay"></div>
+
       <!-- Corner accents -->
-      <div class="absolute top-3 left-3 w-6 h-6" style="border-top: 2px solid rgba(240,192,64,0.4); border-left: 2px solid rgba(240,192,64,0.4);"></div>
-      <div class="absolute top-3 right-3 w-6 h-6" style="border-top: 2px solid rgba(240,192,64,0.4); border-right: 2px solid rgba(240,192,64,0.4);"></div>
-      <div class="absolute bottom-3 left-3 w-6 h-6" style="border-bottom: 2px solid rgba(240,192,64,0.4); border-left: 2px solid rgba(240,192,64,0.4);"></div>
-      <div class="absolute bottom-3 right-3 w-6 h-6" style="border-bottom: 2px solid rgba(240,192,64,0.4); border-right: 2px solid rgba(240,192,64,0.4);"></div>
+      <div class="absolute top-3 left-3 w-5 h-5 pointer-events-none" style="border-top: 2px solid rgba(240,192,64,0.4); border-left: 2px solid rgba(240,192,64,0.4);"></div>
+      <div class="absolute top-3 right-3 w-5 h-5 pointer-events-none" style="border-top: 2px solid rgba(240,192,64,0.4); border-right: 2px solid rgba(240,192,64,0.4);"></div>
+      <div class="absolute bottom-3 left-3 w-5 h-5 pointer-events-none" style="border-bottom: 2px solid rgba(240,192,64,0.4); border-left: 2px solid rgba(240,192,64,0.4);"></div>
+      <div class="absolute bottom-3 right-3 w-5 h-5 pointer-events-none" style="border-bottom: 2px solid rgba(240,192,64,0.4); border-right: 2px solid rgba(240,192,64,0.4);"></div>
 
-      <div class="relative z-10">
-        <span
-          class="material-symbols-outlined block"
-          style="font-size: 56px; color: #f0c040; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 16px rgba(240,192,64,0.5)); margin-bottom: 16px;"
-        >casino</span>
+      <!-- Page tabs -->
+      <div class="relative z-10 flex border-b" style="border-color: rgba(255,255,255,0.06);">
+        {#each WELCOME as p, i}
+          <button
+            onclick={() => welcomePage = i}
+            class="flex-1 py-2 text-center transition-all"
+            style="font-family: 'JetBrains Mono', monospace; font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase; border: none; background: none; cursor: pointer; color: {welcomePage === i ? pg.iconColor : '#2a2640'}; border-bottom: 2px solid {welcomePage === i ? pg.iconColor : 'transparent'}; margin-bottom: -1px;">
+            {p.label}
+          </button>
+        {/each}
+      </div>
 
-        <p class="text-[10px] tracking-[0.3em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">First time here?</p>
-
-        <h2 style="font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 900; color: #ffdf96; letter-spacing: 0.08em; line-height: 1.25; margin-bottom: 18px; text-shadow: 0 0 20px rgba(240,192,64,0.3);">
-          Welcome to<br/>Wheel of Fate
-        </h2>
-
-        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #9a907b; line-height: 1.7; margin-bottom: 24px;">
-          <p>You'll spin <span style="color: #f0c040; font-weight: 700;">~23+ fate-chosen wheels</span> to build your character from scratch.</p>
-          <p class="mt-2">Race. Class. Stats. Powers. Weaknesses. Title.</p>
-          <p class="mt-2">The tutorial walks you through <span style="color: #e4e1ee;">each system</span> as it appears — race mechanics, wildcards, elements, grades, weapons, armor, and everything in between.</p>
-          <p class="mt-2" style="color: #4e4635; font-style: italic;">Everything is permanent. No take-backs.</p>
+      <!-- Content -->
+      <div class="relative z-10 px-6 pt-5 pb-3" style="min-height: 360px; overflow-y: auto; max-height: 70vh;">
+        <div class="flex flex-col items-center text-center mb-4">
+          <span class="material-symbols-outlined mb-3"
+            style="font-size: 42px; color: {pg.iconColor}; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 14px {pg.iconColor}55);">{pg.icon}</span>
+          <h2 style="font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 900; color: #ffdf96; letter-spacing: 0.06em; line-height: 1.25; white-space: pre-line;">{pg.title}</h2>
         </div>
+        <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.69rem; color: #9a907b; line-height: 1.78; white-space: pre-line;">{pg.body}</p>
+      </div>
 
-        <button
-          onclick={() => { onStartGame() }}
-          class="metal-stamp-gold w-full py-3 rounded-lg relative mb-3"
-          style="font-family: 'Cinzel', serif; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;"
-        >
-          <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
-          Let's Go!
-        </button>
+      <!-- Navigation -->
+      <div class="relative z-10 px-5 pt-3 pb-3 flex items-center gap-2.5">
+        {#if welcomePage > 0}
+          <button onclick={() => welcomePage--}
+            class="px-4 py-2.5 rounded-lg text-xs font-bold hover:brightness-110 transition-all"
+            style="font-family: 'Cinzel', serif; letter-spacing: 0.08em; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #9a907b; cursor: pointer;">
+            ← Back
+          </button>
+        {/if}
 
-        <button
-          onclick={onSkip}
-          style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #4e4635; background: none; border: none; cursor: pointer; letter-spacing: 0.1em;"
-        >
+        {#if welcomePage < WELCOME_PAGES - 1}
+          <button onclick={() => welcomePage++}
+            class="metal-stamp-gold flex-1 py-2.5 rounded-lg relative text-xs font-bold"
+            style="font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;">
+            <div class="l-bracket" style="color: rgba(255,255,255,0.2);"></div>
+            Next →
+          </button>
+        {:else}
+          <button onclick={() => { onStartGame() }}
+            class="metal-stamp-gold flex-1 py-2.5 rounded-lg relative text-xs font-bold"
+            style="font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;">
+            <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
+            Let's Spin!
+          </button>
+        {/if}
+      </div>
+
+      <!-- Dot indicators -->
+      <div class="relative z-10 flex justify-center gap-1.5 pb-3">
+        {#each Array.from({length: WELCOME_PAGES}, (_, i) => i) as i}
+          <div class="rounded-full transition-all duration-300 cursor-pointer"
+            onclick={() => welcomePage = i}
+            role="button" tabindex="0"
+            onkeydown={(e) => { if (e.key === 'Enter') welcomePage = i }}
+            style="width: {welcomePage === i ? 16 : 5}px; height: 5px; background: {welcomePage === i ? pg.iconColor : '#2a2640'};"></div>
+        {/each}
+      </div>
+
+      <!-- Skip -->
+      <div class="relative z-10 pb-3 text-center">
+        <button onclick={onSkip}
+          style="font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: #2a2640; background: none; border: none; cursor: pointer; letter-spacing: 0.1em; text-decoration: underline;">
           Skip tutorial
         </button>
       </div>
@@ -245,59 +356,49 @@
   </div>
 {/if}
 
-<!-- ─── Top-left card (steps 1–12) ────────────────────────────────────────── -->
+<!-- ─── In-game step cards (steps 1–14) ───────────────────────────────────── -->
 {#if card}
   <div
     class="fixed z-40 px-3"
-    style="top: 64px; left: 0; width: min(360px, 100vw); pointer-events: none; animation: tutSlideUp 0.3s cubic-bezier(0.34,1.3,0.64,1) forwards;"
-  >
-    <div
-      class="w-full rounded-2xl overflow-hidden"
-      style="pointer-events: all; background: rgba(9,9,15,0.98); backdrop-filter: blur(20px); border: 1px solid rgba(240,192,64,0.18); border-top: 2px solid {card.accent}; box-shadow: 0 8px 48px rgba(0,0,0,0.85), 0 0 0 1px rgba(240,192,64,0.06);"
-    >
-      <!-- Header bar -->
-      <div class="flex items-center gap-2 px-4 py-2.5" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-        <span class="material-symbols-outlined" style="font-size: 13px; color: {card.accent}; font-variation-settings: 'FILL' 1;">school</span>
-        <span class="text-[9px] tracking-[0.25em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Tutorial</span>
+    style="top: 64px; left: 0; width: min(390px, 100vw); pointer-events: none; animation: tutSlideUp 0.3s cubic-bezier(0.34,1.3,0.64,1) forwards;">
+    <div class="w-full rounded-2xl overflow-hidden"
+      style="pointer-events: all; background: rgba(9,9,15,0.98); backdrop-filter: blur(20px); border: 1px solid rgba(240,192,64,0.13); border-top: 2px solid {card.accent}; box-shadow: 0 8px 48px rgba(0,0,0,0.88), 0 0 0 1px rgba(240,192,64,0.04);">
 
-        <!-- Progress dots (12 steps) -->
-        <div class="ml-auto flex gap-1 items-center">
-          {#each [1,2,3,4,5,6,7,8,9,10,11,12] as n}
-            <div
-              class="rounded-full transition-all duration-300"
-              style="width: {n === card.id ? 14 : 4}px; height: 4px; background: {n < card.id ? '#4e4635' : n === card.id ? card.accent : '#2a2a38'};"
-            ></div>
+      <!-- Header -->
+      <div class="flex items-center gap-2 px-4 py-2.5" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <span class="material-symbols-outlined" style="font-size: 11px; color: {card.accent}; font-variation-settings: 'FILL' 1;">school</span>
+        <span class="text-[9px] tracking-[0.22em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Tutorial · {card.id} / {TOTAL_STEPS}</span>
+
+        <!-- Progress -->
+        <div class="ml-auto flex gap-0.5 items-center">
+          {#each Array.from({length: TOTAL_STEPS}, (_, i) => i + 1) as n}
+            <div class="rounded-full transition-all duration-300"
+              style="width: {n === card.id ? 10 : 3}px; height: 3px; background: {n < card.id ? '#3e3828' : n === card.id ? card.accent : '#1a1828'};"></div>
           {/each}
         </div>
 
-        <button
-          onclick={onSkip}
-          class="ml-3 text-[9px] tracking-[0.1em] uppercase transition-colors hover:opacity-80"
-          style="font-family: 'JetBrains Mono', monospace; color: #4e4635; background: none; border: none; cursor: pointer;"
-        >
-          Skip
+        <button onclick={onSkip}
+          class="ml-2 text-[8px] tracking-[0.08em] uppercase hover:opacity-70 transition-opacity"
+          style="font-family: 'JetBrains Mono', monospace; color: #2e2a40; background: none; border: none; cursor: pointer;">
+          End tutorial
         </button>
       </div>
 
       <!-- Content -->
-      <div class="px-4 pt-3.5 pb-1 flex gap-3.5" style="max-height: 55vh; overflow-y: auto;">
-        <span
-          class="material-symbols-outlined shrink-0 mt-0.5"
-          style="font-size: 22px; color: {card.accent}; font-variation-settings: 'FILL' 1;"
-        >{card.icon}</span>
+      <div class="px-4 pt-3.5 pb-1 flex gap-3" style="max-height: 54vh; overflow-y: auto;">
+        <span class="material-symbols-outlined shrink-0 mt-0.5"
+          style="font-size: 19px; color: {card.accent}; font-variation-settings: 'FILL' 1;">{card.icon}</span>
         <div class="flex-1 min-w-0">
-          <p style="font-family: 'Cinzel', serif; font-size: 0.88rem; font-weight: 700; color: #ffdf96; margin-bottom: 5px; letter-spacing: 0.04em;">{card.title}</p>
-          <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #9a907b; line-height: 1.7; white-space: pre-line;">{card.body}</p>
+          <p style="font-family: 'Cinzel', serif; font-size: 0.83rem; font-weight: 700; color: #ffdf96; margin-bottom: 6px; letter-spacing: 0.04em;">{card.title}</p>
+          <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: #9a907b; line-height: 1.78; white-space: pre-line;">{card.body}</p>
         </div>
       </div>
 
-      <!-- Button row -->
+      <!-- CTA -->
       <div class="px-4 pt-3 pb-4 flex justify-end">
-        <button
-          onclick={() => onGotIt(card!.id + 1)}
+        <button onclick={() => onGotIt(card!.id + 1)}
           class="metal-stamp-gold px-5 py-2 rounded-lg text-xs font-bold relative"
-          style="font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;"
-        >
+          style="font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;">
           <div class="l-bracket" style="color: rgba(255,255,255,0.2);"></div>
           {card.cta}
         </button>
@@ -306,17 +407,13 @@
   </div>
 {/if}
 
-<!-- ─── Completion toast (step 13) ─────────────────────────────────────────── -->
+<!-- ─── Completion toast (step 15) ─────────────────────────────────────────── -->
 {#if toastVisible}
-  <div
-    class="fixed top-16 inset-x-0 z-50 flex justify-center px-4 pointer-events-none"
-    style="animation: tutSlideDown 0.3s ease-out forwards;"
-  >
-    <div
-      class="px-5 py-2.5 rounded-full flex items-center gap-2.5"
-      style="background: rgba(9,9,15,0.97); border: 1px solid rgba(240,192,64,0.4); box-shadow: 0 4px 24px rgba(0,0,0,0.7); backdrop-filter: blur(12px);"
-    >
-      <span class="material-symbols-outlined text-sm" style="color: #f0c040; font-variation-settings: 'FILL' 1;">check_circle</span>
+  <div class="fixed top-16 inset-x-0 z-50 flex justify-center px-4 pointer-events-none"
+    style="animation: tutSlideDown 0.3s ease-out forwards;">
+    <div class="px-5 py-2.5 rounded-full flex items-center gap-2.5"
+      style="background: rgba(9,9,15,0.97); border: 1px solid rgba(240,192,64,0.4); box-shadow: 0 4px 24px rgba(0,0,0,0.7); backdrop-filter: blur(12px);">
+      <span class="material-symbols-outlined" style="font-size: 14px; color: #f0c040; font-variation-settings: 'FILL' 1;">check_circle</span>
       <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #f0c040; letter-spacing: 0.12em;">Tutorial complete — you know the system</span>
       <span style="color: #4e4635; font-size: 0.7rem;">✦</span>
     </div>
@@ -324,29 +421,12 @@
 {/if}
 
 <style>
-  /* Tutorial card entrance — slides in from void with rune flash */
   @keyframes tutSlideUp {
-    from {
-      transform: translateY(-24px) scale(0.97);
-      opacity: 0;
-      filter: brightness(1.5) blur(2px);
-    }
-    to {
-      transform: translateY(0) scale(1);
-      opacity: 1;
-      filter: none;
-    }
+    from { transform: translateY(-20px) scale(0.97); opacity: 0; filter: brightness(1.4) blur(2px); }
+    to   { transform: translateY(0) scale(1); opacity: 1; filter: none; }
   }
   @keyframes tutSlideDown {
-    from {
-      transform: translateY(24px) scale(0.97);
-      opacity: 0;
-      filter: brightness(1.5) blur(2px);
-    }
-    to {
-      transform: translateY(0) scale(1);
-      opacity: 1;
-      filter: none;
-    }
+    from { transform: translateY(20px) scale(0.97); opacity: 0; filter: brightness(1.4) blur(2px); }
+    to   { transform: translateY(0) scale(1); opacity: 1; filter: none; }
   }
 </style>
