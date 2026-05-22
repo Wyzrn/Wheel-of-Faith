@@ -114,7 +114,7 @@
     if (/CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)) return { type: 'crit', color: '#fde047', direction }
     if (/berserk|frenzy/i.test(line)) return { type: 'berserker', color: '#ef4444', direction }
     if (/combo finisher|follow-up/i.test(line)) return { type: 'combo', color: '#f59e0b', direction }
-    if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction: 'center' }
+    if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction }
     if (/fire|flame|blaze|inferno|burn|ember|magma|lava|heat/i.test(line)) return { type: 'fire', color: '#f97316', direction }
     if (/shadow|void|abyss|soul drain|leech/i.test(line)) return { type: 'shadow', color: '#8b5cf6', direction }
     if (/blood|crimson/i.test(line)) return { type: 'blood', color: '#dc2626', direction }
@@ -151,6 +151,7 @@
   // fxEvents from current round — used by detectAnim to pull grade/element
   let currentFxEvents = $state<import('$lib/game/battle').RoundFxEvent[]>([])
   let fxEventIdx = 0
+  let aoeRemainingHits = 0
 
   function playLines(lines: string[], onDone: () => void) {
     if (lines.length === 0) { onDone(); return }
@@ -161,17 +162,31 @@
     if (anim) {
       const fx = currentFxEvents[fxEventIdx]
       const isDamage = head.includes('damage!')
+      const isHealLine = /restores|recovers.*HP|vital force|mends/i.test(head)
       const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
-      if (fx && isDamage) fxEventIdx++
-      let { type, color, direction } = anim
-      // Override FX type from the battle simulation's element — much more accurate than text regex
-      if (fx && isDamage && type !== 'crit' && type !== 'berserker' && type !== 'dodge') {
-        const elFx = fx.element ? ELEMENT_FX[fx.element] : null
-        if (elFx) { type = elFx.type; color = elFx.color }
+      let aoeSkip = false
+      if (isDamage && aoeRemainingHits > 0) {
+        aoeRemainingHits--
+        aoeSkip = true
+      } else if (fx && (isDamage || isHealLine)) {
+        fxEventIdx++
+        if (isDamage && fx.attackType === 'aoe' && fx.targetIdxs) {
+          aoeRemainingHits = Math.max(0, fx.targetIdxs.length - 1)
+        }
       }
-      const origin = getPanelOrigin(direction)
-      const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
-      showAnim(type, color, direction, grade, origin, fxAttackType)
+      if (!aoeSkip) {
+        let { type, color, direction } = anim
+        // Override FX type from the battle simulation's element — much more accurate than text regex
+        if (fx && isDamage && type !== 'crit' && type !== 'berserker' && type !== 'dodge') {
+          const elFx = fx.element ? ELEMENT_FX[fx.element] : null
+          if (elFx) { type = elFx.type; color = elFx.color }
+        }
+        const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
+        const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
+        const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
+        const origin = getPanelOrigin(originDir)
+        showAnim(type, color, direction, grade, origin, fxAttackType)
+      }
     }
     const delay = head.startsWith('──') ? 550 : 1000
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
@@ -189,6 +204,7 @@
     roundIdx++
     currentFxEvents = round.fxEvents ?? []
     fxEventIdx = 0
+    aoeRemainingHits = 0
 
     const lines = [`── Round ${round.roundNum} ──`, ...round.lines]
 
