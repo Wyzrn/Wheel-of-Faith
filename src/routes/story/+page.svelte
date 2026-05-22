@@ -81,7 +81,7 @@
   // ── Derived values ─────────────────────────────────────────────────────────
   let roster = $derived(currentSlot?.roster ?? [])
   let gems = $derived(currentSlot?.gems ?? 0)
-  let shards = $derived(currentSlot?.shards ?? 0)
+  let shards = $derived(auth.loggedIn ? (auth.user?.shards ?? 0) : (currentSlot?.shards ?? 0))
   let stage = $derived(currentSlot?.stage ?? 1)
   let playerLevel = $derived(currentSlot?.playerLevel ?? 0)
   let spinsRemaining = $derived(currentSlot?.spinsRemaining ?? 0)
@@ -149,11 +149,16 @@
   })
 
   // ── Save slot actions ──────────────────────────────────────────────────────
-  function selectSlot(id: SlotId) {
+  async function selectSlot(id: SlotId) {
     const existing = loadSaveSlot(id)
     let slot = existing ?? createSaveSlot(id)
     const maxSpins = getEffectiveMaxSpins(auth.user?.gamepasses ?? [])
     slot = applySpinRefresh(slot, maxSpins)
+    // Migrate local slot shards to account on first load
+    if (auth.loggedIn && slot.shards > 0) {
+      await adjustShards(slot.shards)
+      slot = { ...slot, shards: 0 }
+    }
     saveSaveSlot(slot)
     currentSlot = slot
     slots = loadAllSlots()
@@ -282,12 +287,36 @@
     view = 'spin'
   }
 
+  // ── Account shard helpers ─────────────────────────────────────────────────
+  function withAcctShards(slot: StorySaveSlot): StorySaveSlot {
+    if (!auth.loggedIn) return slot
+    return { ...slot, shards: auth.user?.shards ?? 0 }
+  }
+
+  async function adjustShards(delta: number) {
+    if (!auth.loggedIn || delta === 0) return
+    auth.updateShopData((auth.user?.shards ?? 0) + delta, auth.user?.gamepasses ?? [])
+    try {
+      await fetch('/api/shop/shards/adjust', {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta }),
+      })
+    } catch { /* optimistic update already applied */ }
+  }
+
   // ── Shop ───────────────────────────────────────────────────────────────────
   function buySpin() {
     if (!currentSlot) return
-    const updated = purchaseSpin($state.snapshot(currentSlot) as StorySaveSlot)
+    const slot = withAcctShards($state.snapshot(currentSlot) as StorySaveSlot)
+    const updated = purchaseSpin(slot)
     if (!updated) return
-    currentSlot = updated
+    if (auth.loggedIn) {
+      adjustShards(updated.shards - slot.shards)
+      currentSlot = { ...updated, shards: 0 }
+    } else {
+      currentSlot = updated
+    }
   }
 
   let crystalBuyError = $state<string | null>(null)
@@ -413,14 +442,26 @@
 
   function handleBattleComplete(updated: StorySaveSlot) {
     const oldLevel = currentSlot?.playerLevel ?? 0
-    currentSlot = updated
+    if (auth.loggedIn && currentSlot) {
+      const delta = updated.shards - (currentSlot.shards ?? 0)
+      if (delta > 0) adjustShards(delta)
+      currentSlot = { ...updated, shards: 0 }
+    } else {
+      currentSlot = updated
+    }
     checkLevelUp(oldLevel, updated)
     view = 'worlds'
   }
 
   function handleNextBattle(updated: StorySaveSlot) {
     const oldLevel = currentSlot?.playerLevel ?? 0
-    currentSlot = updated
+    if (auth.loggedIn && currentSlot) {
+      const delta = updated.shards - (currentSlot.shards ?? 0)
+      if (delta > 0) adjustShards(delta)
+      currentSlot = { ...updated, shards: 0 }
+    } else {
+      currentSlot = updated
+    }
     checkLevelUp(oldLevel, updated)
   }
 
@@ -441,14 +482,20 @@
 
   function handleBuyCrystalShards(type: 'power' | 'weapon' | 'armor', grade: CrystalGrade) {
     if (!currentSlot) return
-    const result = buyCrystalWithShards($state.snapshot(currentSlot) as StorySaveSlot, type, grade)
+    const slot = withAcctShards($state.snapshot(currentSlot) as StorySaveSlot)
+    const result = buyCrystalWithShards(slot, type, grade)
     if (result === 'insufficient_shards') {
       fCrystalBuyError = 'Not enough shards.'
       setTimeout(() => { fCrystalBuyError = null }, 2500)
       return
     }
-    currentSlot = result
-    saveSaveSlot($state.snapshot(result) as StorySaveSlot)
+    if (auth.loggedIn) {
+      adjustShards((result as StorySaveSlot).shards - slot.shards)
+      currentSlot = { ...(result as StorySaveSlot), shards: 0 }
+    } else {
+      currentSlot = result as StorySaveSlot
+    }
+    saveSaveSlot($state.snapshot(currentSlot) as StorySaveSlot)
   }
 
   function handleSellCrystal(type: 'power' | 'weapon' | 'armor', grade: CrystalGrade) {
@@ -477,7 +524,8 @@
 
   function handleBuyStatCrystalShards(type: StatCrystalType) {
     if (!currentSlot) return
-    const result = buyStatCrystalWithShards($state.snapshot(currentSlot) as StorySaveSlot, type)
+    const slot = withAcctShards($state.snapshot(currentSlot) as StorySaveSlot)
+    const result = buyStatCrystalWithShards(slot, type)
     if (result === 'insufficient_shards') {
       crystalBuyError = 'Not enough shards.'
       setTimeout(() => { crystalBuyError = null }, 2500)
@@ -488,8 +536,13 @@
       setTimeout(() => { crystalBuyError = null }, 2500)
       return
     }
-    currentSlot = result
-    saveSaveSlot($state.snapshot(result) as StorySaveSlot)
+    if (auth.loggedIn) {
+      adjustShards((result as StorySaveSlot).shards - slot.shards)
+      currentSlot = { ...(result as StorySaveSlot), shards: 0 }
+    } else {
+      currentSlot = result as StorySaveSlot
+    }
+    saveSaveSlot($state.snapshot(currentSlot) as StorySaveSlot)
   }
 
   let endlessKeyBuyError = $state<string | null>(null)
@@ -510,7 +563,8 @@
 
   function handleBuyHeroSpin() {
     if (!currentSlot) return
-    const result = buyHeroSpin($state.snapshot(currentSlot) as StorySaveSlot)
+    const slot = withAcctShards($state.snapshot(currentSlot) as StorySaveSlot)
+    const result = buyHeroSpin(slot)
     if (result === 'locked') {
       heroSpinBuyError = 'Reach Level 2 to unlock Hero Spins.'
       setTimeout(() => { heroSpinBuyError = null }, 2500)
@@ -521,12 +575,18 @@
       setTimeout(() => { heroSpinBuyError = null }, 2500)
       return
     }
-    currentSlot = result
+    if (auth.loggedIn) {
+      adjustShards((result as StorySaveSlot).shards - slot.shards)
+      currentSlot = { ...(result as StorySaveSlot), shards: 0 }
+    } else {
+      currentSlot = result as StorySaveSlot
+    }
   }
 
   function handleBuyLegendSpin() {
     if (!currentSlot) return
-    const result = buyLegendSpin($state.snapshot(currentSlot) as StorySaveSlot)
+    const slot = withAcctShards($state.snapshot(currentSlot) as StorySaveSlot)
+    const result = buyLegendSpin(slot)
     if (result === 'locked') {
       legendSpinBuyError = 'Reach Level 4 to unlock Legend Spins.'
       setTimeout(() => { legendSpinBuyError = null }, 2500)
@@ -537,7 +597,12 @@
       setTimeout(() => { legendSpinBuyError = null }, 2500)
       return
     }
-    currentSlot = result
+    if (auth.loggedIn) {
+      adjustShards((result as StorySaveSlot).shards - slot.shards)
+      currentSlot = { ...(result as StorySaveSlot), shards: 0 }
+    } else {
+      currentSlot = result as StorySaveSlot
+    }
   }
 
   // ── Shop extras ────────────────────────────────────────────────────────────

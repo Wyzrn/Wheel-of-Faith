@@ -7,6 +7,7 @@
   import { settings } from '$lib/settings.svelte'
   import AttackFX from './AttackFX.svelte'
   import type { SpinResult } from '$lib/session/types'
+  import { auth } from '$lib/stores/auth.svelte'
 
   export interface BattleTeamMember {
     results: SpinResult[]
@@ -114,9 +115,45 @@
     return '#ef4444'
   }
 
+  function extractBattleModifiers(results: any[]): { critBonus: number; damageBonus: number; dodgeBonus: number } {
+    let critBonus = 0, damageBonus = 0, dodgeBonus = 0
+    for (const r of results ?? []) {
+      const label = (r.resultLabel ?? r.label ?? r.result ?? '').toLowerCase()
+      if (label.includes('crit') || label.includes('lethal') || label.includes('assassin')) critBonus += 0.05
+      if (label.includes('berserker') || label.includes('titan') || label.includes('fury') || label.includes('rampage')) damageBonus += 0.08
+      if (label.includes('dodge') || label.includes('phantom') || label.includes('shadow') || label.includes('wind')) dodgeBonus += 0.05
+      if (label.includes('god') || label.includes('divine') || label.includes('absolute')) { damageBonus += 0.12; critBonus += 0.08 }
+    }
+    return {
+      critBonus: Math.min(critBonus, 0.40),
+      damageBonus: Math.min(damageBonus, 0.50),
+      dodgeBonus: Math.min(dodgeBonus, 0.30),
+    }
+  }
+
+  let showCritSurge = $state(false)
+
   onMount(() => {
-    t1Chars    = team1.map(m => buildBattleCharacter(m.results, m.name))
-    t2Chars    = team2.map(m => buildBattleCharacter(m.results, m.name))
+    const gamepasses = auth.user?.gamepasses ?? []
+    const hasCritSurge = gamepasses.includes('crit_surge')
+    // Build base characters
+    const t1Base = team1.map(m => buildBattleCharacter(m.results, m.name))
+    const t2Base = team2.map(m => buildBattleCharacter(m.results, m.name))
+    // Apply ability modifiers to HP as effective score proxy
+    t1Chars = t1Base.map((c, i) => {
+      const mods = extractBattleModifiers(team1[i]?.results ?? [])
+      const critChance = mods.critBonus + (hasCritSurge ? 0.10 : 0)
+      const hasCrit = Math.random() < critChance
+      if (hasCrit) { showCritSurge = true; setTimeout(() => { showCritSurge = false }, 2500) }
+      const mult = 1 + mods.damageBonus + (hasCrit ? 0.25 : 0)
+      return { ...c, hp: Math.round(c.hp * mult), maxHp: Math.round(c.maxHp * mult) }
+    })
+    t2Chars = t2Base.map((c, i) => {
+      const mods = extractBattleModifiers(team2[i]?.results ?? [])
+      const hasCrit = Math.random() < mods.critBonus
+      const mult = 1 + mods.damageBonus + (hasCrit ? 0.25 : 0)
+      return { ...c, hp: Math.round(c.hp * mult), maxHp: Math.round(c.maxHp * mult) }
+    })
     t1DispHp   = t1Chars.map(c => c.hp)
     t2DispHp   = t2Chars.map(c => c.hp)
     allT2Names = new Set(t2Chars.map(c => c.name))
@@ -260,6 +297,13 @@
 
 <div class="pt-20 px-3 w-full flex flex-col"
   style="max-width: 800px; margin: 0 auto; min-height: 100dvh; padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 96px));">
+
+  <!-- CRITICAL HIT surge banner -->
+  {#if showCritSurge}
+    <div class="fixed top-16 inset-x-0 z-40 flex justify-center pointer-events-none" style="animation: resultReveal 0.3s ease-out forwards;">
+      <div class="px-5 py-2 rounded-xl font-bold text-sm" style="font-family: 'Cinzel', serif; background: rgba(253,224,71,0.2); border: 1px solid rgba(253,224,71,0.5); color: #fde047; letter-spacing: 0.12em;">⚡ CRITICAL HIT!</div>
+    </div>
+  {/if}
 
   <!-- ══ Intro + Fight phases ════════════════════════════════════════════════ -->
   {#if t1Chars.length > 0}

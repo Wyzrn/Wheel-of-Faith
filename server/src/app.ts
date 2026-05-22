@@ -12,6 +12,9 @@ import { friendRoutes } from './routes/friends.js'
 import { adminRoutes } from './routes/admin.js'
 import { storySlotRoutes } from './routes/storySlots.js'
 import { shopRoutes } from './routes/shop.js'
+import { challengeRoutes } from './routes/challenges.js'
+import { endlessRoutes } from './routes/endless.js'
+import { clanRoutes } from './routes/clans.js'
 
 export async function createApp() {
   const app = Fastify({
@@ -65,6 +68,9 @@ export async function createApp() {
   await app.register(adminRoutes, { prefix: '/api' })
   await app.register(storySlotRoutes, { prefix: '/api' })
   await app.register(shopRoutes, { prefix: '/api' })
+  await app.register(challengeRoutes, { prefix: '/api' })
+  await app.register(endlessRoutes, { prefix: '/api' })
+  await app.register(clanRoutes, { prefix: '/api' })
 
   if (process.env.NODE_ENV === 'production') {
     const handlerPath = new URL('../../build/handler.js', import.meta.url).href

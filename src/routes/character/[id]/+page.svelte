@@ -26,7 +26,15 @@
     <div style="min-width: 80px;"></div>
   </nav>
 
-  <div class="flex justify-center pt-20 pb-24 px-4">
+  <div class="flex justify-center pt-16 pb-2 px-4">
+    <div class="flex justify-center pt-2 pb-2">
+      <a href="/character/{data.character.shareId}/replay" class="flex items-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs" style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.2); color: #f0c040; text-decoration: none;">
+        <span class="material-symbols-outlined" style="font-size: 14px; font-variation-settings: 'FILL' 1;">play_circle</span>
+        Watch Replay
+      </a>
+    </div>
+  </div>
+  <div class="flex justify-center pb-24 px-4">
     <CharacterCard
       results={data.character.spins}
       name={data.character.name}

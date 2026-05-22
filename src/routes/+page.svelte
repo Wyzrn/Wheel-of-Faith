@@ -1991,6 +1991,20 @@
         >
           📖 Story Mode
         </a>
+        <a
+          href="/shop"
+          class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
+          style="font-family: 'Cinzel', serif; color: #f0c040; border: 1px solid rgba(240,192,64,0.35); text-decoration: none;"
+        >
+          ◆ Arcane Shop
+        </a>
+        <a
+          href="/challenges"
+          class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
+          style="font-family: 'Cinzel', serif; color: #48c8e0; border: 1px solid rgba(72,200,224,0.3); text-decoration: none;"
+        >
+          ✦ Daily Challenges
+        </a>
       </div>
 
       <!-- Bottom flavour -->

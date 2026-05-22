@@ -153,6 +153,28 @@ export async function shopRoutes(app: FastifyInstance) {
     reply.send({ received: true })
   })
 
+  // ── PATCH /shop/shards/adjust — increment or decrement account shards ────────
+  app.patch('/shop/shards/adjust', {
+    config: { rateLimit: { max: 60, timeWindow: '1m' } },
+  }, async (req: any, reply) => {
+    if (!req.userId) return reply.status(401).send({ error: 'login required' })
+    const { delta } = req.body as { delta: number }
+    if (typeof delta !== 'number' || !isFinite(delta)) return reply.status(400).send({ error: 'invalid delta' })
+    let user
+    if (delta < 0) {
+      user = await User.findOneAndUpdate(
+        { _id: req.userId, shards: { $gte: -delta } },
+        { $inc: { shards: delta } },
+        { new: true }
+      )
+      if (!user) return reply.status(402).send({ error: 'not enough shards' })
+    } else {
+      user = await User.findByIdAndUpdate(req.userId, { $inc: { shards: delta } }, { new: true })
+    }
+    if (!user) return reply.status(404).send({ error: 'user not found' })
+    reply.send({ shards: user.shards })
+  })
+
   // ── POST /shop/gamepasses/:id — buy a gamepass with account shards ─────────
   app.post('/shop/gamepasses/:id', {
     config: { rateLimit: { max: 20, timeWindow: '1m' } },

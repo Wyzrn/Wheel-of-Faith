@@ -15,6 +15,7 @@
   import type { StoryRosterEntry, StoryTeam } from '$lib/story/types'
   import AttackFX from '../AttackFX.svelte'
   import { settings } from '$lib/settings.svelte'
+  import { auth } from '$lib/stores/auth.svelte'
 
   let { slot, onExit }: {
     slot: StorySaveSlot
@@ -430,6 +431,17 @@
     return recordEndlessResult(slot, clearedWave, accDrops, teamCharIds)
   }
 
+  async function submitEndlessScore(wave: number, characterName: string, race: string, archetype: string, tier: string) {
+    if (!auth.loggedIn) return
+    try {
+      await fetch('/api/endless/score', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wave, characterName, race, archetype, tier }),
+      })
+    } catch { /* silent */ }
+  }
+
   function handleQuit() {
     const updated = buildFinalSlot(wavesCleared)
     onExit(updated)
@@ -437,6 +449,11 @@
 
   function handleGameOver() {
     const updated = buildFinalSlot(wavesCleared)
+    // Submit endless score using the best character in team (first member as representative)
+    const rep = teamMembers[0]
+    if (rep && wavesCleared > 0) {
+      submitEndlessScore(wavesCleared, rep.name, rep.race, rep.archetype, rep.overallTier)
+    }
     onExit(updated)
   }
 

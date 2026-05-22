@@ -19,6 +19,8 @@
     $page.url.pathname.startsWith('/character') ? 'characters' :
     $page.url.pathname.startsWith('/gallery') ? 'gallery' :
     $page.url.pathname.startsWith('/rivals') ? 'rivals' :
+    $page.url.pathname.startsWith('/challenges') ? 'challenges' :
+    $page.url.pathname.startsWith('/clan') ? 'clan' :
     $page.url.pathname.startsWith('/friends') ? 'friends' :
     $page.url.pathname.startsWith('/leaderboard') ? 'friends' :
     $page.url.pathname.startsWith('/profile') ? 'profile' :
@@ -77,6 +79,10 @@
     <a href="/rivals" class="nav-tab" class:active={activeTab === 'rivals'}>
       <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'rivals' ? 1 : 0};">swords</span>
       <span class="nav-label">Rivals</span>
+    </a>
+    <a href="/challenges" class="nav-tab" class:active={activeTab === 'challenges'}>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'challenges' ? 1 : 0};">task_alt</span>
+      <span class="nav-label">Tasks</span>
     </a>
     <a href="/friends" class="nav-tab" class:active={activeTab === 'friends'}>
       <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'friends' ? 1 : 0};">group</span>

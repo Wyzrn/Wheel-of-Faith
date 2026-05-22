@@ -41,6 +41,11 @@
     [...characters].sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0)).slice(0, 10)
   )
 
+  // Top 5 for Hall of Fame
+  let top5 = $derived(
+    [...characters].sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0)).slice(0, 5)
+  )
+
   // 10 most recent spin history entries
   let recentHistory = $derived(
     [...spinHistory].sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()).slice(0, 10)
@@ -141,6 +146,32 @@
           {/each}
         </div>
       </div>
+
+      <!-- Hall of Fame -->
+      {#if top5.length > 0}
+        <section class="mb-8">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: #f0c040; font-variation-settings: 'FILL' 1;">military_tech</span>
+            <h2 style="font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 700; color: #ffdf96; letter-spacing: 0.1em;">Hall of Fame</h2>
+            <span class="font-mono text-xs" style="color: #4e4635;">Top 5 characters</span>
+          </div>
+          <div class="flex flex-col gap-2">
+            {#each top5 as char, i}
+              <a href="/character/{char.shareId}" class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all hover:brightness-110" style="background: linear-gradient(135deg, rgba(240,192,64,0.08), rgba(240,192,64,0.03)); border: 1px solid rgba(240,192,64,{i === 0 ? '0.4' : '0.18'}); text-decoration: none;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 1rem; min-width: 24px; text-align: center;">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.9rem;">{char.name}</p>
+                  <p class="text-xs mt-0.5" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{char.race} · {char.archetype}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="font-bold text-sm" style="font-family: 'Cinzel', serif; color: #f0c040;">{char.overall_tier}</p>
+                  <p class="font-mono text-xs" style="color: #4e4635;">{char.overall_score?.toFixed(1) ?? '—'}</p>
+                </div>
+              </a>
+            {/each}
+          </div>
+        </section>
+      {/if}
 
       <!-- ─── Spin History ─────────────────────────────────────────────── -->
       {#if spinHistory.length > 0}

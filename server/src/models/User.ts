@@ -11,6 +11,8 @@ export interface IUser extends Document {
   shards: number              // account-level purchased shards (separate from slot shards)
   gamepasses: string[]        // owned gamepass IDs; stackable passes appear multiple times
   rerollInsuranceLastUsed?: Date
+  challengesCompleted: { type: string; date: string }[]
+  clanId?: mongoose.Types.ObjectId
   createdAt: Date
   comparePassword(plain: string): Promise<boolean>
 }
@@ -25,6 +27,8 @@ const UserSchema = new Schema<IUser>({
   shards:                    { type: Number, default: 0 },
   gamepasses:                { type: [String], default: [] },
   rerollInsuranceLastUsed:   { type: Date },
+  challengesCompleted:       { type: [{ type: { type: String }, date: { type: String } }], default: [] },
+  clanId:                    { type: Schema.Types.ObjectId, ref: 'Clan', default: null },
   createdAt:                 { type: Date, default: Date.now },
 })
 

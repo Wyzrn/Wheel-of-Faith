@@ -12,6 +12,9 @@
   let entries   = $state<LeaderEntry[]>([])
   let loading   = $state(true)
   let error     = $state<string | null>(null)
+  let activeTab = $state<'rivals' | 'endless'>('rivals')
+  let endlessEntries = $state<any[]>([])
+  let endlessLoading = $state(false)
 
   onMount(async () => {
     try {
@@ -25,6 +28,15 @@
       loading = false
     }
   })
+
+  async function loadEndless() {
+    if (endlessEntries.length) return
+    endlessLoading = true
+    try {
+      const res = await fetch('/api/endless/leaderboard')
+      if (res.ok) endlessEntries = (await res.json()).entries ?? []
+    } finally { endlessLoading = false }
+  }
 
   function rank(wins: number): string {
     if (wins >= 100) return 'Legend'
@@ -70,6 +82,44 @@
       <p class="mt-1 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Online rivals wins only</p>
     </div>
 
+    <!-- Tab switcher -->
+    <div class="flex gap-2 mb-6">
+      <button onclick={() => activeTab = 'rivals'} class="flex-1 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-widest transition-all" style="background: {activeTab === 'rivals' ? 'rgba(240,192,64,0.15)' : 'rgba(255,255,255,0.04)'}; border: 1px solid {activeTab === 'rivals' ? 'rgba(240,192,64,0.35)' : 'rgba(255,255,255,0.06)'}; color: {activeTab === 'rivals' ? '#f0c040' : '#9a907b'};">⚔ Rivals</button>
+      <button onclick={() => { activeTab = 'endless'; loadEndless() }} class="flex-1 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-widest transition-all" style="background: {activeTab === 'endless' ? 'rgba(72,200,224,0.15)' : 'rgba(255,255,255,0.04)'}; border: 1px solid {activeTab === 'endless' ? 'rgba(72,200,224,0.35)' : 'rgba(255,255,255,0.06)'}; color: {activeTab === 'endless' ? '#48c8e0' : '#9a907b'};">♾ Endless</button>
+    </div>
+
+    {#if activeTab === 'endless'}
+      {#if endlessLoading}
+        <div class="flex flex-col gap-3">{#each [1,2,3] as _}<div class="animate-pulse rounded-xl h-14" style="background: rgba(255,255,255,0.04);"></div>{/each}</div>
+      {:else if endlessEntries.length === 0}
+        <div class="text-center py-16">
+          <span class="material-symbols-outlined text-5xl" style="color: #4e4635; font-variation-settings: 'FILL' 1;">all_inclusive</span>
+          <p class="mt-3" style="font-family: 'Cinzel', serif; color: #9a907b;">No endless scores yet.</p>
+        </div>
+      {:else}
+        <div class="flex flex-col gap-2">
+          {#each endlessEntries as entry, i}
+            {@const isMe = auth.user?.username === entry.username}
+            <div class="flex items-center gap-3 rounded-xl px-4 py-3" style="background: {isMe ? 'rgba(72,200,224,0.06)' : 'linear-gradient(180deg, #161520, #0c0b14)'}; border: 1px solid {isMe ? 'rgba(72,200,224,0.3)' : 'rgba(72,200,224,0.08)'};">
+              <div class="shrink-0 w-8 flex items-center justify-center">
+                {#if i < 3}<span style="font-size: 1.2rem;">{['🥇','🥈','🥉'][i]}</span>{:else}<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #4e4635; font-weight: 700;">#{i+1}</span>{/if}
+              </div>
+              <div class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm" style="background: rgba(72,200,224,0.12); color: #48c8e0; font-family: 'Cinzel', serif;">{entry.username?.[0]?.toUpperCase() ?? '?'}</div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: {isMe ? '#48c8e0' : '#e4e1ee'}; font-size: 0.9rem;">{entry.username}</p>
+                <p class="text-xs mt-0.5 truncate" style="font-family: 'JetBrains Mono', monospace; color: #6b7280;">{entry.characterName} · {entry.race} · {entry.tier}</p>
+              </div>
+              <div class="shrink-0 text-right">
+                <p class="font-black" style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: #48c8e0;">{entry.wave}</p>
+                <p class="font-mono text-xs" style="color: #4e4635;">waves</p>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    {/if}
+
+    {#if activeTab === 'rivals'}
     <!-- My rank highlight -->
     {#if auth.loggedIn && auth.user && !loading && entries.length > 0}
       {@const myIdx = entries.findIndex(e => e.username === auth.user!.username)}
@@ -160,6 +210,7 @@
           </div>
         {/each}
       </div>
+    {/if}
     {/if}
 
   </div>
