@@ -404,6 +404,86 @@
 }
 
 /*
+ * METAL STAMP GREEN — emerald/forest
+ */
+.metal-stamp-green {
+  background: linear-gradient(162deg, #22c55e 0%, #15803d 40%, #166534 100%);
+  box-shadow: 0 4px 0 #052e16, 0 7px 0 #021a0e, 0 10px 0 #010e07, 0 16px 32px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(167,243,208,0.45), inset 0 -1px 0 rgba(0,0,0,0.45);
+  border: 1px solid #16a34a; border-top-color: #4ade80; border-bottom-color: #052e16;
+  cursor: pointer; transition: transform 0.10s, box-shadow 0.10s, filter 0.10s;
+}
+.metal-stamp-green:hover  { filter: brightness(1.10); }
+.metal-stamp-green:active {
+  transform: translateY(7px);
+  box-shadow: 0 1px 0 #052e16, 0 6px 12px rgba(0,0,0,0.55);
+}
+
+/*
+ * METAL STAMP PURPLE — violet
+ */
+.metal-stamp-purple {
+  background: linear-gradient(162deg, #a78bfa 0%, #7c3aed 40%, #5b21b6 100%);
+  box-shadow: 0 4px 0 #2e1065, 0 7px 0 #1c0a3e, 0 10px 0 #0d051f, 0 16px 32px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(221,214,254,0.45), inset 0 -1px 0 rgba(0,0,0,0.45);
+  border: 1px solid #7c3aed; border-top-color: #c4b5fd; border-bottom-color: #2e1065;
+  cursor: pointer; transition: transform 0.10s, box-shadow 0.10s, filter 0.10s;
+}
+.metal-stamp-purple:hover  { filter: brightness(1.10); }
+.metal-stamp-purple:active {
+  transform: translateY(7px);
+  box-shadow: 0 1px 0 #2e1065, 0 6px 12px rgba(0,0,0,0.55);
+}
+
+/*
+ * METAL STAMP SLATE — neutral dark silver
+ */
+.metal-stamp-slate {
+  background: linear-gradient(162deg, #64748b 0%, #334155 40%, #1e293b 100%);
+  box-shadow: 0 4px 0 #0f172a, 0 7px 0 #080e18, 0 10px 0 #04080e, 0 16px 32px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(203,213,225,0.35), inset 0 -1px 0 rgba(0,0,0,0.55);
+  border: 1px solid #475569; border-top-color: #94a3b8; border-bottom-color: #0f172a;
+  cursor: pointer; transition: transform 0.10s, box-shadow 0.10s, filter 0.10s;
+}
+.metal-stamp-slate:hover  { filter: brightness(1.10); }
+.metal-stamp-slate:active {
+  transform: translateY(7px);
+  box-shadow: 0 1px 0 #0f172a, 0 6px 12px rgba(0,0,0,0.55);
+}
+
+/*
+ * METAL STAMP TEAL — cyan/ocean
+ */
+.metal-stamp-teal {
+  background: linear-gradient(162deg, #22d3ee 0%, #0e7490 40%, #164e63 100%);
+  box-shadow: 0 4px 0 #042f2e, 0 7px 0 #021b1b, 0 10px 0 #010e0e, 0 16px 32px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(165,243,252,0.45), inset 0 -1px 0 rgba(0,0,0,0.45);
+  border: 1px solid #0e7490; border-top-color: #67e8f9; border-bottom-color: #042f2e;
+  cursor: pointer; transition: transform 0.10s, box-shadow 0.10s, filter 0.10s;
+}
+.metal-stamp-teal:hover  { filter: brightness(1.10); }
+.metal-stamp-teal:active {
+  transform: translateY(7px);
+  box-shadow: 0 1px 0 #042f2e, 0 6px 12px rgba(0,0,0,0.55);
+}
+
+/*
+ * METAL STAMP AMBER — orange/fire
+ */
+.metal-stamp-amber {
+  background: linear-gradient(162deg, #fb923c 0%, #c2410c 40%, #9a3412 100%);
+  box-shadow: 0 4px 0 #431407, 0 7px 0 #280a04, 0 10px 0 #130502, 0 16px 32px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(254,215,170,0.45), inset 0 -1px 0 rgba(0,0,0,0.45);
+  border: 1px solid #ea580c; border-top-color: #fdba74; border-bottom-color: #431407;
+  cursor: pointer; transition: transform 0.10s, box-shadow 0.10s, filter 0.10s;
+}
+.metal-stamp-amber:hover  { filter: brightness(1.10); }
+.metal-stamp-amber:active {
+  transform: translateY(7px);
+  box-shadow: 0 1px 0 #431407, 0 6px 12px rgba(0,0,0,0.55);
+}
+
+/*
  * CARVED GROOVE — deeply sunken inset channel
  */
 .carved-groove {

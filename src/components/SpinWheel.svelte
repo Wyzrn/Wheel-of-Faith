@@ -20,13 +20,14 @@
 
   const COLORS = ['#E63946','#457B9D','#2A9D8F','#E9C46A','#F4A261','#264653','#6A0572','#0077B6']
 
-  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0 }: {
+  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false }: {
     segments: WeightedSegment[]
     onSpinComplete: (resultIndex: number, resultLabel: string) => void
     categoryHue?: number
     soundEnabled?: boolean
     effectsEnabled?: boolean
     spinSpeedMultiplier?: number
+    cursedTheme?: boolean
   } = $props()
 
   let spinStatus = $state<SpinStatus>('IDLE')
@@ -419,7 +420,7 @@
   <!-- Shake wrapper — GSAP applies translate() here during spin -->
   <div bind:this={shakeEl} class="flex justify-center w-full">
   <!-- Wheel + canvas wrapper — CSS Grid overlay so canvas and SVG share identical pixel bounds -->
-  <div style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: drop-shadow(0 0 48px rgba(0,0,0,0.97)) drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(72,200,224,0.15));">
+  <div style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: drop-shadow(0 0 48px rgba(0,0,0,0.97)) {cursedTheme ? 'drop-shadow(0 0 32px rgba(139,92,246,0.5)) drop-shadow(0 0 16px rgba(100,0,200,0.4))' : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(72,200,224,0.15))'}; {cursedTheme ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
     <svg
       bind:this={svgEl}
       viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
@@ -671,6 +672,10 @@
   @keyframes hubJewelPulse {
     0%, 100% { filter: url(#hubGlow) brightness(1.0); }
     50%       { filter: url(#hubGlow) brightness(1.45); }
+  }
+  @keyframes cursedPulse {
+    0%, 100% { filter: drop-shadow(0 0 48px rgba(0,0,0,0.97)) drop-shadow(0 0 32px rgba(139,92,246,0.5)) drop-shadow(0 0 16px rgba(100,0,200,0.4)); }
+    50%       { filter: drop-shadow(0 0 48px rgba(0,0,0,0.97)) drop-shadow(0 0 48px rgba(139,92,246,0.8)) drop-shadow(0 0 24px rgba(180,0,255,0.6)); }
   }
   .rune-ring-main { animation: runeRingPulse 3.5s ease-in-out infinite; }
   .rune-ring-slow  { animation: runeRingPulse 7s   ease-in-out infinite 2s; }

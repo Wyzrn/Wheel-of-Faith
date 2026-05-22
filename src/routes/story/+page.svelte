@@ -531,11 +531,6 @@
       setTimeout(() => { crystalBuyError = null }, 2500)
       return
     }
-    if (result === 'daily_limit') {
-      crystalBuyError = `Daily limit reached for ${type} stat crystals.`
-      setTimeout(() => { crystalBuyError = null }, 2500)
-      return
-    }
     if (auth.loggedIn) {
       adjustShards((result as StorySaveSlot).shards - slot.shards)
       currentSlot = { ...(result as StorySaveSlot), shards: 0 }
@@ -1382,7 +1377,7 @@
         ['elite',     'Elite',     '#8b5cf6', '+3 to any stat', dailyElite,     eliteCanBuy,     STAT_CRYSTAL_DAILY_LIMITS.elite],
         ['legendary', 'Legendary', '#f59e0b', '+5 to any stat', dailyLegendary, legendaryCanBuy, STAT_CRYSTAL_DAILY_LIMITS.legendary],
       ] as const) as [type, label, color, desc, dailyUsed, canBuyGems, limit], i}
-        {@const canBuyShards = shards >= STAT_CRYSTAL_SHARD_COSTS[type] && dailyUsed < limit}
+        {@const canBuyShards = shards >= STAT_CRYSTAL_SHARD_COSTS[type]}
         {#if i > 0}<div style="height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0;"></div>{/if}
         <div class="flex items-center gap-3">
           <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
@@ -1391,7 +1386,7 @@
           </div>
           <div class="flex-1 min-w-0">
             <p class="font-bold text-xs" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{label}</p>
-            <p class="font-mono" style="font-size: 10px; color: var(--color-outline);">{desc} · {dailyUsed}/{limit} today</p>
+            <p class="font-mono" style="font-size: 10px; color: var(--color-outline);">{desc} · gems: {dailyUsed}/{limit}/day · shards: unlimited</p>
           </div>
           <div class="flex gap-1">
             <button onclick={() => handleBuyStatCrystal(type)} disabled={!canBuyGems}
@@ -1602,7 +1597,7 @@
     {:else}
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 max-w-[960px] mx-auto">
         {#each sortedRoster as entry (entry.id)}
-          <RosterCard {entry} onExpand={handleExpand} onSell={handleSell} />
+          <RosterCard {entry} onExpand={handleExpand} onSell={handleSell} goldFrame={auth.user?.gamepasses?.includes('gold_roster_frame') ?? false} />
         {/each}
       </div>
     {/if}
@@ -1669,6 +1664,7 @@
     onNextBattle={handleNextBattle}
     onBack={() => view = 'worlds'}
     onGoToTeams={() => { view = 'teams'; cancelTeamForm() }}
+    gamepasses={auth.user?.gamepasses ?? []}
   />
 {/if}
 
@@ -1677,6 +1673,7 @@
   <EndlessView
     slot={currentSlot}
     onExit={handleEndlessExit}
+    gamepasses={auth.user?.gamepasses ?? []}
   />
 {/if}
 

@@ -27,6 +27,7 @@
   import { weaponMasteryLabels } from '$lib/content/weapon-mastery-labels'
   import { settings } from '$lib/settings.svelte'
   import { menuSignal } from '$lib/menuState.svelte'
+  import { auth } from '$lib/stores/auth.svelte'
   import { powers as powersPool } from '$lib/content/powers'
   import Tutorial from '../components/Tutorial.svelte'
   import { appendSpinHistory } from '$lib/spinHistory'
@@ -717,7 +718,8 @@
 
       const forceTutorialWildcard = isStatSpin && def.category === 'strength' && tutorialStep > 0 && tutorialStep < 14 && !tutorialWildcardDone
       if (forceTutorialWildcard) tutorialWildcardDone = true
-      if (isStatSpin && (Math.random() < 0.05 || forceTutorialWildcard)) {
+      const hasDoubleLuck = auth.user?.gamepasses.includes('double_luck') ?? false
+      if (isStatSpin && (Math.random() < (hasDoubleLuck ? 0.10 : 0.05) || forceTutorialWildcard)) {
         // Stat wildcard: pick outcome from weighted table
         const outcome = forceTutorialWildcard
           ? (STAT_WILDCARD_OUTCOMES.find(o => o.type === 'blessing') ?? pickWeighted(STAT_WILDCARD_OUTCOMES))
@@ -761,7 +763,7 @@
         return
       }
 
-      if (isItemSpin && Math.random() < 0.20) {
+      if (isItemSpin && Math.random() < (hasDoubleLuck ? 0.40 : 0.20)) {
         // Item wildcard: bonus extra spin of the same category
         wildcardPendingLabel = resultLabel
         wildcardPendingIndex = resultIndex
@@ -1914,101 +1916,122 @@
 
   <!-- Main Menu — fixed overlay so game content beneath can't be scrolled to -->
   {#if showMenu}
-    <div class="fixed inset-0 z-30 flex flex-col items-center justify-center px-6 pt-14 overflow-y-auto" style="background: #07070d;">
+    <div class="fixed inset-0 z-30 flex flex-col items-center justify-center px-5 overflow-y-auto" style="background: #07070d;">
       <!-- Decorative top glow -->
-      <div class="absolute top-0 inset-x-0 h-64 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240,192,64,0.07), transparent);"></div>
+      <div class="absolute top-0 inset-x-0 h-48 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240,192,64,0.07), transparent);"></div>
 
       <!-- Logo mark -->
-      <div class="mb-8 flex flex-col items-center gap-5">
-        <!-- Concentric ring icon -->
-        <div class="relative flex items-center justify-center" style="width: 128px; height: 128px;">
+      <div class="mb-4 flex flex-col items-center gap-3">
+        <div class="relative flex items-center justify-center" style="width: 84px; height: 84px;">
           <div class="absolute inset-0 rounded-full" style="border: 1px solid rgba(240,192,64,0.15); transform: scale(1.28);"></div>
           <div class="absolute inset-0 rounded-full" style="border: 1px solid rgba(240,192,64,0.25); transform: scale(1.14);"></div>
           <div class="obsidian-slab rounded-full w-full h-full flex items-center justify-center relative overflow-hidden" style="border: 1px solid rgba(240,192,64,0.3);">
             <div class="noise-overlay"></div>
-            <span class="material-symbols-outlined relative z-10" style="font-size: 60px; color: #f0c040; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 16px rgba(240,192,64,0.6));">casino</span>
+            <span class="material-symbols-outlined relative z-10" style="font-size: 40px; color: #f0c040; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 12px rgba(240,192,64,0.6));">casino</span>
           </div>
         </div>
         <div class="text-center">
-          <h1 style="font-family: 'Cinzel', serif; font-size: clamp(2rem, 8vw, 3.2rem); font-weight: 900; color: #f0c040; letter-spacing: 0.18em; line-height: 1.1; text-shadow: 2px 2px 0 rgba(0,0,0,0.8), -1px -1px 0 rgba(255,255,255,0.08), 0 0 20px rgba(240,192,64,0.4);">WHEEL OF FATE</h1>
-          <p class="mt-3 text-sm tracking-[0.25em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Spin your destiny. Accept the consequences.</p>
+          <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 6vw, 2.2rem); font-weight: 900; color: #f0c040; letter-spacing: 0.18em; line-height: 1.1; text-shadow: 2px 2px 0 rgba(0,0,0,0.8), 0 0 16px rgba(240,192,64,0.4);">WHEEL OF FATE</h1>
+          <p class="mt-1.5 text-xs tracking-[0.22em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Spin your destiny. Accept the consequences.</p>
         </div>
       </div>
 
       <!-- Divider -->
-      <div class="flex items-center gap-4 mb-10" style="width: min(280px, 80vw);">
+      <div class="flex items-center gap-3 mb-5" style="width: min(260px, 80vw);">
         <div class="flex-1 h-px" style="background: linear-gradient(90deg, transparent, rgba(240,192,64,0.35));"></div>
-        <span style="color: #f0c040; font-size: 12px; opacity: 0.7;">✦</span>
+        <span style="color: #f0c040; font-size: 11px; opacity: 0.7;">✦</span>
         <div class="flex-1 h-px" style="background: linear-gradient(90deg, rgba(240,192,64,0.35), transparent);"></div>
       </div>
 
       <!-- Buttons -->
-      <div class="flex flex-col gap-4 w-full max-w-xs">
-        <div class="flex items-center gap-3">
+      <div class="flex flex-col gap-2.5 w-full max-w-[260px]">
+        <!-- Spin Your Fate + last char -->
+        <div class="flex items-center gap-2">
           <button
             onclick={() => { if (lastCharResults && lastCharName !== null) { showLastChar = true; showMenu = false } }}
-            class="flex items-center justify-center rounded-full shrink-0 transition-all"
-            style="width: 44px; height: 44px; background: rgba(125,211,252,{lastCharResults ? '0.08' : '0.02'}); border: 1px solid rgba(125,211,252,{lastCharResults ? '0.3' : '0.08'}); color: {lastCharResults ? '#7dd3fc' : '#2a3a4a'}; cursor: {lastCharResults ? 'pointer' : 'default'}; opacity: {lastCharResults ? '1' : '0.35'}; flex-shrink: 0;"
+            class="flex items-center justify-center rounded-lg shrink-0 transition-all"
+            style="width: 38px; height: 38px; background: rgba(125,211,252,{lastCharResults ? '0.08' : '0.02'}); border: 1px solid rgba(125,211,252,{lastCharResults ? '0.3' : '0.08'}); color: {lastCharResults ? '#7dd3fc' : '#2a3a4a'}; cursor: {lastCharResults ? 'pointer' : 'default'}; opacity: {lastCharResults ? '1' : '0.35'};"
             title={lastCharResults ? 'View Last Character' : 'Spin a character first'}
           >
-            <span class="material-symbols-outlined" style="font-size: 18px; font-variation-settings: 'FILL' 1;">person</span>
+            <span class="material-symbols-outlined" style="font-size: 16px; font-variation-settings: 'FILL' 1;">person</span>
           </button>
           <button
             onclick={() => { showMenu = false; if (tutorialStep === 0) tutorialStep = 1 }}
-            class="metal-stamp-gold flex-1 py-4 rounded-lg relative"
-            style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;"
+            class="metal-stamp-gold flex-1 py-3 rounded-lg relative"
+            style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;"
           >
             <div class="l-bracket" style="color: rgba(255,255,255,0.3);"></div>
             Spin Your Fate
           </button>
         </div>
-        <a
-          href="/characters"
-          class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
-          style="font-family: 'Cinzel', serif; color: #d2c5ae; border: 1px solid rgba(78,70,53,0.7); text-decoration: none;"
-        >
-          View Characters
-        </a>
-        <a
-          href="/gallery"
-          class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
-          style="font-family: 'Cinzel', serif; color: #a78bfa; border: 1px solid rgba(139,92,246,0.35); text-decoration: none;"
-        >
-          ✦ Public Gallery
-        </a>
+
+        <!-- Rivals Mode -->
         <button
           onclick={() => { showMenu = false; goto('/rivals') }}
-          class="metal-stamp-crimson w-full py-4 rounded-lg relative"
-          style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; color: #ffdad6;"
+          class="metal-stamp-crimson w-full py-3 rounded-lg relative"
+          style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: #ffdad6;"
         >
-          <div class="l-bracket" style="color: rgba(255,180,171,0.4);"></div>
+          <div class="l-bracket" style="color: rgba(255,180,171,0.35);"></div>
           ⚔ Rivals Mode
         </button>
-        <a
-          href="/story"
-          class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
-          style="font-family: 'Cinzel', serif; color: #6ee7b7; border: 1px solid rgba(52,211,153,0.35); text-decoration: none;"
-        >
-          📖 Story Mode
+
+        <!-- Story Mode -->
+        <a href="/story" style="text-decoration: none;">
+          <div class="metal-stamp-green w-full py-3 rounded-lg relative text-center cursor-pointer"
+            style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: #052e16;">
+            <div class="l-bracket" style="color: rgba(110,231,183,0.35);"></div>
+            📖 Story Mode
+          </div>
         </a>
-        <a
-          href="/shop"
-          class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
-          style="font-family: 'Cinzel', serif; color: #f0c040; border: 1px solid rgba(240,192,64,0.35); text-decoration: none;"
-        >
-          ◆ Arcane Shop
-        </a>
-        <a
-          href="/challenges"
-          class="obsidian-slab w-full py-4 rounded-lg text-sm tracking-[0.2em] uppercase font-bold text-center block transition-all hover:brightness-110"
-          style="font-family: 'Cinzel', serif; color: #48c8e0; border: 1px solid rgba(72,200,224,0.3); text-decoration: none;"
-        >
-          ✦ Daily Challenges
+
+        <!-- Two-col row: Gallery + Characters -->
+        <div class="flex gap-2">
+          <a href="/characters" style="text-decoration: none; flex: 1;">
+            <div class="metal-stamp-slate w-full py-3 rounded-lg relative text-center cursor-pointer"
+              style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #e4e1ee;">
+              <div class="l-bracket" style="color: rgba(200,192,220,0.25);"></div>
+              Characters
+            </div>
+          </a>
+          <a href="/gallery" style="text-decoration: none; flex: 1;">
+            <div class="metal-stamp-purple w-full py-3 rounded-lg relative text-center cursor-pointer"
+              style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #1e0a3c;">
+              <div class="l-bracket" style="color: rgba(167,139,250,0.35);"></div>
+              Gallery
+            </div>
+          </a>
+        </div>
+
+        <!-- Two-col row: Arcane Shop + Challenges -->
+        <div class="flex gap-2">
+          <a href="/shop" style="text-decoration: none; flex: 1;">
+            <div class="metal-stamp-gold w-full py-3 rounded-lg relative text-center cursor-pointer"
+              style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.13em; text-transform: uppercase; font-weight: 700; color: #1a0e00;">
+              <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
+              ◆ Shop
+            </div>
+          </a>
+          <a href="/challenges" style="text-decoration: none; flex: 1;">
+            <div class="metal-stamp-teal w-full py-3 rounded-lg relative text-center cursor-pointer"
+              style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.13em; text-transform: uppercase; font-weight: 700; color: #042f2e;">
+              <div class="l-bracket" style="color: rgba(72,200,224,0.3);"></div>
+              Challenges
+            </div>
+          </a>
+        </div>
+
+        <!-- Clan -->
+        <a href="/clan" style="text-decoration: none;">
+          <div class="metal-stamp-amber w-full py-3 rounded-lg relative text-center cursor-pointer"
+            style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: #1c0a00;">
+            <div class="l-bracket" style="color: rgba(251,146,60,0.35);"></div>
+            ⚑ Clan
+          </div>
         </a>
       </div>
 
       <!-- Bottom flavour -->
-      <p class="mt-14 text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">23 spins. One fate. No take-backs.</p>
+      <p class="mt-6 text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">23 spins. One fate. No take-backs.</p>
     </div>
   {/if}
 
@@ -2287,6 +2310,7 @@
               soundEnabled={settings.soundEnabled}
               effectsEnabled={settings.effectsEnabled}
               spinSpeedMultiplier={settings.spinSpeed}
+              cursedTheme={auth.user?.gamepasses?.includes('cursed_wheel') ?? false}
             />
           {/key}
 

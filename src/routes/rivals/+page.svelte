@@ -117,7 +117,7 @@
       sock.send(JSON.stringify({
         type: 'identify',
         userId: auth.user?.id,
-        username: auth.user?.username ?? 'Anonymous',
+        username: (auth.user?.gamepasses?.includes('legend_tag') ? '[LEGEND] ' : '') + (auth.user?.username ?? 'Anonymous'),
       }))
       onOpen?.()
     }

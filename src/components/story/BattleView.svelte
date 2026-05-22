@@ -16,7 +16,7 @@
   import AttackFX from '../AttackFX.svelte'
   import { settings } from '$lib/settings.svelte'
 
-  let { slot, world, absolutePlusLevel = 0, onBattleComplete, onNextBattle, onBack, onGoToTeams }: {
+  let { slot, world, absolutePlusLevel = 0, onBattleComplete, onNextBattle, onBack, onGoToTeams, gamepasses = [] }: {
     slot: StorySaveSlot
     world: WorldGrade
     absolutePlusLevel?: number
@@ -24,6 +24,7 @@
     onNextBattle?: (updated: StorySaveSlot) => void
     onBack: () => void
     onGoToTeams: () => void
+    gamepasses?: string[]
   } = $props()
 
   let plusMode = $derived(absolutePlusLevel > 0)
@@ -430,7 +431,19 @@
   }
 
   function confirmResult() {
-    if (!playerWon || !lastDrops) {
+    if (!playerWon) {
+      if (gamepasses.includes('revenge_protocol') && accDrops.gems > 0) {
+        const partialDrops: BattleDrops = { gems: Math.floor(accDrops.gems / 2), xp: 0, chanceDrops: [] }
+        onBattleComplete(applyBattleDrops(slot, partialDrops))
+      } else {
+        carryOverDeadIds = new Set()
+        phase = 'pick'
+        selectedTeam = null
+        resetBattleState()
+      }
+      return
+    }
+    if (!lastDrops) {
       carryOverDeadIds = new Set()
       phase = 'pick'
       selectedTeam = null

@@ -17,9 +17,10 @@
   import { settings } from '$lib/settings.svelte'
   import { auth } from '$lib/stores/auth.svelte'
 
-  let { slot, onExit }: {
+  let { slot, onExit, gamepasses = [] }: {
     slot: StorySaveSlot
     onExit: (updated: StorySaveSlot) => void
+    gamepasses?: string[]
   } = $props()
 
   const ELEMENT_FX: Record<string, { type: string; color: string }> = {
@@ -75,15 +76,20 @@
   function buildEndlessEnemies(wave: number): Enemy[][] {
     const grade = endlessGrade(wave)
     const spec = endlessSpec(wave)
-    const idx = WORLD_GRADES.indexOf(grade)
+    const hasBossMagnet = gamepasses.includes('boss_magnet')
     return spec.map(waveSpec =>
       waveSpec.flatMap(({ type, count }) =>
         Array.from({ length: count }, (_, i) => {
+          // boss_magnet: 25% chance to upgrade any warrior to elite, or elite to boss
+          let effectiveType = type
+          if (hasBossMagnet && effectiveType !== 'boss' && Math.random() < 0.25) {
+            effectiveType = effectiveType === 'elite' ? 'boss' : 'elite'
+          }
           const suffix = count > 1 ? ` ${i + 1}` : ''
-          const name = type === 'boss' ? `${grade} Overlord`
-            : type === 'elite' ? `${grade} Champion${suffix}`
+          const name = effectiveType === 'boss' ? `${grade} Overlord`
+            : effectiveType === 'elite' ? `${grade} Champion${suffix}`
             : `${grade} Warrior${suffix}`
-          return { grade, type, name } as Enemy
+          return { grade, type: effectiveType, name } as Enemy
         })
       )
     )

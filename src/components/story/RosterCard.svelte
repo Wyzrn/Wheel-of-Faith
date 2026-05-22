@@ -2,22 +2,27 @@
   import type { StoryRosterEntry } from '$lib/story/types'
   import TierBadge from '../TierBadge.svelte'
 
-  let { entry, onExpand, onSell }: {
+  let { entry, onExpand, onSell, goldFrame = false }: {
     entry: StoryRosterEntry
     onExpand: (id: string) => void
     onSell: (entry: StoryRosterEntry) => void
+    goldFrame?: boolean
   } = $props()
 
   const isHero   = entry.spinClass === 'hero'
   const isLegend = entry.spinClass === 'legend'
 
-  // Hero: amber glow   Legend: violet glow   Normal: subtle gold
-  const borderIdle  = isLegend ? 'rgba(168,85,247,0.5)'  : isHero ? 'rgba(251,191,36,0.5)'  : 'rgba(255,223,150,0.08)'
-  const borderHover = isLegend ? 'rgba(168,85,247,0.9)'  : isHero ? 'rgba(251,191,36,0.9)'  : 'rgba(240,192,64,0.25)'
-  const shadowIdle  = isLegend ? '0 0 14px rgba(168,85,247,0.35), 0 2px 8px rgba(0,0,0,0.5)'
+  // gold_roster_frame upgrades border to full gold; hero/legend keep their special glow on top
+  const borderIdle  = goldFrame    ? 'rgba(240,192,64,0.6)'
+                    : isLegend ? 'rgba(168,85,247,0.5)'  : isHero ? 'rgba(251,191,36,0.5)'  : 'rgba(255,223,150,0.08)'
+  const borderHover = goldFrame    ? 'rgba(240,192,64,1.0)'
+                    : isLegend ? 'rgba(168,85,247,0.9)'  : isHero ? 'rgba(251,191,36,0.9)'  : 'rgba(240,192,64,0.25)'
+  const shadowIdle  = goldFrame    ? '0 0 10px rgba(240,192,64,0.3), 0 2px 8px rgba(0,0,0,0.5)'
+                    : isLegend ? '0 0 14px rgba(168,85,247,0.35), 0 2px 8px rgba(0,0,0,0.5)'
                     : isHero   ? '0 0 14px rgba(251,191,36,0.3),  0 2px 8px rgba(0,0,0,0.5)'
                     :            '0 2px 8px rgba(0,0,0,0.4)'
-  const shadowHover = isLegend ? '0 0 22px rgba(168,85,247,0.55), 0 4px 16px rgba(0,0,0,0.6)'
+  const shadowHover = goldFrame    ? '0 0 20px rgba(240,192,64,0.5), 0 4px 16px rgba(0,0,0,0.6)'
+                    : isLegend ? '0 0 22px rgba(168,85,247,0.55), 0 4px 16px rgba(0,0,0,0.6)'
                     : isHero   ? '0 0 22px rgba(251,191,36,0.45), 0 4px 16px rgba(0,0,0,0.6)'
                     :            '0 4px 16px rgba(0,0,0,0.6)'
 </script>

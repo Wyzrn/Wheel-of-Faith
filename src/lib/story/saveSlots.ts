@@ -107,11 +107,11 @@ export const STAT_CRYSTAL_SELL_PRICES: Record<StatCrystalType, number> = {
   legendary: 100_000,
 }
 
-/** Fate Shard cost to buy one stat crystal (alternative to gems). Shares the daily limit. */
+/** Fate Shard cost to buy one stat crystal (alternative to gems). No daily limit for shard purchases. */
 export const STAT_CRYSTAL_SHARD_COSTS: Record<StatCrystalType, number> = {
-  common:    100,
-  elite:   1_000,
-  legendary: 10_000,
+  common:     50,
+  elite:     500,
+  legendary: 1_000,
 }
 
 /** Tier levels advanced per crystal type (not score points). */
@@ -807,12 +807,8 @@ export function sellStatCrystal(
 export function buyStatCrystalWithShards(
   slot: StorySaveSlot,
   type: StatCrystalType,
-): StorySaveSlot | 'insufficient_shards' | 'daily_limit' {
+): StorySaveSlot | 'insufficient_shards' {
   const cost = STAT_CRYSTAL_SHARD_COSTS[type]
-  const limit = STAT_CRYSTAL_DAILY_LIMITS[type]
-  const daily = getOrResetDaily(slot)
-
-  if (daily.statCrystals[type] >= limit) return 'daily_limit'
   if (slot.shards < cost) return 'insufficient_shards'
 
   return {
@@ -823,13 +819,6 @@ export function buyStatCrystalWithShards(
       statCrystals: {
         ...slot.inventory.statCrystals,
         [type]: slot.inventory.statCrystals[type] + 1,
-      },
-    },
-    dailyCrystalPurchases: {
-      ...daily,
-      statCrystals: {
-        ...daily.statCrystals,
-        [type]: daily.statCrystals[type] + 1,
       },
     },
   }
