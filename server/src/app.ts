@@ -36,8 +36,13 @@ export async function createApp() {
 
   await app.register(cookie)
 
+  const jwtSecret = process.env.JWT_SECRET
+  if (!jwtSecret && process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is required in production')
+  }
+
   await app.register(jwt, {
-    secret: process.env.JWT_SECRET ?? 'wheel-of-fate-dev-secret-change-in-production',
+    secret: jwtSecret ?? 'wheel-of-fate-dev-secret-change-in-production',
     cookie: { cookieName: 'wof_token', signed: false },
   })
 

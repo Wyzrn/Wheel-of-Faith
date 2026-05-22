@@ -5,11 +5,8 @@
   import { shop, gamepasses } from '$lib/stores/shop.svelte'
   import { SHARD_PACKS, GAMEPASSES, CATEGORY_LABELS, type GamepassCategory } from '$lib/shop/gamepasses'
 
-  let successShards = $derived(
-    $page.url.searchParams.get('success') === '1'
-      ? parseInt($page.url.searchParams.get('shards') ?? '0')
-      : 0
-  )
+  let isSuccess = $derived($page.url.searchParams.get('success') === '1')
+  let successShards = $state(0)
   let showSuccess = $state(false)
   let confirmId   = $state<string | null>(null)
   let buyResult   = $state<string | null>(null)
@@ -17,12 +14,15 @@
   const CATEGORIES: GamepassCategory[] = ['combat', 'spinning', 'roster', 'prestige']
 
   onMount(async () => {
-    if (successShards > 0) {
+    if (isSuccess && auth.loggedIn) {
+      const shardsBeforeRefresh = auth.user?.shards ?? 0
       await shop.refresh()
+      successShards = (auth.user?.shards ?? 0) - shardsBeforeRefresh
       showSuccess = true
       setTimeout(() => showSuccess = false, 5000)
+    } else if (auth.loggedIn) {
+      await shop.refresh()
     }
-    if (auth.loggedIn) await shop.refresh()
   })
 
   async function handleBuyGamepass(id: string) {
@@ -163,9 +163,12 @@
                         {gp.stackable && count > 1 ? `OWNED ×${count}` : 'OWNED'}
                       </span>
                     {/if}
+                    {#if gp.comingSoon && !owned}
+                      <span class="font-mono text-xs px-1.5 py-0.5 rounded" style="background: rgba(148,97,221,0.15); border: 1px solid rgba(148,97,221,0.3); color: #9461dd;">SOON</span>
+                    {/if}
                   </div>
                   <p class="text-xs mt-0.5" style="color: #9a907b; line-height: 1.4;">{gp.description}</p>
-                  <p class="font-mono text-xs mt-1.5" style="color: #48c8e0;">{gp.effect}</p>
+                  <p class="font-mono text-xs mt-1.5" style="color: {gp.comingSoon ? '#9a907b' : '#48c8e0'};">{gp.effect}{#if gp.comingSoon} · effect coming soon{/if}</p>
                 </div>
               </div>
 

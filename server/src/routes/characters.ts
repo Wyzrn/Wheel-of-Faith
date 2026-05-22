@@ -170,7 +170,9 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /characters/:shareId — fetch character by share ID
   fastify.get('/characters/:shareId', async (request, reply) => {
     const { shareId } = request.params as { shareId: string }
-    const character = await Character.findOne({ shareId }).lean()
+    const character = await Character.findOne({ shareId })
+      .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins elementWeaknesses share_in_gallery')
+      .lean()
 
     if (!character) {
       return reply.code(404).send({ error: 'Character not found' })
@@ -194,17 +196,20 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
   }, async (request, reply) => {
+    const userId = (request as any).userId
+    if (!userId) return reply.code(401).send({ error: 'not authenticated' })
+
     const { shareId } = request.params as { shareId: string }
     const { share_in_gallery } = request.body as { share_in_gallery: boolean }
 
     const character = await Character.findOneAndUpdate(
-      { shareId },
+      { shareId, userId: new mongoose.Types.ObjectId(userId) },
       { share_in_gallery },
       { new: true }
     ).lean()
 
     if (!character) {
-      return reply.code(404).send({ error: 'Character not found' })
+      return reply.code(404).send({ error: 'Character not found or not yours' })
     }
 
     return reply.send({ share_in_gallery: character.share_in_gallery })
@@ -247,11 +252,14 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.patch('/characters/:shareId/rivals-win', {
     config: {
       rateLimit: {
-        max: 100,
+        max: 30,
         timeWindow: '10 minutes',
       },
     },
   }, async (request, reply) => {
+    const userId = (request as any).userId
+    if (!userId) return reply.code(401).send({ error: 'not authenticated' })
+
     const { shareId } = request.params as { shareId: string }
     const character = await Character.findOneAndUpdate(
       { shareId },

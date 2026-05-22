@@ -130,7 +130,7 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
           player.room = room
           send(socket, { type: 'room_joined', code })
           if (room.p1) send(room.p1.ws, { type: 'partner_joined', username: player.username })
-          send(socket,  { type: 'partner_joined', username: room.p1?.username })
+          send(socket,  { type: 'partner_joined', username: room.p1?.username ?? 'Opponent' })
           break
         }
 

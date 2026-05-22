@@ -62,6 +62,10 @@ export const auth = {
     _user = null
   },
 
+  updateShopData(shards: number, gamepasses: string[]) {
+    if (_user) _user = { ..._user, shards, gamepasses }
+  },
+
   async recordBattleResult(won: boolean) {
     if (!_user) return
     await fetch(`${API}/auth/rivals-result`, {

@@ -66,11 +66,7 @@ export const shop = {
         _error = msg
         return msg
       }
-      // Update auth user with new shards + gamepasses
-      if (auth.user) {
-        auth.user.shards     = data.shards
-        auth.user.gamepasses = data.gamepasses
-      }
+      auth.updateShopData(data.shards, data.gamepasses)
       return null
     } catch {
       _error = 'Network error — try again'
@@ -87,10 +83,7 @@ export const shop = {
       const res = await fetch(`${API}/shop/me`, { credentials: 'include' })
       if (!res.ok) return
       const data = await res.json()
-      if (auth.user) {
-        auth.user.shards     = data.shards
-        auth.user.gamepasses = data.gamepasses
-      }
+      auth.updateShopData(data.shards, data.gamepasses)
     } catch { /* silent */ }
   },
 

@@ -111,6 +111,7 @@
 
   // ── WebSocket ──────────────────────────────────────────────────────────────
   function connectWs(onOpen?: () => void): WebSocket {
+    if (ws && ws.readyState !== WebSocket.CLOSED) ws.close()
     const sock = new WebSocket(WS_URL)
     sock.onopen = () => {
       sock.send(JSON.stringify({

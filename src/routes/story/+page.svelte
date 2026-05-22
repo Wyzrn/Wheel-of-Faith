@@ -22,6 +22,8 @@
   } from '$lib/story/saveSlots'
   import type { StoryTeam } from '$lib/story/types'
   import { getGemValue } from '$lib/story/shards'
+  import { auth } from '$lib/stores/auth.svelte'
+  import { getEffectiveMaxSpins, getEffectiveRosterCapacity } from '$lib/story/saveSlots'
   import { getStageTierLabel } from '$lib/story/raceTiers'
   import type { WorldGrade } from '$lib/story/worlds'
   import type { StoryRosterEntry } from '$lib/story/types'
@@ -70,9 +72,10 @@
   function tickRefresh() {
     if (!currentSlot) return
     const snapshot = $state.snapshot(currentSlot) as StorySaveSlot
-    const refreshed = applySpinRefresh(snapshot)
+    const maxSpins = getEffectiveMaxSpins(auth.user?.gamepasses ?? [])
+    const refreshed = applySpinRefresh(snapshot, maxSpins)
     if (refreshed !== snapshot) currentSlot = refreshed
-    refreshMs = msUntilNextRefresh(refreshed)
+    refreshMs = msUntilNextRefresh(refreshed, maxSpins)
   }
 
   // ── Derived values ─────────────────────────────────────────────────────────
@@ -88,7 +91,9 @@
   let hasHeroSpins   = $derived(playerLevel >= 2 && heroSpins > 0)
   let hasLegendSpins = $derived(playerLevel >= 4 && legendSpins > 0)
   let hasAnySpin     = $derived(spinsRemaining > 0 || bonusSpins > 0 || hasHeroSpins || hasLegendSpins)
-  let rosterCapacity = $derived(currentSlot?.rosterCapacity ?? 5)
+  let rosterCapacity = $derived(
+    currentSlot ? getEffectiveRosterCapacity(currentSlot, auth.user?.gamepasses ?? []) : 5
+  )
   let rosterUpgradeCount = $derived(currentSlot?.rosterUpgradeCount ?? 0)
   let nextUpgradeCost = $derived(rosterUpgradeCost(rosterUpgradeCount))
   let statCrystalInventory  = $derived(currentSlot?.inventory?.statCrystals  ?? { common: 0, elite: 0, legendary: 0 })
@@ -147,12 +152,12 @@
   function selectSlot(id: SlotId) {
     const existing = loadSaveSlot(id)
     let slot = existing ?? createSaveSlot(id)
-    // Award any pending spin refreshes immediately on load
-    slot = applySpinRefresh(slot)
+    const maxSpins = getEffectiveMaxSpins(auth.user?.gamepasses ?? [])
+    slot = applySpinRefresh(slot, maxSpins)
     saveSaveSlot(slot)
     currentSlot = slot
     slots = loadAllSlots()
-    refreshMs = msUntilNextRefresh(slot)
+    refreshMs = msUntilNextRefresh(slot, maxSpins)
     view = 'hub'
   }
 
@@ -315,7 +320,8 @@
 
   function confirmSell() {
     if (!sellTarget || !currentSlot) return
-    const value = getGemValue(sellTarget.overallTier)
+    let value = getGemValue(sellTarget.overallTier)
+    if (auth.user?.gamepasses.includes('sell_bonus')) value = Math.ceil(value * 1.25)
     currentSlot = sellCharacterFromSlot(
       $state.snapshot(currentSlot) as StorySaveSlot,
       sellTarget.id,

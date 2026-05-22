@@ -109,16 +109,15 @@ export async function shopRoutes(app: FastifyInstance) {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
     if (!webhookSecret) {
-      app.log.warn('STRIPE_WEBHOOK_SECRET not set — skipping verification (dev only)')
+      app.log.error('STRIPE_WEBHOOK_SECRET not set — rejecting all webhook calls')
+      return reply.status(500).send({ error: 'webhook not configured' })
     }
 
     let event: Stripe.Event
     try {
       const stripe = getStripe()
       const rawBody = (req as any).rawBody ?? req.body
-      event = webhookSecret
-        ? stripe.webhooks.constructEvent(rawBody, sig, webhookSecret)
-        : (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) as Stripe.Event
+      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret)
     } catch (err: any) {
       app.log.error({ err }, 'Stripe webhook signature verification failed')
       return reply.status(400).send({ error: 'invalid signature' })
@@ -164,21 +163,25 @@ export async function shopRoutes(app: FastifyInstance) {
     const cost = GAMEPASS_COSTS[id]
     if (cost === undefined) return reply.status(400).send({ error: 'unknown gamepass' })
 
-    const user = await User.findById(req.userId)
-    if (!user) return reply.status(404).send({ error: 'user not found' })
-
-    // Non-stackable check
-    if (NON_STACKABLE.has(id) && user.gamepasses.includes(id)) {
-      return reply.status(409).send({ error: 'already owned' })
+    const query: Record<string, unknown> = {
+      _id: req.userId,
+      shards: { $gte: cost },
     }
+    if (NON_STACKABLE.has(id)) query.gamepasses = { $ne: id }
 
-    if (user.shards < cost) {
-      return reply.status(402).send({ error: 'not enough shards', need: cost, have: user.shards })
+    const user = await User.findOneAndUpdate(
+      query,
+      { $inc: { shards: -cost }, $push: { gamepasses: id } },
+      { new: true },
+    )
+    if (!user) {
+      const exists = await User.findById(req.userId).lean()
+      if (!exists) return reply.status(404).send({ error: 'user not found' })
+      if (NON_STACKABLE.has(id) && exists.gamepasses.includes(id)) {
+        return reply.status(409).send({ error: 'already owned' })
+      }
+      return reply.status(402).send({ error: 'not enough shards', need: cost, have: exists.shards })
     }
-
-    user.shards -= cost
-    user.gamepasses.push(id)
-    await user.save()
 
     reply.send({ shards: user.shards, gamepasses: user.gamepasses })
   })
@@ -189,14 +192,20 @@ export async function shopRoutes(app: FastifyInstance) {
   }, async (req: any, reply) => {
     if (!req.userId) return reply.status(401).send({ error: 'login required' })
 
-    const user = await User.findById(req.userId).lean()
+    const user = await User.findById(req.userId)
     if (!user) return reply.status(404).send({ error: 'user not found' })
     if (!user.gamepasses.includes('reroll_insurance')) {
       return reply.status(403).send({ error: 'gamepass not owned' })
     }
 
-    // Track daily use via a lightweight cache key approach
-    // We'll store the last-used date in the session/metadata — for now just authorize
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    if (user.rerollInsuranceLastUsed && user.rerollInsuranceLastUsed >= today) {
+      return reply.status(429).send({ error: 'daily reroll already used' })
+    }
+
+    user.rerollInsuranceLastUsed = new Date()
+    await user.save()
     reply.send({ authorized: true })
   })
 

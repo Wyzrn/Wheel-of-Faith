@@ -114,6 +114,7 @@
   let heightModifiers = $state<Record<string, number>>({})
   // Wildcard state — phase drives the overlay lifecycle
   let wildcardPhase = $state<'idle' | 'flashing' | 'reveal'>('idle')
+  let wildcardRevealTimeout: ReturnType<typeof setTimeout> | null = null
   let tutorialWildcardDone = $state(false)
   let wildcardOutcomeType = $state('')
   let wildcardOutcomeLabel = $state('')
@@ -755,7 +756,8 @@
         wildcardOutcomeLabel = outcome.outcomeLabel
         wildcardOutcomeDesc = outcome.desc
         wildcardPhase = 'flashing'
-        setTimeout(() => { wildcardPhase = 'reveal' }, 3000)
+        if (wildcardRevealTimeout) clearTimeout(wildcardRevealTimeout)
+        wildcardRevealTimeout = setTimeout(() => { wildcardPhase = 'reveal' }, 3000)
         return
       }
 
@@ -768,7 +770,8 @@
         wildcardOutcomeLabel = 'WILDCARD BONUS'
         wildcardOutcomeDesc = `An extra ${def.displayName.toLowerCase()} spin appears! The wheel rewards your luck.`
         wildcardPhase = 'flashing'
-        setTimeout(() => { wildcardPhase = 'reveal' }, 3000)
+        if (wildcardRevealTimeout) clearTimeout(wildcardRevealTimeout)
+        wildcardRevealTimeout = setTimeout(() => { wildcardPhase = 'reveal' }, 3000)
         return
       }
     }
@@ -930,9 +933,9 @@
     } else if (def.category === 'weakness') {
       corruptionScore += 1
     } else if (def.category === 'racialAbility') {
-      usedRacialAbilities.add(resultLabel)
+      usedRacialAbilities = new Set([...usedRacialAbilities, resultLabel])
     } else if (def.category === 'archetypeAbility') {
-      usedArchetypeAbilities.add(resultLabel)
+      usedArchetypeAbilities = new Set([...usedArchetypeAbilities, resultLabel])
     } else if (def.category === 'possessionRace') {
       // Just record who's possessing — no ability/weakness splicing unlike a real race land
       showAnnouncement = `Possessed by ${resultLabel}!`
@@ -1542,13 +1545,17 @@
     // Step 3: SAVE with $state.snapshot (prevents Proxy serialization issues)
     // Save currentSpinIndex + 1 so that a reload after a spin lands always resumes at
     // the NEXT spin, not the just-completed one (prevents re-spinning for better results).
-    saveSession({
-      ...currentSession,
-      completedSpins: $state.snapshot(results),
-      spinQueue: $state.snapshot(spinQueue),
-      currentSpinIndex: currentSpinIndex + 1,
-      pendingStatBonuses: $state.snapshot(pendingStatBonuses),
-    } as SessionState)
+    try {
+      saveSession({
+        ...currentSession,
+        completedSpins: $state.snapshot(results),
+        spinQueue: $state.snapshot(spinQueue),
+        currentSpinIndex: currentSpinIndex + 1,
+        pendingStatBonuses: $state.snapshot(pendingStatBonuses),
+      } as SessionState)
+    } catch (e) {
+      console.error('Failed to save session to localStorage:', e)
+    }
 
     isRevealed = true
   }
@@ -1569,6 +1576,7 @@
     const idx = wildcardPendingIndex
     const lbl = wildcardPendingLabel
     const otype = wildcardOutcomeType
+    if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
     wildcardPhase = 'idle'
     skipWildcard = true
 
@@ -1648,6 +1656,7 @@
     activePowerPool = []
     statBonusOffsets = {}
     heightModifiers = {}
+    if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
     wildcardPhase = 'idle'
     corruptionScore = 0
     raceOverride = null
@@ -1702,6 +1711,7 @@
     activePowerPool = []
     statBonusOffsets = {}
     heightModifiers = {}
+    if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
     wildcardPhase = 'idle'
     corruptionScore = 0
     raceOverride = null
@@ -1734,6 +1744,7 @@
     activePowerPool = []
     statBonusOffsets = {}
     heightModifiers = {}
+    if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
     wildcardPhase = 'idle'
     corruptionScore = 0
     raceOverride = null
@@ -1766,6 +1777,7 @@
     activePowerPool = []
     statBonusOffsets = {}
     heightModifiers = {}
+    if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
     wildcardPhase = 'idle'
     corruptionScore = 0
     raceOverride = null
@@ -1798,7 +1810,8 @@
       activePowerPool = []
       statBonusOffsets = {}
       heightModifiers = {}
-      wildcardPhase = 'idle'
+      if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
+    wildcardPhase = 'idle'
       corruptionScore = 0
       raceOverride = null
       p2StartedAt = new Date().toISOString()

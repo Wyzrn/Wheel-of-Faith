@@ -10,22 +10,15 @@ declare module 'fastify' {
 }
 
 export async function authRoutes(app: FastifyInstance) {
-  // ── Middleware: parse JWT from cookie and attach userId ──────────────────
-  app.addHook('preHandler', async (req) => {
-    try {
-      const payload = await (req as any).jwtVerify()
-      req.userId = (payload as any).id
-    } catch {
-      // Not authenticated — userId stays undefined
-    }
-  })
-
   // ── Register with username + password ────────────────────────────────────
   app.post('/auth/register', {
     config: { rateLimit: { max: 5, timeWindow: '1m' } },
   }, async (req, reply) => {
     const { username, email, password } = req.body as { username: string; email?: string; password: string }
     if (!username || !password) return reply.status(400).send({ error: 'username and password required' })
+    if (!/^[a-zA-Z0-9_.-]{3,24}$/.test(username)) {
+      return reply.status(400).send({ error: 'username may only contain letters, numbers, _, ., - (3–24 chars)' })
+    }
     if (password.length < 6) return reply.status(400).send({ error: 'password must be at least 6 characters' })
 
     const exists = await User.findOne({ $or: [{ username }, ...(email ? [{ email }] : [])] })

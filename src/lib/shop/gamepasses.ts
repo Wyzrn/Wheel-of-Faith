@@ -24,6 +24,7 @@ export interface GamepassDef {
   costShards: number
   stackable: boolean       // can be bought multiple times
   icon: string             // material-symbols name
+  comingSoon?: boolean     // effect not yet active in-game
 }
 
 export const GAMEPASSES: GamepassDef[] = [
@@ -47,6 +48,7 @@ export const GAMEPASSES: GamepassDef[] = [
     costShards: 1_500,
     stackable: false,
     icon: 'bolt',
+    comingSoon: true,
   },
   {
     id: 'revenge_protocol',
@@ -57,6 +59,7 @@ export const GAMEPASSES: GamepassDef[] = [
     costShards: 800,
     stackable: false,
     icon: 'shield_with_heart',
+    comingSoon: true,
   },
   {
     id: 'boss_magnet',
@@ -67,6 +70,7 @@ export const GAMEPASSES: GamepassDef[] = [
     costShards: 1_200,
     stackable: false,
     icon: 'skull',
+    comingSoon: true,
   },
 
   // ── Spinning ──────────────────────────────────────────────────────────────
@@ -99,6 +103,7 @@ export const GAMEPASSES: GamepassDef[] = [
     costShards: 3_000,
     stackable: false,
     icon: 'star',
+    comingSoon: true,
   },
 
   // ── Roster / Progression ──────────────────────────────────────────────────
@@ -143,6 +148,7 @@ export const GAMEPASSES: GamepassDef[] = [
     costShards: 500,
     stackable: false,
     icon: 'military_tech',
+    comingSoon: true,
   },
   {
     id: 'cursed_wheel',
@@ -153,6 +159,7 @@ export const GAMEPASSES: GamepassDef[] = [
     costShards: 800,
     stackable: false,
     icon: 'dark_mode',
+    comingSoon: true,
   },
   {
     id: 'gold_roster_frame',
@@ -163,6 +170,7 @@ export const GAMEPASSES: GamepassDef[] = [
     costShards: 600,
     stackable: false,
     icon: 'workspace_premium',
+    comingSoon: true,
   },
 ]
 
