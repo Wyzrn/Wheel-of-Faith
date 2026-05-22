@@ -8,6 +8,8 @@ export interface IUser extends Document {
   rivalsWins: number
   rivalsLosses: number
   gamesPlayed: number
+  shards: number              // account-level purchased shards (separate from slot shards)
+  gamepasses: string[]        // owned gamepass IDs; stackable passes appear multiple times
   createdAt: Date
   comparePassword(plain: string): Promise<boolean>
 }
@@ -19,6 +21,8 @@ const UserSchema = new Schema<IUser>({
   rivalsWins:   { type: Number, default: 0 },
   rivalsLosses: { type: Number, default: 0 },
   gamesPlayed:  { type: Number, default: 0 },
+  shards:       { type: Number, default: 0 },
+  gamepasses:   { type: [String], default: [] },
   createdAt:    { type: Date, default: Date.now },
 })
 

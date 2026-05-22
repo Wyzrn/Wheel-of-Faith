@@ -23,6 +23,7 @@
     $page.url.pathname.startsWith('/leaderboard') ? 'friends' :
     $page.url.pathname.startsWith('/profile') ? 'profile' :
     $page.url.pathname.startsWith('/battle') ? 'battle' :
+    $page.url.pathname.startsWith('/shop') ? 'shop' :
     'home'
   )
 
@@ -80,6 +81,10 @@
     <a href="/friends" class="nav-tab" class:active={activeTab === 'friends'}>
       <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'friends' ? 1 : 0};">group</span>
       <span class="nav-label">Friends</span>
+    </a>
+    <a href="/shop" class="nav-tab" class:active={activeTab === 'shop'}>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'shop' ? 1 : 0};">storefront</span>
+      <span class="nav-label">Shop</span>
     </a>
     <a href={auth.loggedIn ? '/profile' : '/login'} class="nav-tab" class:active={activeTab === 'profile'}>
       <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'profile' ? 1 : 0};">{auth.loggedIn ? 'account_circle' : 'login'}</span>

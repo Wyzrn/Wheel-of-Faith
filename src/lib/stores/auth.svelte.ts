@@ -7,6 +7,8 @@ export interface AuthUser {
   rivalsWins: number
   rivalsLosses: number
   gamesPlayed: number
+  shards: number
+  gamepasses: string[]
 }
 
 // Svelte 5 reactive auth state

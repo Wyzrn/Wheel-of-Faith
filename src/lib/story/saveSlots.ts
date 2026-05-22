@@ -423,22 +423,35 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
  * Awards spins based on elapsed 3-hour intervals since last refresh.
  * Returns updated slot (may be unchanged if no spins due). Does NOT save.
  */
-export function applySpinRefresh(slot: StorySaveSlot): StorySaveSlot {
+export function applySpinRefresh(slot: StorySaveSlot, maxSpins = MAX_DAILY_SPINS): StorySaveSlot {
   const now = Date.now()
   const last = new Date(slot.spinsLastRefreshedAt).getTime()
   const intervals = Math.floor((now - last) / SPIN_REFRESH_INTERVAL_MS)
   if (intervals <= 0) return slot
-  const newSpins = Math.min(slot.spinsRemaining + intervals, MAX_DAILY_SPINS)
+  const newSpins = Math.min(slot.spinsRemaining + intervals, maxSpins)
   const newRefreshTime = new Date(last + intervals * SPIN_REFRESH_INTERVAL_MS).toISOString()
   return { ...slot, spinsRemaining: newSpins, spinsLastRefreshedAt: newRefreshTime }
 }
 
 /** Returns milliseconds until the next spin refresh (0 if spins already at max). */
-export function msUntilNextRefresh(slot: StorySaveSlot): number {
-  if (slot.spinsRemaining >= MAX_DAILY_SPINS) return 0
+export function msUntilNextRefresh(slot: StorySaveSlot, maxSpins = MAX_DAILY_SPINS): number {
+  if (slot.spinsRemaining >= maxSpins) return 0
   const last = new Date(slot.spinsLastRefreshedAt).getTime()
   const nextRefresh = last + SPIN_REFRESH_INTERVAL_MS
   return Math.max(0, nextRefresh - Date.now())
+}
+
+// ── Gamepass-aware helpers ─────────────────────────────────────────────────────
+
+/** Effective max daily spins — doubled with daily_booster gamepass. */
+export function getEffectiveMaxSpins(gamepasses: string[]): number {
+  return gamepasses.includes('daily_booster') ? MAX_DAILY_SPINS * 2 : MAX_DAILY_SPINS
+}
+
+/** Effective roster capacity — +25 per expanded_roster purchase. */
+export function getEffectiveRosterCapacity(slot: StorySaveSlot, gamepasses: string[]): number {
+  const bonus = gamepasses.filter(g => g === 'expanded_roster').length * 25
+  return slot.rosterCapacity + bonus
 }
 
 /** Loads a save slot from localStorage. Returns null when empty or corrupted. */
@@ -637,18 +650,19 @@ export interface BattleDrops {
  * Applies battle drops to the slot — adds gems, shards (from fateShard drops),
  * and crystals to inventory.
  */
-export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops): StorySaveSlot {
+export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops, gamepasses: string[] = []): StorySaveSlot {
   let shards = slot.shards
   let endlessKeys = slot.endlessKeys
   let bonusSpins = slot.bonusSpins
   const inventory = { ...slot.inventory }
+  const shardMultiplier = gamepasses.includes('double_shard_drop') ? 2 : 1
 
   let heroSpins = slot.heroSpins ?? 0
   let legendSpins = slot.legendSpins ?? 0
 
   for (const drop of drops.chanceDrops) {
     if (drop === 'fateShard') {
-      shards++
+      shards += shardMultiplier
     } else if (drop === 'endlessKey') {
       endlessKeys++
     } else if (drop === 'spin') {

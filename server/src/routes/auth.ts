@@ -66,7 +66,7 @@ export async function authRoutes(app: FastifyInstance) {
     if (!req.userId) return reply.status(401).send({ error: 'not authenticated' })
     const user = await User.findById(req.userId).lean()
     if (!user) return reply.status(404).send({ error: 'user not found' })
-    reply.send({ user: { id: user._id, username: user.username, rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed, email: user.email } })
+    reply.send({ user: { id: user._id, username: user.username, rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed, email: user.email, shards: user.shards ?? 0, gamepasses: user.gamepasses ?? [] } })
   })
 
   // ── Get user profile (public) ─────────────────────────────────────────────

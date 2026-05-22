@@ -23,6 +23,7 @@
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   import { settings } from '$lib/settings.svelte'
+  import { gamepasses } from '$lib/stores/shop.svelte'
   import { randomCharacterName } from '$lib/story/naming'
   import {
     classifyAbility, generatePowerDescription, generateWeaponDescription,
@@ -415,7 +416,8 @@
       const isStatSpin = STAT_CATEGORIES.has(currentDef.category) && !currentDef.isReroll
       const isItemSpin = currentDef.category === 'power' || currentDef.category === 'weapon' || currentDef.category === 'armor'
 
-      if (isStatSpin && Math.random() < 0.05) {
+      const wildcardChance = gamepasses.has('double_luck') ? 0.10 : 0.05
+      if (isStatSpin && Math.random() < wildcardChance) {
         const outcome = pickWeighted(STAT_WILDCARD_OUTCOMES)
         const statSegs = getSegmentsForCategory(currentDef.category as SpinCategory) as { label: string; tier?: string; weight: number }[]
 
@@ -455,7 +457,7 @@
         return
       }
 
-      if (isItemSpin && Math.random() < 0.20) {
+      if (isItemSpin && Math.random() < (gamepasses.has('double_luck') ? 0.35 : 0.20)) {
         // Award a bonus extra item spin of the same type
         const bonusDef: SpinDefinition = {
           category: currentDef.category,

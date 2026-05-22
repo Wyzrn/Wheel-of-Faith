@@ -11,11 +11,18 @@ import { rivalsWsRoutes } from './routes/rivals-ws.js'
 import { friendRoutes } from './routes/friends.js'
 import { adminRoutes } from './routes/admin.js'
 import { storySlotRoutes } from './routes/storySlots.js'
+import { shopRoutes } from './routes/shop.js'
 
 export async function createApp() {
   const app = Fastify({
     logger: true,
     trustProxy: true,
+  })
+
+  // Preserve raw body for Stripe webhook signature verification
+  app.addContentTypeParser('application/json', { parseAs: 'buffer' }, function (req, body, done) {
+    ;(req as any).rawBody = body
+    try { done(null, JSON.parse(body.toString())) } catch (err: any) { done(err) }
   })
 
   await app.register(cors, {
@@ -52,6 +59,7 @@ export async function createApp() {
   await app.register(friendRoutes, { prefix: '/api' })
   await app.register(adminRoutes, { prefix: '/api' })
   await app.register(storySlotRoutes, { prefix: '/api' })
+  await app.register(shopRoutes, { prefix: '/api' })
 
   if (process.env.NODE_ENV === 'production') {
     const handlerPath = new URL('../../build/handler.js', import.meta.url).href
