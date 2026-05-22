@@ -1707,6 +1707,8 @@
     raceOverride = null
     rivalMode = true
     rivalPhase = 'p1'
+    showMenu = false
+    tutorialStep = -1
     p1Results = []
     p1Name = ''
     p1StartedAt = new Date().toISOString()

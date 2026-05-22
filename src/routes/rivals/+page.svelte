@@ -529,6 +529,9 @@
       team2Label={partnerName || 'Opponent'}
       title={isBotBattle ? `${myCharName ?? 'You'} vs BOT` : `${myCharName ?? auth.user?.username ?? 'You'} vs ${partnerName}`}
       team2Color={isBotBattle ? '#34d399' : '#f9a8d4'}
+      onComplete={(winner) => {
+        if (auth.loggedIn) auth.recordBattleResult(winner === 'team1')
+      }}
       onRematch={() => {
         phase = 'menu'
         myResults = []
