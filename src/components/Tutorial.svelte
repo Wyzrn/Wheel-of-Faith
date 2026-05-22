@@ -324,12 +324,29 @@
 {/if}
 
 <style>
+  /* Tutorial card entrance — slides in from void with rune flash */
   @keyframes tutSlideUp {
-    from { transform: translateY(-20px); opacity: 0; }
-    to   { transform: translateY(0);     opacity: 1; }
+    from {
+      transform: translateY(-24px) scale(0.97);
+      opacity: 0;
+      filter: brightness(1.5) blur(2px);
+    }
+    to {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      filter: none;
+    }
   }
   @keyframes tutSlideDown {
-    from { transform: translateY(-20px); opacity: 0; }
-    to   { transform: translateY(0);     opacity: 1; }
+    from {
+      transform: translateY(24px) scale(0.97);
+      opacity: 0;
+      filter: brightness(1.5) blur(2px);
+    }
+    to {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      filter: none;
+    }
   }
 </style>

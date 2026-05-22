@@ -97,19 +97,48 @@
 {/if}
 
 <style>
+  /* Stone fortress floor — the nav bar is a carved obsidian shelf */
   .bottom-nav {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 0; left: 0; right: 0;
     z-index: 10;
     height: 64px;
     display: flex;
     align-items: stretch;
-    background: rgba(7, 7, 13, 0.97);
-    border-top: 1px solid rgba(240, 192, 64, 0.15);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 223, 150, 0.06);
+    /* Deep stone slab background */
+    background: linear-gradient(180deg, #0e0b1c 0%, #070510 100%);
+    /* Stone edge glow + carved top rim */
+    border-top: 1px solid rgba(200,136,42,0.22);
+    box-shadow:
+      /* Outer top glow seam */
+      0 -1px 0 rgba(200,136,42,0.08),
+      /* Deep upward shadow */
+      0 -8px 40px rgba(0,0,0,0.85),
+      /* Inner top highlight (light on stone rim) */
+      inset 0 1px 0 rgba(255,225,140,0.10),
+      /* Inner depth */
+      inset 0 -1px 0 rgba(0,0,0,0.6);
+    backdrop-filter: blur(24px);
+  }
+
+  /* Animated rune trace running along the top edge */
+  .bottom-nav::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(200,136,42,0.0) 10%,
+      rgba(200,136,42,0.7) 30%,
+      rgba(72,200,224,0.6) 50%,
+      rgba(200,136,42,0.7) 70%,
+      rgba(200,136,42,0.0) 90%,
+      transparent 100%
+    );
+    background-size: 300% 100%;
+    animation: runeFlow 6s linear infinite;
   }
 
   .nav-tab {
@@ -124,50 +153,51 @@
     text-decoration: none;
     border: none;
     background: none;
-    color: #4e4635;
-    transition: color 0.15s, transform 0.1s;
+    color: #4a3c24;
+    transition: color 0.18s, transform 0.12s;
     position: relative;
     -webkit-tap-highlight-color: transparent;
   }
 
-  .nav-tab:active {
-    transform: scale(0.88);
-  }
+  .nav-tab:active { transform: scale(0.86); }
 
+  /* Active indicator: rune glow line at top + subtle warmth behind icon */
   .nav-tab::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 20%;
-    right: 20%;
+    top: 0; left: 15%; right: 15%;
     height: 2px;
-    background: #f0c040;
-    border-radius: 0 0 2px 2px;
+    background: linear-gradient(90deg, transparent, #c0882a, #e8b84b, #c0882a, transparent);
+    border-radius: 0 0 3px 3px;
     opacity: 0;
-    transition: opacity 0.15s;
+    transition: opacity 0.18s;
+    box-shadow: 0 0 8px rgba(200,136,42,0.7);
   }
 
-  .nav-tab.active {
-    color: #f0c040;
+  /* Active tab warm stone glow behind */
+  .nav-tab::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 70% at 50% 60%, rgba(200,136,42,0.07) 0%, transparent 80%);
+    opacity: 0;
+    transition: opacity 0.18s;
+    pointer-events: none;
   }
 
-  .nav-tab.active::before {
-    opacity: 1;
-  }
+  .nav-tab.active { color: #e8b84b; }
+  .nav-tab.active::before { opacity: 1; }
+  .nav-tab.active::after  { opacity: 1; }
 
-  .nav-tab:hover:not(.active) {
-    color: #9a907b;
-  }
+  .nav-tab:hover:not(.active) { color: #806020; }
 
-  :global(.nav-icon) {
-    font-size: 22px;
-  }
+  :global(.nav-icon) { font-size: 22px; }
 
   .nav-label {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    font-weight: 600;
+    font-weight: 700;
   }
 </style>

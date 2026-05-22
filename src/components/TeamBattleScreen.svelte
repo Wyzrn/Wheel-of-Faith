@@ -968,6 +968,7 @@
 </div><!-- /battle-root -->
 
 <style>
+  /* ── Arena root — runic battlefield ── */
   .battle-root {
     width: 100%;
     min-height: 100vh;
@@ -976,10 +977,18 @@
     position: relative;
     isolation: isolate;
     overflow-x: hidden;
+    /* Stone-floor grid: fine rune lines + cardinal vein */
     background-image:
-      linear-gradient(rgba(255, 223, 150, 0.016) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 223, 150, 0.016) 1px, transparent 1px);
-    background-size: 48px 48px;
+      radial-gradient(ellipse 70% 30% at 50% 0%,   rgba(200,136,42,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 70% 30% at 50% 100%, rgba(138,60,200,0.06) 0%, transparent 70%),
+      linear-gradient(rgba(200,136,42,0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,136,42,0.022) 1px, transparent 1px),
+      linear-gradient(rgba(200,136,42,0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,136,42,0.055) 1px, transparent 1px);
+    background-size:
+      100% 100%, 100% 100%,
+      40px 40px, 40px 40px,
+      200px 200px, 200px 200px;
   }
 
   .battle-grid {
@@ -992,26 +1001,35 @@
     .battle-grid { grid-template-columns: 1fr; }
   }
 
-  /* ─── Team columns ─── */
+  /* ── Team columns — stone fortress bastions ── */
   .team-col {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     padding: 0.5rem;
-    border-radius: 12px;
+    border-radius: 14px;
     position: relative;
-    transition: box-shadow 0.3s;
+    transition: box-shadow 0.35s;
+    /* Bastion wall glow */
+    background: linear-gradient(180deg, rgba(26,20,48,0.4) 0%, rgba(10,8,18,0.6) 100%);
+    border: 1px solid rgba(200,136,42,0.08);
+    box-shadow: inset 0 1px 0 rgba(255,225,140,0.04);
   }
+
   .team-label {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
+    font-size: 0.60rem;
+    letter-spacing: 0.24em;
     text-transform: uppercase;
     text-align: center;
     padding-bottom: 6px;
     margin-bottom: 2px;
+    /* Runic separator line */
+    border-bottom: 1px solid rgba(200,136,42,0.12);
+    text-shadow: 0 0 10px currentColor;
   }
 
+  /* Member card — carved obsidian tablet */
   .member-card {
     display: flex;
     flex-direction: column;
@@ -1019,39 +1037,53 @@
     padding: 10px;
     border-radius: 10px;
     border: 1px solid;
-    background: linear-gradient(180deg, #1a1825 0%, #0c0b14 100%);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.7), inset 1px 1px 0 rgba(255,223,150,0.08);
+    background: linear-gradient(160deg, #1c1730 0%, #100d1e 60%, #09070f 100%);
+    box-shadow:
+      0 6px 0 #06040e,
+      0 9px 0 #040309,
+      0 14px 28px rgba(0,0,0,0.85),
+      inset 0 1px 0 rgba(255,225,140,0.08),
+      inset 1px 0 0 rgba(255,225,140,0.04);
     transition: opacity 0.6s, box-shadow 0.5s, border-color 0.5s;
+    /* Subtle noise texture */
+    position: relative;
   }
 
+  /* HP track — carved channel */
   .hp-track {
-    height: 7px;
+    height: 8px;
     border-radius: 99px;
     overflow: hidden;
-    background: #05050d;
-    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.7);
+    background: #04030a;
+    box-shadow:
+      inset 3px 2px 6px rgba(0,0,0,0.90),
+      inset 0 0 0 1px rgba(0,0,0,0.5);
   }
   .hp-fill {
     height: 100%;
     border-radius: 99px;
-    filter: brightness(1.15);
+    filter: brightness(1.18) saturate(1.1);
     transition: width 0.9s ease-out, background 0.5s;
+    box-shadow: 0 0 6px currentColor;
   }
+
   .stat-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 3px;
     margin-top: 3px;
   }
+  /* Stat chip — small carved stone chip */
   .stat-chip {
     text-align: center;
     padding: 3px 2px;
     border-radius: 5px;
     border: 1px solid;
-    background: rgba(255,255,255,0.03);
+    background: rgba(0,0,0,0.35);
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.6);
   }
 
-  /* ─── Status badges ─── */
+  /* Status badges */
   .status-badges {
     display: flex;
     gap: 4px;
@@ -1060,34 +1092,64 @@
   }
   .status-badge {
     font-size: 1rem;
-    filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+    filter: drop-shadow(0 0 7px rgba(255,255,255,0.5));
     animation: badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
   }
   @keyframes badgePop {
-    0%   { opacity: 0; transform: scale(0.5); }
-    100% { opacity: 1; transform: scale(1.0); }
+    0%   { opacity: 0; transform: scale(0.4) rotate(-15deg); }
+    70%  { transform: scale(1.2) rotate(3deg); }
+    100% { opacity: 1; transform: scale(1.0) rotate(0deg); }
   }
 
-  /* ─── Center column ─── */
+  /* ── Center column — the arena sanctum ── */
   .center-col {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
 
+  /* Battle log — arcane scrying stone */
   .log-box {
-    border: 1px solid rgba(240,192,64,0.14);
-    border-radius: 12px;
+    border: 1px solid rgba(200,136,42,0.14);
+    border-top-color: rgba(200,136,42,0.22);
+    border-radius: 14px;
     overflow: hidden;
-    background: linear-gradient(180deg, #13121c 0%, #09090f 100%);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.8), inset 1px 1px 0 rgba(255,223,150,0.1);
+    background: linear-gradient(165deg, #14112a 0%, #0a0815 100%);
+    box-shadow:
+      0 0 0 1px rgba(200,136,42,0.06),
+      0 4px 0 #04030a,
+      0 8px 0 #030208,
+      0 18px 50px rgba(0,0,0,0.92),
+      inset 0 1px 0 rgba(255,225,140,0.10),
+      inset 0 -1px 0 rgba(0,0,0,0.5);
+    position: relative;
   }
+  /* Animated rune border on the log box */
+  .log-box::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(200,136,42,0.8) 30%,
+      rgba(72,200,224,0.7) 55%,
+      rgba(200,136,42,0.8) 75%,
+      transparent 100%
+    );
+    background-size: 300% 100%;
+    animation: runeFlow 5s linear infinite;
+    pointer-events: none;
+  }
+
   .log-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 14px;
-    border-bottom: 1px solid rgba(240,192,64,0.08);
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(200,136,42,0.09);
+    background: rgba(0,0,0,0.2);
   }
   .log-scroll {
     overflow-y: auto;
@@ -1097,77 +1159,111 @@
   }
   .log-round-header {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.68rem;
-    color: #9a907b;
-    letter-spacing: 0.12em;
-    border-bottom: 1px solid rgba(240,192,64,0.08);
+    font-size: 0.66rem;
+    color: #806020;
+    letter-spacing: 0.14em;
+    border-bottom: 1px solid rgba(200,136,42,0.09);
     padding: 10px 0 4px;
     margin-bottom: 2px;
+    text-shadow: 0 0 8px rgba(200,136,42,0.35);
   }
   .log-line {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.68rem;
+    font-size: 0.67rem;
     margin-bottom: 3px;
-    line-height: 1.4;
+    line-height: 1.45;
   }
-  .log-italic { color: #9a907b; font-style: italic; }
+  .log-italic { color: #685440; font-style: italic; }
 
+  /* Winner announcement — raised gold victory tablet */
   .winner-box {
     border: 1px solid;
-    border-radius: 16px;
+    border-radius: 18px;
     padding: 1.5rem 1rem;
     text-align: center;
-    animation: resultReveal 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    animation: resultReveal 0.65s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    position: relative;
+    overflow: hidden;
   }
-  .winner-sub   { font-family:'JetBrains Mono',monospace; font-size:0.65rem; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:6px; }
+  .winner-box::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(200,136,42,0.0) 0%,
+      rgba(200,136,42,0.6) 30%,
+      rgba(72,200,224,0.5) 55%,
+      rgba(200,136,42,0.6) 75%,
+      rgba(200,136,42,0.0) 100%
+    );
+    background-size: 300% 100%;
+    animation: runeFlow 4s linear infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .winner-sub   { font-family:'JetBrains Mono',monospace; font-size:0.62rem; letter-spacing:0.24em; text-transform:uppercase; margin-bottom:6px; color:#806020; }
   .winner-name  { font-family:'Cinzel',serif; font-size:clamp(1.3rem,4vw,1.9rem); font-weight:900; letter-spacing:0.12em; }
-  .winner-flavor{ font-size:0.8rem; color:#9a907b; margin-top:6px; }
-  .save-line    { font-family:'JetBrains Mono',monospace; font-size:0.7rem; margin-top:8px; }
+  .winner-flavor{ font-size:0.78rem; color:#685440; margin-top:6px; }
+  .save-line    { font-family:'JetBrains Mono',monospace; font-size:0.68rem; margin-top:8px; }
 
+  /* Action button — carved rune button */
   .btn-action {
     font-family: 'Cinzel', serif;
-    font-size: 0.8rem;
-    letter-spacing: 0.14em;
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
     font-weight: 700;
-    padding: 10px 20px;
-    border-radius: 8px;
-    background: #0d0d16;
-    border: 1px solid;
+    padding: 10px 22px;
+    border-radius: 9px;
+    background: linear-gradient(160deg, #1c1730 0%, #0e0b1c 100%);
+    border: 1px solid rgba(200,136,42,0.30);
+    border-top-color: rgba(200,136,42,0.45);
     cursor: pointer;
-    transition: transform 0.1s;
+    transition: transform 0.10s, box-shadow 0.15s, border-color 0.15s;
+    box-shadow:
+      0 3px 0 #04030a,
+      0 6px 16px rgba(0,0,0,0.7),
+      inset 0 1px 0 rgba(255,225,140,0.08);
   }
-  .btn-action:active { transform: scale(0.95); }
+  .btn-action:hover {
+    border-color: rgba(200,136,42,0.55);
+    box-shadow:
+      0 3px 0 #04030a,
+      0 6px 20px rgba(0,0,0,0.7),
+      0 0 12px rgba(200,136,42,0.12),
+      inset 0 1px 0 rgba(255,225,140,0.12);
+  }
+  .btn-action:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #04030a, 0 4px 8px rgba(0,0,0,0.6);
+  }
 
-  /* ─── Particles ─── */
+  /* ── Particles ── */
   :global(.particle) {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    font-family: 'Cinzel', serif;
-    font-weight: 900;
+    position: fixed; pointer-events: none; z-index: 9999;
+    font-family: 'Cinzel', serif; font-weight: 900;
     animation: particleRise 1.3s ease-out forwards;
     white-space: nowrap;
+    text-shadow: 0 0 8px currentColor;
   }
   :global(.ambient-particle) {
-    position: fixed;
-    pointer-events: none;
-    z-index: 100;
+    position: fixed; pointer-events: none; z-index: 100;
     animation: ambientFloat 2.8s ease-out forwards;
     white-space: nowrap;
   }
   :global(.confetti-particle) {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
+    position: fixed; pointer-events: none; z-index: 9999;
     font-weight: 900;
     animation: confettiFall 3.5s linear forwards;
     white-space: nowrap;
   }
   :global(.trail-particle) {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9997;
+    position: fixed; pointer-events: none; z-index: 9997;
     animation: trailFade 0.32s ease-out forwards;
     white-space: nowrap;
   }
@@ -1176,202 +1272,214 @@
     60%  { opacity: 0.5; transform: scale(0.8); }
     100% { opacity: 0;   transform: scale(0.3) translateY(-6px); }
   }
-
   @keyframes particleRise {
-    0%   { opacity: 1;   transform: translateY(0)     scale(1); }
-    55%  { opacity: 0.9; transform: translateY(-55px)  scale(1.15); }
-    100% { opacity: 0;   transform: translateY(-110px) scale(0.7); }
+    0%   { opacity: 1;   transform: translateY(0)      scale(1); }
+    55%  { opacity: 0.9; transform: translateY(-58px)  scale(1.18); }
+    100% { opacity: 0;   transform: translateY(-115px) scale(0.65); }
   }
   @keyframes ambientFloat {
-    0%   { opacity: 0;   transform: translateY(0)    scale(0.8); }
-    15%  { opacity: 0.6; }
-    85%  { opacity: 0.35; transform: translateY(-80px) scale(1); }
-    100% { opacity: 0;   transform: translateY(-110px) scale(0.9); }
+    0%   { opacity: 0;    transform: translateY(0)     scale(0.8); }
+    15%  { opacity: 0.65; }
+    85%  { opacity: 0.35; transform: translateY(-84px) scale(1); }
+    100% { opacity: 0;    transform: translateY(-115px) scale(0.9); }
   }
   @keyframes confettiFall {
-    0%   { opacity: 1;   transform: translateY(0)       rotate(0deg)   scale(1); }
-    25%  { opacity: 0.9; transform: translateY(25vh)    rotate(180deg) translateX(15px); }
-    50%  { opacity: 0.8; transform: translateY(50vh)    rotate(360deg) translateX(-12px); }
-    75%  { opacity: 0.5; transform: translateY(75vh)    rotate(540deg) translateX(8px); }
-    100% { opacity: 0;   transform: translateY(106vh)   rotate(720deg) scale(0.5); }
+    0%   { opacity: 1;   transform: translateY(0)    rotate(0deg)   scale(1); }
+    25%  { opacity: 0.9; transform: translateY(25vh) rotate(180deg) translateX(15px); }
+    50%  { opacity: 0.8; transform: translateY(50vh) rotate(360deg) translateX(-12px); }
+    75%  { opacity: 0.5; transform: translateY(75vh) rotate(540deg) translateX(8px); }
+    100% { opacity: 0;   transform: translateY(106vh) rotate(720deg) scale(0.5); }
   }
 
-  /* ─── Screen shake ─── */
-  :global(.fx-shake-light) { animation: shakeLight 0.45s ease-out; }
-  :global(.fx-shake-heavy) { animation: shakeHeavy 0.52s ease-out; }
+  /* ── Screen shake ── */
+  :global(.fx-shake-light) { animation: shakeLight 0.46s ease-out; }
+  :global(.fx-shake-heavy) { animation: shakeHeavy 0.54s ease-out; }
   @keyframes shakeLight {
     0%,100% { transform: translate(0); }
-    20% { transform: translate(-5px, 2px); }
-    40% { transform: translate(5px,-2px); }
-    60% { transform: translate(-3px, 3px); }
-    80% { transform: translate(3px,-1px); }
+    20% { transform: translate(-6px, 2px); }
+    40% { transform: translate(6px,-2px); }
+    60% { transform: translate(-4px, 3px); }
+    80% { transform: translate(4px,-1px); }
   }
   @keyframes shakeHeavy {
-    0%,100% { transform: translate(0); }
-    10% { transform: translate(-11px, 5px) rotate(-0.5deg); }
-    20% { transform: translate(11px,-5px) rotate(0.5deg); }
-    30% { transform: translate(-8px, 8px) rotate(-0.3deg); }
-    40% { transform: translate(8px,-8px) rotate(0.3deg); }
+    0%,100% { transform: translate(0) rotate(0deg); }
+    10% { transform: translate(-12px, 5px) rotate(-0.6deg); }
+    20% { transform: translate(12px,-5px) rotate(0.6deg); }
+    30% { transform: translate(-9px, 9px) rotate(-0.4deg); }
+    40% { transform: translate(9px,-9px) rotate(0.4deg); }
     55% { transform: translate(-5px, 5px); }
     70% { transform: translate(5px,-3px); }
     85% { transform: translate(-2px, 2px); }
   }
 
-  /* ─── Panel flash effects ─── */
-  :global(.fx-flash-hit)   { animation: flashHit   0.4s ease-out; }
-  :global(.fx-flash-crit)  { animation: flashCrit  0.5s ease-out; }
-  :global(.fx-flash-heal)  { animation: flashHeal  0.5s ease-out; }
-  :global(.fx-flash-death) { animation: flashDeath 0.6s ease-out; }
+  /* ── Panel flash effects ── */
+  :global(.fx-flash-hit)   { animation: flashHit   0.42s ease-out; }
+  :global(.fx-flash-crit)  { animation: flashCrit  0.52s ease-out; }
+  :global(.fx-flash-heal)  { animation: flashHeal  0.52s ease-out; }
+  :global(.fx-flash-death) { animation: flashDeath 0.65s ease-out; }
 
   @keyframes flashHit {
     0%   { box-shadow: none; }
-    30%  { box-shadow: inset 0 0 30px rgba(239,68,68,0.45), 0 0 25px rgba(239,68,68,0.3); }
+    25%  { box-shadow: inset 0 0 36px rgba(224,64,48,0.50), 0 0 28px rgba(224,64,48,0.35), 0 0 0 1px rgba(224,64,48,0.2); }
     100% { box-shadow: none; }
   }
   @keyframes flashCrit {
     0%   { box-shadow: none; background-color: transparent; }
-    15%  { box-shadow: inset 0 0 50px rgba(253,224,71,0.5), 0 0 50px rgba(253,224,71,0.5); background-color: rgba(253,224,71,0.06); }
+    12%  {
+      box-shadow:
+        inset 0 0 60px rgba(232,184,75,0.55),
+        0 0 60px rgba(232,184,75,0.55),
+        0 0 0 2px rgba(232,184,75,0.3);
+      background-color: rgba(232,184,75,0.07);
+    }
     100% { box-shadow: none; background-color: transparent; }
   }
   @keyframes flashHeal {
     0%   { box-shadow: none; }
-    30%  { box-shadow: inset 0 0 30px rgba(52,211,153,0.4), 0 0 25px rgba(52,211,153,0.3); }
+    25%  { box-shadow: inset 0 0 36px rgba(52,211,153,0.45), 0 0 28px rgba(52,211,153,0.35), 0 0 0 1px rgba(52,211,153,0.2); }
     100% { box-shadow: none; }
   }
   @keyframes flashDeath {
     0%   { box-shadow: none; }
-    20%  { box-shadow: inset 0 0 60px rgba(239,68,68,0.6), 0 0 60px rgba(239,68,68,0.4); }
+    18%  { box-shadow: inset 0 0 70px rgba(200,48,30,0.65), 0 0 70px rgba(200,48,30,0.45), 0 0 0 2px rgba(200,48,30,0.3); }
     100% { box-shadow: none; }
   }
 
-  /* ─── Impact rings ─── */
+  /* ── Impact rings ── */
   :global(.impact-ring) {
     position: fixed;
-    width: 16px; height: 16px;
+    width: 14px; height: 14px;
     border-radius: 50%;
-    border: 3px solid rgba(253,224,71,0.9);
+    border: 3px solid rgba(232,184,75,0.95);
     pointer-events: none;
     z-index: 9998;
     transform: translate(-50%, -50%);
-    animation: impactRingAnim 0.7s ease-out forwards;
+    animation: impactRingAnim 0.72s ease-out forwards;
+    box-shadow: 0 0 8px rgba(232,184,75,0.6);
   }
   @keyframes impactRingAnim {
-    0%   { width: 16px;  height: 16px;  opacity: 0.95; border-width: 3px; }
-    60%  { opacity: 0.5; }
-    100% { width: 130px; height: 130px; opacity: 0;    border-width: 1px; }
+    0%   { width: 14px;  height: 14px;  opacity: 1.0;  border-width: 3px; }
+    50%  { opacity: 0.6; }
+    100% { width: 140px; height: 140px; opacity: 0;    border-width: 1px; }
   }
 
-  /* ─── Speed lines ─── */
+  /* ── Speed lines ── */
   :global(.speed-lines-overlay) {
     position: fixed; inset: 0;
-    pointer-events: none;
-    z-index: 150;
-    overflow: hidden;
-    opacity: 0;
+    pointer-events: none; z-index: 150;
+    overflow: hidden; opacity: 0;
   }
-  :global(.speed-lines-active) {
-    animation: speedLinesReveal 0.25s ease-out forwards;
-  }
+  :global(.speed-lines-active) { animation: speedLinesReveal 0.26s ease-out forwards; }
   :global(.speed-line) {
     position: absolute;
     left: -100%; right: -100%;
     height: 1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.22) 30%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.22) 70%, transparent 100%);
-    animation: speedLineMove 0.25s ease-out forwards;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(232,184,75,0.18) 25%,
+      rgba(255,255,255,0.30) 50%,
+      rgba(232,184,75,0.18) 75%,
+      transparent 100%);
+    animation: speedLineMove 0.26s ease-out forwards;
     opacity: 0;
   }
-  @keyframes speedLinesReveal {
-    0%   { opacity: 1; }
-    100% { opacity: 0; }
-  }
+  @keyframes speedLinesReveal { 0% { opacity: 1; } 100% { opacity: 0; } }
   @keyframes speedLineMove {
     0%   { opacity: 0; transform: translateX(-40%); }
-    20%  { opacity: 1; }
+    22%  { opacity: 1; }
     100% { opacity: 0; transform: translateX(40%); }
   }
 
-  /* ─── Screen flash overlays ─── */
+  /* ── Screen flash overlays ── */
   :global(.screen-flash-overlay) {
     position: fixed; inset: 0;
     pointer-events: none; z-index: 200;
-    animation: screenFlashCrit 0.22s ease-out forwards;
+    animation: screenFlashCrit 0.24s ease-out forwards;
   }
   @keyframes screenFlashCrit {
-    0%   { background: rgba(253,224,71,0.16); }
-    40%  { background: rgba(253,224,71,0.22); }
+    0%   { background: rgba(232,184,75,0.18); }
+    35%  { background: rgba(232,184,75,0.24); }
     100% { background: transparent; }
   }
-
   :global(.death-flash-overlay) {
     position: fixed; inset: 0;
     pointer-events: none; z-index: 200;
-    animation: deathFlashFull 0.6s ease-out forwards;
+    animation: deathFlashFull 0.65s ease-out forwards;
   }
   @keyframes deathFlashFull {
     0%   { background: transparent; }
-    20%  { background: rgba(239,68,68,0.28); }
+    18%  { background: rgba(200,48,30,0.32); }
     100% { background: transparent; }
   }
 
-  /* ─── Vignette ─── */
+  /* ── Vignette ── */
   :global(.vignette-overlay) {
     position: fixed; inset: 0;
     pointer-events: none; z-index: 50;
-    border: 0px solid transparent;
     box-shadow: none;
-    transition: border 0.8s, box-shadow 0.8s;
+    transition: box-shadow 0.8s;
   }
   :global(.vignette-active) {
-    border: 10px solid transparent;
-    box-shadow: inset 0 0 90px rgba(239,68,68,0.18);
-    animation: vignettePulse 2s ease-in-out infinite;
+    box-shadow: inset 0 0 100px rgba(200,48,30,0.20);
+    animation: vignettePulse 2.2s ease-in-out infinite;
   }
   @keyframes vignettePulse {
-    0%, 100% { box-shadow: inset 0 0 70px rgba(239,68,68,0.12); }
-    50%       { box-shadow: inset 0 0 110px rgba(239,68,68,0.28); }
+    0%, 100% { box-shadow: inset 0 0 80px rgba(200,48,30,0.14); }
+    50%       { box-shadow: inset 0 0 130px rgba(200,48,30,0.32); }
   }
 
-  /* ─── Round banner ─── */
+  /* ── Round banner — runic proclamation ── */
   :global(.round-banner) {
     position: fixed;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     font-family: 'Cinzel', serif;
-    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-size: clamp(1.6rem, 5vw, 2.6rem);
     font-weight: 900;
-    color: #f0c040;
-    letter-spacing: 0.35em;
+    color: #e8b84b;
+    letter-spacing: 0.38em;
     text-transform: uppercase;
-    text-shadow: 0 0 40px rgba(240,192,64,0.7), 0 0 80px rgba(240,192,64,0.3);
+    text-shadow:
+      0 0 20px rgba(200,136,42,0.9),
+      0 0 50px rgba(200,136,42,0.5),
+      0 0 90px rgba(200,136,42,0.2),
+      0 2px 0 rgba(0,0,0,0.9);
     pointer-events: none;
     z-index: 9990;
-    animation: roundBannerAnim 0.8s ease-out forwards;
+    animation: roundBannerAnim 0.85s ease-out forwards;
   }
   @keyframes roundBannerAnim {
-    0%   { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
-    25%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
-    70%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(1.7) rotate(-2deg); }
+    22%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0) rotate(0deg); }
+    68%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.82) translateY(-12px); }
   }
 
-  /* ─── Center text (COMBO / BERSERK) ─── */
+  /* ── Center text (COMBO / BERSERK) ── */
   :global(.center-text-display) {
     position: fixed;
     top: 42%; left: 50%;
     transform: translate(-50%, -50%);
     font-family: 'Cinzel', serif;
-    font-size: clamp(1.8rem, 6vw, 3rem);
+    font-size: clamp(1.8rem, 6vw, 3.2rem);
     font-weight: 900;
-    letter-spacing: 0.25em;
+    letter-spacing: 0.28em;
     pointer-events: none;
     z-index: 9991;
-    animation: centerTextPop 1.2s ease-out forwards;
+    animation: centerTextPop 1.25s ease-out forwards;
+    filter: drop-shadow(0 0 20px currentColor);
   }
   @keyframes centerTextPop {
-    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-8deg); }
-    18%  { opacity: 1; transform: translate(-50%, -50%) scale(1.25) rotate(2deg); }
-    35%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0)  rotate(0deg); }
-    75%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8) translateY(-20px); }
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.35) rotate(-10deg); }
+    16%  { opacity: 1; transform: translate(-50%, -50%) scale(1.30)  rotate(2deg); }
+    32%  { opacity: 1; transform: translate(-50%, -50%) scale(1.00)  rotate(0deg); }
+    72%  { opacity: 1; transform: translate(-50%, -50%) scale(1.00); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.78) translateY(-22px); }
+  }
+
+  @keyframes runeFlow {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 </style>

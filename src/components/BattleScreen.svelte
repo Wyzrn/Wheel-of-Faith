@@ -509,17 +509,18 @@
 {/if}
 
 <style>
+/* Rune-flash dodge — panel phases through reality */
 @keyframes panel-dodge {
-  0%   { opacity: 1;    transform: translateX(0);     filter: none; }
-  12%  { opacity: 0.22; transform: translateX(-15px);  filter: brightness(1.8) blur(3px); }
-  30%  { opacity: 0.45; transform: translateX(11px);   filter: brightness(1.4) blur(1.5px); }
-  50%  { opacity: 0.18; transform: translateX(-9px);   filter: brightness(2) blur(3px); }
-  68%  { opacity: 0.55; transform: translateX(5px);    filter: blur(1px); }
-  85%  { opacity: 0.85; transform: translateX(-2px);   filter: none; }
-  100% { opacity: 1;    transform: translateX(0);     filter: none; }
+  0%   { opacity: 1;    transform: translateX(0)     skewX(0deg);   filter: none; }
+  10%  { opacity: 0.18; transform: translateX(-18px) skewX(-4deg);  filter: brightness(2.2) blur(3px) hue-rotate(30deg); }
+  28%  { opacity: 0.40; transform: translateX(14px)  skewX(3deg);   filter: brightness(1.6) blur(2px); }
+  48%  { opacity: 0.15; transform: translateX(-11px) skewX(-2deg);  filter: brightness(2.5) blur(3px) hue-rotate(-20deg); }
+  66%  { opacity: 0.52; transform: translateX(7px)   skewX(1deg);   filter: blur(1px); }
+  83%  { opacity: 0.88; transform: translateX(-3px)  skewX(0deg);   filter: none; }
+  100% { opacity: 1;    transform: translateX(0)     skewX(0deg);   filter: none; }
 }
 .panel-dodging {
-  animation: panel-dodge 0.75s ease-out forwards;
-  will-change: transform, opacity;
+  animation: panel-dodge 0.80s ease-out forwards;
+  will-change: transform, opacity, filter;
 }
 </style>

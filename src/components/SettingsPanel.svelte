@@ -113,26 +113,61 @@
 </aside>
 
 <style>
+  /* Toggle — runic on/off switch */
   .toggle-btn {
     position: relative; flex-shrink: 0;
-    width: 44px; height: 24px; border-radius: 12px;
-    cursor: pointer; transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+    width: 46px; height: 26px; border-radius: 13px;
+    cursor: pointer;
+    transition: background 0.22s, box-shadow 0.22s, border-color 0.22s;
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(0,0,0,0.4);
   }
+  /* Knob — polished stone sphere */
   .toggle-knob {
-    position: absolute; top: 2px;
+    position: absolute; top: 3px;
     width: 20px; height: 20px; border-radius: 50%;
-    transition: left 0.2s, background 0.2s;
+    transition: left 0.22s cubic-bezier(0.34,1.56,0.64,1), background 0.22s;
+    box-shadow:
+      0 2px 0 rgba(0,0,0,0.5),
+      0 4px 8px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.25);
   }
-  .divider { height: 1px; background: rgba(240,192,64,0.08); }
+  /* Runic divider — carved seam */
+  .divider {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(200,136,42,0.08) 20%,
+      rgba(200,136,42,0.18) 50%,
+      rgba(200,136,42,0.08) 80%,
+      transparent 100%
+    );
+  }
+  /* Speed chip — stone selection chip */
   .speed-chip {
-    padding: 9px 14px; border-radius: 8px; border: 1px solid;
-    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600;
-    cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    padding: 9px 14px; border-radius: 9px; border: 1px solid;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.70rem; font-weight: 700;
+    cursor: pointer; transition: all 0.16s; -webkit-tap-highlight-color: transparent;
     min-height: 40px;
+    background: linear-gradient(160deg, #1c1730 0%, #0e0b1c 100%);
+    box-shadow:
+      0 3px 0 #06040e,
+      0 7px 18px rgba(0,0,0,0.7),
+      inset 0 1px 0 rgba(255,225,140,0.06);
+    letter-spacing: 0.08em;
   }
+  .speed-chip:active { transform: translateY(2px); }
+
+  /* Battle speed chip — wider selection row */
   .battle-speed-chip {
-    width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid;
+    width: 100%; padding: 9px 13px; border-radius: 9px; border: 1px solid;
     cursor: pointer; display: flex; justify-content: space-between; align-items: center;
-    transition: all 0.15s;
+    transition: all 0.16s;
+    background: linear-gradient(160deg, #1c1730 0%, #0e0b1c 100%);
+    box-shadow:
+      0 3px 0 #06040e,
+      0 7px 18px rgba(0,0,0,0.7),
+      inset 0 1px 0 rgba(255,225,140,0.05);
   }
+  .battle-speed-chip:active { transform: translateY(2px); }
 </style>

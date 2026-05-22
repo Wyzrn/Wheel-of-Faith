@@ -1,64 +1,80 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface: #13121c;
-  --color-surface-dim: #0d0d16;
-  --color-surface-container-lowest: #0d0d16;
-  --color-surface-container-low: #1b1b24;
-  --color-surface-container: #1f1f28;
-  --color-surface-container-high: #292933;
-  --color-surface-container-highest: #34343e;
-  --color-on-surface: #e4e1ee;
-  --color-on-surface-variant: #d2c5ae;
-  --color-outline-variant: #4e4635;
-  --color-outline: #9a907b;
-  --color-primary: #ffdf96;
-  --color-primary-dim: #f0c040;
-  --color-secondary: #f4be5d;
-  --color-tertiary: #fed6ff;
-  --color-error: #ffb4ab;
-  --color-background: #07070d;
+  /* ── Deep stone palette ── */
+  --color-background:                  #050308;
+  --color-surface:                     #100d1e;
+  --color-surface-dim:                 #0a0812;
+  --color-surface-container-lowest:    #0a0812;
+  --color-surface-container-low:       #17132a;
+  --color-surface-container:           #1e1933;
+  --color-surface-container-high:      #26213e;
+  --color-surface-container-highest:   #302b4d;
+
+  /* ── Aged parchment text ── */
+  --color-on-surface:         #ddd0b8;
+  --color-on-surface-variant: #a0906c;
+  --color-outline-variant:    #3c3020;
+  --color-outline:            #685440;
+
+  /* ── Ancient bronze-gold ── */
+  --color-primary:     #e8b84b;
+  --color-primary-dim: #c0882a;
+
+  /* ── Arcane teal (rune glow) ── */
+  --color-secondary:   #48c8e0;
+
+  /* ── Mystic violet ── */
+  --color-tertiary:    #b47aec;
+
+  /* ── Blood ember ── */
+  --color-error:       #e06060;
 
   --font-cinzel: "Cinzel", serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-mono:   "JetBrains Mono", monospace;
 }
 
 :root {
-  --bg-void: #07070d;
-  --gold-bright: #ffdf96;
-  --gold-mid: #f0c040;
-  --gold-dim: #9a907b;
-  --gold-glow: rgba(240, 192, 64, 0.4);
-  --purple-glow: rgba(141, 0, 169, 0.3);
+  --bg-void:         #050308;
 
-  /* Tier colors (kept for backwards-compat) */
-  --tier-f-minus: #555;
-  --tier-f:       #666;
-  --tier-f-plus:  #777;
-  --tier-e-minus: #6b7280;
-  --tier-e:       #9ca3af;
-  --tier-e-plus:  #d1d5db;
-  --tier-d-minus: #92400e;
-  --tier-d:       #b45309;
-  --tier-d-plus:  #d97706;
-  --tier-c-minus: #1d4ed8;
-  --tier-c:       #2563eb;
-  --tier-c-plus:  #3b82f6;
-  --tier-b-minus: #065f46;
-  --tier-b:       #059669;
-  --tier-b-plus:  #34d399;
-  --tier-a-minus: #7c3aed;
-  --tier-a:       #8b5cf6;
-  --tier-a-plus:  #a78bfa;
-  --tier-s-minus: #b91c1c;
-  --tier-s:       #dc2626;
-  --tier-s-plus:  #ef4444;
-  --tier-ss-minus: #ea580c;
-  --tier-ss:       #f97316;
-  --tier-ss-plus:  #fb923c;
-  --tier-sss-minus: #ca8a04;
-  --tier-sss:       #eab308;
-  --tier-sss-plus:  #fde047;
+  /* ── Bronze-gold spectrum ── */
+  --gold-bright:     #e8b84b;
+  --gold-mid:        #c0882a;
+  --gold-dim:        #806020;
+  --gold-ancient:    #503c10;
+  --gold-glow:       rgba(200,136,42,0.50);
+  --gold-glow-soft:  rgba(200,136,42,0.16);
+
+  /* ── Arcane rune teal ── */
+  --rune-teal:       #48c8e0;
+  --rune-teal-glow:  rgba(72,200,224,0.40);
+  --rune-teal-soft:  rgba(72,200,224,0.10);
+
+  /* ── Arcane violet ── */
+  --arcane:          #8a3cc8;
+  --arcane-glow:     rgba(138,60,200,0.40);
+  --arcane-soft:     rgba(138,60,200,0.10);
+
+  /* ── Forge ember ── */
+  --ember:           #c84030;
+  --ember-glow:      rgba(200,64,48,0.45);
+
+  /* ── Stone depth layers (for 3D box-shadow stacking) ── */
+  --stone-d0: #030205;
+  --stone-d1: #060410;
+  --stone-d2: #0c091a;
+  --stone-d3: #131028;
+
+  /* ── Tier colors ── */
+  --tier-f-minus: #4a4a4a; --tier-f: #5c5c5c;  --tier-f-plus: #6e6e6e;
+  --tier-e-minus: #6b7280; --tier-e: #9ca3af;  --tier-e-plus: #d1d5db;
+  --tier-d-minus: #92400e; --tier-d: #b45309;  --tier-d-plus: #d97706;
+  --tier-c-minus: #1d4ed8; --tier-c: #2563eb;  --tier-c-plus: #3b82f6;
+  --tier-b-minus: #065f46; --tier-b: #059669;  --tier-b-plus: #34d399;
+  --tier-a-minus: #7c3aed; --tier-a: #8b5cf6;  --tier-a-plus: #a78bfa;
+  --tier-s-minus: #b91c1c; --tier-s: #dc2626;  --tier-s-plus: #ef4444;
+  --tier-ss-minus: #ea580c; --tier-ss: #f97316; --tier-ss-plus: #fb923c;
+  --tier-sss-minus: #ca8a04; --tier-sss: #eab308; --tier-sss-plus: #fde047;
   --tier-god:           #e879f9;
   --tier-primordial:    #ffffff;
   --tier-primordial-p:  #ccffff;
@@ -67,224 +83,438 @@
   --tier-absolute-p:    #00ddff;
 }
 
+/* ════════════════════════════ BASE ════════════════════════════ */
 @layer base {
-  html {
-    overflow-x: hidden;
-  }
+  html { overflow-x: hidden; }
 
   body {
     overflow-x: hidden;
     background-color: var(--bg-void);
     background-image:
-      radial-gradient(circle at 50% -20%, rgba(240, 192, 64, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 50% 120%, rgba(147, 0, 10, 0.1) 0%, transparent 50%),
-      linear-gradient(to right, rgba(255, 223, 150, 0.022) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 223, 150, 0.022) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+      /* Top: ancient gold haze rising from the void */
+      radial-gradient(ellipse 90% 45% at 50% -8%,  rgba(200,136,42,0.13) 0%, transparent 70%),
+      /* Bottom: arcane deep-void swell */
+      radial-gradient(ellipse 80% 40% at 50% 108%, rgba(138,60,200,0.09) 0%, transparent 70%),
+      /* Left seam: rune-teal energy */
+      radial-gradient(ellipse 25% 80% at -3% 50%,  rgba(72,200,224,0.05) 0%, transparent 60%),
+      /* Rune grid — minor (40 px) */
+      linear-gradient(rgba(200,136,42,0.026) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,136,42,0.026) 1px, transparent 1px),
+      /* Rune grid — major (200 px, cardinal glow) */
+      linear-gradient(rgba(200,136,42,0.065) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,136,42,0.065) 1px, transparent 1px);
+    background-size:
+      100% 100%, 100% 100%, 100% 100%,
+      40px 40px, 40px 40px,
+      200px 200px, 200px 200px;
     background-attachment: fixed;
     padding-bottom: 72px;
-    color: #e4e1ee;
+    color: var(--color-on-surface);
     font-family: "Inter", sans-serif;
   }
 
   * { box-sizing: border-box; }
 }
 
+/* ════════════════════════ KEYFRAMES ════════════════════════ */
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
+  from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slideInLeft {
   from { transform: translateX(-100%); }
   to   { transform: translateX(0); }
 }
-
 @keyframes slideInBottom {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
 }
-
 @keyframes popIn {
-  0%   { opacity: 0; transform: scale(0.93) translateY(4px); }
-  65%  { transform: scale(1.02); }
+  0%   { opacity: 0; transform: scale(0.86) translateY(8px); }
+  62%  { transform: scale(1.04); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
-
 @keyframes shimmer {
   from { background-position: -200% 0; }
-  to   { background-position: 200% 0; }
+  to   { background-position:  200% 0; }
 }
 
-/* View transitions — subtle scale+fade between pages */
-::view-transition-old(root) {
-  animation: 120ms ease both vt-out;
+/* View transitions */
+::view-transition-old(root) { animation: 120ms ease both vt-out; }
+::view-transition-new(root) { animation: 200ms ease both vt-in; }
+@keyframes vt-out { to   { opacity: 0; transform: scale(0.98); } }
+@keyframes vt-in  { from { opacity: 0; transform: scale(1.01); } }
+
+/* Runic glow flow — used on animated borders */
+@keyframes runeFlow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
-::view-transition-new(root) {
-  animation: 200ms ease both vt-in;
+@keyframes runeGlow {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 1.00; }
 }
-@keyframes vt-out {
-  to { opacity: 0; transform: scale(0.98); }
-}
-@keyframes vt-in {
-  from { opacity: 0; transform: scale(1.01); }
+@keyframes runePulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(200,136,42,0.14),
+      0 4px 0 var(--stone-d2),
+      0 8px 0 var(--stone-d1),
+      0 18px 50px rgba(0,0,0,0.95),
+      inset 0 1px 0 rgba(255,225,140,0.07);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(200,136,42,0.38),
+      0 4px 0 var(--stone-d2),
+      0 8px 0 var(--stone-d1),
+      0 18px 50px rgba(0,0,0,0.95),
+      0 0 28px rgba(200,136,42,0.14),
+      inset 0 1px 0 rgba(255,225,140,0.14);
+  }
 }
 
-/* Skeleton shimmer utility */
+/* Skeleton shimmer */
 .skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%);
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.02) 25%,
+    rgba(255,255,255,0.06) 50%,
+    rgba(255,255,255,0.02) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.6s ease-in-out infinite;
+  animation: shimmer 1.8s ease-in-out infinite;
 }
 
 @keyframes pulseGold {
-  0%, 100% { box-shadow: 0 0 20px rgba(240,192,64,0.18); }
-  50%       { box-shadow: 0 0 36px rgba(240,192,64,0.42), 0 0 60px rgba(240,192,64,0.12); }
+  0%, 100% { box-shadow: 0 0 22px var(--gold-glow-soft); }
+  50%       { box-shadow: 0 0 44px var(--gold-glow), 0 0 90px rgba(200,136,42,0.07); }
 }
 
-/* Result card: scale-up spring pop with a gold glow flash */
 @keyframes resultReveal {
-  0%   { opacity: 0; transform: scale(0.48) translateY(18px); filter: drop-shadow(0 0 0px transparent); }
-  55%  { filter: drop-shadow(0 0 28px rgba(240,192,64,0.75)); }
-  100% { opacity: 1; transform: scale(1) translateY(0);       filter: drop-shadow(0 0 8px rgba(240,192,64,0.18)); }
+  0%   { opacity: 0; transform: scale(0.44) translateY(22px); filter: drop-shadow(0 0 0px transparent); }
+  55%  { filter: drop-shadow(0 0 36px rgba(200,136,42,0.85)); }
+  100% { opacity: 1; transform: scale(1) translateY(0);       filter: drop-shadow(0 0 12px rgba(200,136,42,0.24)); }
 }
 
-/* Wildcard flash animations */
 @keyframes wildcardFlashBg {
-  from { background: rgba(0,0,0,0.92); }
-  to   { background: rgba(20,15,0,0.72); }
+  from { background: rgba(0,0,0,0.96); }
+  to   { background: rgba(14,9,0,0.76); }
 }
-
 @keyframes wildcardFlashText {
-  from { opacity: 1; transform: scale(1);    text-shadow: 0 0 40px rgba(240,192,64,0.9), 0 0 80px rgba(240,192,64,0.5); }
-  to   { opacity: 0.2; transform: scale(0.96); text-shadow: 0 0 10px rgba(240,192,64,0.3); }
+  from { opacity: 1;   transform: scale(1);    text-shadow: 0 0 40px rgba(200,136,42,0.9), 0 0 80px rgba(200,136,42,0.5); }
+  to   { opacity: 0.2; transform: scale(0.96); text-shadow: 0 0 10px rgba(200,136,42,0.3); }
 }
 
-/* ── Design system utility classes (Stitch-derived) ── */
+/* ════════════════════ DESIGN SYSTEM ════════════════════════ */
 
+/*
+ * OBSIDIAN SLAB
+ * Main carved-stone panel with 3-layer bottom shadow for tablet depth.
+ * Corner gradient brightens to simulate light catching edges.
+ */
 .obsidian-slab {
-  background: linear-gradient(180deg, #13121c 0%, #0c0b14 100%);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 1px 1px 0 rgba(255,223,150,0.05);
-  border: 1px solid rgba(255,223,150,0.1);
-  border-top-color: rgba(255,223,150,0.15);
-  border-left-color: rgba(255,223,150,0.1);
+  background: linear-gradient(165deg,
+    #1c1730 0%,
+    #130f24 40%,
+    #0d0a1a 75%,
+    #080610 100%);
+  box-shadow:
+    /* Outer border glow */
+    0 0 0 1px rgba(200,136,42,0.13),
+    /* 3D stone thickness (layered bottom shadows) */
+    0 3px 0 var(--stone-d2),
+    0 6px 0 var(--stone-d1),
+    0 9px 0 var(--stone-d0),
+    /* Ambient depth */
+    0 20px 64px rgba(0,0,0,0.96),
+    0 6px 18px rgba(0,0,0,0.72),
+    /* Inner top edge: light catching the rim */
+    inset 0 1px 0 rgba(255,225,140,0.08),
+    inset 1px 0 0 rgba(255,225,140,0.04),
+    /* Inner bottom: carved shadow */
+    inset 0 -1px 0 rgba(0,0,0,0.55);
+  border: 1px solid rgba(200,136,42,0.10);
+  border-top-color:  rgba(200,136,42,0.22);
+  border-left-color: rgba(200,136,42,0.13);
   position: relative;
 }
+
+/* Stone noise texture overlay */
 .obsidian-slab::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.040;
   pointer-events: none;
   border-radius: inherit;
+  mix-blend-mode: screen;
 }
 
+/* Corner accent gradients — light catching four beveled corners */
+.obsidian-slab::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(200,136,42,0.20) 0%, transparent 18px) top    left  / 18px 18px no-repeat,
+    linear-gradient(225deg, rgba(200,136,42,0.14) 0%, transparent 18px) top    right / 18px 18px no-repeat,
+    linear-gradient(315deg, rgba(200,136,42,0.14) 0%, transparent 18px) bottom right / 18px 18px no-repeat,
+    linear-gradient(45deg,  rgba(200,136,42,0.14) 0%, transparent 18px) bottom left  / 18px 18px no-repeat;
+}
+
+/*
+ * RUNE PANEL — lighter secondary panel surface
+ */
+.rune-panel {
+  background: linear-gradient(155deg, #1a1530 0%, #100d20 100%);
+  box-shadow:
+    0 0 0 1px rgba(200,136,42,0.09),
+    0 2px 0 var(--stone-d1),
+    0 5px 0 var(--stone-d0),
+    0 12px 36px rgba(0,0,0,0.82),
+    inset 0 1px 0 rgba(255,225,140,0.05);
+  border: 1px solid rgba(200,136,42,0.07);
+  border-top-color: rgba(200,136,42,0.16);
+  position: relative;
+}
+
+/*
+ * HAMMERED GOLD — gold selection border / interactive highlight
+ */
 .hammered-gold {
-  border: 1px solid #f0c040;
-  box-shadow: inset 0 0 10px rgba(240,192,64,0.2), 0 0 5px rgba(240,192,64,0.1);
+  border: 1px solid var(--gold-mid);
+  box-shadow:
+    inset 0 0 14px rgba(200,136,42,0.20),
+    0 0 10px rgba(200,136,42,0.14),
+    inset 0 1px 0 rgba(255,235,160,0.18);
   cursor: pointer;
-  transition: box-shadow 0.15s;
+  transition: box-shadow 0.18s, border-color 0.18s;
 }
 .hammered-gold:hover {
-  box-shadow: inset 0 0 14px rgba(240,192,64,0.28), 0 0 12px rgba(240,192,64,0.2);
+  border-color: var(--gold-bright);
+  box-shadow:
+    inset 0 0 22px rgba(200,136,42,0.32),
+    0 0 22px rgba(200,136,42,0.24),
+    inset 0 1px 0 rgba(255,235,160,0.26);
 }
 
+/*
+ * ENGRAVED TEXT — text that looks recessed into stone
+ */
 .engraved-text {
-  color: #cfc5b4;
-  text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
-  opacity: 0.8;
+  color: #b09c7e;
+  text-shadow:
+    1px 1px 2px rgba(0,0,0,0.95),
+    -0.5px -0.5px 0 rgba(255,230,160,0.07);
+  opacity: 0.82;
 }
 
+/*
+ * GOLD EMBOSS — raised, glowing gold text
+ */
 .gold-emboss {
-  color: #f0c040;
-  text-shadow: 2px 2px 0px rgba(0,0,0,0.8), -1px -1px 0px rgba(255,255,255,0.1), 0px 0px 15px rgba(240,192,64,0.4);
+  color: var(--gold-bright);
+  text-shadow:
+    0 1px 0 rgba(0,0,0,0.95),
+    0 -0.5px 0 rgba(255,248,190,0.28),
+    0 0 14px rgba(200,136,42,0.55),
+    0 0 32px rgba(200,136,42,0.22);
 }
 
+/*
+ * METAL STAMP GOLD — 3D raised bronze-gold button
+ */
 .metal-stamp-gold {
-  background: linear-gradient(135deg, #f0c040 0%, #b88d00 100%);
-  box-shadow: 0 4px 0 #796125, 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.35);
-  border: 1px solid #ffdf97;
+  background: linear-gradient(162deg,
+    #ecc868 0%,
+    #c89030 35%,
+    #a87018 60%,
+    #c89030 100%);
+  box-shadow:
+    /* 3D stacked thickness */
+    0 4px 0 #5c3e08,
+    0 7px 0 #3c2604,
+    0 10px 0 #1e1202,
+    /* Ambient spread */
+    0 16px 32px rgba(0,0,0,0.72),
+    /* Top edge highlight (polished bevel) */
+    inset 0 1px 0 rgba(255,248,190,0.55),
+    inset 0 -1px 0 rgba(0,0,0,0.45),
+    inset 1px 0 0 rgba(255,248,190,0.28),
+    inset -1px 0 0 rgba(0,0,0,0.35);
+  border: 1px solid #d4a832;
+  border-top-color: #f0d060;
+  border-bottom-color: #604812;
   color: #1a0e00;
+  font-weight: 800;
   cursor: pointer;
-  transition: transform 0.12s, box-shadow 0.12s;
+  transition: transform 0.10s, box-shadow 0.10s, filter 0.10s;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.28);
 }
 .metal-stamp-gold:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.10);
+  box-shadow:
+    0 4px 0 #5c3e08,
+    0 7px 0 #3c2604,
+    0 10px 0 #1e1202,
+    0 16px 40px rgba(0,0,0,0.72),
+    0 0 24px rgba(200,136,42,0.30),
+    inset 0 1px 0 rgba(255,248,190,0.60),
+    inset 0 -1px 0 rgba(0,0,0,0.45);
 }
 .metal-stamp-gold:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 #796125, 0 4px 10px rgba(0,0,0,0.5);
+  transform: translateY(7px);
+  box-shadow:
+    0 1px 0 #5c3e08,
+    0 6px 12px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,248,190,0.32),
+    inset 0 2px 5px rgba(0,0,0,0.35);
 }
 
+/*
+ * METAL STAMP CRIMSON — 3D raised blood-red button
+ */
 .metal-stamp-crimson {
-  background: linear-gradient(135deg, #93000a 0%, #690005 100%);
-  box-shadow: 0 4px 0 #3d0002, 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.12);
-  border: 1px solid #ffb4ab;
+  background: linear-gradient(162deg, #a83030 0%, #701818 50%, #560c0c 100%);
+  box-shadow:
+    0 4px 0 #2c0808,
+    0 7px 0 #1a0404,
+    0 10px 0 #0e0202,
+    0 16px 32px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(255,160,140,0.28),
+    inset 0 -1px 0 rgba(0,0,0,0.55);
+  border: 1px solid #c04040;
+  border-top-color: #e05050;
+  border-bottom-color: #3e0808;
   cursor: pointer;
-  transition: transform 0.12s, box-shadow 0.12s;
+  transition: transform 0.10s, box-shadow 0.10s, filter 0.10s;
 }
-.metal-stamp-crimson:hover {
-  filter: brightness(1.1);
-}
+.metal-stamp-crimson:hover  { filter: brightness(1.12); }
 .metal-stamp-crimson:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 #3d0002, 0 4px 10px rgba(0,0,0,0.5);
+  transform: translateY(7px);
+  box-shadow: 0 1px 0 #2c0808, 0 6px 12px rgba(0,0,0,0.55);
 }
 
+/*
+ * CARVED GROOVE — deeply sunken inset channel
+ */
 .carved-groove {
-  background: #05050d;
-  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(0,0,0,0.4);
+  background: var(--stone-d0);
+  box-shadow:
+    inset 3px 3px 9px rgba(0,0,0,0.88),
+    inset 0 0 0 1px rgba(0,0,0,0.55),
+    inset 0 1px 3px rgba(0,0,0,0.75);
 }
 
+/*
+ * NOISE OVERLAY — stone micro-texture (position:absolute)
+ */
 .noise-overlay {
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.04;
   pointer-events: none;
   border-radius: inherit;
+  mix-blend-mode: screen;
 }
 
+/*
+ * RADIAL ENERGY — decorative aura overlays (position:absolute)
+ */
 .radial-energy-left {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 0% 50%, rgba(240,192,64,0.15) 0%, transparent 60%);
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 0% 50%, rgba(200,136,42,0.14) 0%, transparent 55%);
   pointer-events: none;
 }
 .radial-energy-right {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 100% 50%, rgba(147,0,10,0.15) 0%, transparent 60%);
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 100% 50%, rgba(138,60,200,0.12) 0%, transparent 55%);
   pointer-events: none;
 }
+
 .vignette-crit {
-  box-shadow: inset 0 0 150px rgba(147,0,10,0.3);
+  box-shadow: inset 0 0 160px rgba(200,48,30,0.38);
 }
 
+/*
+ * L-BRACKET — angular corner accent (set color via currentColor on parent)
+ */
 .l-bracket {
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   pointer-events: none;
 }
 .l-bracket::before {
   content: '';
   position: absolute;
   top: -2px; left: -2px;
-  width: 10px; height: 10px;
+  width: 14px; height: 14px;
   border-top: 2px solid currentColor;
   border-left: 2px solid currentColor;
+  border-radius: 1px 0 0 0;
 }
 .l-bracket::after {
   content: '';
   position: absolute;
   bottom: -2px; right: -2px;
-  width: 10px; height: 10px;
+  width: 14px; height: 14px;
   border-bottom: 2px solid currentColor;
   border-right: 2px solid currentColor;
+  border-radius: 0 0 1px 0;
+}
+
+/*
+ * RUNE BORDER — animated conic gradient rune-trace border
+ */
+.rune-border {
+  position: relative;
+}
+.rune-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(200,136,42,0.0) 0%,
+    rgba(200,136,42,0.8) 30%,
+    rgba(72,200,224,0.8) 55%,
+    rgba(200,136,42,0.8) 75%,
+    rgba(200,136,42,0.0) 100%
+  );
+  background-size: 300% 100%;
+  animation: runeFlow 4s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+/*
+ * RUNE SHINE — shimmer gradient text (Cinzel headings)
+ */
+.rune-shine {
+  background: linear-gradient(
+    105deg,
+    var(--gold-dim) 0%,
+    var(--gold-bright) 38%,
+    #fff8e0 50%,
+    var(--gold-bright) 62%,
+    var(--gold-dim) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3.5s linear infinite;
 }
