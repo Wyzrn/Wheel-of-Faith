@@ -150,31 +150,36 @@
           {@const alreadyOwned = owned && !gp.stackable}
 
           <div class="rounded-xl px-4 py-3.5 relative overflow-hidden"
-            style="background: {owned ? 'linear-gradient(135deg, rgba(240,192,64,0.08), rgba(240,192,64,0.03))' : 'linear-gradient(180deg, #13121c, #0c0b14)'}; border: 1px solid {owned ? 'rgba(240,192,64,0.28)' : 'rgba(78,70,53,0.3)'}; box-shadow: {owned ? '0 0 16px rgba(240,192,64,0.06)' : 'inset 1px 1px 0 rgba(255,223,150,0.03)'};">
+            style="background: {gp.comingSoon ? 'linear-gradient(180deg, #0e0d15, #09080f)' : owned ? 'linear-gradient(135deg, rgba(240,192,64,0.08), rgba(240,192,64,0.03))' : 'linear-gradient(180deg, #13121c, #0c0b14)'}; border: 1px solid {gp.comingSoon ? 'rgba(48,44,64,0.6)' : owned ? 'rgba(240,192,64,0.28)' : 'rgba(78,70,53,0.3)'}; opacity: {gp.comingSoon ? '0.6' : '1'};">
             <div class="flex items-start justify-between gap-3">
               <div class="flex items-start gap-3 flex-1 min-w-0">
                 <span class="material-symbols-outlined mt-0.5 flex-shrink-0"
-                  style="font-size: 20px; color: {owned ? '#f0c040' : '#4e4635'}; font-variation-settings: 'FILL' {owned ? 1 : 0};">{gp.icon}</span>
+                  style="font-size: 20px; color: {gp.comingSoon ? '#3a3550' : owned ? '#f0c040' : '#4e4635'}; font-variation-settings: 'FILL' {owned ? 1 : 0};">{gp.icon}</span>
                 <div class="min-w-0">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <p class="font-semibold text-sm" style="font-family: 'Cinzel', serif; color: {owned ? '#ffdf96' : '#e4e1ee'};">{gp.name}</p>
-                    {#if owned}
+                    <p class="font-semibold text-sm" style="font-family: 'Cinzel', serif; color: {gp.comingSoon ? '#4a4465' : owned ? '#ffdf96' : '#e4e1ee'};">{gp.name}</p>
+                    {#if owned && !gp.comingSoon}
                       <span class="font-mono text-xs px-1.5 py-0.5 rounded" style="background: rgba(240,192,64,0.15); border: 1px solid rgba(240,192,64,0.3); color: #f0c040;">
                         {gp.stackable && count > 1 ? `OWNED ×${count}` : 'OWNED'}
                       </span>
                     {/if}
-                    {#if gp.comingSoon && !owned}
-                      <span class="font-mono text-xs px-1.5 py-0.5 rounded" style="background: rgba(148,97,221,0.15); border: 1px solid rgba(148,97,221,0.3); color: #9461dd;">SOON</span>
+                    {#if gp.comingSoon}
+                      <span class="font-mono text-xs px-1.5 py-0.5 rounded" style="background: rgba(48,44,64,0.5); border: 1px solid rgba(58,53,80,0.6); color: #4a4465;">UNAVAILABLE</span>
                     {/if}
                   </div>
-                  <p class="text-xs mt-0.5" style="color: #9a907b; line-height: 1.4;">{gp.description}</p>
-                  <p class="font-mono text-xs mt-1.5" style="color: {gp.comingSoon ? '#9a907b' : '#48c8e0'};">{gp.effect}{#if gp.comingSoon} · effect coming soon{/if}</p>
+                  <p class="text-xs mt-0.5" style="color: {gp.comingSoon ? '#2e2b45' : '#9a907b'}; line-height: 1.4;">{gp.description}</p>
+                  <p class="font-mono text-xs mt-1.5" style="color: {gp.comingSoon ? '#2e2b45' : '#48c8e0'};">{gp.comingSoon ? 'Not yet available' : gp.effect}</p>
                 </div>
               </div>
 
               <!-- Buy button -->
               <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                {#if alreadyOwned}
+                {#if gp.comingSoon}
+                  <div class="px-3 py-2 rounded-lg"
+                    style="background: rgba(30,28,48,0.4); border: 1px solid rgba(48,44,64,0.5);">
+                    <span class="font-mono text-xs font-bold" style="color: #2e2b45;">—</span>
+                  </div>
+                {:else if alreadyOwned}
                   <div class="flex items-center gap-1 px-3 py-2 rounded-lg"
                     style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.2);">
                     <span class="material-symbols-outlined" style="font-size: 14px; color: #f0c040; font-variation-settings: 'FILL' 1;">check_circle</span>
