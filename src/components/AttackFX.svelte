@@ -4,9 +4,10 @@
     color?: string
     size?: number
     direction?: 'ltr' | 'rtl' | 'center'
-    grade?: string   // F | E | D | C | B | A | S | SS | SSS | God
+    grade?: string      // F | E | D | C | B | A | S | SS | SSS | God
+    attackType?: string // attack | aoe | heal | buff | debuff | summon | passive
   }
-  let { type, color = '#ffffff', size = 100, direction = 'center', grade = 'C' }: Props = $props()
+  let { type, color = '#ffffff', size = 100, direction = 'center', grade = 'C', attackType = 'attack' }: Props = $props()
 
   // Grade → intensity index (0=F … 9=God)
   const GRADE_IDX: Record<string, number> = { F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, SS: 7, SSS: 8, God: 9, Godly: 9 }
@@ -36,6 +37,11 @@
   const crashTypes  = new Set(['crit', 'berserker', 'earth', 'slash'])
 
   let flyClass = $derived(
+    attackType === 'aoe'    ? 'fx-aoe-burst' :
+    attackType === 'heal'   ? 'fx-heal-rise' :
+    attackType === 'buff'   ? 'fx-buff-pulse' :
+    attackType === 'debuff' ? 'fx-debuff-spread' :
+    attackType === 'summon' ? 'fx-summon-portal' :
     direction === 'center' ? '' :
     noFlyTypes.has(type)   ? '' :
     swirlTypes.has(type)   ? `fx-${direction}-swirl` :
@@ -872,6 +878,55 @@
   68%  { transform: translate(max(-57vw,-456px),0)    scale(1.3); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 20px var(--c)); }
   82%  { transform: translate(max(-60vw,-480px),0)    scale(2.2); opacity: 1; filter: brightness(5.5) drop-shadow(0 0 50px var(--c)); }
   100% { transform: translate(max(-60vw,-480px),0)    scale(0.2); opacity: 0; filter: brightness(1); }
+}
+
+/* ─── AOE BURST: expands outward from attacker position ──────────── */
+.fx-aoe-burst { animation: fx-aoe-burst 0.80s cubic-bezier(0.22, 0.8, 0.3, 1) forwards; }
+@keyframes fx-aoe-burst {
+  0%   { transform: scale(0.2) rotate(0deg);   opacity: 0;    filter: drop-shadow(0 0 6px var(--c)); }
+  15%  { transform: scale(1.2) rotate(10deg);  opacity: 1;    filter: brightness(3) drop-shadow(0 0 28px var(--c)); }
+  45%  { transform: scale(1.8) rotate(20deg);  opacity: 0.85; }
+  70%  { transform: scale(2.8) rotate(25deg);  opacity: 0.5;  }
+  100% { transform: scale(4.0) rotate(30deg);  opacity: 0;    filter: brightness(1); }
+}
+
+/* ─── HEAL RISE: floats upward at target location ────────────────── */
+.fx-heal-rise { animation: fx-heal-rise 0.90s ease-out forwards; }
+@keyframes fx-heal-rise {
+  0%   { transform: translate(0,  20px) scale(0.4); opacity: 0;   filter: brightness(2) drop-shadow(0 0 12px var(--c)); }
+  20%  { transform: translate(0,   0px) scale(1.2); opacity: 1;   filter: brightness(3) drop-shadow(0 0 22px var(--c)); }
+  60%  { transform: translate(0, -30px) scale(1.0); opacity: 0.8; }
+  100% { transform: translate(0, -60px) scale(0.6); opacity: 0;   filter: brightness(1); }
+}
+
+/* ─── BUFF PULSE: scale pulse in place ───────────────────────────── */
+.fx-buff-pulse { animation: fx-buff-pulse 0.80s ease-out forwards; }
+@keyframes fx-buff-pulse {
+  0%   { transform: scale(0.3) rotate(-10deg); opacity: 0;   filter: drop-shadow(0 0 6px var(--c)); }
+  25%  { transform: scale(1.4) rotate(  5deg); opacity: 1;   filter: brightness(3) drop-shadow(0 0 24px var(--c)); }
+  55%  { transform: scale(0.9) rotate( -3deg); opacity: 0.9; }
+  75%  { transform: scale(1.1) rotate(  2deg); opacity: 0.7; }
+  100% { transform: scale(1.5) rotate(  0deg); opacity: 0;   filter: brightness(1); }
+}
+
+/* ─── DEBUFF SPREAD: corrupt drip/spread ─────────────────────────── */
+.fx-debuff-spread { animation: fx-debuff-spread 0.85s ease-out forwards; }
+@keyframes fx-debuff-spread {
+  0%   { transform: scale(0.4) rotate(  0deg); opacity: 0;   filter: drop-shadow(0 0 8px var(--c)); }
+  20%  { transform: scale(1.1) rotate( -5deg); opacity: 1;   filter: brightness(2.5) drop-shadow(0 0 20px var(--c)); }
+  50%  { transform: scale(1.3) rotate(  5deg); opacity: 0.8; }
+  80%  { transform: scale(1.6) rotate( -3deg); opacity: 0.4; }
+  100% { transform: scale(1.8) rotate(  0deg); opacity: 0;   filter: brightness(1); }
+}
+
+/* ─── SUMMON PORTAL: spinning vortex materializing ───────────────── */
+.fx-summon-portal { animation: fx-summon-portal 1.0s ease-out forwards; }
+@keyframes fx-summon-portal {
+  0%   { transform: scale(0.0) rotate(   0deg); opacity: 0;   filter: brightness(1) drop-shadow(0 0 4px var(--c)); }
+  10%  { transform: scale(0.6) rotate( -90deg); opacity: 0.7; filter: brightness(2) drop-shadow(0 0 16px var(--c)); }
+  35%  { transform: scale(1.6) rotate(-200deg); opacity: 1;   filter: brightness(4) drop-shadow(0 0 36px var(--c)); }
+  65%  { transform: scale(1.3) rotate(-300deg); opacity: 0.9; }
+  100% { transform: scale(0.5) rotate(-420deg); opacity: 0;   filter: brightness(1); }
 }
 
 /* ─── SLASH ──────────────────────────────────────────────────────── */

@@ -75,7 +75,7 @@
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
 
   type AnimDir = 'ltr' | 'rtl' | 'center'
-  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; origin?: { x: number; y: number } } | null>(null)
+  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; origin?: { x: number; y: number }; attackType?: string } | null>(null)
   let animKey = 0
   let dodgeDir = $state<'ltr' | 'rtl' | null>(null)
 
@@ -88,9 +88,9 @@
     return { x, y }
   }
 
-  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, origin?: { x: number; y: number }) {
+  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, origin?: { x: number; y: number }, attackType?: string) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
-    activeAnim = { type, color, key: ++animKey, direction, grade, origin }
+    activeAnim = { type, color, key: ++animKey, direction, grade, origin, attackType }
     dodgeDir = type === 'dodge' ? (direction === 'ltr' ? 'ltr' : direction === 'rtl' ? 'rtl' : null) : null
     animTimeoutId = setTimeout(() => { activeAnim = null; dodgeDir = null }, 950)
   }
@@ -170,7 +170,8 @@
         if (elFx) { type = elFx.type; color = elFx.color }
       }
       const origin = getPanelOrigin(direction)
-      showAnim(type, color, direction, grade, origin)
+      const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
+      showAnim(type, color, direction, grade, origin, fxAttackType)
     }
     const delay = head.startsWith('──') ? 550 : 1000
     timeoutId = setTimeout(() => playLines(rest, onDone), delay)
@@ -380,7 +381,7 @@
                     transform:translate(-50%,-50%);
                     z-index:9999;pointer-events:none;">
           <AttackFX type={activeAnim.type} color={activeAnim.color}
-                    direction={activeAnim.direction} size={76} grade={activeAnim.grade}/>
+                    direction={activeAnim.direction} size={76} grade={activeAnim.grade} attackType={activeAnim.attackType}/>
         </div>
       {/key}
     {/if}
