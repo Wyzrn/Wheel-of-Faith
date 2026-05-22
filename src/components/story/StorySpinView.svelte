@@ -967,30 +967,38 @@
   {/if}
 </div>
 
-<!-- ── Wildcard overlay ───────────────────────────────────────────────────────── -->
-{#if wildcardPhase !== 'idle'}
+<!-- ── Wildcard flash overlay — phase 1: full-screen WILDCARD flash ───────────── -->
+{#if wildcardPhase === 'flashing'}
+  <div class="fixed inset-0 z-50 flex items-center justify-center"
+    style="background: rgba(0,0,0,0.85); animation: wildcardFlashBg 0.25s ease-in-out infinite alternate;">
+    <p style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 6rem); font-weight: 900; color: #f0c040; letter-spacing: 0.15em; text-shadow: 0 0 40px rgba(240,192,64,0.9), 0 0 80px rgba(240,192,64,0.5); animation: wildcardFlashText 0.2s ease-in-out infinite alternate;">⚡ WILDCARD ⚡</p>
+  </div>
+{/if}
+
+<!-- ── Wildcard reveal overlay — phase 2: show outcome ────────────────────────── -->
+{#if wildcardPhase === 'reveal'}
   <div
     class="fixed inset-0 z-50 flex items-center justify-center px-4"
     style="background: rgba(7,7,13,0.92); backdrop-filter: blur(14px);"
   >
     <div
       class="relative flex flex-col items-center gap-5 rounded-2xl px-8 py-8 max-w-sm w-full text-center"
-      style="border: 1px solid #f59e0b66; box-shadow: 0 0 100px rgba(0,0,0,0.98), 0 0 60px rgba(245,158,11,0.22), 0 0 20px rgba(245,158,11,0.08), inset 0 1px 0 rgba(255,255,255,0.04);"
+      style="border: 1px solid #f59e0b66; box-shadow: 0 0 100px rgba(0,0,0,0.98), 0 0 60px rgba(245,158,11,0.22), 0 0 20px rgba(245,158,11,0.08), inset 0 1px 0 rgba(255,255,255,0.04); animation: resultReveal 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;"
     >
-      {#if wildcardPhase === 'flashing'}
-        <div class="text-5xl animate-pulse">🎲</div>
-        <p class="text-amber-300 font-bold text-xl tracking-widest uppercase" style="font-family: var(--font-cinzel,'Cinzel',serif);">Wildcard!</p>
-        <p class="text-zinc-400 text-sm">Fate intervenes…</p>
-      {:else}
-        <div class="text-5xl">{wildcardOutcomeType === 'item_bonus' ? '🎁' : '⚡'}</div>
-        <p class="text-amber-300 font-bold text-xl tracking-widest uppercase" style="font-family: var(--font-cinzel,'Cinzel',serif);">{wildcardOutcomeLabel}</p>
-        <p class="text-zinc-300 text-sm leading-relaxed">{wildcardOutcomeDesc}</p>
-        <button
-          onclick={handleWildcardContinue}
-          class="mt-2 px-6 py-2 rounded-lg font-semibold text-sm tracking-wide transition-colors"
-          style="background: #f59e0b; color: #07070d;"
-        >Continue</button>
-      {/if}
+      <div class="text-5xl">{wildcardOutcomeType === 'item_bonus' ? '🎁' : '⚡'}</div>
+      <div>
+        <p class="text-xs tracking-[0.3em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #f0c040;">⚡ Wildcard Activated</p>
+        <p class="font-bold text-xl tracking-widest uppercase" style="font-family: var(--font-cinzel,'Cinzel',serif); color: #ffdf96; letter-spacing: 0.12em;">{wildcardOutcomeLabel}</p>
+      </div>
+      <p class="text-sm leading-relaxed" style="font-family: 'JetBrains Mono', monospace; color: #9a907b; max-width: 240px;">{wildcardOutcomeDesc}</p>
+      <button
+        onclick={handleWildcardContinue}
+        class="metal-stamp-gold mt-2 px-8 py-2.5 rounded-lg font-bold text-sm tracking-widest relative"
+        style="font-family: var(--font-cinzel,'Cinzel',serif);"
+      >
+        <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
+        Continue
+      </button>
     </div>
   </div>
 {/if}

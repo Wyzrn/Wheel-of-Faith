@@ -88,6 +88,9 @@
 
   // ── State declarations ────────────────────────────────────────────────────
   let showMenu = $state(true)
+  const LANDING_KEY = 'wof_visited'
+  let showLanding = $state(typeof localStorage !== 'undefined' && !localStorage.getItem(LANDING_KEY))
+  let spinTriggerKey = $state(0)
   let currentSession = $state<SessionState>(createSession())
   let showResumePrompt = $state(false)
   let spinQueue = $state<SpinDefinition[]>(buildInitialQueue())
@@ -204,6 +207,14 @@
     // Welcome "Let's go!" — start the spin session and advance past the welcome modal
     showMenu = false
     tutorialStep = 1
+  }
+
+  function handleTutorialTriggerAction() {
+    if (isRevealed) {
+      handleNextSpin()
+    } else {
+      spinTriggerKey++
+    }
   }
 
   // ── Derived values ────────────────────────────────────────────────────────
@@ -1874,7 +1885,101 @@
     onGotIt={handleTutorialGotIt}
     onSkip={handleTutorialSkip}
     onStartGame={handleTutorialStartGame}
+    onTriggerAction={handleTutorialTriggerAction}
   />
+{/if}
+
+<!-- Landing page — shown on first visit before the main menu -->
+{#if showLanding}
+  <div class="fixed inset-0 z-[60] flex flex-col items-center justify-center px-6 overflow-y-auto"
+    style="background: #07070d;">
+    <!-- Top glow -->
+    <div class="absolute top-0 inset-x-0 h-64 pointer-events-none"
+      style="background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(240,192,64,0.09), transparent);"></div>
+    <!-- Bottom glow -->
+    <div class="absolute bottom-0 inset-x-0 h-48 pointer-events-none"
+      style="background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(157,23,77,0.07), transparent);"></div>
+
+    <div class="relative z-10 w-full max-w-sm flex flex-col items-center gap-6 py-12">
+      <!-- Logo -->
+      <div class="flex flex-col items-center gap-3">
+        <div class="relative flex items-center justify-center" style="width: 96px; height: 96px;">
+          <div class="absolute inset-0 rounded-full" style="border: 1px solid rgba(240,192,64,0.12); transform: scale(1.3);"></div>
+          <div class="absolute inset-0 rounded-full" style="border: 1px solid rgba(240,192,64,0.22); transform: scale(1.15);"></div>
+          <div class="obsidian-slab rounded-full w-full h-full flex items-center justify-center relative overflow-hidden"
+            style="border: 1px solid rgba(240,192,64,0.32); box-shadow: 0 0 40px rgba(240,192,64,0.15);">
+            <div class="noise-overlay"></div>
+            <span class="material-symbols-outlined relative z-10"
+              style="font-size: 46px; color: #f0c040; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 16px rgba(240,192,64,0.7));">casino</span>
+          </div>
+        </div>
+        <div class="text-center">
+          <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 8vw, 2.6rem); font-weight: 900; color: #f0c040; letter-spacing: 0.18em; line-height: 1.1; text-shadow: 0 0 24px rgba(240,192,64,0.4);">WHEEL OF FATE</h1>
+          <p class="mt-1.5 text-xs tracking-[0.22em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Spin your destiny. Accept the consequences.</p>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="flex items-center gap-3 w-full">
+        <div class="flex-1 h-px" style="background: linear-gradient(90deg, transparent, rgba(240,192,64,0.3));"></div>
+        <span style="color: #f0c040; font-size: 10px; opacity: 0.6;">✦</span>
+        <div class="flex-1 h-px" style="background: linear-gradient(90deg, rgba(240,192,64,0.3), transparent);"></div>
+      </div>
+
+      <!-- Description -->
+      <div class="w-full obsidian-slab rounded-xl p-5 relative overflow-hidden"
+        style="border: 1px solid rgba(240,192,64,0.12);">
+        <div class="noise-overlay"></div>
+        <div class="relative z-10 flex flex-col gap-3">
+          <p class="text-sm leading-relaxed" style="font-family: 'JetBrains Mono', monospace; color: #9a907b; line-height: 1.75;">
+            A character creation engine driven entirely by chance.
+          </p>
+          <div class="flex flex-col gap-2">
+            {#each [
+              { icon: 'casino', text: 'Spin 23+ sequential wheels — race, powers, stats, weapons, weaknesses' },
+              { icon: 'bolt', text: '5% Wildcard chance on every stat spin — blessing, curse, or chaos' },
+              { icon: 'swords', text: 'Battle your characters in Rivals Mode or build a full roster in Story Mode' },
+              { icon: 'link', text: 'Share your character card with anyone — no account needed' },
+            ] as feature}
+              <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined shrink-0 mt-0.5"
+                  style="font-size: 14px; color: #f0c040; font-variation-settings: 'FILL' 1;">{feature.icon}</span>
+                <p class="text-xs leading-relaxed" style="font-family: 'JetBrains Mono', monospace; color: #6b6070; line-height: 1.65;">{feature.text}</p>
+              </div>
+            {/each}
+          </div>
+        </div>
+      </div>
+
+      <!-- CTAs -->
+      <div class="flex flex-col gap-3 w-full">
+        <button
+          onclick={() => {
+            showLanding = false
+            try { localStorage.setItem(LANDING_KEY, '1') } catch { /* ignore */ }
+          }}
+          class="metal-stamp-gold w-full py-3.5 rounded-xl relative"
+          style="font-family: 'Cinzel', serif; font-size: 0.88rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;"
+        >
+          <div class="l-bracket" style="color: rgba(255,255,255,0.28);"></div>
+          Play Now
+        </button>
+        <a
+          href="/login"
+          onclick={() => { try { localStorage.setItem(LANDING_KEY, '1') } catch { /* ignore */ } }}
+          class="w-full py-3 rounded-xl text-center text-sm font-bold transition-all"
+          style="font-family: 'Cinzel', serif; letter-spacing: 0.14em; text-transform: uppercase; background: rgba(255,255,255,0.03); border: 1px solid rgba(240,192,64,0.18); color: #9a907b; text-decoration: none;"
+        >
+          Login / Create Account
+        </a>
+      </div>
+
+      <!-- Footer note -->
+      <p class="text-center text-xs" style="font-family: 'JetBrains Mono', monospace; color: #2e2a40; letter-spacing: 0.08em;">
+        No account required to spin. Login to save progress across devices.
+      </p>
+    </div>
+  </div>
 {/if}
 
 <main class="min-h-screen" style="background: #07070d; color: #e4e1ee;">
@@ -2312,6 +2417,7 @@
               effectsEnabled={settings.effectsEnabled}
               spinSpeedMultiplier={settings.spinSpeed}
               cursedTheme={auth.user?.gamepasses?.includes('cursed_wheel') ?? false}
+              spinTrigger={spinTriggerKey}
             />
           {/key}
 

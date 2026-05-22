@@ -12,9 +12,10 @@
     onGotIt: (nextStep: number) => void
     onSkip: () => void
     onStartGame: () => void
+    onTriggerAction?: () => void
   }
 
-  let { step, currentCategory, isRevealed = false, onGotIt, onSkip, onStartGame }: Props = $props()
+  let { step, currentCategory, isRevealed = false, onGotIt, onSkip, onStartGame, onTriggerAction }: Props = $props()
 
   // ── Welcome modal pages ───────────────────────────────────────────────────
   let welcomePage = $state(0)
@@ -62,14 +63,14 @@
       iconColor: '#f0c040',
       label: 'Shards & Shop',
       title: 'Fate Shards, Shop & Clans',
-      body: 'Fate Shards are your global account currency — they never reset across save slots or sessions.\n\nEarn them by:\n• Winning battles in Story Mode (chance drops, doubled with 2× Shard Drop gamepass)\n• Selling characters from your roster (+25% with Sell Bonus gamepass)\n• Daily Challenges — up to 175 shards/day from 3 rotating tasks\n\nSpend them in the Arcane Shop on:\n• Gamepasses — permanent upgrades: 2× Luck, Reroll Insurance, Expanded Roster, Daily Booster, Boss Magnet, Cursed Wheel, Gold Roster Frame, and more\n• Stat Crystals — buy Common (50 ◆), Elite (500 ◆), or Legendary (1,000 ◆) crystals directly, no daily limit\n\n⚑ Clans — team up with up to 9 other players. Clan leaderboard ranks by total combined Rivals wins. Join from the Clan page on the main menu.',
+      body: 'Fate Shards are your global account currency — they never reset across save slots or sessions.\n\nEarn Fate Shards by:\n• Winning battles in Story Mode (chance drops, doubled with 2× Shard Drop gamepass)\n• Daily Challenges — up to 175 shards/day from 3 rotating tasks\n\nEarn Gems (per-slot currency) by:\n• Selling characters from your roster (+25% with Sell Bonus gamepass)\n• Winning battles in Story Mode worlds\n\nSpend Fate Shards in the Arcane Shop on:\n• Gamepasses — permanent upgrades: 2× Luck, Reroll Insurance, Expanded Roster, Daily Booster, Boss Magnet, Cursed Wheel, Gold Roster Frame, and more\n• Stat Crystals — buy Common (50 ◆), Elite (500 ◆), or Legendary (1,000 ◆) crystals directly, no daily limit\n\n⚑ Clans — team up with up to 9 other players. Clan leaderboard ranks by total combined Rivals wins. Join from the Clan page on the main menu.',
     },
     {
       icon: 'workspace_premium',
       iconColor: '#f0c040',
       label: "Let's Go",
       title: "You're Ready",
-      body: 'After your 23 spins, you receive an Overall Tier Grade:\n\nF– → F → F+ → E → D → C → B → A → S → SS → SSS → God\n\nDerived from a weighted score across all 11 stats, powers, and equipment. Fighting Skill is weighted heaviest. God tier is extremely rare.\n\nYour completed character card can be:\n• Shared — a unique URL anyone can open\n• Published to the Public Gallery\n• Added to your Profile Hall of Fame (top 5 characters you\'ve ever rolled)\n• Replayed — step through all 23 spins in a viewer\n\nContext cards will appear during the spin to explain each system as it comes up. You can end the tutorial at any time by clicking "End tutorial" on any card.\n\nThe wheel has no memory. Every spin is fresh.',
+      body: 'After your 23 spins, you receive an Overall Tier Grade:\n\nF– → F → F+ → E → D → C → B → A → S → SS → SSS → Z → ZZ → ZZZ → Celestial → Godly → Primordial → Absolute\n\nDerived from a weighted score across all 11 stats, powers, and equipment. Fighting Skill is weighted heaviest. Absolute tier is extremely rare.\n\nYour completed character card can be:\n• Shared — a unique URL anyone can open\n• Published to the Public Gallery\n• Added to your Profile Hall of Fame (top 5 characters you\'ve ever rolled)\n• Replayed — step through all 23 spins in a viewer\n\nContext cards will appear during the spin to explain each system as it comes up. You can end the tutorial at any time by clicking "End tutorial" on any card.\n\nThe wheel has no memory. Every spin is fresh.',
     },
   ]
 
@@ -158,7 +159,7 @@
         id: 5,
         icon: 'bar_chart',
         title: `Stat — ${statName}`,
-        body: `${detail}\n\nThe grade system runs 28 levels:\nF–, F, F+\nE–, E, E+\nD–, D, D+\nC–, C, C+\nB–, B, B+\nA–, A, A+\nS–, S, S+\nSS–, SS, SS+\nSSS–, SSS, SSS+\nGod\n\nThe label you land on IS your tier. Score is embedded in it. Your race silently shifts the probability of landing higher tiers. You spin all 11 stats in this section.\n\n⚡ Every stat spin has a 5% Wildcard chance (10% with 2× Luck gamepass) that can rewrite your result entirely — up, down, or sideways. Next card explains how Wildcards work.`,
+        body: `${detail}\n\nThe grade system runs 46 levels:\nF–, F, F+\nE–, E, E+\nD–, D, D+\nC–, C, C+\nB–, B, B+\nA–, A, A+\nS–, S, S+\nSS–, SS, SS+\nSSS–, SSS, SSS+\nZ–, Z, Z+\nZZ–, ZZ, ZZ+\nZZZ–, ZZZ, ZZZ+\nCelestial–, Celestial, Celestial+\nGodly–, Godly\nPrimordial, Absolute\n\nThe label you land on IS your tier. Score is embedded in it. Your race silently shifts the probability of landing higher tiers. You spin all 11 stats in this section.\n\n⚡ Every stat spin has a 5% Wildcard chance (10% with 2× Luck gamepass) that can rewrite your result entirely — up, down, or sideways. Next card explains how Wildcards work.`,
         cta: 'Got it — spin!',
         accent: '#f0c040',
       }
@@ -239,7 +240,7 @@
       id: 13,
       icon: 'workspace_premium',
       title: 'Final Spin — Title',
-      body: 'Your honorary designation. The capstone of your identity.\n\nTitles range from grand and heroic to absurd and self-defeating. Some are race-weighted; many are universal. Permanent and visible on your character card forever.\n\nAfter this spin, you\'ll name your character. Then your complete card is revealed with your Overall Tier Grade:\n\nF– → F → F+ → E → D → C → B → A → S → SS → SSS → God\n\nThis grade is calculated from a weighted score across all 11 stats, powers, weapons, and armor. Fighting Skill is weighted heaviest. God tier is extremely rare — fewer than 1% of spins reach it.\n\nThis is it. Spin.',
+      body: 'Your honorary designation. The capstone of your identity.\n\nTitles range from grand and heroic to absurd and self-defeating. Some are race-weighted; many are universal. Permanent and visible on your character card forever.\n\nAfter this spin, you\'ll name your character. Then your complete card is revealed with your Overall Tier Grade:\n\nF– → F → F+ → E → D → C → B → A → S → SS → SSS → Z → ZZ → ZZZ → Celestial → Godly → Primordial → Absolute\n\nThis grade is calculated from a weighted score across all 11 stats, powers, weapons, and armor. Fighting Skill is weighted heaviest. Absolute tier is extremely rare.\n\nThis is it. Spin.',
       cta: 'Last spin — let\'s go!',
       accent: '#f0c040',
     }
@@ -249,7 +250,7 @@
       id: 14,
       icon: 'stars',
       title: 'Character Complete — What Next?',
-      body: 'Your fate is decided. Here\'s what you can do with your character:\n\n⚔ Rivals Mode — battle this character against friends (local) or real opponents (online). Wins climb the Rivals leaderboard on your profile.\n\n📖 Story Mode — build a full roster. Spin more characters (including Hero and Legend-class variants), battle through Worlds, collect and equip crystal drops, and unlock Endless Mode at Level 3.\n\n◆ Fate Shards — earn from battles and selling characters. Complete Daily Challenges (up to 175 shards/day). Spend in the Arcane Shop on permanent Gamepass upgrades that apply across all modes.\n\n⚑ Clans — team up with up to 9 players and compete on the Clan leaderboard by combined Rivals wins.\n\n🔗 Share — copy your character\'s link and send it to anyone. No account needed to view.',
+      body: 'Your fate is decided. Here\'s what you can do with your character:\n\n⚔ Rivals Mode — battle this character against friends (local) or real opponents (online). Wins climb the Rivals leaderboard on your profile.\n\n📖 Story Mode — build a full roster. Spin more characters (including Hero and Legend-class variants), battle through Worlds, collect and equip crystal drops, and unlock Endless Mode at Level 3.\n\n◆ Fate Shards — earn from battles and Daily Challenges (up to 175/day). Spend in the Arcane Shop on permanent Gamepass upgrades.\n💎 Gems — earned by selling Story Mode characters and winning battles. Used for in-slot upgrades and crystals.\n\n⚑ Clans — team up with up to 9 players and compete on the Clan leaderboard by combined Rivals wins.\n\n🔗 Share — copy your character\'s link and send it to anyone. No account needed to view.',
       cta: 'Done — I\'m ready!',
       accent: '#f0c040',
     }
@@ -396,7 +397,7 @@
 
       <!-- CTA -->
       <div class="px-4 pt-3 pb-4 flex justify-end">
-        <button onclick={() => onGotIt(card!.id + 1)}
+        <button onclick={() => { onGotIt(card!.id + 1); onTriggerAction?.() }}
           class="metal-stamp-gold px-5 py-2 rounded-lg text-xs font-bold relative"
           style="font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;">
           <div class="l-bracket" style="color: rgba(255,255,255,0.2);"></div>

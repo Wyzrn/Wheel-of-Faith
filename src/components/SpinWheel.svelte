@@ -20,7 +20,7 @@
 
   const COLORS = ['#E63946','#457B9D','#2A9D8F','#E9C46A','#F4A261','#264653','#6A0572','#0077B6']
 
-  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false }: {
+  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false, spinTrigger = 0 }: {
     segments: WeightedSegment[]
     onSpinComplete: (resultIndex: number, resultLabel: string) => void
     categoryHue?: number
@@ -28,6 +28,7 @@
     effectsEnabled?: boolean
     spinSpeedMultiplier?: number
     cursedTheme?: boolean
+    spinTrigger?: number
   } = $props()
 
   let spinStatus = $state<SpinStatus>('IDLE')
@@ -54,6 +55,16 @@
   let spinTween: gsap.core.Tween | null = null
   let idleTween: gsap.core.Tween | null = null
   let shakeStartTime = 0
+
+  // External spin trigger — incremented by parent to programmatically fire a spin
+  let prevSpinTrigger = spinTrigger
+  $effect(() => {
+    void spinTrigger
+    if (spinTrigger !== prevSpinTrigger) {
+      prevSpinTrigger = spinTrigger
+      if (spinStatus === 'IDLE') handleSpin()
+    }
+  })
 
   // ── Web Audio ─────────────────────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
