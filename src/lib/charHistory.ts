@@ -9,6 +9,10 @@ export interface CharHistoryEntry {
   name: string
   startedAt: string   // ISO timestamp
   savedAt: string     // ISO timestamp of when it was pushed
+  // shareId is set once the character has been POSTed to the server. Absent =
+  // local-only run that the user could optionally save to their profile from
+  // the history viewer.
+  shareId?: string
 }
 
 const KEY = 'wof_char_history_v1'
@@ -45,6 +49,14 @@ export function pushCharHistory(entry: Omit<CharHistoryEntry, 'savedAt'>): CharH
 export function clearCharHistory(): void {
   if (typeof localStorage === 'undefined') return
   try { localStorage.removeItem(KEY) } catch { /* ignore */ }
+}
+
+// Match by startedAt (the unique per-session timestamp) and patch the entry —
+// used to record a shareId once the server confirms the save.
+export function markCharSaved(startedAt: string, shareId: string): CharHistoryEntry[] {
+  const next = safeRead().map(e => e.startedAt === startedAt ? { ...e, shareId } : e)
+  safeWrite(next)
+  return next
 }
 
 // Backward-compat read of the old single-character key. Used once on the next

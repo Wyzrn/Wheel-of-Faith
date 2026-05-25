@@ -31,7 +31,7 @@
   import { powers as powersPool } from '$lib/content/powers'
   import Tutorial from '../components/Tutorial.svelte'
   import { appendSpinHistory } from '$lib/spinHistory'
-  import { loadCharHistory, pushCharHistory, migrateLegacyLastChar, type CharHistoryEntry } from '$lib/charHistory'
+  import { loadCharHistory, pushCharHistory, migrateLegacyLastChar, markCharSaved, type CharHistoryEntry } from '$lib/charHistory'
   import { randomCharacterName } from '$lib/story/naming'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import type { ElementType, ItemGrade } from '$lib/content/types'
@@ -116,11 +116,15 @@
   let charHistory       = $state<CharHistoryEntry[]>([])
   let showHistory       = $state(false)
   let viewingHistoryIdx = $state(0)
+  let savingHistoryEntry = $state(false)
+  let savedToastMessage = $state<string | null>(null)
   // Rivals relay state
   let rivalsOnlineMode    = $state(false)
   let rivalsOnlineWaiting = $state(false)
   let rivalsBotMode       = $state(false)
-  let showLastChar    = $state(false)
+  // showLastChar removed — the history carousel below replaces it; index 0 of
+  // charHistory is the last character. Keeping the legacy variable would orphan
+  // dead branches in the menu.
 
   // ── Tutorial state ────────────────────────────────────────────────────────
   // -1 = inactive (done/skipped), 0 = welcome modal, 1–8 = step cards, 9 = toast
@@ -174,6 +178,58 @@
     tutorialStep = -1
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(TUTORIAL_KEY, '1')
+    }
+  }
+
+  // Save a history entry to the server when the user clicks "Save to profile"
+  // from the history viewer. POSTs the character payload, then patches the
+  // local history entry with the returned shareId so the CTA disappears.
+  async function saveHistoryEntry(entry: CharHistoryEntry) {
+    if (!auth.loggedIn || savingHistoryEntry || entry.shareId) return
+    savingHistoryEntry = true
+    try {
+      const statScores: Record<string, number> = {}
+      for (const r of entry.results) {
+        if (r.score !== undefined && r.category) statScores[r.category] = r.score
+      }
+      const overallScore = computeOverallScore(statScores)
+      const overallGrade = scoreTier(overallScore)
+      const res = await fetch('/api/characters', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: entry.name?.trim() || 'The Unnamed',
+          race: entry.results.find(r => r.category === 'race')?.resultLabel ?? '',
+          archetype: entry.results.find(r => r.category === 'archetype')?.resultLabel ?? '',
+          overall_score: overallScore,
+          overall_tier: overallGrade,
+          spins: entry.results,
+          session_started_at: entry.startedAt,
+          share_in_gallery: false,
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        savedToastMessage = res.status === 422
+          ? 'Too brief — fate needs at least 90 seconds.'
+          : (body as { error?: string }).error ?? 'Save failed.'
+      } else {
+        const { shareId } = await res.json() as { shareId: string }
+        charHistory = markCharSaved(entry.startedAt, shareId)
+        try {
+          const existing: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
+          if (!existing.includes(shareId)) {
+            localStorage.setItem('wof_saved_chars', JSON.stringify([shareId, ...existing].slice(0, 50)))
+          }
+        } catch { /* ignore */ }
+        savedToastMessage = 'Saved to your profile.'
+      }
+    } catch {
+      savedToastMessage = 'Network error — try again.'
+    } finally {
+      savingHistoryEntry = false
+      setTimeout(() => { savedToastMessage = null }, 3500)
     }
   }
 
@@ -2028,18 +2084,11 @@
 
       <!-- Buttons -->
       <div class="flex flex-col gap-2.5 w-full max-w-[260px]">
-        <!-- Spin Your Fate + last char + history -->
+        <!-- Spin Your Fate + recent characters (one button, paginates through last 5) -->
         <div class="flex items-center gap-2">
           <button
-            onclick={() => { if (lastCharResults && lastCharName !== null) { showLastChar = true; showMenu = false } }}
-            class="flex items-center justify-center rounded-lg shrink-0 transition-all"
-            style="width: 38px; height: 38px; background: rgba(125,211,252,{lastCharResults ? '0.08' : '0.02'}); border: 1px solid rgba(125,211,252,{lastCharResults ? '0.3' : '0.08'}); color: {lastCharResults ? '#7dd3fc' : '#2a3a4a'}; cursor: {lastCharResults ? 'pointer' : 'default'}; opacity: {lastCharResults ? '1' : '0.35'};"
-            title={lastCharResults ? 'View Last Character' : 'Spin a character first'}
-          >
-            <span class="material-symbols-outlined" style="font-size: 16px; font-variation-settings: 'FILL' 1;">person</span>
-          </button>
-          <button
             onclick={() => { showMenu = false; if (tutorialStep === 0) tutorialStep = 1 }}
+            data-fx="big"
             class="metal-stamp-gold flex-1 py-3 rounded-lg relative"
             style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;"
           >
@@ -2049,11 +2098,12 @@
           <button
             onclick={() => { if (charHistory.length > 0) { viewingHistoryIdx = 0; showHistory = true; showMenu = false } }}
             class="flex items-center justify-center rounded-lg shrink-0 transition-all relative"
-            style="width: 38px; height: 38px; background: rgba(167,139,250,{charHistory.length > 0 ? '0.08' : '0.02'}); border: 1px solid rgba(167,139,250,{charHistory.length > 0 ? '0.3' : '0.08'}); color: {charHistory.length > 0 ? '#a78bfa' : '#2a3a4a'}; cursor: {charHistory.length > 0 ? 'pointer' : 'default'}; opacity: {charHistory.length > 0 ? '1' : '0.35'};"
-            title={charHistory.length > 0 ? `Last ${charHistory.length} characters` : 'Spin to build history'}
+            style="width: 44px; height: 44px; background: rgba(167,139,250,{charHistory.length > 0 ? '0.10' : '0.02'}); border: 1px solid rgba(167,139,250,{charHistory.length > 0 ? '0.32' : '0.08'}); color: {charHistory.length > 0 ? '#a78bfa' : '#2a3a4a'}; cursor: {charHistory.length > 0 ? 'pointer' : 'default'}; opacity: {charHistory.length > 0 ? '1' : '0.35'};"
+            title={charHistory.length > 0 ? `Recent characters (${charHistory.length})` : 'Spin a character to start your history'}
+            aria-label="Recent characters"
           >
-            <span class="material-symbols-outlined" style="font-size: 16px;">history</span>
-            {#if charHistory.length > 1}
+            <span class="material-symbols-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">groups</span>
+            {#if charHistory.length > 0}
               <span style="position: absolute; top: -4px; right: -4px; background: #a78bfa; color: #1e0a3c; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; min-width: 14px; height: 14px; border-radius: 7px; display: flex; align-items: center; justify-content: center; padding: 0 3px;">{charHistory.length}</span>
             {/if}
           </button>
@@ -2129,31 +2179,22 @@
     </div>
   {/if}
 
-  <!-- Last character view overlay -->
-  {#if showLastChar && lastCharResults && lastCharName !== null}
-    <div class="flex justify-center pt-20 pb-24 px-4">
-      <div class="w-full max-w-xl flex flex-col gap-4">
-        <div class="flex items-center justify-between">
-          <p class="text-xs tracking-[0.2em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #7dd3fc;">Last Completed Character</p>
-          <button
-            onclick={() => { showLastChar = false; showMenu = true }}
-            class="text-xs px-3 py-1.5 rounded transition-all active:scale-95"
-            style="color: #9a907b; border: 1px solid #4e4635; background: none; font-family: 'JetBrains Mono', monospace; cursor: pointer;"
-          >← Back</button>
-        </div>
-        <CharacterCard results={lastCharResults} name={lastCharName} startedAt={lastCharStartedAt ?? new Date().toISOString()} readonly={false} onNewCharacter={() => { showLastChar = false; showMenu = true }} onBackToMenu={() => { showLastChar = false; showMenu = true }} />
-      </div>
-    </div>
-  {/if}
-
-  <!-- Character history carousel — paginates through last 5 locally-completed runs -->
+  <!-- Character history carousel — paginates through last 5 locally-completed runs.
+       Replaces the previous separate "Last character" overlay since the carousel
+       at index 0 IS the last character. The card itself surfaces a "Save to
+       profile" CTA when the entry has no shareId yet. -->
   {#if showHistory && charHistory.length > 0}
     {@const cur = charHistory[Math.min(viewingHistoryIdx, charHistory.length - 1)]}
     <div class="flex justify-center pt-20 pb-24 px-4">
       <div class="w-full max-w-xl flex flex-col gap-4">
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
           <p class="text-xs tracking-[0.2em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #a78bfa;">
             Character History {viewingHistoryIdx + 1}/{charHistory.length}
+            {#if cur.shareId}
+              <span style="color: #34d399;">· Saved</span>
+            {:else}
+              <span style="color: #9a907b;">· Unsaved</span>
+            {/if}
           </p>
           <div class="flex gap-1.5 items-center">
             <button
@@ -2177,6 +2218,39 @@
             >← Back</button>
           </div>
         </div>
+
+        <!-- Save CTA — only for entries the server hasn't seen yet and only on
+             the most recent entry (older ones are >24h old and rejected by the
+             session-too-short guard server-side). -->
+        {#if !cur.shareId && viewingHistoryIdx === 0 && auth.loggedIn}
+          <div class="rounded-xl px-4 py-3 flex items-center gap-3" style="background: linear-gradient(135deg, rgba(240,192,64,0.10), rgba(240,192,64,0.03)); border: 1px solid rgba(240,192,64,0.32);">
+            <span class="material-symbols-outlined" style="font-size: 22px; color: #f0c040; font-variation-settings: 'FILL' 1;">cloud_upload</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs" style="font-family: 'Cinzel', serif; color: #ffdf96; font-weight: 700;">This character hasn't been saved yet</p>
+              <p class="text-xs mt-0.5" style="color: #9a907b;">Save it to your profile so it survives a local-storage wipe.</p>
+            </div>
+            <button
+              onclick={() => saveHistoryEntry(cur)}
+              disabled={savingHistoryEntry}
+              data-fx="big"
+              class="metal-stamp-gold px-3 py-2 rounded-lg text-xs font-bold relative disabled:opacity-50"
+              style="font-family: 'Cinzel', serif; letter-spacing: 0.1em; text-transform: uppercase;"
+            >
+              {savingHistoryEntry ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        {:else if !cur.shareId && viewingHistoryIdx === 0 && !auth.loggedIn}
+          <div class="rounded-xl px-4 py-3 flex items-center gap-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: #9a907b;">info</span>
+            <p class="text-xs flex-1" style="color: #9a907b;"><a href="/login" style="color: #f0c040; text-decoration: underline;">Log in</a> to save this character to your profile.</p>
+          </div>
+        {/if}
+        {#if savedToastMessage}
+          <div class="rounded-xl px-4 py-2.5 text-center" style="background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.3);">
+            <p class="text-xs" style="color: #34d399;">{savedToastMessage}</p>
+          </div>
+        {/if}
+
         <CharacterCard
           results={cur.results}
           name={cur.name}
@@ -2294,7 +2368,14 @@
   <!-- Character card screen -->
   {#if showCard}
     <div class="flex justify-center pt-20 pb-24 px-4">
-      <CharacterCard {results} name={characterName} startedAt={currentSession.startedAt} onNewCharacter={handleNewCharacter} onBackToMenu={handleBackToMenu} />
+      <CharacterCard
+        {results}
+        name={characterName}
+        startedAt={currentSession.startedAt}
+        onNewCharacter={handleNewCharacter}
+        onBackToMenu={handleBackToMenu}
+        onSaved={(shareId, startedAt) => { charHistory = markCharSaved(startedAt, shareId) }}
+      />
     </div>
   {/if}
 

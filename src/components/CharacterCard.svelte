@@ -14,7 +14,7 @@
 
   interface EquippedItemProp { id: string; grade: string; name: string }
 
-  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, equippedItems, onNewCharacter, onBackToMenu }: {
+  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, equippedItems, onNewCharacter, onBackToMenu, onSaved }: {
     results: SpinResult[]
     name?: string
     startedAt: string
@@ -23,6 +23,10 @@
     equippedItems?: { weapons: EquippedItemProp[]; armors: EquippedItemProp[]; powers: EquippedItemProp[] }
     onNewCharacter: () => void
     onBackToMenu?: () => void
+    // Fired when the user successfully POSTs this character to /api/characters.
+    // Used by the parent (main page) to mark the matching history entry with
+    // the returned shareId so the "Save to profile" CTA disappears.
+    onSaved?: (shareId: string, startedAt: string) => void
   } = $props()
 
   function get(category: string) {
@@ -256,6 +260,8 @@
           localStorage.setItem('wof_saved_chars', JSON.stringify([shareId, ...existing].slice(0, 50)))
         }
       } catch { /* ignore storage errors */ }
+      // Notify parent so it can mark the matching history entry as saved.
+      onSaved?.(shareId, startedAt)
     } finally {
       saving = false
     }

@@ -2,6 +2,7 @@
   import '../app.css'
   import { onMount } from 'svelte'
   import SettingsPanel from '../components/SettingsPanel.svelte'
+  import ClickParticles from '../components/ClickParticles.svelte'
   import { page } from '$app/stores'
   import { goto, onNavigate } from '$app/navigation'
   import { triggerMenu, triggerStoryHome } from '$lib/menuState.svelte'
@@ -96,6 +97,11 @@
 {#if showSettings}
   <SettingsPanel onClose={() => showSettings = false} />
 {/if}
+
+<!-- Global click sparkle effects — listens to pointerdown on document and emits
+     short-lived particles at the click location. Skipped on low perf tier and
+     when settings.effectsEnabled is off. -->
+<ClickParticles />
 
 <style>
   /* Stone fortress floor — the nav bar is a carved obsidian shelf */

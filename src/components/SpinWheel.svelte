@@ -713,7 +713,8 @@
   <button
     onclick={handleSpin}
     disabled={!canSpin}
-    class="{canSpin ? 'metal-stamp-gold' : 'obsidian-slab'} px-10 py-3 rounded-lg relative disabled:opacity-40 disabled:cursor-not-allowed"
+    data-fx="big"
+    class="{canSpin ? 'metal-stamp-gold spin-fx' : 'obsidian-slab'} px-10 py-3 rounded-lg relative disabled:opacity-40 disabled:cursor-not-allowed"
     style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; {!canSpin ? 'color: #9a907b; border: 1px solid #4e4635;' : ''}"
   >
     {#if canSpin}<div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>{/if}

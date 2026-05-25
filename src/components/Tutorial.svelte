@@ -260,6 +260,27 @@
 
   let card = $derived(resolveCard(step, currentCategory, isRevealed))
 
+  // Card body shortening — show the first 3 lines (or up to ~280 chars) by
+  // default; "Read more" expands the full body. Keeps the mobile card small
+  // enough not to cover the wheel/result. Users in a hurry can ignore the
+  // body entirely and just tap the CTA — the icon + title carry the gist.
+  function summarize(body: string): { short: string; needsExpand: boolean } {
+    const lines = body.split('\n').filter(l => l.trim().length > 0)
+    const firstThree = lines.slice(0, 3).join('\n')
+    const short = firstThree.length > 280 ? firstThree.slice(0, 280) + '…' : firstThree
+    return { short, needsExpand: lines.length > 3 || body.length > short.length }
+  }
+  let bodyExpanded = $state(false)
+  let cardCollapsed = $state(false)
+
+  // Auto-collapse the card when a result is revealed so the player can see what
+  // they actually got. Also reset expand state when the card switches.
+  $effect(() => {
+    if (isRevealed) cardCollapsed = true
+    else cardCollapsed = false
+    bodyExpanded = false
+  })
+
   // Completion toast: briefly visible when step hits 15
   let toastVisible = $state(false)
   $effect(() => {
@@ -357,20 +378,29 @@
   </div>
 {/if}
 
-<!-- ─── In-game step cards (steps 1–14) ───────────────────────────────────── -->
+<!-- ─── In-game step cards (steps 1–14) ─────────────────────────────────────
+     Positioning rules:
+       Mobile (≤640px): pinned to BOTTOM of viewport, above the 64px nav bar.
+         Never covers the wheel or the result reveal. Auto-collapses on reveal.
+       Desktop (>640px): top-left as before so it doesn't cover the wheel.
+     When isRevealed=true the card auto-collapses to a slim chevron-strip that
+     the user can tap to expand. The CTA on each card also doubles as the
+     "trigger action" — pressing it advances + auto-fires the next spin via
+     onTriggerAction so the tutorial flows without the user having to find
+     and tap the spin button after every card. -->
 {#if card}
+  {@const summary = summarize(card.body)}
   <div
-    class="fixed z-40 px-3"
-    style="top: 64px; left: 0; width: min(390px, 100vw); pointer-events: none; animation: tutSlideUp 0.3s cubic-bezier(0.34,1.3,0.64,1) forwards;">
-    <div class="w-full rounded-2xl overflow-hidden"
-      style="pointer-events: all; background: rgba(9,9,15,0.98); backdrop-filter: blur(20px); border: 1px solid rgba(240,192,64,0.13); border-top: 2px solid {card.accent}; box-shadow: 0 8px 48px rgba(0,0,0,0.88), 0 0 0 1px rgba(240,192,64,0.04);">
+    class="tut-card-wrap"
+    style="--accent: {card.accent}; animation: tutSlideUp 0.3s cubic-bezier(0.34,1.3,0.64,1) forwards;">
+    <div class="tut-card" style="border-top: 2px solid {card.accent};">
 
-      <!-- Header -->
-      <div class="flex items-center gap-2 px-4 py-2.5" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+      <!-- Header — collapsed mode hides everything except a thin progress strip + expand button -->
+      <div class="tut-header">
         <span class="material-symbols-outlined" style="font-size: 11px; color: {card.accent}; font-variation-settings: 'FILL' 1;">school</span>
         <span class="text-[9px] tracking-[0.22em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Tutorial · {card.id} / {TOTAL_STEPS}</span>
 
-        <!-- Progress -->
+        <!-- Progress dots -->
         <div class="ml-auto flex gap-0.5 items-center">
           {#each Array.from({length: TOTAL_STEPS}, (_, i) => i + 1) as n}
             <div class="rounded-full transition-all duration-300"
@@ -378,32 +408,54 @@
           {/each}
         </div>
 
+        <button onclick={() => { cardCollapsed = !cardCollapsed }}
+          class="tut-collapse-btn ml-2"
+          aria-label={cardCollapsed ? 'Expand tutorial' : 'Collapse tutorial'}>
+          <span class="material-symbols-outlined" style="font-size: 14px;">{cardCollapsed ? 'expand_less' : 'expand_more'}</span>
+        </button>
         <button onclick={onSkip}
-          class="ml-2 text-[8px] tracking-[0.08em] uppercase hover:opacity-70 transition-opacity"
-          style="font-family: 'JetBrains Mono', monospace; color: #2e2a40; background: none; border: none; cursor: pointer;">
-          End tutorial
+          class="tut-skip-btn"
+          title="End tutorial">
+          <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
         </button>
       </div>
 
-      <!-- Content -->
-      <div class="px-4 pt-3.5 pb-1 flex gap-3" style="max-height: 54vh; overflow-y: auto;">
-        <span class="material-symbols-outlined shrink-0 mt-0.5"
-          style="font-size: 19px; color: {card.accent}; font-variation-settings: 'FILL' 1;">{card.icon}</span>
-        <div class="flex-1 min-w-0">
-          <p style="font-family: 'Cinzel', serif; font-size: 0.83rem; font-weight: 700; color: #ffdf96; margin-bottom: 6px; letter-spacing: 0.04em;">{card.title}</p>
-          <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: #9a907b; line-height: 1.78; white-space: pre-line;">{card.body}</p>
+      <!-- Body (hidden when collapsed) -->
+      {#if !cardCollapsed}
+        <div class="tut-body">
+          <div class="tut-body-row">
+            <span class="material-symbols-outlined shrink-0 mt-0.5"
+              style="font-size: 22px; color: {card.accent}; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 6px {card.accent}55);">{card.icon}</span>
+            <div class="flex-1 min-w-0">
+              <p class="tut-title">{card.title}</p>
+              <p class="tut-text">{bodyExpanded ? card.body : summary.short}</p>
+              {#if summary.needsExpand}
+                <button onclick={() => bodyExpanded = !bodyExpanded}
+                  class="tut-expand-btn"
+                  style="color: {card.accent};">
+                  {bodyExpanded ? '← Less' : 'Read more →'}
+                </button>
+              {/if}
+            </div>
+          </div>
+
+          <!-- CTA: pulses to draw the eye. Clicking it advances + triggers the next action. -->
+          <div class="tut-cta-row">
+            {#if !isRevealed}
+              <span class="tut-hint">
+                <span class="material-symbols-outlined tut-arrow" style="font-size: 14px;">arrow_downward</span>
+                Tap below — we'll spin for you
+              </span>
+            {/if}
+            <button onclick={() => { onGotIt(card!.id + 1); onTriggerAction?.() }}
+              data-fx="big"
+              class="tut-cta-btn"
+              style="border-color: {card.accent}; color: {card.accent};">
+              {card.cta}
+            </button>
+          </div>
         </div>
-      </div>
-
-      <!-- CTA -->
-      <div class="px-4 pt-3 pb-4 flex justify-end">
-        <button onclick={() => { onGotIt(card!.id + 1); onTriggerAction?.() }}
-          class="metal-stamp-gold px-5 py-2 rounded-lg text-xs font-bold relative"
-          style="font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;">
-          <div class="l-bracket" style="color: rgba(255,255,255,0.2);"></div>
-          {card.cta}
-        </button>
-      </div>
+      {/if}
     </div>
   </div>
 {/if}
@@ -423,11 +475,151 @@
 
 <style>
   @keyframes tutSlideUp {
-    from { transform: translateY(-20px) scale(0.97); opacity: 0; filter: brightness(1.4) blur(2px); }
+    from { transform: translateY(20px) scale(0.97); opacity: 0; filter: brightness(1.4) blur(2px); }
     to   { transform: translateY(0) scale(1); opacity: 1; filter: none; }
   }
   @keyframes tutSlideDown {
     from { transform: translateY(20px) scale(0.97); opacity: 0; filter: brightness(1.4) blur(2px); }
     to   { transform: translateY(0) scale(1); opacity: 1; filter: none; }
+  }
+
+  /* In-game card positioning. Mobile pins it to the bottom (above 64px nav) so
+     the wheel + result are never covered. Desktop floats it top-left at a safe
+     width since there's room above the wheel anyway. */
+  .tut-card-wrap {
+    position: fixed;
+    z-index: 40;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    padding: 0 12px;
+    /* Mobile: pin to bottom above nav */
+    bottom: 76px;
+    top: auto;
+    display: flex;
+    justify-content: center;
+  }
+  @media (min-width: 641px) {
+    .tut-card-wrap {
+      top: 64px;
+      bottom: auto;
+      right: auto;
+      max-width: 420px;
+      justify-content: flex-start;
+    }
+  }
+
+  .tut-card {
+    pointer-events: all;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(9, 9, 15, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(240, 192, 64, 0.18);
+    box-shadow: 0 8px 48px rgba(0, 0, 0, 0.88), 0 0 0 1px rgba(240, 192, 64, 0.04);
+  }
+
+  .tut-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .tut-collapse-btn, .tut-skip-btn {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: #9a907b;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .tut-collapse-btn:hover, .tut-skip-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e4e1ee;
+  }
+  .tut-skip-btn { margin-left: 4px; }
+
+  .tut-body { padding: 12px 14px 12px; }
+  .tut-body-row { display: flex; gap: 10px; }
+  .tut-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #ffdf96;
+    margin-bottom: 4px;
+    letter-spacing: 0.04em;
+  }
+  .tut-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.67rem;
+    color: #9a907b;
+    line-height: 1.65;
+    white-space: pre-line;
+  }
+  .tut-expand-btn {
+    margin-top: 6px;
+    background: none;
+    border: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .tut-cta-row {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .tut-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--accent, #f0c040);
+    opacity: 0.85;
+    letter-spacing: 0.06em;
+  }
+  .tut-arrow {
+    animation: tutArrowBob 1.2s ease-in-out infinite;
+    display: inline-block;
+  }
+  @keyframes tutArrowBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(3px); }
+  }
+  .tut-cta-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: rgba(240, 192, 64, 0.10);
+    border: 1px solid;
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.12s;
+    animation: tutCtaPulse 2.4s ease-in-out infinite;
+  }
+  .tut-cta-btn:hover { background: rgba(240, 192, 64, 0.18); }
+  .tut-cta-btn:active { transform: scale(0.96); }
+  @keyframes tutCtaPulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--accent, rgba(240,192,64,0.4)); }
+    50%      { box-shadow: 0 0 0 6px transparent; }
   }
 </style>
