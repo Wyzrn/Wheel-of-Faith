@@ -22,6 +22,15 @@
   onMount(async () => {
     await loadMyClan()
     loading = false
+    // Mark today's clan_visit daily challenge — fire-and-forget, idempotent on server.
+    if (auth.loggedIn) {
+      fetch('/api/challenges/progress', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'clan_visit' }),
+      }).catch(() => { /* network — silently ignore */ })
+    }
   })
 
   async function loadMyClan() {

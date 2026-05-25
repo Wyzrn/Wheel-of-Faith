@@ -1,82 +1,99 @@
 import type { FastifyInstance } from 'fastify'
 import { User } from '../models/User.js'
-import { DAILY_CHALLENGES, todayStr, markChallengeProgress, CHALLENGE_TYPES, type ChallengeType } from '../lib/challenges.js'
+import {
+  CHALLENGE_POOL, CLIENT_GRANTABLE_EVENTS, pickDailyChallenges, todayStr, markEvent, todayCount,
+} from '../lib/challenges.js'
 
 export async function challengeRoutes(app: FastifyInstance) {
   // ── GET /challenges/daily ───────────────────────────────────────────────────
-  // Returns today's challenges with three states per entry:
-  //   status = 'locked'   → user has not yet qualified today
-  //   status = 'ready'    → user qualified, can /claim
-  //   status = 'claimed'  → already claimed today
+  // Returns today's 4 deterministically-shuffled challenges with per-challenge
+  // status (locked / ready / claimed) and progress fraction (current/threshold).
   app.get('/challenges/daily', async (req: any, reply) => {
     const today = todayStr()
+    const todays = pickDailyChallenges(today)
+
     if (!req.userId) {
       return reply.send({
-        challenges: DAILY_CHALLENGES.map(c => ({ ...c, status: 'locked' as const, completed: false })),
+        challenges: todays.map(c => ({
+          type: c.type, name: c.name, description: c.description, reward: c.reward, icon: c.icon,
+          threshold: c.threshold, progress: 0, status: 'locked' as const, completed: false,
+        })),
       })
     }
     const user = await User.findById(req.userId).lean()
-    const progressToday = new Set(
-      (user?.challengesProgress ?? []).filter(c => c.date === today).map(c => c.type),
-    )
     const completedToday = new Set(
       (user?.challengesCompleted ?? []).filter(c => c.date === today).map(c => c.type),
     )
+    const progressByEvent = new Map<string, number>()
+    for (const p of user?.challengesProgress ?? []) {
+      if (p.date === today) progressByEvent.set(p.type, p.count ?? 1)
+    }
+
     reply.send({
-      challenges: DAILY_CHALLENGES.map(c => {
-        const claimed = completedToday.has(c.type)
-        const ready = progressToday.has(c.type) && !claimed
+      challenges: todays.map(c => {
+        const progress = progressByEvent.get(c.event) ?? 0
+        const claimed  = completedToday.has(c.type)
+        const ready    = !claimed && progress >= c.threshold
         const status: 'locked' | 'ready' | 'claimed' = claimed ? 'claimed' : ready ? 'ready' : 'locked'
-        return { ...c, status, completed: claimed }
+        return {
+          type: c.type, name: c.name, description: c.description, reward: c.reward, icon: c.icon,
+          threshold: c.threshold, progress: Math.min(progress, c.threshold), status, completed: claimed,
+        }
       }),
     })
   })
 
   // ── POST /challenges/progress ──────────────────────────────────────────────
-  // Marks the authenticated user's progress for a challenge type. Idempotent.
-  // Note: server-side game events (spin completion, rivals win, shop visit) also
-  // call markChallengeProgress() directly. This route is a client-side hint for
-  // browse-style events like shop_visit where there's no server interaction.
+  // Client-initiated event hint. Only events in CLIENT_GRANTABLE_EVENTS are
+  // accepted; everything else must be marked by a server-side hook (POST
+  // /characters, WS battle resolution, etc.) so the client can't self-grant.
   app.post('/challenges/progress', {
     config: { rateLimit: { max: 30, timeWindow: '1m' } },
   }, async (req: any, reply) => {
     if (!req.userId) return reply.status(401).send({ error: 'login required' })
     const { type } = req.body as { type: string }
-    if (!CHALLENGE_TYPES.includes(type as ChallengeType)) {
-      return reply.status(400).send({ error: 'unknown challenge type' })
-    }
-    // Restrict client-initiated progress to types that genuinely lack a server hook.
-    // spin_complete is granted by character POST; rivals_win by WS battle resolve.
-    // Allowing the client to mark those here would re-open the original bypass.
-    if (type !== 'shop_visit') {
-      return reply.status(403).send({ error: 'this challenge is granted by server-side events only' })
+    if (!CLIENT_GRANTABLE_EVENTS.has(type)) {
+      return reply.status(403).send({ error: 'this event is granted by server-side hooks only' })
     }
     const user = await User.findById(req.userId)
     if (!user) return reply.status(404).send({ error: 'user not found' })
-    const added = await markChallengeProgress(user, type as ChallengeType)
-    reply.send({ ok: true, newlyMarked: added })
+    // Idempotent per-day for visit-style events: cap at 1.
+    if (todayCount(user, type) >= 1) return reply.send({ ok: true, count: 1 })
+    const count = await markEvent(user, type, 1)
+    reply.send({ ok: true, count })
   })
 
   // ── POST /challenges/:type/claim ────────────────────────────────────────────
-  // Requires a matching progress entry from today. Fails with 403 if the user
-  // hasn't qualified yet. Fails with 409 if already claimed today.
+  // Looks up the challenge by type, checks the linked event count vs threshold,
+  // pays out shards and records the claim. Idempotent — second call returns 409.
   app.post('/challenges/:type/claim', {
-    config: { rateLimit: { max: 10, timeWindow: '1m' } },
+    config: { rateLimit: { max: 20, timeWindow: '1m' } },
   }, async (req: any, reply) => {
     if (!req.userId) return reply.status(401).send({ error: 'login required' })
     const { type } = req.params as { type: string }
-    const challenge = DAILY_CHALLENGES.find(c => c.type === type)
+    const challenge = CHALLENGE_POOL.find(c => c.type === type)
     if (!challenge) return reply.status(404).send({ error: 'unknown challenge' })
 
+    // Reject claims for challenges that aren't actually today's set — prevents
+    // a user from claiming rewards from yesterday's pool that they never saw.
     const today = todayStr()
+    const todaysSet = new Set(pickDailyChallenges(today).map(c => c.type))
+    if (!todaysSet.has(type)) return reply.status(404).send({ error: 'not in today\'s challenges' })
+
     const user = await User.findById(req.userId)
     if (!user) return reply.status(404).send({ error: 'user not found' })
 
     const alreadyClaimed = user.challengesCompleted.some(c => c.type === type && c.date === today)
     if (alreadyClaimed) return reply.status(409).send({ error: 'already claimed today' })
 
-    const qualified = user.challengesProgress.some(c => c.type === type && c.date === today)
-    if (!qualified) return reply.status(403).send({ error: 'challenge not completed yet', status: 'locked' })
+    const progress = todayCount(user, challenge.event)
+    if (progress < challenge.threshold) {
+      return reply.status(403).send({
+        error: 'challenge not completed yet',
+        status: 'locked',
+        progress, threshold: challenge.threshold,
+      })
+    }
 
     user.challengesCompleted.push({ type, date: today })
     user.shards += challenge.reward

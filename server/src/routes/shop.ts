@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import Stripe from 'stripe'
 import { User } from '../models/User.js'
 import { Purchase } from '../models/Purchase.js'
+import { markEvent } from '../lib/challenges.js'
 
 // Gamepass + shard pack definitions (duplicated here to avoid ESM cross-boundary issues)
 const SHARD_PACKS: Record<string, { name: string; shards: number; priceUsd: number }> = {
@@ -203,6 +204,11 @@ export async function shopRoutes(app: FastifyInstance) {
         return reply.status(409).send({ error: 'already owned' })
       }
       return reply.status(402).send({ error: 'not enough shards', need: cost, have: exists.shards })
+    }
+
+    // Mark gamepass_buy challenge event on successful purchase
+    try { await markEvent(user, 'gamepass_buy') } catch (err) {
+      app.log.warn({ err }, 'Failed to mark gamepass_buy challenge event')
     }
 
     reply.send({ shards: user.shards, gamepasses: user.gamepasses })

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { WebSocket } from '@fastify/websocket'
 import { User } from '../models/User.js'
-import { markChallengeProgress } from '../lib/challenges.js'
+import { markEvent } from '../lib/challenges.js'
 
 interface Player {
   ws: WebSocket
@@ -201,7 +201,7 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
                 if (winner.userId) {
                   await User.findByIdAndUpdate(winner.userId, { $inc: { rivalsWins: 1, gamesPlayed: 1 } })
                   const winUser = await User.findById(winner.userId)
-                  if (winUser) await markChallengeProgress(winUser, 'rivals_win')
+                  if (winUser) await markEvent(winUser, 'rivals_win')
                 }
                 if (loser.userId) {
                   await User.findByIdAndUpdate(loser.userId, { $inc: { rivalsLosses: 1, gamesPlayed: 1 } })

@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid'
 import mongoose from 'mongoose'
 import { Character } from '../models/Character.js'
 import { User } from '../models/User.js'
-import { markChallengeProgress } from '../lib/challenges.js'
+import { markEvent } from '../lib/challenges.js'
 import type { FastifyPluginAsync } from 'fastify'
 
 const SORT_FIELD_MAP: Record<string, Record<string, 1 | -1>> = {
@@ -87,13 +87,36 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       ...(userId ? { userId: new mongoose.Types.ObjectId(userId) } : {}),
     })
 
-    // Mark daily 'spin_complete' challenge progress — server-side event, can't be
-    // spoofed because session-too-short guard above already enforced a 90s+ session.
+    // Mark server-verified events for daily challenges. The 90s session guard
+    // above ensures these can't be triggered by a one-shot POST. We emit:
+    //   • spin_complete  — always
+    //   • high_tier_spin — overall_tier ∈ {A, A+, S, S+, SS, SS+, SSS, …}
+    //   • s_tier_spin    — overall_tier ∈ {S, S+, SS, SS+, SSS, …}
+    //   • low_tier_spin  — overall_tier starts with F or E
+    //   • gallery_share  — share_in_gallery true
     try {
       const user = await User.findById(userId)
-      if (user) await markChallengeProgress(user, 'spin_complete')
+      if (user) {
+        await markEvent(user, 'spin_complete')
+        const tier = body.overall_tier ?? ''
+        const HIGH_TIER_PREFIXES = ['A', 'S']                 // covers A-, A, A+, S-, S, S+, SS*, SSS*
+        const S_TIER_PREFIXES    = ['S']                       // S, S+, SS*, SSS*, plus Celestial/Godly which don't start with S
+        const LOW_TIER_PREFIXES  = ['F', 'E']
+        if (HIGH_TIER_PREFIXES.some(p => tier.startsWith(p)) || /^(SS|SSS|Z|Celestial|Godly|Primordial|Absolute)/.test(tier)) {
+          await markEvent(user, 'high_tier_spin')
+        }
+        if (S_TIER_PREFIXES.some(p => tier.startsWith(p)) || /^(Z|Celestial|Godly|Primordial|Absolute)/.test(tier)) {
+          await markEvent(user, 's_tier_spin')
+        }
+        if (LOW_TIER_PREFIXES.some(p => tier.startsWith(p))) {
+          await markEvent(user, 'low_tier_spin')
+        }
+        if (body.share_in_gallery) {
+          await markEvent(user, 'gallery_share')
+        }
+      }
     } catch (err) {
-      fastify.log.warn({ err }, 'Failed to mark spin_complete challenge progress')
+      fastify.log.warn({ err }, 'Failed to mark character POST challenge events')
     }
 
     return reply.code(201).send({
@@ -221,6 +244,16 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
 
     if (!character) {
       return reply.code(404).send({ error: 'Character not found or not yours' })
+    }
+
+    // Mark gallery_share event when the toggle flips ON (not on toggle-off).
+    if (share_in_gallery) {
+      try {
+        const user = await User.findById(userId)
+        if (user) await markEvent(user, 'gallery_share')
+      } catch (err) {
+        fastify.log.warn({ err }, 'Failed to mark gallery_share challenge event')
+      }
     }
 
     return reply.send({ share_in_gallery: character.share_in_gallery })

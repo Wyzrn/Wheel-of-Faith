@@ -358,6 +358,14 @@
         accDrops = { ...accDrops, chanceDrops: [...accDrops.chanceDrops, 'endlessKey'] }
       }
       lastDrops = { ...accDrops }
+      // Mark today's story_battle_win daily challenge — fire-and-forget. Server
+      // rate-limits and the reward is modest, so the spoof vector is minimal.
+      fetch('/api/challenges/progress', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'story_battle_win' }),
+      }).catch(() => { /* network — silently ignore */ })
     } else {
       lastDrops = null
     }

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import bcrypt from 'bcryptjs'
 import { User } from '../models/User.js'
 import { Character } from '../models/Character.js'
+import { markEvent } from '../lib/challenges.js'
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -67,6 +68,15 @@ export async function authRoutes(app: FastifyInstance) {
       user.dailyStreak = user.lastVisitDate === yesterday ? (user.dailyStreak ?? 0) + 1 : 1
       user.lastVisitDate = today
       await user.save()
+    }
+    // Always-on daily_login challenge event — idempotent at count=1 since /auth/me
+    // can fire many times per page; first call wins and downstream calls no-op
+    // because markEvent increments unguarded, so we gate on todayCount.
+    try {
+      const existing = (user.challengesProgress ?? []).find(c => c.type === 'daily_login' && c.date === today)
+      if (!existing) await markEvent(user, 'daily_login')
+    } catch (err) {
+      app.log.warn({ err }, 'Failed to mark daily_login challenge event')
     }
     reply.send({ user: {
       id: user._id, username: user.username,

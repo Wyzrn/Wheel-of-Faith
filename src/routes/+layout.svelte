@@ -68,6 +68,8 @@
       <span class="nav-label">Settings</span>
     </button>
   {:else}
+    <!-- 5 tabs only — Rivals/Tasks/Shop moved to the in-page main menu to keep
+         the hotbar usable on mobile. Each tab gets ~20% width instead of ~11%. -->
     <button onclick={handleHomeClick} class="nav-tab" class:active={activeTab === 'home'}>
       <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'home' ? 1 : 0};">home</span>
       <span class="nav-label">Home</span>
@@ -76,21 +78,9 @@
       <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'characters' ? 1 : 0};">group</span>
       <span class="nav-label">Fighters</span>
     </a>
-    <a href="/rivals" class="nav-tab" class:active={activeTab === 'rivals'}>
-      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'rivals' ? 1 : 0};">swords</span>
-      <span class="nav-label">Rivals</span>
-    </a>
-    <a href="/challenges" class="nav-tab" class:active={activeTab === 'challenges'}>
-      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'challenges' ? 1 : 0};">task_alt</span>
-      <span class="nav-label">Tasks</span>
-    </a>
     <a href="/friends" class="nav-tab" class:active={activeTab === 'friends'}>
-      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'friends' ? 1 : 0};">group</span>
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'friends' ? 1 : 0};">groups</span>
       <span class="nav-label">Friends</span>
-    </a>
-    <a href="/shop" class="nav-tab" class:active={activeTab === 'shop'}>
-      <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'shop' ? 1 : 0};">storefront</span>
-      <span class="nav-label">Shop</span>
     </a>
     <a href={auth.loggedIn ? '/profile' : '/login'} class="nav-tab" class:active={activeTab === 'profile'}>
       <span class="material-symbols-outlined nav-icon" style="font-variation-settings: 'FILL' {activeTab === 'profile' ? 1 : 0};">{auth.loggedIn ? 'account_circle' : 'login'}</span>
@@ -202,13 +192,18 @@
 
   .nav-tab:hover:not(.active) { color: #806020; }
 
-  :global(.nav-icon) { font-size: 22px; }
+  :global(.nav-icon) { font-size: 24px; }
 
   .nav-label {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.12em;
+    font-size: 10px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     font-weight: 700;
+  }
+  /* Tighten on very narrow phones so 5 labels never collide */
+  @media (max-width: 360px) {
+    .nav-label { font-size: 9px; letter-spacing: 0.08em; }
+    :global(.nav-icon) { font-size: 22px; }
   }
 </style>

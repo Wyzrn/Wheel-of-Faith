@@ -9,6 +9,8 @@
     description: string
     reward: number
     icon: string
+    threshold: number
+    progress: number
     status: ChallengeStatus
     completed: boolean
   }
@@ -53,7 +55,7 @@
       const res = await fetch(`/api/challenges/${type}/claim`, { method: 'POST', credentials: 'include' })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
-        challenges = challenges.map(c => c.type === type ? { ...c, status: 'claimed', completed: true } : c)
+        challenges = challenges.map(c => c.type === type ? { ...c, status: 'claimed', completed: true, progress: c.threshold } : c)
         claimResult = { type, reward: data.reward }
         auth.updateShopData(data.shards, auth.user?.gamepasses ?? [])
         setTimeout(() => { claimResult = null }, 3000)
@@ -93,7 +95,7 @@
     <div class="text-center mb-6">
       <p class="font-mono text-xs tracking-widest uppercase mb-1" style="color: #9a907b;">Resets in <span style="color: #f0c040;">{resetCountdown}</span> (UTC)</p>
       <h1 style="font-family: 'Cinzel', serif; font-size: 1.7rem; font-weight: 700; color: #ffdf96;">Daily Challenges</h1>
-      <p class="text-sm mt-1" style="color: #9a907b;">Finish a task in-game, then claim your Fate Shards here.</p>
+      <p class="text-sm mt-1" style="color: #9a907b;">A fresh set rolls every UTC midnight. Finish them in-game to claim Fate Shards.</p>
       {#if auth.loggedIn && auth.user?.dailyStreak}
         <div class="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full" style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.2);">
           <span class="material-symbols-outlined" style="font-size: 14px; color: #f0c040; font-variation-settings: 'FILL' 1;">local_fire_department</span>
@@ -137,6 +139,8 @@
             : isReady
               ? 'linear-gradient(135deg, rgba(240,192,64,0.10), rgba(240,192,64,0.03))'
               : 'linear-gradient(180deg, #13121c, #0c0b14)'}
+          {@const showProgress = ch.threshold > 1 && !isClaimed}
+          {@const pct = ch.threshold > 0 ? Math.min(100, Math.round((ch.progress / ch.threshold) * 100)) : 0}
           <div class="rounded-2xl px-5 py-4" style="background: {bg}; border: 1px solid {accent}33;">
             <div class="flex items-center gap-4">
               <span class="material-symbols-outlined flex-shrink-0" style="font-size: 28px; color: {accent}; font-variation-settings: 'FILL' {isClaimed || isReady ? 1 : 0};">
@@ -145,10 +149,20 @@
               <div class="flex-1 min-w-0">
                 <p class="font-semibold text-sm" style="font-family: 'Cinzel', serif; color: {accent};">{ch.name}</p>
                 <p class="text-xs mt-0.5" style="color: #9a907b; line-height: 1.4;">{ch.description}</p>
-                <div class="flex items-center gap-1 mt-1.5">
-                  <span class="material-symbols-outlined" style="font-size: 12px; color: #f0c040; font-variation-settings: 'FILL' 1;">diamond</span>
-                  <span class="font-mono text-xs font-bold" style="color: #f0c040;">+{ch.reward} shards</span>
+                <div class="flex items-center gap-3 mt-1.5">
+                  <div class="flex items-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size: 12px; color: #f0c040; font-variation-settings: 'FILL' 1;">diamond</span>
+                    <span class="font-mono text-xs font-bold" style="color: #f0c040;">+{ch.reward}</span>
+                  </div>
+                  {#if showProgress}
+                    <span class="font-mono text-xs" style="color: {accent};">{ch.progress}/{ch.threshold}</span>
+                  {/if}
                 </div>
+                {#if showProgress}
+                  <div class="mt-2 h-1 rounded-full overflow-hidden" style="background: rgba(255,255,255,0.05);">
+                    <div style="height: 100%; width: {pct}%; background: {accent}; transition: width 0.3s ease;"></div>
+                  </div>
+                {/if}
               </div>
               {#if isClaimed}
                 <span class="font-mono text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0" style="background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.25); color: #34d399;">Done</span>
