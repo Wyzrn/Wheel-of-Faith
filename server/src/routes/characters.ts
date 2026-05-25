@@ -1,6 +1,8 @@
 import { nanoid } from 'nanoid'
 import mongoose from 'mongoose'
 import { Character } from '../models/Character.js'
+import { User } from '../models/User.js'
+import { markChallengeProgress } from '../lib/challenges.js'
 import type { FastifyPluginAsync } from 'fastify'
 
 const SORT_FIELD_MAP: Record<string, Record<string, 1 | -1>> = {
@@ -84,6 +86,15 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       elementWeaknesses: (body.elementWeaknesses ?? []).slice(0, 5),
       ...(userId ? { userId: new mongoose.Types.ObjectId(userId) } : {}),
     })
+
+    // Mark daily 'spin_complete' challenge progress — server-side event, can't be
+    // spoofed because session-too-short guard above already enforced a 90s+ session.
+    try {
+      const user = await User.findById(userId)
+      if (user) await markChallengeProgress(user, 'spin_complete')
+    } catch (err) {
+      fastify.log.warn({ err }, 'Failed to mark spin_complete challenge progress')
+    }
 
     return reply.code(201).send({
       shareId: character.shareId,
@@ -249,6 +260,9 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   // PATCH /characters/:shareId/rivals-win — increment rivals_wins by 1
+  // Requires authentication AND character ownership. Server-side battle resolution
+  // (rivals-ws.ts) is the source of truth for whether a win actually occurred; this
+  // endpoint just records it against a specific character belonging to the caller.
   fastify.patch('/characters/:shareId/rivals-win', {
     config: {
       rateLimit: {
@@ -262,13 +276,13 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
 
     const { shareId } = request.params as { shareId: string }
     const character = await Character.findOneAndUpdate(
-      { shareId },
+      { shareId, userId: new mongoose.Types.ObjectId(userId) },
       { $inc: { rivals_wins: 1 } },
       { new: true }
     ).lean()
 
     if (!character) {
-      return reply.code(404).send({ error: 'Character not found' })
+      return reply.code(404).send({ error: 'Character not found or not yours' })
     }
 
     return reply.send({ rivals_wins: character.rivals_wins })

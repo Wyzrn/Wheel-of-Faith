@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getPerfTier } from '$lib/perf'
   interface Props {
     type: string
     color?: string
@@ -260,13 +261,22 @@
     p(CI+'impact_4.png',  50, 50,   0,   0,   0, 1.3, 0.18, 30),
   ]
 
+  // Perf tier: drop the trailing half of particles on low-end devices.
+  // Capture once per component instance — these are static device props.
+  const _perfTier = getPerfTier()
+  const _maxDelay = _perfTier === 'low' ? 0.10 : _perfTier === 'mid' ? 0.18 : Infinity
+
   // Base sprites, filtered by grade (F/E drops lower-weight trailing particles)
   let particleSprites = $derived.by((): Sprite[] => {
     const base = PARTICLES[type] ?? GENERIC_PARTICLES
-    if (gradeIdx <= 1) return base.filter(s => s.delay <= 0.10)   // F/E: only early particles
-    if (gradeIdx <= 2) return base.filter(s => s.delay <= 0.16)   // D
-    // Apply grade scale to size and spread
-    return base.map(s => ({
+    let filtered: Sprite[]
+    if (gradeIdx <= 1) filtered = base.filter(s => s.delay <= 0.10)   // F/E: only early particles
+    else if (gradeIdx <= 2) filtered = base.filter(s => s.delay <= 0.16)  // D
+    else if (_maxDelay !== Infinity) filtered = base.filter(s => s.delay <= _maxDelay)
+    else filtered = base
+    // Apply grade scale to size and spread (skip alloc if no scale needed)
+    if (gradeIdx <= 2 && _maxDelay === Infinity) return filtered
+    return filtered.map(s => ({
       ...s,
       size: Math.round(s.size * scaleMult),
       tx: s.tx * spreadMult,
@@ -793,6 +803,9 @@
   justify-content: center;
   pointer-events: none;
   filter: drop-shadow(0 0 8px var(--c));
+  /* contain paint+layout so child animations don't trigger reflows in sibling battle UI */
+  contain: layout style paint;
+  will-change: transform, opacity;
 }
 .fx-svg { width: 100%; height: 100%; }
 

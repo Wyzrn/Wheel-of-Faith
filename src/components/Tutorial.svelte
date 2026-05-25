@@ -132,7 +132,7 @@
     }
 
     // Step 3 — Racial features
-    if (RACIAL_CATS.has(cat) && s <= 3) return {
+    if (RACIAL_CATS.has(cat) && !revealed && s <= 3) return {
       id: 3,
       icon: 'auto_awesome',
       title: 'Racial Features',
@@ -142,7 +142,7 @@
     }
 
     // Step 4 — Archetype
-    if (cat === 'archetype' && s <= 4) return {
+    if (cat === 'archetype' && !revealed && s <= 4) return {
       id: 4,
       icon: 'military_tech',
       title: 'Spin — Archetype',
@@ -176,7 +176,7 @@
     }
 
     // Step 7 — Powers
-    if (cat === 'power' && s <= 7) return {
+    if (cat === 'power' && !revealed && s <= 7) return {
       id: 7,
       icon: 'bolt',
       title: 'Powers & Elements',
@@ -186,7 +186,7 @@
     }
 
     // Step 8 — Weapons
-    if (cat === 'weapon' && s <= 8) return {
+    if (cat === 'weapon' && !revealed && s <= 8) return {
       id: 8,
       icon: 'swords',
       title: 'Weapons',
@@ -196,7 +196,7 @@
     }
 
     // Step 9 — Armor
-    if ((cat === 'armor' || cat === 'armorStrength') && s <= 9) return {
+    if ((cat === 'armor' || cat === 'armorStrength') && !revealed && s <= 9) return {
       id: 9,
       icon: 'shield',
       title: 'Armor & Armor Strength',
@@ -206,7 +206,7 @@
     }
 
     // Step 10 — Weaknesses
-    if (cat === 'weakness' && s <= 10) return {
+    if (cat === 'weakness' && !revealed && s <= 10) return {
       id: 10,
       icon: 'broken_image',
       title: 'Weaknesses',
@@ -216,7 +216,7 @@
     }
 
     // Step 11 — Redemption spin
-    if (cat === 'redemptionSpin' && s <= 11) return {
+    if (cat === 'redemptionSpin' && !revealed && s <= 11) return {
       id: 11,
       icon: 'casino',
       title: 'The Redemption Spin',
@@ -226,7 +226,7 @@
     }
 
     // Step 12 — Backstory
-    if (cat === 'backstory' && s <= 12) return {
+    if (cat === 'backstory' && !revealed && s <= 12) return {
       id: 12,
       icon: 'history_edu',
       title: 'Backstory',

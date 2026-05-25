@@ -531,7 +531,14 @@
       title={isBotBattle ? `${myCharName ?? 'You'} vs BOT` : `${myCharName ?? auth.user?.username ?? 'You'} vs ${partnerName}`}
       team2Color={isBotBattle ? '#34d399' : '#f9a8d4'}
       onComplete={(winner) => {
-        if (auth.loggedIn) auth.recordBattleResult(winner === 'team1')
+        const iWon = winner === 'team1'
+        // Tell the server which side this client thinks won; server credits the win
+        // only when both clients report agreeing results. See rivals-ws.ts 'battle_result'.
+        const wsData = getRivalsWs()
+        if (wsData && !isBotBattle) {
+          try { wsData.ws.send(JSON.stringify({ type: 'battle_result', won: iWon })) } catch { /* socket closed */ }
+        }
+        if (auth.loggedIn) auth.recordBattleResult(iWon)
       }}
       onRematch={() => {
         phase = 'menu'

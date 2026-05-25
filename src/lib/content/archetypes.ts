@@ -847,3 +847,26 @@ export const archetypes: Archetype[] = [
   },
 
 ]
+
+// O(1) lookup map — avoids archetypes.find(a => a.label === X) linear scans
+// across 35+ archetypes in hot paths.
+export const archetypesByLabel: Map<string, Archetype> = new Map(archetypes.map(a => [a.label, a]))
+export const getArchetype = (label: string | undefined | null): Archetype | undefined =>
+  label ? archetypesByLabel.get(label) : undefined
+
+// Merge archetype abilities into the shared abilityLookup map exported from races.ts.
+// Importing here (not in races.ts) avoids a circular module dep — races doesn't need
+// archetypes to build its half, and we lazily extend the same Map on import.
+import { abilityLookup as _abilityLookup } from './races'
+for (const arc of archetypes) {
+  const entries: { label: string; element?: import('./types').ElementType; grade?: import('./types').ItemGrade }[] = [
+    ...arc.abilities,
+    ...(arc.customAbilityPool ?? []),
+  ]
+  for (const entry of entries) {
+    if ((entry.element || entry.grade) && !_abilityLookup.has(entry.label)) {
+      _abilityLookup.set(entry.label, { element: entry.element, grade: entry.grade })
+    }
+  }
+}
+

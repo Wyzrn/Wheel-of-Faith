@@ -2395,3 +2395,50 @@ export const races: Race[] = [
     ],
   },
 ]
+
+// O(1) lookup map — avoids races.find(r => r.label === X) linear scans across
+// 35+ races for hot paths in spin/battle/character build code.
+export const racesByLabel: Map<string, Race> = new Map(races.map(r => [r.label, r]))
+export const getRace = (label: string | undefined | null): Race | undefined =>
+  label ? racesByLabel.get(label) : undefined
+
+// Flat lookup from every race subType/class/transformation entry → element + grade.
+// Previously rebuilt at +page.svelte module init on every page load; lifting it here
+// means the Map is computed once when the races chunk is loaded.
+type _PoolEntry = { element?: import('./types').ElementType; grade?: import('./types').ItemGrade }
+export const racePoolLookup: Map<string, _PoolEntry> = (() => {
+  const m = new Map<string, _PoolEntry>()
+  for (const race of races) {
+    const entries: { label: string; element?: import('./types').ElementType; grade?: import('./types').ItemGrade }[] = [
+      ...(race.subTypePool ?? []),
+      ...(race.classPool ?? []),
+      ...(race.transformationPool ?? []),
+    ]
+    for (const entry of entries) {
+      if (entry.element || entry.grade) m.set(entry.label, { element: entry.element, grade: entry.grade })
+    }
+  }
+  return m
+})()
+
+// Flat lookup for ability labels across all races (top-level + nested in pool entries).
+// Archetype abilities are appended in archetypes.ts via mergeAbilityLookup() so each
+// content module can populate the shared map without circular imports.
+export const abilityLookup: Map<string, _PoolEntry> = (() => {
+  const m = new Map<string, _PoolEntry>()
+  for (const race of races) {
+    const all: { label: string; element?: import('./types').ElementType; grade?: import('./types').ItemGrade }[] = [
+      ...race.abilities,
+      ...(race.subTypePool ?? []).flatMap(e => e.abilities ?? []),
+      ...(race.classPool ?? []).flatMap(e => e.abilities ?? []),
+      ...(race.transformationPool ?? []).flatMap(e => e.abilities ?? []),
+    ]
+    for (const entry of all) {
+      if ((entry.element || entry.grade) && !m.has(entry.label)) {
+        m.set(entry.label, { element: entry.element, grade: entry.grade })
+      }
+    }
+  }
+  return m
+})()
+

@@ -23,6 +23,16 @@
     } else if (auth.loggedIn) {
       await shop.refresh()
     }
+    // Fire-and-forget: mark today's 'shop_visit' daily challenge progress.
+    // Server validates the user is authenticated; idempotent for the day.
+    if (auth.loggedIn) {
+      fetch('/api/challenges/progress', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'shop_visit' }),
+      }).catch(() => { /* network — silently ignore */ })
+    }
   })
 
   async function handleBuyGamepass(id: string) {

@@ -1,5 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { WebSocket } from '@fastify/websocket'
+import { User } from '../models/User.js'
+import { markChallengeProgress } from '../lib/challenges.js'
 
 interface Player {
   ws: WebSocket
@@ -8,6 +10,9 @@ interface Player {
   results: object[]
   done: boolean
   room?: Room
+  // Each player self-reports their own won/lost flag once battle resolves client-side.
+  // Server credits the win/loss only when both reports arrive and agree (one wins, one loses).
+  battleReport?: { won: boolean }
 }
 
 interface Room {
@@ -15,6 +20,9 @@ interface Room {
   p1: Player | null
   p2: Player | null
   createdAt: number
+  // True once the server has credited a result for this room. Prevents double-credit
+  // if either client sends battle_result twice.
+  resolved?: boolean
 }
 
 interface QueueEntry {
@@ -176,6 +184,33 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
         case 'battle_result': {
           const other = getOther(player)
           if (other) send(other.ws, { type: 'battle_result', won: !(msg.won as boolean) })
+          // Server-side win/loss crediting: each player reports their own result, and
+          // we credit only when both reports agree (one true, one false). This stops
+          // a single client from inflating rivalsWins by sending {won:true} alone.
+          const room = player.room
+          if (!room || room.resolved) break
+          player.battleReport = { won: !!msg.won }
+          const p1 = room.p1, p2 = room.p2
+          if (p1?.battleReport && p2?.battleReport && p1.battleReport.won !== p2.battleReport.won) {
+            room.resolved = true
+            const winner = p1.battleReport.won ? p1 : p2
+            const loser  = p1.battleReport.won ? p2 : p1
+            // Best-effort credit; failures here must not break the battle UX.
+            ;(async () => {
+              try {
+                if (winner.userId) {
+                  await User.findByIdAndUpdate(winner.userId, { $inc: { rivalsWins: 1, gamesPlayed: 1 } })
+                  const winUser = await User.findById(winner.userId)
+                  if (winUser) await markChallengeProgress(winUser, 'rivals_win')
+                }
+                if (loser.userId) {
+                  await User.findByIdAndUpdate(loser.userId, { $inc: { rivalsLosses: 1, gamesPlayed: 1 } })
+                }
+              } catch (err) {
+                app.log.warn({ err, roomCode: room.code }, 'Failed to credit rivals battle result')
+              }
+            })()
+          }
           break
         }
 

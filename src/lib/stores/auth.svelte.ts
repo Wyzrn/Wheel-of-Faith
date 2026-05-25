@@ -9,6 +9,8 @@ export interface AuthUser {
   gamesPlayed: number
   shards: number
   gamepasses: string[]
+  dailyStreak?: number
+  lastVisitDate?: string | null
 }
 
 // Svelte 5 reactive auth state
@@ -66,15 +68,12 @@ export const auth = {
     if (_user) _user = { ..._user, shards, gamepasses }
   },
 
-  async recordBattleResult(won: boolean) {
+  // Battle results are credited server-side via the rivals WebSocket
+  // ('battle_result' message in rivals-ws.ts). The client only updates its
+  // local optimistic counters here so the UI reflects the win immediately;
+  // the real ledger lives on the server.
+  recordBattleResult(won: boolean) {
     if (!_user) return
-    await fetch(`${API}/auth/rivals-result`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ won }),
-    })
-    // Optimistic update
     if (won) _user = { ..._user, rivalsWins: _user.rivalsWins + 1, gamesPlayed: _user.gamesPlayed + 1 }
     else _user = { ..._user, rivalsLosses: _user.rivalsLosses + 1, gamesPlayed: _user.gamesPlayed + 1 }
   },

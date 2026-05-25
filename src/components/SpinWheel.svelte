@@ -4,6 +4,7 @@
   import { slicePath, weightedSegmentAngles } from '$lib/game/geometry'
   import { weightedRandom } from '$lib/game/random'
   import type { WeightedSegment, SpinStatus } from '$lib/session/types'
+  import { effectsMultiplier, effectiveDpr, getPerfTier } from '$lib/perf'
 
   const SVG_SIZE = 500
   const CENTER = SVG_SIZE / 2          // 250
@@ -42,9 +43,27 @@
   let canSpin = $derived(spinStatus === 'IDLE')
   let isRevealed = $derived(spinStatus === 'REVEALED')
   let activeSegments = $derived(frozenSegments ?? segments)
-  let displaySegments = $derived(activeSegments.map(s => s.dimmed ? { ...s, weight: Math.max(s.weight, 1) } : s))
+  // Only allocate a new displaySegments array when there is at least one dimmed segment
+  // with weight < 1. Otherwise reuse the existing reference (most spins have no dimmed
+  // segments, so this avoids per-tick allocation while a parent re-render fires).
+  let displaySegments = $derived.by(() => {
+    let needsClone = false
+    for (let i = 0; i < activeSegments.length; i++) {
+      if (activeSegments[i].dimmed && activeSegments[i].weight < 1) { needsClone = true; break }
+    }
+    return needsClone
+      ? activeSegments.map(s => s.dimmed && s.weight < 1 ? { ...s, weight: 1 } : s)
+      : activeSegments
+  })
   let segmentAngles = $derived(weightedSegmentAngles(displaySegments))
-  let maxSegmentWeight = $derived(Math.max(...activeSegments.filter(s => !s.dimmed).map(s => s.weight), 1))
+  let maxSegmentWeight = $derived.by(() => {
+    let m = 1
+    for (let i = 0; i < activeSegments.length; i++) {
+      const s = activeSegments[i]
+      if (!s.dimmed && s.weight > m) m = s.weight
+    }
+    return m
+  })
 
   let wheelGroupEl: SVGGElement
   let shakeEl: HTMLDivElement
@@ -70,6 +89,24 @@
   let audioCtx: AudioContext | null = null
   let lastTickRot = 0
   let lastTickAt  = 0   // AudioContext time of last tick; enforces 40ms rate limit
+
+  // Haptic feedback — short pulse on each tick boundary. Gated by Vibration API
+  // support (mobile only) and rate-limited so a long spin doesn't drain battery.
+  // Browsers only honour vibrate() during/after a user gesture; the spin button
+  // click is the gesture, so calls fired during the tween are allowed.
+  const _supportsVibrate = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
+  let _lastVibrateAt = 0
+  function pulseHaptic(speed: number) {
+    if (!_supportsVibrate) return
+    const now = performance.now()
+    if (now - _lastVibrateAt < 60) return  // ~16 pulses/sec max
+    _lastVibrateAt = now
+    try { navigator.vibrate(Math.round(4 + speed * 6)) } catch { /* unsupported */ }
+  }
+  function pulseHapticLanding() {
+    if (!_supportsVibrate) return
+    try { navigator.vibrate([12, 30, 22]) } catch { /* unsupported */ }
+  }
 
   function getAudioCtx(): AudioContext | null {
     if (!audioCtx) {
@@ -216,18 +253,23 @@
 
   function resizeCanvas() {
     if (!particleCanvas) return
-    const dpr = window.devicePixelRatio || 1
-    // Use the canvas element's own layout dimensions — offsetWidth/offsetHeight
-    // always reflect the CSS-computed size regardless of SVG attribute quirks.
+    // effectiveDpr caps at 1× on low-end, 1.5× on mid — cuts particle fillrate
+    // by 50–75% on phones without changing visual layout.
+    const dpr = effectiveDpr()
     particleCanvas.width  = Math.round(particleCanvas.offsetWidth  * dpr)
     particleCanvas.height = Math.round(particleCanvas.offsetHeight * dpr)
   }
 
+  const _fxMult = effectsMultiplier()
+  const _perfTier = getPerfTier()
+
   function spawnParticles(normalizedSpeed: number) {
     if (normalizedSpeed < 0.04 || !particleCanvas || !svgEl) return
-    const count = Math.ceil(normalizedSpeed * 6)
+    if (_perfTier === 'low') return  // skip particle spawn entirely on low-end
+    const count = Math.ceil(normalizedSpeed * 6 * _fxMult)
+    if (count <= 0) return
     const [tipX, tipY] = svgToCanvas(TIP_SVG_X, TIP_SVG_Y)
-    const dpr = window.devicePixelRatio || 1
+    const dpr = effectiveDpr()
     const jitter = 7 * dpr
 
     for (let i = 0; i < count; i++) {
@@ -273,7 +315,7 @@
     if (!c) return
     c.clearRect(0, 0, particleCanvas.width, particleCanvas.height)
 
-    const dpr = window.devicePixelRatio || 1
+    const dpr = effectiveDpr()
     const gravity = 200 * dpr  // pixels/s²
 
     for (let i = particles.length - 1; i >= 0; i--) {
@@ -393,7 +435,11 @@
         // ── Tick on segment boundary crossing (rate-limited inside playTick) ─
         const angVelDps = dt > 0 ? Math.abs(rot - prevGsapRot) / dt * 1000 : 0
         const speed     = Math.min(1, angVelDps / 4500)
-        if (soundEnabled && countBordersCrossed(lastTickRot, rot) > 0) playTick(speed)
+        const crossed   = countBordersCrossed(lastTickRot, rot) > 0
+        if (crossed) {
+          if (soundEnabled) playTick(speed)
+          if (effectsEnabled) pulseHaptic(speed)
+        }
         lastTickRot = rot
 
         // ── Particles ──────────────────────────────────────────────────────
@@ -416,6 +462,7 @@
       onComplete: () => {
         if (shakeEl) gsap.set(shakeEl, { x: 0, y: 0 })
         if (soundEnabled) playLanding()
+        if (effectsEnabled) pulseHapticLanding()
         currentRotation = targetAngle
         lastResult = { index: resultIndex, label: segments[resultIndex].label }
         spinStatus = 'LANDED'
@@ -426,7 +473,7 @@
   }
 </script>
 
-<div class="flex flex-col items-center gap-5 w-full mx-auto select-none">
+<div class="flex flex-col items-center gap-5 w-full mx-auto select-none" style="contain: layout style paint;">
 
   <!-- Shake wrapper — GSAP applies translate() here during spin -->
   <div bind:this={shakeEl} class="flex justify-center w-full">

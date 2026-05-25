@@ -14,8 +14,8 @@
   import type { SpinDefinition } from '$lib/game/spinQueue'
   import type { SpinResult, WeightedSegment } from '$lib/session/types'
   import type { StoryRosterEntry } from '$lib/story/types'
-  import { races } from '$lib/content/races'
-  import { archetypes } from '$lib/content/archetypes'
+  import { races, getRace } from '$lib/content/races'
+  import { archetypes, getArchetype } from '$lib/content/archetypes'
   import { weaponsByCategory } from '$lib/content/weapons'
   import { armorsByCategory } from '$lib/content/armors'
   import { getRacesForStage, racesToSegments, getArchetypesForStage, archetypesToSegments } from '$lib/story/raceTiers'
@@ -290,7 +290,7 @@
     if (currentDef.category === 'racialAbility') {
       const raceResult = results.find(r => r.category === 'race')
       if (raceResult) {
-        const race = races.find(r => r.label === raceResult.resultLabel)
+        const race = getRace(raceResult.resultLabel)
         const classResult = results.find(r => r.category === 'raceClass')
         const classItem = race?.classPool?.find(c => c.label === classResult?.resultLabel)
         const subTypeResult = results.find(r => r.category === 'raceSubType')
@@ -309,7 +309,7 @@
     if (currentDef.category === 'archetypeAbility') {
       const archetypeResult = results.find(r => r.category === 'archetype')
       if (archetypeResult) {
-        const archetype = archetypes.find(a => a.label === archetypeResult.resultLabel)
+        const archetype = getArchetype(archetypeResult.resultLabel)
         const pool = archetype?.customAbilityPool ?? archetype?.abilities
         if (pool && pool.length > 0) {
           return (pool as WeightedSegment[]).map(seg =>
@@ -323,14 +323,14 @@
     // Race sub-type: use race's subTypePool
     if (currentDef.category === 'raceSubType') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       return (race?.subTypePool as WeightedSegment[] | undefined) ?? getSegmentsForCategory('raceSubType')
     }
 
     // Race class: use race's classPool
     if (currentDef.category === 'raceClass') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       return (race?.classPool as WeightedSegment[] | undefined) ?? getSegmentsForCategory('raceClass')
     }
 
@@ -351,7 +351,7 @@
     // Stat wheels: apply racial minimum tier floor + stage max cap
     if (STAT_CATEGORIES.has(currentDef.category)) {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       const minTierIdx = race?.minStatTier != null ? TIER_ORDER.indexOf(race.minStatTier as import('$lib/game/scoreTier').TierGrade) : -1
 
       const segs = getSegmentsForCategory(currentDef.category as SpinCategory) as (WeightedSegment & { score?: number; tier?: string })[]
@@ -554,7 +554,7 @@
       const insertSlots: SpinDefinition[] = []
 
       if (currentDef.category === 'race') {
-        const race = races.find(r => r.label === resultLabel)
+        const race = getRace(resultLabel)
         if (race) {
           if (race.subTypePool?.length) {
             insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Sub-Type` })
@@ -583,7 +583,7 @@
 
       if (currentDef.category === 'raceSubType') {
         const raceResult = results.find(r => r.category === 'race')
-        const race = races.find(r => r.label === raceResult?.resultLabel)
+        const race = getRace(raceResult?.resultLabel)
         const subTypeItem = race?.subTypePool?.find(s => s.label === resultLabel)
         if (subTypeItem?.statBonusGrants) {
           for (const [stat, bonusType] of Object.entries(subTypeItem.statBonusGrants)) {
@@ -594,7 +594,7 @@
 
       if (currentDef.category === 'raceClass') {
         const raceResult = results.find(r => r.category === 'race')
-        const race = races.find(r => r.label === raceResult?.resultLabel)
+        const race = getRace(raceResult?.resultLabel)
         const classItem = race?.classPool?.find(c => c.label === resultLabel)
         if (classItem?.statBonusGrants) {
           for (const [stat, bonusType] of Object.entries(classItem.statBonusGrants)) {
@@ -612,7 +612,7 @@
       }
 
       if (currentDef.category === 'archetype') {
-        const archetype = archetypes.find(a => a.label === resultLabel)
+        const archetype = getArchetype(resultLabel)
         if (archetype) {
           const abilityLabel = archetype.abilitySpinDisplayName ?? 'Archetype Ability'
           const count = archetype.abilitySpinCount ?? 2

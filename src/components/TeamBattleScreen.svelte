@@ -977,6 +977,8 @@
     position: relative;
     isolation: isolate;
     overflow-x: hidden;
+    /* Contain paint+layout so attack FX animations don't trigger reflows up the tree */
+    contain: layout paint;
     /* Stone-floor grid: fine rune lines + cardinal vein */
     background-image:
       radial-gradient(ellipse 70% 30% at 50% 0%,   rgba(200,136,42,0.08) 0%, transparent 70%),

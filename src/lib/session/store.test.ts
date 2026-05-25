@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { loadSession, saveSession, clearSession, createSession } from './store'
+import { loadSession, saveSession, clearSession, flushSession, createSession } from './store'
 
 beforeEach(() => {
   const store: Record<string, string> = {}
@@ -25,6 +25,7 @@ describe('saveSession + loadSession', () => {
   it('round-trip preserves session data', () => {
     const session = createSession()
     saveSession(session)
+    flushSession()  // bypass 200ms debounce in test
     const loaded = loadSession()
     expect(loaded?.sessionId).toBe(session.sessionId)
     expect(loaded?.startedAt).toBe(session.startedAt)
@@ -36,6 +37,7 @@ describe('clearSession', () => {
   it('removes wof_session so loadSession returns null', () => {
     const session = createSession()
     saveSession(session)
+    flushSession()
     clearSession()
     expect(loadSession()).toBeNull()
   })

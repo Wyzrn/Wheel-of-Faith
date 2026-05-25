@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SpinResult } from '$lib/session/types'
   import { computeOverallScore, scoreTier, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
-  import { archetypes } from '$lib/content/archetypes'
+  import { archetypes, getArchetype } from '$lib/content/archetypes'
   import { races } from '$lib/content/races'
   import { powers as powersPool } from '$lib/content/powers'
   import { weapons as weaponsPool } from '$lib/content/weapons'
@@ -69,7 +69,7 @@
   let devilFruitName    = $derived(get('devilFruitName'))
   let transformation    = $derived(get('raceTransformation'))
   let archetype         = $derived(get('archetype'))
-  let archetypeTypeLabel = $derived(archetypes.find(a => a.label === archetype)?.archetypeType ?? null)
+  let archetypeTypeLabel = $derived(getArchetype(archetype)?.archetypeType ?? null)
   let backstory         = $derived(get('backstory'))
   let height            = $derived(get('height'))
   let gender            = $derived(get('gender'))
@@ -182,7 +182,16 @@
   let intervalId: ReturnType<typeof setInterval> | null = null
 
   onMount(() => {
-    intervalId = setInterval(() => { now = Date.now() }, 1000)
+    // Stop ticking once canSave becomes true — Save button no longer needs second-by-second
+    // refresh and stopping the interval cancels all downstream $derived recomputation each second.
+    intervalId = setInterval(() => {
+      now = Date.now()
+      const age = (now - new Date(startedAt).getTime()) / 1000
+      if (age >= 90 && intervalId !== null) {
+        clearInterval(intervalId)
+        intervalId = null
+      }
+    }, 1000)
   })
 
   onDestroy(() => {

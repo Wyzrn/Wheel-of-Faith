@@ -8,15 +8,15 @@
   import CharacterCard from '../components/CharacterCard.svelte'
   import SettingsPanel from '../components/SettingsPanel.svelte'
   import QuickBattleView from '../components/QuickBattleView.svelte'
-  import { loadSession, saveSession, clearSession, createSession } from '$lib/session/store'
+  import { loadSession, saveSession, clearSession, flushSession, createSession } from '$lib/session/store'
   import type { SessionState, SpinResult } from '$lib/session/types'
   import { buildInitialQueue, getSegmentsForCategory } from '$lib/game/spinQueue'
   import type { SpinDefinition, SpinCategory } from '$lib/game/spinQueue'
   import { computeOverallScore, scoreTier, gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import type { TierGrade } from '$lib/game/scoreTier'
   import { redemptionProbability } from '$lib/game/redemption'
-  import { races } from '$lib/content/races'
-  import { archetypes } from '$lib/content/archetypes'
+  import { races, getRace, racePoolLookup as _racePoolLookup, abilityLookup as _abilityLookup } from '$lib/content/races'
+  import { archetypes, getArchetype } from '$lib/content/archetypes'
   import { DEVIL_FRUIT_POOLS } from '$lib/content/devil-fruits'
   import { weapons as weaponsPool, weaponsByCategory } from '$lib/content/weapons'
   import { armors as armorsPool, armorsByCategory } from '$lib/content/armors'
@@ -31,6 +31,7 @@
   import { powers as powersPool } from '$lib/content/powers'
   import Tutorial from '../components/Tutorial.svelte'
   import { appendSpinHistory } from '$lib/spinHistory'
+  import { loadCharHistory, pushCharHistory, migrateLegacyLastChar, type CharHistoryEntry } from '$lib/charHistory'
   import { randomCharacterName } from '$lib/story/naming'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import type { ElementType, ItemGrade } from '$lib/content/types'
@@ -39,44 +40,12 @@
   const _armorLookup      = new Map(armorsPool.map(a => [a.label, a]))
   const _enchantLookup    = new Map(enchantmentsPool.map(e => [e.label, e]))
 
-  // Lookup for race subType/class/transformation pool entries (have element+grade)
-  const _racePoolLookup = new Map<string, { element?: ElementType; grade?: ItemGrade }>()
-  for (const race of races) {
-    for (const entry of [
-      ...(race.subTypePool ?? []),
-      ...(race.classPool ?? []),
-      ...(race.transformationPool ?? []),
-    ]) {
-      if (entry.element || entry.grade) {
-        _racePoolLookup.set(entry.label, { element: entry.element, grade: entry.grade })
-      }
-    }
-  }
-
-  // Flat lookup from all race + archetype ability arrays (element + grade now in data)
-  const _abilityLookup = new Map<string, { element?: ElementType; grade?: ItemGrade }>()
-  for (const race of races) {
-    for (const entry of [
-      ...race.abilities,
-      ...(race.subTypePool ?? []).flatMap(e => e.abilities ?? []),
-      ...(race.classPool ?? []).flatMap(e => e.abilities ?? []),
-      ...(race.transformationPool ?? []).flatMap(e => e.abilities ?? []),
-    ]) {
-      if ((entry.element || entry.grade) && !_abilityLookup.has(entry.label)) {
-        _abilityLookup.set(entry.label, { element: entry.element, grade: entry.grade })
-      }
-    }
-  }
-  for (const arc of archetypes) {
-    for (const entry of [...arc.abilities, ...(arc.customAbilityPool ?? [])]) {
-      if ((entry.element || entry.grade) && !_abilityLookup.has(entry.label)) {
-        _abilityLookup.set(entry.label, { element: entry.element, grade: entry.grade })
-      }
-    }
-  }
+  // _racePoolLookup and _abilityLookup are imported as module-level maps from
+  // $lib/content/races (built once when the content chunk loads, populated with
+  // archetype abilities by the archetypes module on import).
   // Derives weakness count from race's probability modifier when no explicit count is set
   function archetypeTypeFor(label: string): string {
-    return archetypes.find(a => a.label === label)?.archetypeType ?? ''
+    return getArchetype(label)?.archetypeType ?? ''
   }
 
   function deriveWeaknessCount(modifier: number): number {
@@ -137,11 +106,16 @@
   let p2StartedAt = $state('')     // session_started_at for P2 character save
   let p1ShareId = $state('')       // set if P1 is a pre-saved character (from challenge flow)
 
-  // ── Last completed character (persisted until next spin starts) ──────────
-  const LAST_CHAR_KEY = 'wof_last_char'
+  // ── Last completed character — first slot of the rolling 5-character history.
+  // Older entries surfaced via the history carousel; this state keeps the
+  // existing single-character buttons working without reshuffling templates.
+  const LAST_CHAR_KEY = 'wof_last_char'  // legacy — migrated once on load
   let lastCharResults   = $state<SpinResult[] | null>(null)
   let lastCharName      = $state<string | null>(null)
   let lastCharStartedAt = $state<string | null>(null)
+  let charHistory       = $state<CharHistoryEntry[]>([])
+  let showHistory       = $state(false)
+  let viewingHistoryIdx = $state(0)
   // Rivals relay state
   let rivalsOnlineMode    = $state(false)
   let rivalsOnlineWaiting = $state(false)
@@ -399,7 +373,7 @@
     if (def.category === 'racialAbility') {
       const raceResult = results.find(r => r.category === 'race')
       const effectiveLabel = raceOverride ?? raceResult?.resultLabel
-      const race = races.find(r => r.label === effectiveLabel)
+      const race = getRace(effectiveLabel)
       const classResult = results.find(r => r.category === 'raceClass')
       const classItem = race?.classPool?.find(c => c.label === classResult?.resultLabel)
       const subTypeResult = results.find(r => r.category === 'raceSubType')
@@ -413,14 +387,14 @@
     // Use race sub-type pool (always from the original race, not the override)
     if (def.category === 'raceSubType') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       return race?.subTypePool ?? getSegmentsForCategory('raceSubType')
     }
 
     // Use race class pool
     if (def.category === 'raceClass') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       return race?.classPool ?? getSegmentsForCategory('raceClass')
     }
 
@@ -435,7 +409,7 @@
     if (def.category === 'raceTransformation') {
       const raceResult = results.find(r => r.category === 'race')
       const effectiveLabel = raceOverride ?? raceResult?.resultLabel
-      const race = races.find(r => r.label === effectiveLabel)
+      const race = getRace(effectiveLabel)
       return race?.transformationPool ?? getSegmentsForCategory('raceTransformation')
     }
 
@@ -456,7 +430,7 @@
     // Use archetype-specific ability pool — prefer customAbilityPool, then abilities, then fallback
     if (def.category === 'archetypeAbility') {
       const archetypeResult = results.find(r => r.category === 'archetype')
-      const archetype = archetypes.find(a => a.label === archetypeResult?.resultLabel)
+      const archetype = getArchetype(archetypeResult?.resultLabel)
       const pool = archetype?.customAbilityPool ?? archetype?.abilities ?? getSegmentsForCategory('archetypeAbility')
       return pool.map(seg =>
         usedArchetypeAbilities.has(seg.label) ? { ...seg, weight: 0, dimmed: true } : seg
@@ -471,14 +445,14 @@
     // Use race custom height pool when available
     if (def.category === 'height') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       if (race?.customHeightPool) return race.customHeightPool
     }
 
     // Use race custom gender pool when available (genderless races, specific-gender races)
     if (def.category === 'gender') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       if (race?.customGenderPool) return race.customGenderPool
     }
 
@@ -490,9 +464,9 @@
     // Weapon type: apply race + archetype bias multipliers
     if (def.category === 'weaponType') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       const archetypeResult = results.find(r => r.category === 'archetype')
-      const archetype = archetypes.find(a => a.label === archetypeResult?.resultLabel)
+      const archetype = getArchetype(archetypeResult?.resultLabel)
       const baseSegs = getSegmentsForCategory('weaponType')
       if (!race?.weaponTypeBias && !archetype?.weaponTypeBias) return baseSegs
       return baseSegs.map(seg => ({
@@ -506,9 +480,9 @@
     // Armor type: apply race + archetype bias multipliers
     if (def.category === 'armorType') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       const archetypeResult = results.find(r => r.category === 'archetype')
-      const archetype = archetypes.find(a => a.label === archetypeResult?.resultLabel)
+      const archetype = getArchetype(archetypeResult?.resultLabel)
       const baseSegs = getSegmentsForCategory('armorType')
       if (!race?.armorTypeBias && !archetype?.armorTypeBias) return baseSegs
       return baseSegs.map(seg => ({
@@ -548,7 +522,7 @@
     // Stat categories: apply tier rarity weights + race stat modifiers + transformation bonus
     if (STAT_CATEGORIES.has(def.category)) {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       // Global tier modifier: rarer races (low weight) get significantly better stats.
       // weight 3 (Kryptonian) → ~2.1x capped at 2.0, weight 10 → ~1.8x, weight 20 → ~1.4x, weight 38 → ~0.7x (floored)
       const raceWeight = race?.weight ?? 20
@@ -558,7 +532,7 @@
       const raceMod = race?.statModifiers?.[def.category] ?? globalModifier
       // Archetype modifier: shapes stat probability on top of race
       const archetypeResult = results.find(r => r.category === 'archetype')
-      const archetype = archetypes.find(a => a.label === archetypeResult?.resultLabel)
+      const archetype = getArchetype(archetypeResult?.resultLabel)
       const archetypeMod = archetype?.statModifiers?.[def.category] ?? 1.0
       // Height modifier — set when height spin resolves, multiplies into stat probability
       const heightMod = heightModifiers[def.category] ?? 1.0
@@ -604,15 +578,16 @@
 
   // ── onMount: restore session if saved ────────────────────────────────────
   onMount(() => {
-    try {
-      const raw = localStorage.getItem(LAST_CHAR_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw) as { results: SpinResult[]; name: string; startedAt?: string }
-        lastCharResults = parsed.results
-        lastCharName = parsed.name
-        lastCharStartedAt = parsed.startedAt ?? new Date().toISOString()
-      }
-    } catch { /* ignore */ }
+    // Migrate the legacy single-character key into the new rolling history
+    // array, then surface the most recent entry as "last character".
+    migrateLegacyLastChar(LAST_CHAR_KEY)
+    charHistory = loadCharHistory()
+    if (charHistory.length > 0) {
+      const top = charHistory[0]
+      lastCharResults = top.results
+      lastCharName = top.name
+      lastCharStartedAt = top.startedAt
+    }
 
     // Rivals online: relay spins to existing WS from rivals page
     const rivalsParam = new URLSearchParams(window.location.search).get('rivals')
@@ -797,7 +772,7 @@
 
     // Step 1: SPLICE queue (must happen before saveSession)
     if (def.category === 'race') {
-      const race = races.find(r => r.label === resultLabel)
+      const race = getRace(resultLabel)
       const count = race?.abilitySpinCount ?? 1
       const extraPowers = race?.extraPowerSpins ?? 0
       const extraWeapons = (race as any)?.extraWeaponSpins ?? 0
@@ -855,7 +830,7 @@
       showAnnouncement = `${resultLabel}: spin for ${parts.join(', ')}!`
     } else if (def.category === 'raceSubType') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       const subTypeItem = race?.subTypePool?.find(s => s.label === resultLabel)
       if (subTypeItem?.statBonusGrants) {
         for (const [stat, bonusType] of Object.entries(subTypeItem.statBonusGrants)) {
@@ -877,7 +852,7 @@
       }
     } else if (def.category === 'raceClass') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       const classItem = race?.classPool?.find(c => c.label === resultLabel)
       if (classItem?.statBonusGrants) {
         for (const [stat, bonusType] of Object.entries(classItem.statBonusGrants)) {
@@ -907,7 +882,7 @@
       }
     } else if (def.category === 'raceTransformation') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = races.find(r => r.label === raceResult?.resultLabel)
+      const race = getRace(raceResult?.resultLabel)
       const transItem = race?.transformationPool?.find(t => t.label === resultLabel)
       if (transItem?.statBonusGrants) {
         for (const [stat, bonusType] of Object.entries(transItem.statBonusGrants)) {
@@ -965,7 +940,7 @@
         showAnnouncement = `${resultLabel} — the possession barely stirs within you.`
       }
     } else if (def.category === 'archetype') {
-      const archetype = archetypes.find(a => a.label === resultLabel)
+      const archetype = getArchetype(resultLabel)
       const count = archetype?.abilitySpinCount ?? 1
       const abilityLabel = archetype?.abilitySpinDisplayName ?? 'Archetype Ability'
       const insertSlots: SpinDefinition[] = []
@@ -1862,12 +1837,14 @@
       if (tutorialStep >= 0) {
         tutorialStep = 14
       }
-      // Persist last character for "View Last Character" button
+      // Persist into rolling 5-character history; surface the new entry as
+      // "last character" for the existing menu button.
       const snapshot = $state.snapshot(results) as SpinResult[]
       try {
-        localStorage.setItem(LAST_CHAR_KEY, JSON.stringify({ results: snapshot, name: characterName, startedAt: currentSession.startedAt }))
+        charHistory = pushCharHistory({ results: snapshot, name: characterName, startedAt: currentSession.startedAt })
         lastCharResults = snapshot
         lastCharName = characterName
+        lastCharStartedAt = currentSession.startedAt
       } catch { /* ignore */ }
       clearSession()
       showNameScreen = false
@@ -2051,7 +2028,7 @@
 
       <!-- Buttons -->
       <div class="flex flex-col gap-2.5 w-full max-w-[260px]">
-        <!-- Spin Your Fate + last char -->
+        <!-- Spin Your Fate + last char + history -->
         <div class="flex items-center gap-2">
           <button
             onclick={() => { if (lastCharResults && lastCharName !== null) { showLastChar = true; showMenu = false } }}
@@ -2068,6 +2045,17 @@
           >
             <div class="l-bracket" style="color: rgba(255,255,255,0.3);"></div>
             Spin Your Fate
+          </button>
+          <button
+            onclick={() => { if (charHistory.length > 0) { viewingHistoryIdx = 0; showHistory = true; showMenu = false } }}
+            class="flex items-center justify-center rounded-lg shrink-0 transition-all relative"
+            style="width: 38px; height: 38px; background: rgba(167,139,250,{charHistory.length > 0 ? '0.08' : '0.02'}); border: 1px solid rgba(167,139,250,{charHistory.length > 0 ? '0.3' : '0.08'}); color: {charHistory.length > 0 ? '#a78bfa' : '#2a3a4a'}; cursor: {charHistory.length > 0 ? 'pointer' : 'default'}; opacity: {charHistory.length > 0 ? '1' : '0.35'};"
+            title={charHistory.length > 0 ? `Last ${charHistory.length} characters` : 'Spin to build history'}
+          >
+            <span class="material-symbols-outlined" style="font-size: 16px;">history</span>
+            {#if charHistory.length > 1}
+              <span style="position: absolute; top: -4px; right: -4px; background: #a78bfa; color: #1e0a3c; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; min-width: 14px; height: 14px; border-radius: 7px; display: flex; align-items: center; justify-content: center; padding: 0 3px;">{charHistory.length}</span>
+            {/if}
           </button>
         </div>
 
@@ -2154,6 +2142,49 @@
           >← Back</button>
         </div>
         <CharacterCard results={lastCharResults} name={lastCharName} startedAt={lastCharStartedAt ?? new Date().toISOString()} readonly={false} onNewCharacter={() => { showLastChar = false; showMenu = true }} onBackToMenu={() => { showLastChar = false; showMenu = true }} />
+      </div>
+    </div>
+  {/if}
+
+  <!-- Character history carousel — paginates through last 5 locally-completed runs -->
+  {#if showHistory && charHistory.length > 0}
+    {@const cur = charHistory[Math.min(viewingHistoryIdx, charHistory.length - 1)]}
+    <div class="flex justify-center pt-20 pb-24 px-4">
+      <div class="w-full max-w-xl flex flex-col gap-4">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-xs tracking-[0.2em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #a78bfa;">
+            Character History {viewingHistoryIdx + 1}/{charHistory.length}
+          </p>
+          <div class="flex gap-1.5 items-center">
+            <button
+              onclick={() => { viewingHistoryIdx = Math.max(0, viewingHistoryIdx - 1) }}
+              disabled={viewingHistoryIdx === 0}
+              class="text-xs px-2.5 py-1.5 rounded transition-all active:scale-95 disabled:opacity-30"
+              style="color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); background: none; font-family: 'JetBrains Mono', monospace; cursor: pointer;"
+              aria-label="Previous"
+            >‹</button>
+            <button
+              onclick={() => { viewingHistoryIdx = Math.min(charHistory.length - 1, viewingHistoryIdx + 1) }}
+              disabled={viewingHistoryIdx >= charHistory.length - 1}
+              class="text-xs px-2.5 py-1.5 rounded transition-all active:scale-95 disabled:opacity-30"
+              style="color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); background: none; font-family: 'JetBrains Mono', monospace; cursor: pointer;"
+              aria-label="Next"
+            >›</button>
+            <button
+              onclick={() => { showHistory = false; showMenu = true }}
+              class="text-xs px-3 py-1.5 rounded transition-all active:scale-95 ml-2"
+              style="color: #9a907b; border: 1px solid #4e4635; background: none; font-family: 'JetBrains Mono', monospace; cursor: pointer;"
+            >← Back</button>
+          </div>
+        </div>
+        <CharacterCard
+          results={cur.results}
+          name={cur.name}
+          startedAt={cur.startedAt}
+          readonly={true}
+          onNewCharacter={() => { showHistory = false; showMenu = true }}
+          onBackToMenu={() => { showHistory = false; showMenu = true }}
+        />
       </div>
     </div>
   {/if}

@@ -57,9 +57,23 @@ export async function authRoutes(app: FastifyInstance) {
   // ── Get current user (me) ─────────────────────────────────────────────────
   app.get('/auth/me', async (req, reply) => {
     if (!req.userId) return reply.status(401).send({ error: 'not authenticated' })
-    const user = await User.findById(req.userId).lean()
+    // Update daily streak: increment if the user was here yesterday, reset to 1
+    // if they skipped a day, no-op if they already visited today.
+    const today    = new Date().toISOString().slice(0, 10)
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)
+    let user = await User.findById(req.userId)
     if (!user) return reply.status(404).send({ error: 'user not found' })
-    reply.send({ user: { id: user._id, username: user.username, rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed, email: user.email, shards: user.shards ?? 0, gamepasses: user.gamepasses ?? [] } })
+    if (user.lastVisitDate !== today) {
+      user.dailyStreak = user.lastVisitDate === yesterday ? (user.dailyStreak ?? 0) + 1 : 1
+      user.lastVisitDate = today
+      await user.save()
+    }
+    reply.send({ user: {
+      id: user._id, username: user.username,
+      rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed,
+      email: user.email, shards: user.shards ?? 0, gamepasses: user.gamepasses ?? [],
+      dailyStreak: user.dailyStreak ?? 0, lastVisitDate: user.lastVisitDate ?? null,
+    } })
   })
 
   // ── Get user profile (public) ─────────────────────────────────────────────
@@ -101,13 +115,12 @@ export async function authRoutes(app: FastifyInstance) {
     reply.send({ users })
   })
 
-  // ── Update rivals stats after battle ─────────────────────────────────────
-  app.post('/auth/rivals-result', async (req, reply) => {
-    if (!req.userId) return reply.status(401).send({ error: 'not authenticated' })
-    const { won } = req.body as { won: boolean }
-    await User.findByIdAndUpdate(req.userId, {
-      $inc: { gamesPlayed: 1, ...(won ? { rivalsWins: 1 } : { rivalsLosses: 1 }) },
-    })
-    reply.send({ ok: true })
+  // ── Rivals stats are now credited inside the WebSocket battle resolver ──
+  // (rivals-ws.ts, case 'battle_result'). Both clients must report agreeing
+  // outcomes (one win, one loss) before the server credits. Kept here as a
+  // 410 stub so any cached/older client falls back gracefully rather than
+  // failing silently or, worse, being trusted.
+  app.post('/auth/rivals-result', async (_req, reply) => {
+    return reply.status(410).send({ error: 'deprecated — wins are credited server-side via battle WS' })
   })
 }
