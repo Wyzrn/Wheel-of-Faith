@@ -8,16 +8,18 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { buildBattleCharacter, simulateBattle, formatHp, detectWeaknessElement } from '$lib/game/battle'
-  import type { BattleCharacter, BattleRound } from '$lib/game/battle'
+  import { buildBattleCharacter, formatHp, detectWeaknessElement } from '$lib/game/battle'
+  import type { BattleCharacter } from '$lib/game/battle'
   import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
   import type { SpinResult } from '$lib/session/types'
   import { settings } from '$lib/settings.svelte'
+  import { auth } from '$lib/stores/auth.svelte'
   import BattleArena from './BattleArena.svelte'
   import {
-    memberFromChar, normalizeRound1v1,
-    type ArenaTeam, type ArenaRound, type ArenaWinner,
+    memberFromChar,
+    type ArenaTeam, type ArenaWinner,
   } from '$lib/battle/arena'
+  import { BattleController1v1 } from '$lib/battle/controller'
 
   interface Props {
     p1Results: SpinResult[]
@@ -42,11 +44,20 @@
   let p1Char = $state<BattleCharacter | null>(null)
   let p2Char = $state<BattleCharacter | null>(null)
   let teams  = $state<[ArenaTeam, ArenaTeam] | null>(null)
-  let arenaRounds = $state<ArenaRound[]>([])
+  let controller = $state<BattleController1v1 | null>(null)
 
   // Arena drives this binding; the result modal keys off it.
   let phase  = $state<'intro' | 'battle' | 'result'>('intro')
   let winner = $state<ArenaWinner | null>(null)
+
+  // Manual-mode preference: starts inverted from the Auto Battle setting,
+  // then can be flipped per battle via the visible Auto / Manual switch in
+  // the arena header.
+  let manualMode = $state(!settings.autoBattle)
+
+  // Instant Battle (gamepass) — show the Skip button when the player owns
+  // the `instant_battle` gamepass on their account.
+  let canInstant = $derived((auth.user?.gamepasses ?? []).includes('instant_battle'))
 
   // Winner save state (mode-specific — stays in this view)
   let saveStatus   = $state<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -69,8 +80,14 @@
       { side: 'team2', label: c2.name, accent: TEAM2_ACCENT, members: [m2] },
     ]
 
-    const rounds: BattleRound[] = simulateBattle(c1, c2, 10)
-    arenaRounds = rounds.map(r => normalizeRound1v1(r, 'p1', 'p2'))
+    // Build the stateful controller so the arena can either auto-step or
+    // pause for player input depending on the manual-mode toggle. Both
+    // characters live on the same controller — team1 is the player, team2
+    // is the opponent (AI).
+    controller = new BattleController1v1(
+      { id: 'p1', side: 'team1', char: c1 },
+      { id: 'p2', side: 'team2', char: c2 },
+    )
   })
 
   function handleBattleEnd(w: ArenaWinner) {
@@ -151,11 +168,15 @@
 
 <div class="w-full flex flex-col px-3 py-5 sm:px-6 sm:py-8 sm:items-center"
      style="min-height: 100dvh; max-width: 800px; margin: 0 auto;">
-  {#if teams && arenaRounds.length > 0}
+  {#if teams && controller}
     <BattleArena
       bind:phase
       teams={teams}
-      rounds={arenaRounds}
+      controller={controller}
+      manualMode={manualMode}
+      playerActorId="p1"
+      onManualToggle={(m) => manualMode = m}
+      canInstant={canInstant}
       modeTitle="RIVALS BATTLE"
       modeSubtitle="⚔ Rivals Mode"
       modeAccent="#f9a8d4"

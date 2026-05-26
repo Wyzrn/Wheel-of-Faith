@@ -11,12 +11,13 @@
     { value: 2.0,  label: 'Turbo'   },
   ]
 
-  const BATTLE_SPEED_OPTIONS: { value: number; label: string; desc: string }[] = [
-    { value: 0.4,  label: 'Slow',    desc: 'Dramatic pacing' },
-    { value: 0.7,  label: 'Relaxed', desc: 'Easy to read'   },
-    { value: 1.0,  label: 'Normal',  desc: 'Default'        },
-    { value: 2.2,  label: 'Fast',    desc: 'Quick fights'   },
-    { value: 99,   label: 'Instant', desc: 'Skip animation' },
+  // Auto Battle speed — only meaningful while auto is on. Manual mode plays
+  // at normal pace because the player paces themselves. "Instant" is no
+  // longer free; it lives in the Arcane Shop as the Instant Battle gamepass.
+  const AUTO_SPEED_OPTIONS: { value: number; label: string; desc: string }[] = [
+    { value: 0.7,  label: 'Relaxed', desc: 'Easy to read'  },
+    { value: 1.0,  label: 'Normal',  desc: 'Default'       },
+    { value: 1.6,  label: 'Fast',    desc: 'Quick fights'  },
   ]
 
   // Auto-continue: how long the result reveal stays before auto-firing Continue.
@@ -29,7 +30,7 @@
     { value: 4000, label: '4s',      desc: 'Savor each one'  },
   ]
 
-  function toggle(key: 'soundEnabled' | 'effectsEnabled') {
+  function toggle(key: 'soundEnabled' | 'effectsEnabled' | 'autoBattle') {
     settings[key] = !settings[key]
     settings.save()
   }
@@ -121,23 +122,38 @@
 
     <div class="divider"></div>
 
-    <!-- ─ Battle Speed ─ -->
-    <div>
-      <p class="text-sm font-semibold mb-1" style="color: #e4e1ee;">Battle Speed</p>
-      <p class="text-xs mb-3" style="color: #9a907b;">How fast combat lines play back</p>
-      <div class="flex flex-col gap-1.5">
-        {#each BATTLE_SPEED_OPTIONS as opt}
-          {@const active = settings.battleSpeed === opt.value}
-          <button onclick={() => { settings.battleSpeed = opt.value; settings.save() }}
-            class="battle-speed-chip"
-            style="background: {active ? 'linear-gradient(180deg, rgba(240,192,64,0.14), rgba(240,192,64,0.06))' : 'linear-gradient(180deg, #13121c, #0c0b14)'}; border-color: {active ? '#f0c040' : 'rgba(78,70,53,0.3)'}; box-shadow: {active ? '0 0 12px rgba(240,192,64,0.12), inset 1px 1px 0 rgba(255,223,150,0.08)' : 'inset 1px 1px 0 rgba(255,223,150,0.05)'};"
-          >
-            <span style="font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 700; color: {active ? '#f0c040' : '#9a907b'};">{opt.label}</span>
-            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: {active ? '#d4a020' : '#4e4635'};">{opt.desc}</span>
-          </button>
-        {/each}
+    <!-- ─ Auto Battle ─ -->
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-semibold" style="color: #e4e1ee;">Auto Battle</p>
+        <p class="text-xs mt-0.5" style="color: #9a907b;">Off = pick each move manually</p>
       </div>
+      <button onclick={() => toggle('autoBattle')} class="toggle-btn"
+        style="background: {settings.autoBattle ? '#f0c040' : '#0c0b14'}; box-shadow: {settings.autoBattle ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.autoBattle ? '#f0c040' : 'rgba(78,70,53,0.5)'};"
+        aria-label="Toggle auto battle">
+        <span class="toggle-knob" style="left: {settings.autoBattle ? '22px' : '2px'}; background: {settings.autoBattle ? '#0d0d16' : '#3a3848'};"></span>
+      </button>
     </div>
+
+    {#if settings.autoBattle}
+      <!-- ─ Auto Battle Speed (only when auto is on) ─ -->
+      <div>
+        <p class="text-sm font-semibold mb-1" style="color: #e4e1ee;">Battle Speed</p>
+        <p class="text-xs mb-3" style="color: #9a907b;">Playback rate while auto-battling</p>
+        <div class="flex flex-col gap-1.5">
+          {#each AUTO_SPEED_OPTIONS as opt}
+            {@const active = settings.autoBattleSpeed === opt.value}
+            <button onclick={() => { settings.autoBattleSpeed = opt.value; settings.save() }}
+              class="battle-speed-chip"
+              style="background: {active ? 'linear-gradient(180deg, rgba(240,192,64,0.14), rgba(240,192,64,0.06))' : 'linear-gradient(180deg, #13121c, #0c0b14)'}; border-color: {active ? '#f0c040' : 'rgba(78,70,53,0.3)'}; box-shadow: {active ? '0 0 12px rgba(240,192,64,0.12), inset 1px 1px 0 rgba(255,223,150,0.08)' : 'inset 1px 1px 0 rgba(255,223,150,0.05)'};"
+            >
+              <span style="font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 700; color: {active ? '#f0c040' : '#9a907b'};">{opt.label}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: {active ? '#d4a020' : '#4e4635'};">{opt.desc}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
   </div>
 </aside>

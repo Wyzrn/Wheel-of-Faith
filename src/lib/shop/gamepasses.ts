@@ -3,6 +3,7 @@ export type GamepassId =
   | 'crit_surge'
   | 'revenge_protocol'
   | 'boss_magnet'
+  | 'instant_battle'
   | 'double_luck'
   | 'reroll_insurance'
   | 'blessed_wheel'
@@ -68,6 +69,16 @@ export const GAMEPASSES: GamepassDef[] = [
     costShards: 3_600,
     stackable: false,
     icon: 'skull',
+  },
+  {
+    id: 'instant_battle',
+    name: 'Instant Battle',
+    description: 'Unlocks a Skip button in every battle that fast-forwards the entire fight to the result in one tap.',
+    effect: 'In-battle Skip → result',
+    category: 'combat',
+    costShards: 5_000,
+    stackable: false,
+    icon: 'fast_forward',
   },
 
   // ── Spinning ──────────────────────────────────────────────────────────────

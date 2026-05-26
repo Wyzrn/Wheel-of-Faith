@@ -17,11 +17,16 @@
   import { onDestroy, tick, type Snippet } from 'svelte'
   import AttackFX from './AttackFX.svelte'
   import BattleProjectile from './BattleProjectile.svelte'
+  import BattleHotbar from './BattleHotbar.svelte'
   import DamageIndicator from './DamageIndicator.svelte'
   import type { DamageEvent } from '$lib/game/damageEvent'
   import { deriveStatusBadges } from '$lib/game/battleStatuses'
   import { formatHp } from '$lib/game/battle'
   import type { RoundFxEvent } from '$lib/game/battle'
+  import {
+    BattleController1v1, availableActions,
+    type PlayerAction,
+  } from '$lib/battle/controller'
   import {
     type ArenaMember, type ArenaRound, type ArenaTeam, type ArenaWinner,
     type AnimDir, ELEMENT_FX, detectAnim, damageHitFromLine, hpColor, speedDelay,
@@ -29,7 +34,8 @@
 
   interface Props {
     teams: [ArenaTeam, ArenaTeam]
-    rounds: ArenaRound[]
+    // Scripted-mode rounds (legacy). Ignored when `controller` is supplied.
+    rounds?: ArenaRound[]
     phase: 'intro' | 'battle' | 'result'
     modeTitle: string
     modeSubtitle?: string
@@ -38,6 +44,19 @@
     speedFactor: number              // settings.battleSpeed (legacy)
     effectsEnabled: boolean          // settings.effectsEnabled
     autoStart?: boolean              // if true, auto-transition intro→battle
+    // Controller mode — when provided, rounds are pulled from the
+    // stateful controller on demand rather than from `rounds`.
+    controller?: BattleController1v1
+    // When true (and `controller` is provided), pause for player input
+    // each turn. When false, controller auto-steps for visual playback.
+    manualMode?: boolean
+    // ID of the ArenaMember the player controls (controller mode only).
+    playerActorId?: string
+    // Fires when the player flips the visible Auto / Manual switch.
+    onManualToggle?: (manual: boolean) => void
+    // Instant Battle gamepass owners see a Skip button that fast-forwards
+    // the whole fight to the result. Surfaced only when this is true.
+    canInstant?: boolean
     // Snippets
     prebattle?: Snippet
     result?: Snippet
@@ -50,12 +69,18 @@
     onBattleEnd?: (winner: ArenaWinner) => void
   }
   let {
-    teams, rounds, phase = $bindable(), modeTitle, modeSubtitle = '',
+    teams, rounds = [], phase = $bindable(), modeTitle, modeSubtitle = '',
     modeAccent = '#f0c040', introMs = 2600, speedFactor, effectsEnabled,
     autoStart = true,
+    controller, manualMode = false, playerActorId, onManualToggle,
+    canInstant = false,
     prebattle, result, hotbar, cardExtra,
     onPhaseChange, onRoundEnd, onLineShown, onBattleEnd,
   }: Props = $props()
+
+  // Whether this battle is being driven by a controller (turn-by-turn)
+  // instead of a pre-baked rounds[] queue.
+  let controllerMode = $derived(!!controller)
 
   // ── Display HP (animated towards round.hpAfter on round-end) ───────────────
   // Member id → current displayed HP. Initialized from members and overwritten
@@ -69,6 +94,12 @@
 
   let allMembers = $derived([...teams[0].members, ...teams[1].members])
   let allNames   = $derived(allMembers.map(m => m.name))
+
+  // The actor the player is currently controlling. Default to team1[0] if
+  // not provided. Held as derived so it tracks team changes.
+  let playerActor = $derived(
+    allMembers.find(m => m.id === playerActorId) ?? teams[0].members[0]
+  )
   let t1Names    = $derived(new Set(teams[0].members.map(m => m.name)))
   let t2Names    = $derived(new Set(teams[1].members.map(m => m.name)))
 
@@ -340,12 +371,10 @@
     timeoutId = setTimeout(() => playLines(rest, onDone), speedDelay(base, speedFactor))
   }
 
-  function playRound() {
-    if (roundIdx >= rounds.length) {
-      finishBattle(rounds.at(-1)?.winner ?? null)
-      return
-    }
-    const round = rounds[roundIdx]
+  // Plays back one already-resolved ArenaRound. After playback, dispatches
+  // to the right next-round source (scripted queue, controller auto-step,
+  // or pause for manual input).
+  function playOneRound(round: ArenaRound) {
     roundIdx++
     currentFxEvents = round.fxEvents ?? []
     fxEventIdx = 0
@@ -360,10 +389,82 @@
       onRoundEnd?.(round)
       if (round.winner !== undefined) {
         finishBattle(round.winner)
-      } else {
-        timeoutId = setTimeout(playRound, speedDelay(900, speedFactor))
+        return
       }
+      timeoutId = setTimeout(advanceAfterRound, speedDelay(900, speedFactor))
     })
+  }
+
+  // Decides what to do once a round's playback completes.
+  function advanceAfterRound() {
+    if (controllerMode && controller) {
+      if (controller.isOver) { finishBattle(controller.winner ?? null); return }
+      if (manualMode) {
+        awaitingPlayerInput = true
+      } else {
+        playOneRound(controller.stepAuto())
+      }
+    } else {
+      // Scripted mode — pull from the pre-baked queue
+      if (roundIdx >= rounds.length) {
+        finishBattle(rounds.at(-1)?.winner ?? null)
+        return
+      }
+      playOneRound(rounds[roundIdx])
+    }
+  }
+
+  // Called by the hotbar when the player submits an action.
+  let awaitingPlayerInput = $state(false)
+  function handlePlayerAction(action: PlayerAction) {
+    if (!controller || !playerActor || awaitingPlayerInput === false) return
+    awaitingPlayerInput = false
+    const round = controller.submitAction(playerActor.id, action)
+    playOneRound(round)
+  }
+
+  // ── Instant Battle (gamepass) — drain to result in one tap ─────────────
+  function instantResolve() {
+    if (timeoutId) clearTimeout(timeoutId)
+    if (animTimeoutId) clearTimeout(animTimeoutId)
+    timeoutId = null
+    awaitingPlayerInput = false
+    projectiles = []
+    activeAnim = null
+
+    if (controllerMode && controller) {
+      // Step the controller until it declares a winner. We don't render the
+      // intermediate lines — just settle the HPs to the final snapshot.
+      let safety = 100
+      let last: ArenaRound | null = null
+      while (!controller.isOver && safety-- > 0) last = controller.stepAuto()
+      if (last) {
+        const next = { ...displayHp }
+        for (const id of Object.keys(last.hpAfter)) next[id] = last.hpAfter[id]
+        displayHp = next
+      }
+      finishBattle(controller.winner ?? 'draw')
+    } else {
+      // Scripted mode — fast-forward to the last round's hpAfter.
+      const last = rounds.at(-1)
+      if (last) {
+        const next = { ...displayHp }
+        for (const id of Object.keys(last.hpAfter)) next[id] = last.hpAfter[id]
+        displayHp = next
+        finishBattle(last.winner ?? 'draw')
+      }
+    }
+  }
+
+  // ── Auto / Manual visible switch ─────────────────────────────────────────
+  function flipManual(newVal: boolean) {
+    if (newVal === manualMode) return
+    onManualToggle?.(newVal)
+    // If the player flipped to Auto mid-wait, dequeue the wait and resume.
+    if (!newVal && awaitingPlayerInput && controller && !controller.isOver) {
+      awaitingPlayerInput = false
+      timeoutId = setTimeout(() => playOneRound(controller.stepAuto()), 200)
+    }
   }
 
   function finishBattle(w: ArenaWinner | null) {
@@ -377,12 +478,22 @@
   let started = false
   $effect(() => {
     if (!autoStart || started) return
-    if (phase !== 'intro' || rounds.length === 0) return
+    if (phase !== 'intro') return
+    // Need either a controller (live mode) or scripted rounds to play.
+    if (!controllerMode && rounds.length === 0) return
     started = true
     timeoutId = setTimeout(() => {
       phase = 'battle'
       onPhaseChange?.('battle')
-      playRound()
+      if (controllerMode && controller) {
+        if (manualMode) {
+          awaitingPlayerInput = true
+        } else {
+          playOneRound(controller.stepAuto())
+        }
+      } else {
+        playOneRound(rounds[0])
+      }
     }, introMs)
   })
 
@@ -406,13 +517,42 @@
 <div bind:this={wrapperEl} class="ba-wrapper" style="overflow:visible;">
 
   <!-- Header -->
-  <div class="text-center mb-4 sm:mb-6" style="animation: fadeIn 0.3s ease-out forwards;">
+  <div class="text-center mb-3 sm:mb-5 relative" style="animation: fadeIn 0.3s ease-out forwards;">
     {#if modeSubtitle}
       <p class="text-xs tracking-[0.28em] uppercase mb-1 sm:mb-2"
          style="font-family: 'JetBrains Mono', monospace; color: {modeAccent};">{modeSubtitle}</p>
     {/if}
     <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.2rem, 5vw, 2.4rem); font-weight: 900;
                color: #ffdf96; letter-spacing: 0.15em;">{modeTitle}</h1>
+
+    <!-- Auto / Manual toggle (visible switch — only shown when controllable) -->
+    {#if controllerMode && onManualToggle}
+      <div class="ba-auto-toggle"
+           role="group"
+           aria-label="Auto battle on or off"
+           style="--accent: {modeAccent};">
+        <span class="ba-auto-label">Auto</span>
+        <button
+          class="ba-switch"
+          class:ba-switch-on={!manualMode}
+          onclick={() => flipManual(!manualMode)}
+          aria-pressed={!manualMode}
+          aria-label="{manualMode ? 'Enable' : 'Disable'} auto battle">
+          <span class="ba-switch-knob"></span>
+        </button>
+      </div>
+    {/if}
+
+    <!-- Instant Battle skip button (Instant Battle gamepass) -->
+    {#if canInstant && phase === 'battle'}
+      <button class="ba-skip-btn"
+              onclick={instantResolve}
+              aria-label="Skip battle to result"
+              title="Instant Battle — skip to result">
+        <span class="material-symbols-outlined" style="font-size: 16px; font-variation-settings: 'FILL' 1;">fast_forward</span>
+        <span>Skip</span>
+      </button>
+    {/if}
   </div>
 
   <!-- Two-team grid -->
@@ -592,8 +732,18 @@
     </div>
   {/if}
 
-  <!-- Manual hotbar slot (Segment 4 will populate this) -->
-  {#if phase === 'battle' && hotbar}
+  <!-- Manual hotbar: either the built-in BattleHotbar (controller mode +
+       awaiting player input) or a caller-supplied `hotbar` snippet. -->
+  {#if phase === 'battle' && controllerMode && awaitingPlayerInput && playerActor && controller}
+    {@const actorChar = controller.member(playerActor.id)?.char}
+    {#if actorChar}
+      <BattleHotbar
+        availability={availableActions(actorChar)}
+        actorName={playerActor.name}
+        accent={teams.find(t => t.side === playerActor.side)?.accent ?? '#f0c040'}
+        onAction={handlePlayerAction}/>
+    {/if}
+  {:else if phase === 'battle' && hotbar}
     {@render hotbar()}
   {/if}
 
@@ -626,4 +776,77 @@
     animation: panel-dodge 0.80s ease-out forwards;
     will-change: transform, opacity, filter;
   }
+
+  /* Auto / Manual visible switch */
+  .ba-auto-toggle {
+    position: absolute;
+    top: 0;
+    right: 4px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(20, 18, 30, 0.72);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    backdrop-filter: blur(6px);
+  }
+  .ba-auto-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #9a907b;
+    line-height: 1;
+  }
+  .ba-switch {
+    position: relative;
+    width: 38px; height: 20px;
+    border-radius: 999px;
+    background: #2a2535;
+    border: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+    transition: background 0.18s ease-out, border-color 0.18s ease-out, box-shadow 0.18s ease-out;
+    padding: 0;
+  }
+  .ba-switch.ba-switch-on {
+    background: color-mix(in srgb, var(--accent) 70%, #1a1325);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .ba-switch-knob {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #f6efe2;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    transition: transform 0.20s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .ba-switch.ba-switch-on .ba-switch-knob {
+    transform: translateX(18px);
+    background: #fff;
+  }
+
+  /* Instant-Battle Skip button (Skip ⏭ pill — top-left twin of the toggle) */
+  .ba-skip-btn {
+    position: absolute;
+    top: 0;
+    left: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px 4px 8px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(64, 32, 16, 0.78), rgba(40, 20, 8, 0.92));
+    border: 1px solid #f59e0b;
+    color: #fde68a;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.32);
+    transition: transform 0.12s ease-out, box-shadow 0.18s ease-out;
+  }
+  .ba-skip-btn:hover { box-shadow: 0 0 22px rgba(245, 158, 11, 0.5); }
+  .ba-skip-btn:active { transform: scale(0.94); }
 </style>
