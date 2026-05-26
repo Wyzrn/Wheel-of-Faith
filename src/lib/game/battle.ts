@@ -633,10 +633,15 @@ const ELEMENT_DEBUFF: Partial<Record<ElementType, StatusType>> = {
   Void:      'wither',
 }
 
-function doAction(
+// `forcedMove` lets the manual-mode controller supply the player's chosen
+// move directly, bypassing the random pick. The rest of doAction's logic
+// (fumbles, charm, intimidate, dodge, crit, etc.) still applies — manual
+// mode just controls WHICH move; outcomes still depend on stats + RNG.
+export function doAction(
   attacker: BattleCharacter,
   defender: BattleCharacter,
   attackerCurrentHp?: number,
+  forcedMove?: BattleMove,
 ): AttackResult {
   const lines: string[] = []
   const empty = (): AttackResult => ({ skipped: true, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines })
@@ -672,14 +677,20 @@ function doAction(
     return { skipped: false, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines }
   }
 
-  // Select move (energy restriction can force physical moves)
-  let available = attacker.moves.filter(m => m.attackType !== 'passive')
-  if (attacker.energyRank <= 5 && Math.random() < 0.35) {
-    const nonPower = available.filter(m => m.type !== 'power')
-    if (nonPower.length > 0) available = nonPower
+  // Select move (energy restriction can force physical moves) — unless the
+  // caller (manual mode) supplied an explicit move.
+  let move: BattleMove
+  if (forcedMove) {
+    move = forcedMove
+  } else {
+    let available = attacker.moves.filter(m => m.attackType !== 'passive')
+    if (attacker.energyRank <= 5 && Math.random() < 0.35) {
+      const nonPower = available.filter(m => m.type !== 'power')
+      if (nonPower.length > 0) available = nonPower
+    }
+    if (available.length === 0) available = attacker.moves
+    move = pick(available)
   }
-  if (available.length === 0) available = attacker.moves
-  const move = pick(available)
 
   // ── Buff — team damage boost, no direct damage ────────────────────────────
   if (move.attackType === 'buff') {

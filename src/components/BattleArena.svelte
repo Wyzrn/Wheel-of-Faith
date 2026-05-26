@@ -16,6 +16,7 @@
 <script lang="ts">
   import { onDestroy, tick, type Snippet } from 'svelte'
   import AttackFX from './AttackFX.svelte'
+  import BattleProjectile from './BattleProjectile.svelte'
   import DamageIndicator from './DamageIndicator.svelte'
   import type { DamageEvent } from '$lib/game/damageEvent'
   import { deriveStatusBadges } from '$lib/game/battleStatuses'
@@ -151,6 +152,68 @@
     return null
   }
 
+  // ── Projectile registry (Segment 2) ────────────────────────────────────────
+  // Each entry corresponds to one in-flight comet from an attacker anchor to
+  // a target anchor. On the projectile's onImpact we play the impact burst
+  // (existing AttackFX) at the target coords + drop the damage number.
+  interface Projectile {
+    id: number
+    startX: number; startY: number
+    endX: number; endY: number
+    color: string
+    gradeIdx: number
+    durationMs: number
+    onImpact: () => void
+  }
+  let projectiles = $state<Projectile[]>([])
+  let projIdCounter = 0
+
+  const GRADE_IDX: Record<string, number> = {
+    F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, SS: 7, SSS: 8, God: 9, Godly: 9,
+  }
+
+  function spawnProjectile(
+    startX: number, startY: number,
+    endX: number, endY: number,
+    color: string, grade: string | undefined,
+    onImpact: () => void,
+  ) {
+    const gradeIdx = GRADE_IDX[grade ?? 'C'] ?? 3
+    const dist = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2)
+    // Slower comets for longer distances feel weightier; cap to keep
+    // gameplay snappy. Speed factor scales like battle log delay.
+    const baseDur = Math.max(280, Math.min(600, 280 + dist * 0.6))
+    const durationMs = Math.max(80, baseDur / Math.min(speedFactor, 3))
+    const p: Projectile = {
+      id: ++projIdCounter,
+      startX, startY, endX, endY,
+      color, gradeIdx, durationMs,
+      onImpact: () => {
+        projectiles = projectiles.filter(x => x.id !== p.id)
+        onImpact()
+      },
+    }
+    projectiles = [...projectiles, p]
+  }
+
+  // Resolve an ArenaMember from a fxEvent.attackerSide / targetIdxs entry.
+  function memberFromFxIndex(side: 'p1' | 'p2' | 'team1' | 'team2', idx: number): ArenaMember | undefined {
+    if (side === 'p1' || side === 'team1') return teams[0].members[idx]
+    if (side === 'p2' || side === 'team2') return teams[1].members[idx]
+    return undefined
+  }
+  function oppositeSide(side: 'p1' | 'p2' | 'team1' | 'team2'): 'p1' | 'p2' | 'team1' | 'team2' {
+    if (side === 'p1') return 'p2'
+    if (side === 'p2') return 'p1'
+    if (side === 'team1') return 'team2'
+    return 'team1'
+  }
+  function memberOriginById(id: string): { x: number; y: number } | undefined {
+    const m = allMembers.find(x => x.id === id)
+    if (!m) return undefined
+    return memberOrigin(m.name)
+  }
+
   // ── Round / line playback ─────────────────────────────────────────────────
   let logEl: HTMLDivElement | null = $state(null)
   let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -175,13 +238,19 @@
     logLines = [...logLines, head]
     onLineShown?.(head)
     scrollLog()
-    maybeEmitDamageFromLine(head)
 
     const anim = detectAnim(head, t1Names, t2Names)
+    const isDamage   = head.includes('damage!')
+    const isHealLine = /restores|recovers.*HP|vital force|mends/i.test(head)
+
+    // Damage indicator timing:
+    //  • Damage attacks with a paired fxEvent: defer until projectile impact
+    //    so the number pops at the moment the comet lands.
+    //  • Everything else (heals/misses/shields/no fxEvent): emit immediately.
+    let deferDamageEmit = false
+
     if (anim && effectsEnabled) {
       const fx = currentFxEvents[fxEventIdx]
-      const isDamage   = head.includes('damage!')
-      const isHealLine = /restores|recovers.*HP|vital force|mends/i.test(head)
       const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
 
       let aoeSkip = false
@@ -204,16 +273,68 @@
           if (elFx) { type = elFx.type; color = elFx.color }
         }
         const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
-        const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
-        const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
-        const attackerName = inferAttackerName(head)
-        let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
-          ? memberOrigin(attackerName)
-          : undefined
-        if (!origin) origin = wrapperOrigin(originDir)
-        showAnim(type, color, direction, grade, origin, fxAttackType)
+
+        // ── Projectile path: damage attacks with attacker/target anchors ───
+        // We need a fxEvent to know who's hitting whom. Without it, we fall
+        // back to the legacy in-place burst.
+        const canProjectile = isDamage && fx && type !== 'crit' && type !== 'dodge' && type !== 'shield' && type !== 'berserker'
+
+        if (canProjectile) {
+          const attacker = memberFromFxIndex(fx.attackerSide, fx.attackerIdx)
+          const enemySide = oppositeSide(fx.attackerSide)
+          const targets: ArenaMember[] = (fx.targetIdxs ?? [0])
+            .map(i => memberFromFxIndex(enemySide, i))
+            .filter((m): m is ArenaMember => !!m)
+
+          const startOrigin = attacker ? memberOriginById(attacker.id) : undefined
+          const targetOrigins = targets
+            .map(t => ({ t, o: memberOriginById(t.id) }))
+            .filter((x): x is { t: ArenaMember; o: { x: number; y: number } } => !!x.o)
+
+          if (startOrigin && targetOrigins.length > 0) {
+            const hit = damageHitFromLine(head, allNames)
+            // Spawn one comet per target. First comet drives the damage
+            // indicator for THIS log line; secondary targets show their own
+            // burst (their damage numbers will come from subsequent AOE
+            // lines, which emit immediately as part of the legacy path).
+            targetOrigins.forEach((to, i) => {
+              spawnProjectile(
+                startOrigin.x, startOrigin.y, to.o.x, to.o.y,
+                color, grade,
+                () => {
+                  showAnim(type, color, 'center', grade, to.o, fxAttackType)
+                  if (i === 0 && hit) emitDamage(hit.targetName, hit.value, hit.kind)
+                },
+              )
+            })
+            deferDamageEmit = true
+          } else {
+            // Fallback: legacy in-place burst at wrapper-relative position.
+            const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
+            const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
+            const attackerName = inferAttackerName(head)
+            let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
+              ? memberOrigin(attackerName)
+              : undefined
+            if (!origin) origin = wrapperOrigin(originDir)
+            showAnim(type, color, direction, grade, origin, fxAttackType)
+          }
+        } else {
+          // Non-projectile path: dodges, shields, crits (in-place flash),
+          // heals, buffs, summons, debuffs. Anchored to the actor's card.
+          const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
+          const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
+          const attackerName = inferAttackerName(head)
+          let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
+            ? memberOrigin(attackerName)
+            : undefined
+          if (!origin) origin = wrapperOrigin(originDir)
+          showAnim(type, color, direction, grade, origin, fxAttackType)
+        }
       }
     }
+
+    if (!deferDamageEmit) maybeEmitDamageFromLine(head)
 
     const base = head.startsWith('──') ? 550 : 1000
     timeoutId = setTimeout(() => playLines(rest, onDone), speedDelay(base, speedFactor))
@@ -372,7 +493,19 @@
     {/each}
   </div>
 
-  <!-- VFX overlay (Segment 1: legacy behaviour preserved) -->
+  <!-- Projectile layer (S2): comets in flight from attacker → target. -->
+  {#if phase === 'battle' && effectsEnabled}
+    {#each projectiles as p (p.id)}
+      <BattleProjectile
+        startX={p.startX} startY={p.startY}
+        endX={p.endX} endY={p.endY}
+        color={p.color} gradeIdx={p.gradeIdx}
+        durationMs={p.durationMs}
+        onImpact={p.onImpact}/>
+    {/each}
+  {/if}
+
+  <!-- Impact / non-projectile burst overlay -->
   {#if phase === 'battle' && activeAnim && effectsEnabled}
     {#key activeAnim.key}
       {@const ox = activeAnim.origin?.x}
