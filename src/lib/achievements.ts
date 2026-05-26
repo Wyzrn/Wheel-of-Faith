@@ -240,7 +240,14 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 // celebration toast.
 const STORAGE_KEY = 'wof_achievements_v1'
 
-interface UnlockRecord { id: string; unlockedAt: string }
+interface UnlockRecord {
+  id: string
+  unlockedAt: string
+  // Set once the achievement's shard reward has been posted to the server.
+  // Tracked separately from unlockedAt so that an unlock recorded while
+  // logged-out or offline still credits later, exactly once.
+  creditedAt?: string
+}
 
 export function loadUnlocks(): UnlockRecord[] {
   if (typeof localStorage === 'undefined') return []
@@ -296,9 +303,43 @@ export function evaluateAll(ctx: AchievementContext): { states: AchievementState
     if (isNewlyUnlocked) newlyUnlocked.push(state)
     return state
   })
-  // Persist updated unlocks (only matters if there were new ones)
+  // Persist updated unlocks (only matters if there were new ones). Preserve
+  // existing creditedAt timestamps so we don't double-credit shards.
   if (newlyUnlocked.length > 0) {
-    saveUnlocks(Array.from(byId, ([id, unlockedAt]) => ({ id, unlockedAt })))
+    const creditedById = new Map(records.map(r => [r.id, r.creditedAt]))
+    saveUnlocks(Array.from(byId, ([id, unlockedAt]) => ({
+      id, unlockedAt, creditedAt: creditedById.get(id),
+    })))
   }
   return { states, newlyUnlocked }
+}
+
+// Returns achievements that have been unlocked but whose shard reward has not
+// yet been credited to the user's account. Used by the achievements / profile
+// pages to deliver pending rewards on the next eligible visit (e.g. user
+// unlocked while logged-out, then logs back in).
+export function pendingRewardUnlocks(): { id: string; reward: number }[] {
+  const records = loadUnlocks()
+  const byId = new Map(ACHIEVEMENTS.map(a => [a.id, a]))
+  const out: { id: string; reward: number }[] = []
+  for (const r of records) {
+    if (r.creditedAt) continue
+    const reward = byId.get(r.id)?.reward ?? 0
+    if (reward > 0) out.push({ id: r.id, reward })
+  }
+  return out
+}
+
+// Marks the given achievement IDs as having had their shard reward credited.
+// Idempotent — safe to call multiple times with the same IDs.
+export function markRewardsCredited(ids: string[]): void {
+  if (ids.length === 0) return
+  const records = loadUnlocks()
+  const set = new Set(ids)
+  const now = new Date().toISOString()
+  let changed = false
+  for (const r of records) {
+    if (set.has(r.id) && !r.creditedAt) { r.creditedAt = now; changed = true }
+  }
+  if (changed) saveUnlocks(records)
 }

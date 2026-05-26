@@ -4,7 +4,7 @@
   import { auth } from '$lib/stores/auth.svelte'
   import { loadSpinHistory } from '$lib/spinHistory'
   import type { SpinHistoryEntry } from '$lib/spinHistory'
-  import { ACHIEVEMENTS, buildContext, evaluateAll, colorForTier, type AchievementState, type AchievementTier } from '$lib/achievements'
+  import { ACHIEVEMENTS, buildContext, evaluateAll, colorForTier, pendingRewardUnlocks, markRewardsCredited, type AchievementState, type AchievementTier } from '$lib/achievements'
   import { loadRecentOpponents, type RecentOpponent } from '$lib/recentOpponents'
 
   let characters = $state<any[]>([])
@@ -43,7 +43,35 @@
     achievementStates = evaluateAll(buildContext(auth.user)).states
     recentOpponents = loadRecentOpponents()
     loading = false
+
+    // Credit any unlocked-but-uncredited achievement shard rewards. Mirrors
+    // the same flow used on the dedicated achievements page so badges pay
+    // out regardless of which page the user visits first.
+    await creditPendingAchievementRewards()
   })
+
+  async function creditPendingAchievementRewards() {
+    if (!auth.loggedIn || !auth.user) return
+    const pending = pendingRewardUnlocks()
+    if (pending.length === 0) return
+    const delta = pending.reduce((s, p) => s + p.reward, 0)
+    if (delta <= 0) return
+    auth.updateShopData((auth.user.shards ?? 0) + delta, auth.user.gamepasses ?? [])
+    try {
+      const res = await fetch('/api/shop/shards/adjust', {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta }),
+      })
+      if (!res.ok) {
+        auth.updateShopData((auth.user.shards ?? 0) - delta, auth.user.gamepasses ?? [])
+        return
+      }
+      markRewardsCredited(pending.map(p => p.id))
+    } catch {
+      auth.updateShopData((auth.user.shards ?? 0) - delta, auth.user.gamepasses ?? [])
+    }
+  }
 
   function timeAgoShort(iso: string): string {
     const ms = Date.now() - new Date(iso).getTime()

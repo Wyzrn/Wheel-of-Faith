@@ -4,6 +4,7 @@
   import { toast } from '$lib/toast.svelte'
   import {
     ACHIEVEMENTS, buildContext, evaluateAll, colorForTier,
+    pendingRewardUnlocks, markRewardsCredited,
     type AchievementState, type AchievementTier,
   } from '$lib/achievements'
 
@@ -25,7 +26,7 @@
     filter === 'all' ? states : states.filter(s => s.tier === filter)
   )
 
-  onMount(() => {
+  onMount(async () => {
     const ctx = buildContext(auth.user)
     const { states: s, newlyUnlocked } = evaluateAll(ctx)
     states = s
@@ -36,7 +37,38 @@
     for (const a of newlyUnlocked) {
       toast.reward(`Achievement unlocked: ${a.name}`, `+${a.reward ?? 0} Fate Shards · ${a.description}`)
     }
+
+    await creditPendingAchievementRewards()
   })
+
+  // Credits any unlocked-but-not-yet-credited achievement rewards to the
+  // signed-in user's shard balance. Runs on every visit so unlocks earned
+  // while logged-out (or while the previous credit attempt was offline)
+  // eventually pay out — exactly once each.
+  async function creditPendingAchievementRewards() {
+    if (!auth.loggedIn || !auth.user) return
+    const pending = pendingRewardUnlocks()
+    if (pending.length === 0) return
+    const delta = pending.reduce((s, p) => s + p.reward, 0)
+    if (delta <= 0) return
+    // Optimistic local update first so the header shard counter reflects it.
+    auth.updateShopData((auth.user.shards ?? 0) + delta, auth.user.gamepasses ?? [])
+    try {
+      const res = await fetch('/api/shop/shards/adjust', {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta }),
+      })
+      if (!res.ok) {
+        // Roll back optimistic update; leave records uncredited so we retry next visit.
+        auth.updateShopData((auth.user.shards ?? 0) - delta, auth.user.gamepasses ?? [])
+        return
+      }
+      markRewardsCredited(pending.map(p => p.id))
+    } catch {
+      auth.updateShopData((auth.user.shards ?? 0) - delta, auth.user.gamepasses ?? [])
+    }
+  }
 
   const TIER_LABEL: Record<AchievementTier, string> = {
     bronze: 'Bronze', silver: 'Silver', gold: 'Gold', mythic: 'Mythic',
