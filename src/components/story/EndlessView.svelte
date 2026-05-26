@@ -14,6 +14,9 @@
   } from '$lib/story/saveSlots'
   import type { StoryRosterEntry, StoryTeam } from '$lib/story/types'
   import AttackFX from '../AttackFX.svelte'
+  import DamageIndicator from '../DamageIndicator.svelte'
+  import type { DamageEvent } from '$lib/game/damageEvent'
+  import { deriveStatusBadges } from '$lib/game/battleStatuses'
   import { settings } from '$lib/settings.svelte'
   import { auth } from '$lib/stores/auth.svelte'
 
@@ -217,7 +220,60 @@
   let allT2Names   = $state(new Set<string>())
 
   type AnimDir = 'ltr' | 'rtl' | 'center'
-  let activeAnim   = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; attackType?: string } | null>(null)
+  let activeAnim   = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; origin?: { x: number; y: number }; attackType?: string } | null>(null)
+
+  // Per-character refs so VFX shoots from the actual attacker card
+  let t1PanelEl       = $state<HTMLDivElement | null>(null)
+  let t2PanelEl       = $state<HTMLDivElement | null>(null)
+  let battleWrapperEl = $state<HTMLDivElement | null>(null)
+  const t1CharEls = new Map<string, HTMLElement>()
+  const t2CharEls = new Map<string, HTMLElement>()
+  function trackCharEl(node: HTMLElement, args: { name: string; team: 1 | 2 }) {
+    const map = args.team === 1 ? t1CharEls : t2CharEls
+    map.set(args.name, node)
+    return { destroy() { map.delete(args.name) } }
+  }
+  function getCharOriginByName(name: string | null): { x: number; y: number } | undefined {
+    if (!name) return undefined
+    const el = t1CharEls.get(name) ?? t2CharEls.get(name)
+    if (!el) return undefined
+    const r = el.getBoundingClientRect()
+    if (r.width === 0) return undefined
+    return {
+      x: r.left + r.width / 2,
+      y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80)),
+    }
+  }
+  function getWrapperOriginForDir(dir: AnimDir): { x: number; y: number } | undefined {
+    if (!battleWrapperEl) return undefined
+    const wr = battleWrapperEl.getBoundingClientRect()
+    if (wr.width === 0) return undefined
+    const xRel = dir === 'rtl' ? 0.75 : dir === 'ltr' ? 0.25 : 0.5
+    return {
+      x: wr.left + wr.width * xRel,
+      y: Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80)),
+    }
+  }
+  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
+    if (dir === 'center') return getWrapperOriginForDir('center')
+    const el = dir === 'ltr' ? t1PanelEl : dir === 'rtl' ? t2PanelEl : null
+    if (el) {
+      const r = el.getBoundingClientRect()
+      if (r.width > 0) {
+        return {
+          x: r.left + r.width / 2,
+          y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65)),
+        }
+      }
+    }
+    return getWrapperOriginForDir(dir)
+  }
+  function inferAttackerName(line: string): string | null {
+    for (const n of [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)]) {
+      if (line.startsWith(n)) return n
+    }
+    return null
+  }
   let animKey      = 0
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
   let timeoutId:    ReturnType<typeof setTimeout> | null = null
@@ -272,9 +328,9 @@
   }
 
   // ── Attack animation ───────────────────────────────────────────────────────
-  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, attackType?: string) {
+  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, origin?: { x: number; y: number }, attackType?: string) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
-    activeAnim = { type, color, key: ++animKey, direction, grade, attackType }
+    activeAnim = { type, color, key: ++animKey, direction, grade, origin, attackType }
     animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
   }
 
@@ -311,6 +367,59 @@
     return null
   }
 
+  // Status chips + damage indicators (same pattern as the other battle views)
+  let charStatusByName = $derived(
+    deriveStatusBadges(logLines, [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)])
+  )
+  let damageEvents = $state<DamageEvent[]>([])
+  let dmgIdCounter = 0
+  function emitDamage(targetName: string, value: number, kind: DamageEvent['kind']) {
+    const el = t1CharEls.get(targetName) ?? t2CharEls.get(targetName)
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    if (r.width === 0) return
+    const ev: DamageEvent = { id: ++dmgIdCounter, x: r.left + r.width / 2, y: r.top + r.height * 0.3, value, kind }
+    damageEvents = [...damageEvents.slice(-29), ev]
+    setTimeout(() => { damageEvents = damageEvents.filter(d => d.id !== ev.id) }, 1400)
+  }
+  function parseDamageNumber(s: string): number {
+    const cleaned = s.replace(/,/g, '').toUpperCase()
+    if (cleaned.endsWith('K')) return Math.round(parseFloat(cleaned) * 1_000)
+    if (cleaned.endsWith('M')) return Math.round(parseFloat(cleaned) * 1_000_000)
+    if (cleaned.endsWith('B')) return Math.round(parseFloat(cleaned) * 1_000_000_000)
+    return Math.round(parseFloat(cleaned) || 0)
+  }
+  function maybeEmitDamageFromLine(line: string) {
+    if (!settings.effectsEnabled) return
+    const allNames = [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)]
+    const dmgMatch = line.match(/for\s+([\d.,]+[KMB]?)\s+damage!?/i)
+    if (dmgMatch) {
+      const preBoundary = line.lastIndexOf(' for ')
+      const head = preBoundary > 0 ? line.slice(0, preBoundary) : line
+      let target: string | null = null
+      let lastIdx = -1
+      for (const n of allNames) {
+        const i = head.lastIndexOf(n)
+        if (i > lastIdx) { lastIdx = i; target = n }
+      }
+      if (target) {
+        const isCrit = /CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)
+        emitDamage(target, parseDamageNumber(dmgMatch[1]), isCrit ? 'crit' : 'damage')
+        return
+      }
+    }
+    const healMatch = line.match(/(?:restores|recovers|mends)\s+([\d.,]+[KMB]?)\s*HP/i)
+    if (healMatch) {
+      for (const n of allNames) if (line.startsWith(n)) { emitDamage(n, parseDamageNumber(healMatch[1]), 'heal'); return }
+    }
+    if (/evades|dodges|misses/i.test(line)) {
+      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'miss'); return }
+    }
+    if (/barrier forms around|defensive stance|bracing/i.test(line)) {
+      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'shield'); return }
+    }
+  }
+
   async function scrollLog() {
     await tick()
     if (logEl) logEl.scrollTop = logEl.scrollHeight
@@ -321,6 +430,7 @@
     const [head, ...rest] = lines
     logLines = [...logLines, head]
     scrollLog()
+    maybeEmitDamageFromLine(head)
     const anim = detectAnim(head)
     if (anim) {
       const fx = currentFxEvents[fxEventIdx]
@@ -346,7 +456,13 @@
         const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
         const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
         const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
-        showAnim(type, color, originDir, grade, fxAttackType)
+        // Three-stage origin: char card → team panel → battle wrapper.
+        const attackerName = inferAttackerName(head)
+        let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
+          ? getCharOriginByName(attackerName)
+          : undefined
+        if (!origin) origin = getPanelOrigin(originDir)
+        showAnim(type, color, direction, grade, origin, fxAttackType)
       }
     }
     const delay = speedDelay(head.startsWith('──') ? 350 : 600)
@@ -635,10 +751,10 @@
 
   <!-- ══ Intro / Fight ═══════════════════════════════════════════════════════ -->
   {#if phase !== 'pick' && phase !== 'wave_result' && phase !== 'gameover' && t1Chars.length > 0}
-    <div class="w-full relative mb-3" style="overflow: visible;">
+    <div bind:this={battleWrapperEl} class="w-full relative mb-3" style="overflow: visible;">
       <div class="grid grid-cols-2 gap-2">
-        <!-- Player team -->
-        <div class="flex flex-col gap-1.5">
+        <!-- Player team — uses shared bv-char-card classes for consistent styling -->
+        <div bind:this={t1PanelEl} class="flex flex-col gap-1.5">
           {#if t1Chars.length > 1}
             <p class="font-mono text-xs text-center tracking-widest uppercase" style="color: rgba(240,192,64,0.6);">Your Team</p>
           {/if}
@@ -646,19 +762,31 @@
             {@const hp  = t1DispHp[i] ?? 0}
             {@const pct = t1HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
-            <div class="rounded-xl p-2 flex flex-col gap-1 items-center text-center"
-              style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,{dead ? '0.07' : '0.22'}); opacity: {dead ? 0.4 : 1}; transition: opacity 0.5s;">
-              {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>{/if}
-              <p class="font-bold truncate w-full" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.75rem;">{char.name}</p>
-              <div class="rounded-full overflow-hidden w-full" style="height: 7px; background: rgba(255,255,255,0.08);">
-                <div class="h-full rounded-full" style="width: {pct * 100}%; background: {hpColor(pct)}; transition: width 0.8s ease-out;"></div>
+            {@const badges = charStatusByName.get(char.name) ?? []}
+            <div use:trackCharEl={{ name: char.name, team: 1 }} class="bv-char-card bv-team-1" class:bv-dead={dead}>
+              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full mb-1.5">
+                {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>{/if}
+                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.78rem; letter-spacing: 0.03em;">{char.name}</p>
               </div>
-              <p style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.6rem;">{formatHp(hp)} / {formatHp(char.maxHp)}</p>
+              <div class="bv-hp-track">
+                <div class="bv-hp-fill" style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
+              </div>
+              <p class="text-center mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.62rem; letter-spacing: 0.04em;">{formatHp(hp)}<span style="color: #4e4635;"> / {formatHp(char.maxHp)}</span></p>
+              {#if badges.length > 0 && !dead}
+                <div class="flex flex-wrap gap-1 justify-center mt-1.5">
+                  {#each badges as b}
+                    <span class="bv-status-chip" title="{b.label}: {b.description}"
+                      style="background: {b.color}22; border-color: {b.color}66;">
+                      <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+                    </span>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/each}
         </div>
         <!-- Enemies -->
-        <div class="flex flex-col gap-1.5">
+        <div bind:this={t2PanelEl} class="flex flex-col gap-1.5">
           {#if t2Chars.length > 1}
             <p class="font-mono text-xs text-center tracking-widest uppercase" style="color: rgba(232,121,249,0.6);">Enemies</p>
           {/if}
@@ -666,28 +794,54 @@
             {@const hp  = t2DispHp[i] ?? 0}
             {@const pct = t2HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
-            <div class="rounded-xl p-2 flex flex-col gap-1 items-center text-center"
-              style="background: {ec}0d; border: 1px solid {ec}{dead ? '11' : '22'}; opacity: {dead ? 0.4 : 1}; transition: opacity 0.5s;">
-              {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>{/if}
-              <p class="font-bold truncate w-full" style="font-family: 'Cinzel', serif; color: {ec}; font-size: 0.75rem;">{char.name}</p>
-              <div class="rounded-full overflow-hidden w-full" style="height: 7px; background: rgba(255,255,255,0.08);">
-                <div class="h-full rounded-full" style="width: {pct * 100}%; background: {hpColor(pct)}; transition: width 0.8s ease-out;"></div>
+            {@const badges = charStatusByName.get(char.name) ?? []}
+            <div use:trackCharEl={{ name: char.name, team: 2 }} class="bv-char-card bv-team-2" class:bv-dead={dead} style="--team-accent: {ec};">
+              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full mb-1.5">
+                {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>{/if}
+                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: {ec}; font-size: 0.78rem; letter-spacing: 0.03em;">{char.name}</p>
               </div>
-              <p style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.6rem;">{formatHp(hp)} / {formatHp(char.maxHp)}</p>
+              <div class="bv-hp-track">
+                <div class="bv-hp-fill" style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
+              </div>
+              <p class="text-center mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.62rem; letter-spacing: 0.04em;">{formatHp(hp)}<span style="color: #4e4635;"> / {formatHp(char.maxHp)}</span></p>
+              {#if badges.length > 0 && !dead}
+                <div class="flex flex-wrap gap-1 justify-center mt-1.5">
+                  {#each badges as b}
+                    <span class="bv-status-chip" title="{b.label}: {b.description}"
+                      style="background: {b.color}22; border-color: {b.color}66;">
+                      <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+                    </span>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/each}
         </div>
       </div>
-      <!-- Attack FX overlay -->
+      <!-- Attack FX overlay — anchored on attacker's actual rect (three-stage
+           fallback in JS), with a wrapper-relative fallback in template as
+           a last resort. -->
       {#if phase === 'fight' && activeAnim}
         {#key activeAnim.key}
-          <div style="position: absolute; top: 40%; transform: translateY(-50%);
-                      {activeAnim.direction === 'rtl' ? 'right: 8%' : activeAnim.direction === 'center' ? 'left: 50%; transform: translate(-50%, -50%)' : 'left: 8%'};
-                      z-index: 20; pointer-events: none;">
+          {@const ox = activeAnim.origin?.x}
+          {@const oy = activeAnim.origin?.y}
+          {@const _wr = battleWrapperEl?.getBoundingClientRect()}
+          <div style="position:fixed;
+                      left:{ox != null ? ox + 'px' : _wr != null
+                            ? (activeAnim.direction === 'rtl' ? (_wr.left + _wr.width * 0.75) + 'px'
+                              : activeAnim.direction === 'ltr' ? (_wr.left + _wr.width * 0.25) + 'px'
+                              : (_wr.left + _wr.width / 2) + 'px')
+                            : (activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw')};
+                      top:{oy != null ? oy + 'px' : _wr != null
+                            ? (_wr.top + _wr.height / 2) + 'px' : '50vh'};
+                      transform:translate(-50%,-50%);
+                      z-index:9999;pointer-events:none;">
             <AttackFX type={activeAnim.type} color={activeAnim.color} direction={activeAnim.direction} size={76} grade={activeAnim.grade} attackType={activeAnim.attackType} />
           </div>
         {/key}
       {/if}
+      <!-- Floating damage indicators -->
+      <DamageIndicator events={damageEvents} />
     </div>
 
     <!-- VS splash -->

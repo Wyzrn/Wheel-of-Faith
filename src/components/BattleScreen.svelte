@@ -5,6 +5,10 @@
   import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
   import type { SpinResult } from '$lib/session/types'
   import AttackFX from './AttackFX.svelte'
+  import DamageIndicator from './DamageIndicator.svelte'
+  import type { DamageEvent } from '$lib/game/damageEvent'
+  import { deriveStatusBadges } from '$lib/game/battleStatuses'
+  import { settings } from '$lib/settings.svelte'
 
   interface Props {
     p1Results: SpinResult[]
@@ -79,13 +83,55 @@
   let animKey = 0
   let dodgeDir = $state<'ltr' | 'rtl' | null>(null)
 
-  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
-    const el = dir === 'ltr' ? p1PanelEl : dir === 'rtl' ? p2PanelEl : null
+  // Battle wrapper ref + per-character refs — match the polish pattern used
+  // by every other battle view so VFX shoots from the right place.
+  let battleWrapperEl = $state<HTMLDivElement | null>(null)
+  const charEls = new Map<string, HTMLElement>()
+  function trackCharEl(node: HTMLElement, args: { name: string }) {
+    charEls.set(args.name, node)
+    return { destroy() { charEls.delete(args.name) } }
+  }
+  function getCharOriginByName(name: string | null): { x: number; y: number } | undefined {
+    if (!name) return undefined
+    const el = charEls.get(name)
     if (!el) return undefined
     const r = el.getBoundingClientRect()
-    const x = r.left + r.width / 2
-    const y = Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65))
-    return { x, y }
+    if (r.width === 0) return undefined
+    return {
+      x: r.left + r.width / 2,
+      y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80)),
+    }
+  }
+  function getWrapperOriginForDir(dir: AnimDir): { x: number; y: number } | undefined {
+    if (!battleWrapperEl) return undefined
+    const wr = battleWrapperEl.getBoundingClientRect()
+    if (wr.width === 0) return undefined
+    const xRel = dir === 'rtl' ? 0.75 : dir === 'ltr' ? 0.25 : 0.5
+    return {
+      x: wr.left + wr.width * xRel,
+      y: Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80)),
+    }
+  }
+  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
+    if (dir === 'center') return getWrapperOriginForDir('center')
+    const el = dir === 'ltr' ? p1PanelEl : dir === 'rtl' ? p2PanelEl : null
+    if (el) {
+      const r = el.getBoundingClientRect()
+      if (r.width > 0) {
+        return {
+          x: r.left + r.width / 2,
+          y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65)),
+        }
+      }
+    }
+    return getWrapperOriginForDir(dir)
+  }
+  function inferAttackerName(line: string): string | null {
+    const names: string[] = []
+    if (p1Char) names.push(p1Char.name)
+    if (p2Char) names.push(p2Char.name)
+    for (const n of names) if (line.startsWith(n)) return n
+    return null
   }
 
   function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, origin?: { x: number; y: number }, attackType?: string) {
@@ -148,6 +194,57 @@
     if (logEl) logEl.scrollTop = logEl.scrollHeight
   }
 
+  // Status chips + damage indicators (matches every other battle view)
+  let allNames = $derived([p1Char?.name, p2Char?.name].filter((n): n is string => !!n))
+  let charStatusByName = $derived(deriveStatusBadges(logLines, allNames))
+  let damageEvents = $state<DamageEvent[]>([])
+  let dmgIdCounter = 0
+  function emitDamage(targetName: string, value: number, kind: DamageEvent['kind']) {
+    const el = charEls.get(targetName)
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    if (r.width === 0) return
+    const ev: DamageEvent = { id: ++dmgIdCounter, x: r.left + r.width / 2, y: r.top + r.height * 0.3, value, kind }
+    damageEvents = [...damageEvents.slice(-29), ev]
+    setTimeout(() => { damageEvents = damageEvents.filter(d => d.id !== ev.id) }, 1400)
+  }
+  function parseDamageNumber(s: string): number {
+    const cleaned = s.replace(/,/g, '').toUpperCase()
+    if (cleaned.endsWith('K')) return Math.round(parseFloat(cleaned) * 1_000)
+    if (cleaned.endsWith('M')) return Math.round(parseFloat(cleaned) * 1_000_000)
+    if (cleaned.endsWith('B')) return Math.round(parseFloat(cleaned) * 1_000_000_000)
+    return Math.round(parseFloat(cleaned) || 0)
+  }
+  function maybeEmitDamageFromLine(line: string) {
+    if (!settings.effectsEnabled) return
+    const dmgMatch = line.match(/for\s+([\d.,]+[KMB]?)\s+damage!?/i)
+    if (dmgMatch) {
+      const preBoundary = line.lastIndexOf(' for ')
+      const head = preBoundary > 0 ? line.slice(0, preBoundary) : line
+      let target: string | null = null
+      let lastIdx = -1
+      for (const n of allNames) {
+        const i = head.lastIndexOf(n)
+        if (i > lastIdx) { lastIdx = i; target = n }
+      }
+      if (target) {
+        const isCrit = /CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)
+        emitDamage(target, parseDamageNumber(dmgMatch[1]), isCrit ? 'crit' : 'damage')
+        return
+      }
+    }
+    const healMatch = line.match(/(?:restores|recovers|mends)\s+([\d.,]+[KMB]?)\s*HP/i)
+    if (healMatch) {
+      for (const n of allNames) if (line.startsWith(n)) { emitDamage(n, parseDamageNumber(healMatch[1]), 'heal'); return }
+    }
+    if (/evades|dodges|misses/i.test(line)) {
+      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'miss'); return }
+    }
+    if (/barrier forms around|defensive stance|bracing/i.test(line)) {
+      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'shield'); return }
+    }
+  }
+
   // fxEvents from current round — used by detectAnim to pull grade/element
   let currentFxEvents = $state<import('$lib/game/battle').RoundFxEvent[]>([])
   let fxEventIdx = 0
@@ -158,6 +255,7 @@
     const [head, ...rest] = lines
     logLines = [...logLines, head]
     scrollLog()
+    maybeEmitDamageFromLine(head)
     const anim = detectAnim(head)
     if (anim) {
       const fx = currentFxEvents[fxEventIdx]
@@ -184,7 +282,12 @@
         const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
         const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
         const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
-        const origin = getPanelOrigin(originDir)
+        // Three-stage origin: char card → team panel → wrapper.
+        const attackerName = inferAttackerName(head)
+        let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
+          ? getCharOriginByName(attackerName)
+          : undefined
+        if (!origin) origin = getPanelOrigin(originDir)
         showAnim(type, color, direction, grade, origin, fxAttackType)
       }
     }
@@ -331,71 +434,106 @@
 
   <!-- Character panels + attack animation overlay — always 2 columns on all screen sizes -->
   {#if p1Char && p2Char}
-    <div class="w-full relative mb-3 sm:mb-6" style="overflow:visible;">
+    {@const p1Badges = charStatusByName.get(p1Char.name) ?? []}
+    {@const p2Badges = charStatusByName.get(p2Char.name) ?? []}
+    {@const p1Won = phase === 'result' && winner === 'p1'}
+    {@const p2Won = phase === 'result' && winner === 'p2'}
+    <div bind:this={battleWrapperEl} class="w-full relative mb-3 sm:mb-6" style="overflow:visible;">
     <div class="grid grid-cols-2 gap-2 sm:gap-4">
 
       <!-- P1 panel -->
-      <div bind:this={p1PanelEl} class="rounded-xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-2 {dodgeDir === 'ltr' ? 'panel-dodging' : ''}"
-        style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,{phase === 'result' && winner === 'p1' ? '0.7' : '0.22'}); box-shadow: {phase === 'result' && winner === 'p1' ? '0 0 40px rgba(240,192,64,0.3)' : 'none'}; transition: box-shadow 0.5s, border-color 0.5s;">
-        <div class="flex items-center gap-2 min-w-0">
-          {#if phase === 'result' && winner === 'p1'}
+      <div bind:this={p1PanelEl} use:trackCharEl={{ name: p1Char.name }}
+        class="bv-char-card bv-team-1 {dodgeDir === 'ltr' ? 'panel-dodging' : ''}"
+        class:bv-victor={p1Won}
+        style="padding: 12px;">
+        <div class="flex items-center gap-2 min-w-0 mb-1.5">
+          {#if p1Won}
             <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-          {:else if phase === 'result' && winner === 'p2'}
+          {:else if p2Won}
             <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
           {/if}
           <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.95rem;">{p1Char.name}</p>
         </div>
-        <p class="text-xs truncate" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{p1Char.raceLabel} · {p1Char.archetypeLabel}</p>
-        <div class="rounded-full overflow-hidden" style="height: 10px; background: rgba(255,255,255,0.08);">
-          <div class="h-full rounded-full" style="width: {p1HpPct * 100}%; background: {hpColor(p1HpPct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
+        <p class="text-xs truncate mb-1.5" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{p1Char.raceLabel} · {p1Char.archetypeLabel}</p>
+        <div class="bv-hp-track" style="height: 10px;">
+          <div class="bv-hp-fill" style="width: {p1HpPct * 100}%; background: {hpColor(p1HpPct)}; color: {hpColor(p1HpPct)};"></div>
         </div>
-        <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(p1HpPct)};">{formatHp(p1DisplayHp)} / {formatHp(p1Char.maxHp)} HP</p>
-        <div class="grid grid-cols-3 gap-1 mt-1">
+        <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(p1HpPct)};">{formatHp(p1DisplayHp)}<span style="color: #4e4635;"> / {formatHp(p1Char.maxHp)} HP</span></p>
+        <div class="grid grid-cols-3 gap-1 mt-2">
           {#each [['ATK', formatHp(p1Char.physicalDamage)], ['DEF', Math.round(p1Char.armorReduction * 100) + '%'], ['INIT', Math.round(p1Char.initiative)]] as [lbl, val]}
-            <div class="text-center rounded py-1" style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,0.1);">
+            <div class="text-center rounded py-1" style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,0.12);">
               <p style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 9px;">{lbl}</p>
               <p class="font-bold text-xs" style="font-family: 'Cinzel', serif; color: #ffdf96;">{val}</p>
             </div>
           {/each}
         </div>
+        {#if p1Badges.length > 0}
+          <div class="flex flex-wrap gap-1 justify-center mt-2">
+            {#each p1Badges as b}
+              <span class="bv-status-chip" title="{b.label}: {b.description}"
+                style="background: {b.color}22; border-color: {b.color}66;">
+                <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+              </span>
+            {/each}
+          </div>
+        {/if}
       </div>
 
       <!-- P2 panel -->
-      <div bind:this={p2PanelEl} class="rounded-xl p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-2 {dodgeDir === 'rtl' ? 'panel-dodging' : ''}"
-        style="background: rgba(232,121,249,0.06); border: 1px solid rgba(232,121,249,{phase === 'result' && winner === 'p2' ? '0.7' : '0.22'}); box-shadow: {phase === 'result' && winner === 'p2' ? '0 0 40px rgba(232,121,249,0.3)' : 'none'}; transition: box-shadow 0.5s, border-color 0.5s;">
-        <div class="flex items-center gap-2 min-w-0">
-          {#if phase === 'result' && winner === 'p2'}
+      <div bind:this={p2PanelEl} use:trackCharEl={{ name: p2Char.name }}
+        class="bv-char-card bv-team-2 {dodgeDir === 'rtl' ? 'panel-dodging' : ''}"
+        class:bv-victor={p2Won}
+        style="padding: 12px; --team-accent: #e879f9;">
+        <div class="flex items-center gap-2 min-w-0 mb-1.5">
+          {#if p2Won}
             <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #e879f9; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-          {:else if phase === 'result' && winner === 'p1'}
+          {:else if p1Won}
             <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
           {/if}
           <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #e879f9; font-size: 0.95rem;">{p2Char.name}</p>
         </div>
-        <p class="text-xs truncate" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{p2Char.raceLabel} · {p2Char.archetypeLabel}</p>
-        <div class="rounded-full overflow-hidden" style="height: 10px; background: rgba(255,255,255,0.08);">
-          <div class="h-full rounded-full" style="width: {p2HpPct * 100}%; background: {hpColor(p2HpPct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
+        <p class="text-xs truncate mb-1.5" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{p2Char.raceLabel} · {p2Char.archetypeLabel}</p>
+        <div class="bv-hp-track" style="height: 10px;">
+          <div class="bv-hp-fill" style="width: {p2HpPct * 100}%; background: {hpColor(p2HpPct)}; color: {hpColor(p2HpPct)};"></div>
         </div>
-        <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(p2HpPct)};">{formatHp(p2DisplayHp)} / {formatHp(p2Char.maxHp)} HP</p>
-        <div class="grid grid-cols-3 gap-1 mt-1">
+        <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(p2HpPct)};">{formatHp(p2DisplayHp)}<span style="color: #4e4635;"> / {formatHp(p2Char.maxHp)} HP</span></p>
+        <div class="grid grid-cols-3 gap-1 mt-2">
           {#each [['ATK', formatHp(p2Char.physicalDamage)], ['DEF', Math.round(p2Char.armorReduction * 100) + '%'], ['INIT', Math.round(p2Char.initiative)]] as [lbl, val]}
-            <div class="text-center rounded py-1" style="background: rgba(232,121,249,0.06); border: 1px solid rgba(232,121,249,0.1);">
+            <div class="text-center rounded py-1" style="background: rgba(232,121,249,0.06); border: 1px solid rgba(232,121,249,0.12);">
               <p style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 9px;">{lbl}</p>
               <p class="font-bold text-xs" style="font-family: 'Cinzel', serif; color: #e879f9;">{val}</p>
             </div>
           {/each}
         </div>
+        {#if p2Badges.length > 0}
+          <div class="flex flex-wrap gap-1 justify-center mt-2">
+            {#each p2Badges as b}
+              <span class="bv-status-chip" title="{b.label}: {b.description}"
+                style="background: {b.color}22; border-color: {b.color}66;">
+                <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+              </span>
+            {/each}
+          </div>
+        {/if}
       </div>
 
     </div>
 
-    <!-- Attack FX overlay: fixed to attacker panel center, fly animation travels to target -->
+    <!-- Attack FX overlay — three-stage origin fallback (char → panel → wrapper)
+         so VFX never lands at the viewport edge. -->
     {#if phase === 'battle' && activeAnim}
       {#key activeAnim.key}
         {@const ox = activeAnim.origin?.x}
         {@const oy = activeAnim.origin?.y}
+        {@const _wr = battleWrapperEl?.getBoundingClientRect()}
         <div style="position:fixed;
-                    left:{ox != null ? ox + 'px' : activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw'};
-                    top:{oy != null ? oy + 'px' : '50vh'};
+                    left:{ox != null ? ox + 'px' : _wr != null
+                          ? (activeAnim.direction === 'rtl' ? (_wr.left + _wr.width * 0.75) + 'px'
+                            : activeAnim.direction === 'ltr' ? (_wr.left + _wr.width * 0.25) + 'px'
+                            : (_wr.left + _wr.width / 2) + 'px')
+                          : (activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw')};
+                    top:{oy != null ? oy + 'px' : _wr != null
+                          ? (_wr.top + _wr.height / 2) + 'px' : '50vh'};
                     transform:translate(-50%,-50%);
                     z-index:9999;pointer-events:none;">
           <AttackFX type={activeAnim.type} color={activeAnim.color}
@@ -403,6 +541,9 @@
         </div>
       {/key}
     {/if}
+
+    <!-- Floating damage indicators -->
+    <DamageIndicator events={damageEvents} />
 
     </div>
   {/if}

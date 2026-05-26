@@ -6,6 +6,9 @@
   } from '$lib/game/battle'
   import { settings } from '$lib/settings.svelte'
   import AttackFX from './AttackFX.svelte'
+  import DamageIndicator from './DamageIndicator.svelte'
+  import type { DamageEvent } from '$lib/game/damageEvent'
+  import { deriveStatusBadges } from '$lib/game/battleStatuses'
   import type { SpinResult } from '$lib/session/types'
   import { auth } from '$lib/stores/auth.svelte'
 
@@ -63,6 +66,34 @@
   let aoeRemainingHits = 0
   let t1PanelEl = $state<HTMLDivElement | null>(null)
   let t2PanelEl = $state<HTMLDivElement | null>(null)
+  let battleWrapperEl = $state<HTMLDivElement | null>(null)
+
+  // Per-character refs so VFX shoots from the actual attacker card, not the
+  // column midpoint. Populated by the `trackCharEl` action on each card.
+  const t1CharEls = new Map<string, HTMLElement>()
+  const t2CharEls = new Map<string, HTMLElement>()
+  function trackCharEl(node: HTMLElement, args: { name: string; team: 1 | 2 }) {
+    const map = args.team === 1 ? t1CharEls : t2CharEls
+    map.set(args.name, node)
+    return { destroy() { map.delete(args.name) } }
+  }
+  function getCharOriginByName(name: string | null): { x: number; y: number } | undefined {
+    if (!name) return undefined
+    const el = t1CharEls.get(name) ?? t2CharEls.get(name)
+    if (!el) return undefined
+    const r = el.getBoundingClientRect()
+    if (r.width === 0) return undefined
+    return {
+      x: r.left + r.width / 2,
+      y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80)),
+    }
+  }
+  function inferAttackerName(line: string): string | null {
+    for (const n of [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)]) {
+      if (line.startsWith(n)) return n
+    }
+    return null
+  }
 
   const ELEMENT_FX: Record<string, { type: string; color: string }> = {
     Fire:      { type: 'fire',      color: '#f97316' },
@@ -89,13 +120,86 @@
     Neutral:   { type: 'slash',     color: '#f87171' },
   }
 
+  // Wrapper-relative fallback so VFX never paints at the viewport edge when
+  // a specific panel ref hasn't bound yet.
+  function getWrapperOriginForDir(dir: AnimDir): { x: number; y: number } | undefined {
+    if (!battleWrapperEl) return undefined
+    const wr = battleWrapperEl.getBoundingClientRect()
+    if (wr.width === 0) return undefined
+    const xRel = dir === 'rtl' ? 0.75 : dir === 'ltr' ? 0.25 : 0.5
+    return {
+      x: wr.left + wr.width * xRel,
+      y: Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80)),
+    }
+  }
   function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
+    if (dir === 'center') return getWrapperOriginForDir('center')
     const el = dir === 'ltr' ? t1PanelEl : dir === 'rtl' ? t2PanelEl : null
-    if (!el) return undefined
+    if (el) {
+      const r = el.getBoundingClientRect()
+      if (r.width > 0) {
+        return {
+          x: r.left + r.width / 2,
+          y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65)),
+        }
+      }
+    }
+    return getWrapperOriginForDir(dir)
+  }
+
+  // Status chips (derived from recent log lines, hover descriptions inline)
+  let charStatusByName = $derived(
+    deriveStatusBadges(logLines, [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)])
+  )
+
+  // Floating damage indicators
+  let damageEvents = $state<DamageEvent[]>([])
+  let dmgIdCounter = 0
+  function emitDamage(targetName: string, value: number, kind: DamageEvent['kind']) {
+    const el = t1CharEls.get(targetName) ?? t2CharEls.get(targetName)
+    if (!el) return
     const r = el.getBoundingClientRect()
-    const x = r.left + r.width / 2
-    const y = Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65))
-    return { x, y }
+    if (r.width === 0) return
+    const ev: DamageEvent = { id: ++dmgIdCounter, x: r.left + r.width / 2, y: r.top + r.height * 0.3, value, kind }
+    damageEvents = [...damageEvents.slice(-29), ev]
+    setTimeout(() => { damageEvents = damageEvents.filter(d => d.id !== ev.id) }, 1400)
+  }
+  function parseDamageNumber(s: string): number {
+    const cleaned = s.replace(/,/g, '').toUpperCase()
+    if (cleaned.endsWith('K')) return Math.round(parseFloat(cleaned) * 1_000)
+    if (cleaned.endsWith('M')) return Math.round(parseFloat(cleaned) * 1_000_000)
+    if (cleaned.endsWith('B')) return Math.round(parseFloat(cleaned) * 1_000_000_000)
+    return Math.round(parseFloat(cleaned) || 0)
+  }
+  function maybeEmitDamageFromLine(line: string) {
+    if (!settings.effectsEnabled) return
+    const allNames = [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)]
+    const dmgMatch = line.match(/for\s+([\d.,]+[KMB]?)\s+damage!?/i)
+    if (dmgMatch) {
+      const preBoundary = line.lastIndexOf(' for ')
+      const head = preBoundary > 0 ? line.slice(0, preBoundary) : line
+      let target: string | null = null
+      let lastIdx = -1
+      for (const n of allNames) {
+        const i = head.lastIndexOf(n)
+        if (i > lastIdx) { lastIdx = i; target = n }
+      }
+      if (target) {
+        const isCrit = /CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)
+        emitDamage(target, parseDamageNumber(dmgMatch[1]), isCrit ? 'crit' : 'damage')
+        return
+      }
+    }
+    const healMatch = line.match(/(?:restores|recovers|mends)\s+([\d.,]+[KMB]?)\s*HP/i)
+    if (healMatch) {
+      for (const n of allNames) if (line.startsWith(n)) { emitDamage(n, parseDamageNumber(healMatch[1]), 'heal'); return }
+    }
+    if (/evades|dodges|misses/i.test(line)) {
+      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'miss'); return }
+    }
+    if (/barrier forms around|defensive stance|bracing/i.test(line)) {
+      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'shield'); return }
+    }
   }
 
   function speedDelay(ms: number): number {
@@ -218,6 +322,7 @@
     const [head, ...rest] = lines
     logLines = [...logLines, head]
     scrollLog()
+    maybeEmitDamageFromLine(head)
     const anim = detectAnim(head)
     if (anim) {
       const fx = currentFxEvents[fxEventIdx]
@@ -243,7 +348,13 @@
         const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
         const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
         const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
-        const origin = getPanelOrigin(originDir)
+        // Three-stage fallback: char card → team panel → wrapper rect. AOE
+        // skips the char step so the burst lands on the enemy column.
+        const attackerName = inferAttackerName(head)
+        let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
+          ? getCharOriginByName(attackerName)
+          : undefined
+        if (!origin) origin = getPanelOrigin(originDir)
         showAnim(type, color, direction, grade, origin, fxAttackType)
       }
     }
@@ -309,7 +420,7 @@
   {#if t1Chars.length > 0}
 
     <!-- Team HP panels -->
-    <div class="w-full relative mb-3" style="overflow: visible;">
+    <div bind:this={battleWrapperEl} class="w-full relative mb-3" style="overflow: visible;">
       <div class="grid grid-cols-2 gap-2">
 
         <!-- Player / Team 1 -->
@@ -323,7 +434,8 @@
             {@const pct = t1HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
             {@const won  = phase === 'result' && team1Won}
-            <div class="bv-char-card bv-team-1"
+            {@const badges = charStatusByName.get(char.name) ?? []}
+            <div use:trackCharEl={{ name: char.name, team: 1 }} class="bv-char-card bv-team-1"
               class:bv-dead={dead}
               class:bv-victor={won && !dead}>
               <div class="flex items-center justify-center gap-1.5 min-w-0 w-full mb-1.5">
@@ -338,6 +450,16 @@
                 <div class="bv-hp-fill" style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
               </div>
               <p class="text-center mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.62rem; letter-spacing: 0.04em;">{formatHp(hp)}<span style="color: #4e4635;"> / {formatHp(char.maxHp)}</span></p>
+              {#if badges.length > 0 && !dead}
+                <div class="flex flex-wrap gap-1 justify-center mt-1.5">
+                  {#each badges as b}
+                    <span class="bv-status-chip" title="{b.label}: {b.description}"
+                      style="background: {b.color}22; border-color: {b.color}66;">
+                      <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+                    </span>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/each}
         </div>
@@ -353,7 +475,8 @@
             {@const pct = t2HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
             {@const lost = phase === 'result' && !team1Won}
-            <div class="bv-char-card bv-team-2"
+            {@const badges = charStatusByName.get(char.name) ?? []}
+            <div use:trackCharEl={{ name: char.name, team: 2 }} class="bv-char-card bv-team-2"
               class:bv-dead={dead}
               class:bv-victor={lost && !dead}
               style="--team-accent: {team2Color};">
@@ -369,19 +492,37 @@
                 <div class="bv-hp-fill" style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
               </div>
               <p class="text-center mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.62rem; letter-spacing: 0.04em;">{formatHp(hp)}<span style="color: #4e4635;"> / {formatHp(char.maxHp)}</span></p>
+              {#if badges.length > 0 && !dead}
+                <div class="flex flex-wrap gap-1 justify-center mt-1.5">
+                  {#each badges as b}
+                    <span class="bv-status-chip" title="{b.label}: {b.description}"
+                      style="background: {b.color}22; border-color: {b.color}66;">
+                      <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+                    </span>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/each}
         </div>
       </div>
 
-      <!-- Attack FX overlay: fixed to attacker panel center, fly animation travels to target -->
+      <!-- Attack FX overlay — anchored on attacker's actual rect with three-stage
+           fallback (char card → team panel → battle wrapper). Viewport-percent
+           defaults below only fire if all three refs failed (shouldn't happen). -->
       {#if phase === 'fight' && activeAnim}
         {#key activeAnim.key}
           {@const ox = activeAnim.origin?.x}
           {@const oy = activeAnim.origin?.y}
+          {@const _wr = battleWrapperEl?.getBoundingClientRect()}
           <div style="position:fixed;
-                      left:{ox != null ? ox + 'px' : activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw'};
-                      top:{oy != null ? oy + 'px' : '50vh'};
+                      left:{ox != null ? ox + 'px' : _wr != null
+                            ? (activeAnim.direction === 'rtl' ? (_wr.left + _wr.width * 0.75) + 'px'
+                              : activeAnim.direction === 'ltr' ? (_wr.left + _wr.width * 0.25) + 'px'
+                              : (_wr.left + _wr.width / 2) + 'px')
+                            : (activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw')};
+                      top:{oy != null ? oy + 'px' : _wr != null
+                            ? (_wr.top + _wr.height / 2) + 'px' : '50vh'};
                       transform:translate(-50%,-50%);
                       z-index:9999;pointer-events:none;">
             <AttackFX type={activeAnim.type} color={activeAnim.color}
@@ -389,6 +530,9 @@
           </div>
         {/key}
       {/if}
+
+      <!-- Floating damage indicators -->
+      <DamageIndicator events={damageEvents} />
     </div>
 
     <!-- VS splash (intro only) -->
