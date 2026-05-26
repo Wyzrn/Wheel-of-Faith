@@ -74,6 +74,17 @@
   }
 
   function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
+    // For 'center' anims (AOE bursts on system events), anchor on the battle
+    // wrapper midpoint, not the viewport. Otherwise VFX from a scrolled-down
+    // battle log appears floating in the middle of the viewport.
+    if (dir === 'center') {
+      if (!wrapperEl) return undefined
+      const r = wrapperEl.getBoundingClientRect()
+      // Clamp Y into the visible viewport so the VFX never paints off-screen.
+      const cx = r.left + r.width / 2
+      const cy = Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80))
+      return { x: cx, y: cy }
+    }
     const el = dir === 'ltr' ? t1PanelEl : dir === 'rtl' ? t2PanelEl : null
     if (!el) return undefined
     const r = el.getBoundingClientRect()
@@ -682,7 +693,11 @@
           if (!ex.includes(shareId)) localStorage.setItem('wof_saved_chars', JSON.stringify([shareId, ...ex].slice(0, 50)))
         } catch { /* ignore */ }
       }
-      const patchRes = await fetch(`/api/characters/${shareId}/rivals-win`, { method: 'PATCH' })
+      // credentials:'include' is required — the server now gates this endpoint
+      // by ownership (PATCH /characters/:shareId/rivals-win checks userId match),
+      // so the auth cookie has to ride along or the increment silently 401s
+      // and the medal never appears on the character card.
+      const patchRes = await fetch(`/api/characters/${shareId}/rivals-win`, { method: 'PATCH', credentials: 'include' })
       if (patchRes.ok) {
         const pd = await patchRes.json() as { rivals_wins: number }
         savedWins = pd.rivals_wins; savedShareId = shareId; saveStatus = 'saved'
@@ -778,9 +793,19 @@
       {#key activeAnim.key}
         {@const ox = activeAnim.origin?.x}
         {@const oy = activeAnim.origin?.y}
+        {@const _wrapperRect = wrapperEl?.getBoundingClientRect()}
+        <!-- Fallback positioning when origin couldn't be resolved (panel ref not
+             mounted yet on the very first frame). Use the wrapper midpoint instead
+             of 50vw/50vh so scrolled views don't paint VFX floating in air. -->
         <div style="position:fixed;
-                    left:{ox != null ? ox + 'px' : activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw'};
-                    top:{oy != null ? oy + 'px' : '50vh'};
+                    left:{ox != null ? ox + 'px' : _wrapperRect != null
+                          ? (activeAnim.direction === 'rtl' ? (_wrapperRect.right - _wrapperRect.width * 0.25) + 'px'
+                            : activeAnim.direction === 'ltr' ? (_wrapperRect.left + _wrapperRect.width * 0.25) + 'px'
+                            : (_wrapperRect.left + _wrapperRect.width / 2) + 'px')
+                          : (activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw')};
+                    top:{oy != null ? oy + 'px' : _wrapperRect != null
+                          ? (_wrapperRect.top + Math.min(_wrapperRect.height / 2, window.innerHeight * 0.4)) + 'px'
+                          : '50vh'};
                     transform:translate(-50%,-50%);
                     z-index:9999;pointer-events:none;">
           <AttackFX type={activeAnim.type} color={activeAnim.color}

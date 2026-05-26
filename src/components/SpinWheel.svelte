@@ -103,9 +103,15 @@
     _lastVibrateAt = now
     try { navigator.vibrate(Math.round(4 + speed * 6)) } catch { /* unsupported */ }
   }
-  function pulseHapticLanding() {
+  function pulseHapticLanding(intensity: number = 0.5) {
     if (!_supportsVibrate) return
-    try { navigator.vibrate([12, 30, 22]) } catch { /* unsupported */ }
+    // Scale pulse strength + count by tier intensity. F-tier: single 8ms tap.
+    // SSS+: long burst with multiple beats so the player feels the gravity.
+    const a = Math.round(10 + intensity * 14)       // 10–24ms
+    const b = Math.round(20 + intensity * 30)       // 20–50ms pause
+    const c = Math.round(16 + intensity * 32)       // 16–48ms
+    const pattern = intensity >= 0.65 ? [a, b, c, b, c, b, a] : [a, b, c]
+    try { navigator.vibrate(pattern) } catch { /* unsupported */ }
   }
 
   function getAudioCtx(): AudioContext | null {
@@ -150,53 +156,88 @@
     nSrc.start(now)
   }
 
-  function playLanding() {
+  // Maps a tier label to an "intensity" score in [0, 1]. F-tier = 0, Absolute = 1.
+  // Used to scale the landing animation, sound design, and haptic punch so a
+  // mythic roll feels different from a C-tier roll. Stat-less wheels (race, etc.)
+  // pass undefined and we default to mid (0.4).
+  function tierIntensity(tier: string | undefined): number {
+    if (!tier) return 0.4
+    const ladder = [
+      'F-','F','F+','E-','E','E+','D-','D','D+','C-','C','C+',
+      'B-','B','B+','A-','A','A+','S-','S','S+','SS-','SS','SS+',
+      'SSS-','SSS','SSS+','Z-','Z','Z+','ZZ-','ZZ','ZZ+','ZZZ-','ZZZ','ZZZ+',
+      'Celestial-','Celestial','Celestial+','Godly-','Godly',
+      'Primordial','Primordial+','Absolute-','Absolute','Absolute+',
+    ]
+    const idx = ladder.indexOf(tier)
+    if (idx < 0) return 0.4
+    return Math.min(1, idx / (ladder.length - 1))
+  }
+
+  function playLanding(tier?: string) {
     const ac = getAudioCtx()
     if (!ac) return
     const now = ac.currentTime
+    const t = tierIntensity(tier)            // 0..1
+    const gainScale  = 0.7 + t * 0.6         // 0.7..1.3 — louder for higher tiers
+    const pitchScale = 0.85 + t * 0.5        // 0.85..1.35 — brighter for high tiers
+    const sustainExt = 0.35 * t              // extra ring sustain on mythic rolls
 
-    // Sub weight — very short, just gives physical mass to the hit
+    // Sub weight — adds physical mass to the hit. Bigger on high tiers.
     const sub = ac.createOscillator()
     const sg  = ac.createGain()
     sub.type = 'sine'
-    sub.frequency.setValueAtTime(58, now)
-    sub.frequency.exponentialRampToValueAtTime(26, now + 0.13)
-    sg.gain.setValueAtTime(0.9, now)
-    sg.gain.exponentialRampToValueAtTime(0.001, now + 0.13)
+    sub.frequency.setValueAtTime(58 * pitchScale, now)
+    sub.frequency.exponentialRampToValueAtTime(26, now + 0.13 + sustainExt * 0.5)
+    sg.gain.setValueAtTime(0.9 * gainScale, now)
+    sg.gain.exponentialRampToValueAtTime(0.001, now + 0.13 + sustainExt * 0.5)
     sub.connect(sg); sg.connect(ac.destination)
-    sub.start(now); sub.stop(now + 0.15)
+    sub.start(now); sub.stop(now + 0.15 + sustainExt)
 
     // Hollow knock — square wave gives a "clonk" wood/metal character vs the sine thud
     const knock = ac.createOscillator()
     const kg    = ac.createGain()
     knock.type = 'square'
-    knock.frequency.setValueAtTime(290, now)
+    knock.frequency.setValueAtTime(290 * pitchScale, now)
     knock.frequency.exponentialRampToValueAtTime(185, now + 0.09)
-    kg.gain.setValueAtTime(0.22, now)
+    kg.gain.setValueAtTime(0.22 * gainScale, now)
     kg.gain.exponentialRampToValueAtTime(0.001, now + 0.11)
     knock.connect(kg); kg.connect(ac.destination)
     knock.start(now); knock.stop(now + 0.13)
 
-    // Resonant ring — pure sine, sustains and fades like a struck bowl
+    // Resonant ring — pure sine, sustains and fades like a struck bowl. Mythic
+    // rolls get noticeably longer ring + a second harmonic for "celestial" feel.
     const ring = ac.createOscillator()
     const rg   = ac.createGain()
     ring.type = 'sine'
-    ring.frequency.value = 430
-    rg.gain.setValueAtTime(0.32, now)
-    rg.gain.exponentialRampToValueAtTime(0.001, now + 0.7)
+    ring.frequency.value = 430 * pitchScale
+    rg.gain.setValueAtTime(0.32 * gainScale, now)
+    rg.gain.exponentialRampToValueAtTime(0.001, now + 0.7 + sustainExt * 1.2)
     ring.connect(rg); rg.connect(ac.destination)
-    ring.start(now); ring.stop(now + 0.72)
+    ring.start(now); ring.stop(now + 0.72 + sustainExt * 1.5)
 
     // High attack sparkle — short bright ping on initial contact
     const spark = ac.createOscillator()
     const spg   = ac.createGain()
     spark.type = 'sine'
-    spark.frequency.setValueAtTime(1450, now)
+    spark.frequency.setValueAtTime(1450 * pitchScale, now)
     spark.frequency.exponentialRampToValueAtTime(880, now + 0.16)
-    spg.gain.setValueAtTime(0.13, now)
+    spg.gain.setValueAtTime(0.13 * gainScale, now)
     spg.gain.exponentialRampToValueAtTime(0.001, now + 0.19)
     spark.connect(spg); spg.connect(ac.destination)
     spark.start(now); spark.stop(now + 0.21)
+
+    // Mythic+: add a fifth harmonic shimmer for "celestial chime" character.
+    if (t >= 0.65) {
+      const fifth = ac.createOscillator()
+      const fg    = ac.createGain()
+      fifth.type = 'sine'
+      fifth.frequency.value = 645 * pitchScale
+      fg.gain.setValueAtTime(0.10 * gainScale, now + 0.05)
+      fg.gain.exponentialRampToValueAtTime(0.001, now + 1.0 + sustainExt)
+      fifth.connect(fg); fg.connect(ac.destination)
+      fifth.start(now + 0.05); fifth.stop(now + 1.1 + sustainExt)
+    }
   }
 
   // Count how many segment boundaries the pointer swept through as rotation moved
@@ -461,8 +502,21 @@
       },
       onComplete: () => {
         if (shakeEl) gsap.set(shakeEl, { x: 0, y: 0 })
-        if (soundEnabled) playLanding()
-        if (effectsEnabled) pulseHapticLanding()
+        // Pull the landed segment's tier so we can scale audio/haptic intensity
+        // — higher tiers feel more dramatic without explicit fanfare overlays.
+        const landed = segments[resultIndex]
+        const landedTier = (landed as { tier?: string }).tier
+        const intensity = tierIntensity(landedTier)
+        if (soundEnabled) playLanding(landedTier)
+        if (effectsEnabled) pulseHapticLanding(intensity)
+
+        // Mythic+: brief screen flash on the wheel itself to mark special rolls.
+        if (effectsEnabled && intensity >= 0.65 && wheelGroupEl) {
+          gsap.fromTo(wheelGroupEl,
+            { filter: 'brightness(2.8) drop-shadow(0 0 24px rgba(255,223,150,0.9))' },
+            { filter: 'brightness(1) drop-shadow(0 0 0 transparent)', duration: 0.9, ease: 'power3.out' })
+        }
+
         currentRotation = targetAngle
         lastResult = { index: resultIndex, label: segments[resultIndex].label }
         spinStatus = 'LANDED'

@@ -284,8 +284,10 @@
         } catch { /* ignore */ }
       }
 
-      // Increment wins on backend
-      const patchRes = await fetch(`/api/characters/${shareId}/rivals-win`, { method: 'PATCH' })
+      // Increment wins on backend. credentials:'include' is required because the
+      // server gates this PATCH by character ownership (userId match), so the
+      // auth cookie has to ride along or the increment silently 401s.
+      const patchRes = await fetch(`/api/characters/${shareId}/rivals-win`, { method: 'PATCH', credentials: 'include' })
       if (patchRes.ok) {
         const patchData = await patchRes.json() as { rivals_wins: number }
         savedWins    = patchData.rivals_wins

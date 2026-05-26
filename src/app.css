@@ -526,29 +526,13 @@
 }
 
 /*
- * L-BRACKET — angular corner accent (set color via currentColor on parent)
+ * L-BRACKET — angular corner accent. Originally drew small "L" shapes in the
+ * top-left + bottom-right of buttons. Disabled because the corner glyphs
+ * looked like stray arrows and competed with the button content. Element is
+ * kept so existing callsites don't need to change; rule is now a no-op.
  */
 .l-bracket {
-  position: absolute; inset: 0;
-  pointer-events: none;
-}
-.l-bracket::before {
-  content: '';
-  position: absolute;
-  top: -2px; left: -2px;
-  width: 14px; height: 14px;
-  border-top: 2px solid currentColor;
-  border-left: 2px solid currentColor;
-  border-radius: 1px 0 0 0;
-}
-.l-bracket::after {
-  content: '';
-  position: absolute;
-  bottom: -2px; right: -2px;
-  width: 14px; height: 14px;
-  border-bottom: 2px solid currentColor;
-  border-right: 2px solid currentColor;
-  border-radius: 0 0 1px 0;
+  display: none;
 }
 
 /*

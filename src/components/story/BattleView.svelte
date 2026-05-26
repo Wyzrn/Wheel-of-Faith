@@ -15,6 +15,7 @@
   import type { StoryRosterEntry, StoryTeam } from '$lib/story/types'
   import AttackFX from '../AttackFX.svelte'
   import { settings } from '$lib/settings.svelte'
+  import { saveReplay } from '$lib/battleReplay'
 
   let { slot, world, absolutePlusLevel = 0, onBattleComplete, onNextBattle, onBack, onGoToTeams, gamepasses = [] }: {
     slot: StorySaveSlot
@@ -123,6 +124,7 @@
   let killedThisWave = $state(new Set<number>())
   let t1PanelEl      = $state<HTMLDivElement | null>(null)
   let t2PanelEl      = $state<HTMLDivElement | null>(null)
+  let battleWrapperEl = $state<HTMLDivElement | null>(null)
 
   type AnimDir = 'ltr' | 'rtl' | 'center'
   let activeAnim    = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; origin?: { x: number; y: number }; attackType?: string } | null>(null)
@@ -159,6 +161,14 @@
   }
 
   function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
+    // Center anims (system events / AOE) anchor on the battle wrapper midpoint.
+    if (dir === 'center') {
+      if (!battleWrapperEl) return undefined
+      const wr = battleWrapperEl.getBoundingClientRect()
+      const cx = wr.left + wr.width / 2
+      const cy = Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80))
+      return { x: cx, y: cy }
+    }
     const el = dir === 'ltr' ? t1PanelEl : dir === 'rtl' ? t2PanelEl : null
     if (!el) return undefined
     const r = el.getBoundingClientRect()
@@ -369,6 +379,20 @@
     } else {
       lastDrops = null
     }
+    // Persist a text replay (last 5 kept) so the player can re-read what
+    // happened. Battle log is the source of truth; this is just a snapshot.
+    try {
+      saveReplay({
+        mode: 'story',
+        worldGrade: world,
+        team1Label: selectedTeam?.name ?? 'Your Team',
+        team2Label: `World ${world}`,
+        team1Chars: t1Chars.map(c => ({ name: c.name, race: c.raceLabel, archetype: c.archetypeLabel })),
+        team2Chars: t2Chars.map(c => ({ name: c.name })),
+        logLines: [...logLines],
+        playerWon,
+      })
+    } catch { /* localStorage quota — skip silently */ }
     phase = 'result'
   }
 
@@ -613,7 +637,7 @@
   {#if phase !== 'pick' && t1Chars.length > 0}
 
     <!-- Team panels — all players left, all enemies right -->
-    <div class="w-full relative mb-3" style="overflow: visible;">
+    <div bind:this={battleWrapperEl} class="w-full relative mb-3" style="overflow: visible;">
       <div class="grid grid-cols-2 gap-2">
 
         <!-- Player team column -->
@@ -668,14 +692,26 @@
 
       </div>
 
-      <!-- Attack FX overlay: fixed to attacker panel center, fly animation travels to target -->
+      <!-- Attack FX overlay: anchored to the attacker panel's actual rect so FX
+           shoots from the character, not the viewport edge. Story mode is a
+           narrow 560px column — viewport-relative fallbacks (75vw) put FX at
+           the screen edge instead of inside the battle column, which was the
+           "FX is way to the right" bug. Wrapper rect is used as fallback when
+           panel refs aren't bound yet on the first frame. -->
       {#if phase === 'fight' && activeAnim}
         {#key activeAnim.key}
           {@const ox = activeAnim.origin?.x}
           {@const oy = activeAnim.origin?.y}
+          {@const _wr = battleWrapperEl?.getBoundingClientRect()}
           <div style="position:fixed;
-                      left:{ox != null ? ox + 'px' : activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw'};
-                      top:{oy != null ? oy + 'px' : '50vh'};
+                      left:{ox != null ? ox + 'px' : _wr != null
+                            ? (activeAnim.direction === 'rtl' ? (_wr.left + _wr.width * 0.75) + 'px'
+                              : activeAnim.direction === 'ltr' ? (_wr.left + _wr.width * 0.25) + 'px'
+                              : (_wr.left + _wr.width / 2) + 'px')
+                            : (activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw')};
+                      top:{oy != null ? oy + 'px' : _wr != null
+                            ? (_wr.top + _wr.height / 2) + 'px'
+                            : '50vh'};
                       transform:translate(-50%,-50%);
                       z-index:9999;pointer-events:none;">
             <AttackFX type={activeAnim.type} color={activeAnim.color}

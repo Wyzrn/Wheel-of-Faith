@@ -5,12 +5,15 @@
   import { auth } from '$lib/stores/auth.svelte'
   import { normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import QuickBattleView from '../../components/QuickBattleView.svelte'
+  import RivalsPreviewIntro from '../../components/RivalsPreviewIntro.svelte'
   import type { SpinResult } from '$lib/session/types'
   import { setRivalsWs, getRivalsWs, clearRivalsWs } from '$lib/stores/rivalsWs'
   import { startOfflineRivals, getOfflineRivalsResult, clearOfflineRivals } from '$lib/stores/offlineRivals'
 
   // ── Phase state machine ────────────────────────────────────────────────────
-  type Phase = 'menu' | 'searching' | 'create_or_join' | 'waiting' | 'battle_ready' | 'battle'
+  // 'preview' is a 4-second pre-battle screen showing both characters before
+  // the fight begins. Auto-advances to 'battle' but can be skipped.
+  type Phase = 'menu' | 'searching' | 'create_or_join' | 'waiting' | 'battle_ready' | 'preview' | 'battle'
 
   let phase = $state<Phase>('menu')
   let ws    = $state<WebSocket | null>(null)
@@ -68,7 +71,7 @@
         partnerName = 'BOT'
         partnerResults = generateBotResults()
         isBotBattle = true
-        phase = 'battle'
+        phase = 'preview'
         return
       }
     }
@@ -89,7 +92,7 @@
         partnerResults = stored.pendingBattle.opponentResults as SpinResult[]
         if (stored.pendingBattle.myName) myCharName = stored.pendingBattle.myName
         if (stored.pendingBattle.opponentName) partnerName = stored.pendingBattle.opponentName
-        phase = 'battle'
+        phase = 'preview'
       } else {
         phase = 'battle_ready'
       }
@@ -167,7 +170,7 @@
         myCharName = you?.username ?? null
         partnerResults = opp?.results ?? []
         partnerName = opp?.username ?? partnerName
-        phase = 'battle'
+        phase = 'preview'
         break
       }
       case 'searching':
@@ -519,6 +522,20 @@
 
   </div>
 </main>
+
+<!-- ── Pre-battle preview ─────────────────────────────────────────────────────
+     Auto-advances to 'battle' after 4 seconds; Enter / click "Begin" skips. -->
+{#if phase === 'preview'}
+  <RivalsPreviewIntro
+    team1={[{ results: myResults, name: myCharName ?? auth.user?.username ?? 'You' }]}
+    team2={[{ results: partnerResults, name: partnerName || 'Opponent' }]}
+    team1Label={myCharName ?? auth.user?.username ?? 'You'}
+    team2Label={partnerName || 'Opponent'}
+    team1Color="#7dd3fc"
+    team2Color={isBotBattle ? '#34d399' : '#f9a8d4'}
+    onContinue={() => { phase = 'battle' }}
+  />
+{/if}
 
 <!-- ── Battle screen ──────────────────────────────────────────────────────────── -->
 {#if phase === 'battle'}

@@ -28,16 +28,19 @@ column flips to ✅ as they ship.
 
 | Status | Item | Notes |
 |---|---|---|
-| ⏳ | Achievement / badge system | Model + ~20 achievements + claim flow + profile display |
+| ✅ | Achievement / badge system | 20 achievements (bronze/silver/gold/mythic), `lib/achievements.ts` + `/achievements` route. Auto-celebrates new unlocks. |
+| ✅ | Pre-battle preview screen (rivals) | `RivalsPreviewIntro.svelte` — 4s countdown showing both characters side-by-side; Enter/Space skips. |
+| ✅ | Battle replay (story mode first) | MVP text replay — `lib/battleReplay.ts` saves last 5 battles; `/replays` route renders the log + combatants. Visual frame-by-frame replay still on the wishlist. |
+| ✅ | Tier-scaled landing intensity + sound design pass | `tierIntensity()` in SpinWheel scales audio gain/pitch/sustain + haptic pattern; mythic+ adds a fifth-harmonic shimmer + bright wheel flash. |
 | ⏳ | Donation system for clans | Members request gems, others fulfill, daily caps |
-| ⏳ | Pre-battle preview screen (rivals) | Both characters side-by-side for 3s before fight |
-| ⏳ | Battle replay (story mode first) | Record rounds, viewer with playback controls |
+| ⏳ | Status effect badges in battle | Chip strip under each character (buff/debuff/poisoned/frozen/stunned/burning) with hover descriptions. Requires plumbing `activeStatuses[]` through `BattleCharacter` + round results, then UI consumes it. Bigger than it looks — deferred to its own session. |
 | ⏳ | Bundle deals / featured-of-the-day in shop | Rotating gamepass discount with countdown |
 | ⏳ | Virtual scroll on gallery/characters | Once lists pass ~50 entries |
-| ⏳ | Sound design pass | Per-tier landing sounds (F clunk → Godly chime) |
-| ⏳ | Tier-scaled landing intensity | Flash/haptic/slow-mo zoom for high tiers |
 | ⏳ | Compare two characters side-by-side | Stat overlay diff |
 | ⏳ | Gem ↔ shard converter | Last-resort exchange with unfavorable rate |
+| ✅ | **Bonus**: rivals-win medal credentials fix | PATCH `/characters/:shareId/rivals-win` now passes credentials so the auth-gated ownership check actually sees the cookie. |
+| ✅ | **Bonus**: battle FX positioning fix | Story BattleView + TeamBattleScreen no longer fall back to viewport-relative coords (75vw / 50vh). Uses the battle wrapper's rect so FX shoots from the actual panel area, not the screen edge. |
+| ✅ | **Bonus**: L-bracket corner glyphs removed | The "arrow looking things" on 3D buttons are gone — single-rule CSS no-op. |
 
 ---
 
