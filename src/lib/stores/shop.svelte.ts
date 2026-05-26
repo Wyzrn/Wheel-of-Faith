@@ -1,5 +1,6 @@
 import { auth } from './auth.svelte'
-import type { GamepassId } from '$lib/shop/gamepasses'
+import { toast } from '$lib/toast.svelte'
+import { GAMEPASSES, type GamepassId } from '$lib/shop/gamepasses'
 
 const API = '/api'
 
@@ -48,7 +49,9 @@ export const shop = {
     }
   },
 
-  /** Purchase a gamepass using account shards. */
+  /** Purchase a gamepass using account shards. Toasts success/failure for the
+   *  caller; the returned string is the error message (kept for legacy callers
+   *  that want to surface it inline in addition to the global toast). */
   async buyGamepass(id: GamepassId): Promise<string | null> {
     if (_buying) return 'busy'
     _buying = true
@@ -64,12 +67,16 @@ export const shop = {
           : data.error === 'not enough shards' ? `Need ${data.need?.toLocaleString()} shards`
           : data.error ?? 'Purchase failed'
         _error = msg
+        toast.error(msg)
         return msg
       }
       auth.updateShopData(data.shards, data.gamepasses)
+      const def = GAMEPASSES.find(g => g.id === id)
+      toast.reward('Gamepass unlocked', def?.name ?? id)
       return null
     } catch {
       _error = 'Network error — try again'
+      toast.error(_error)
       return _error
     } finally {
       _buying = false

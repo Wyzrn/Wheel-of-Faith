@@ -997,6 +997,25 @@
       </div>
     </div>
 
+    <!-- First-time onboarding hint — surfaces a clear next step when the roster
+         is empty (i.e. brand-new save slot). Disappears as soon as the player
+         spins their first character. -->
+    {#if roster.length === 0 && hasAnySpin}
+      <div class="w-full max-w-xs rounded-xl px-4 py-3"
+        style="background: linear-gradient(135deg, rgba(240,192,64,0.10), rgba(240,192,64,0.03)); border: 1px solid rgba(240,192,64,0.32);">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined" style="font-size: 22px; color: #f0c040; font-variation-settings: 'FILL' 1;">tips_and_updates</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-bold mb-1" style="font-family: 'Cinzel', serif; color: #ffdf96;">Welcome to your save slot</p>
+            <p class="text-xs" style="color: #9a907b; line-height: 1.5; font-family: 'JetBrains Mono', monospace;">
+              Tap <span style="color: #f0c040;">Wheel</span> to spin your first character. Then explore
+              <span style="color: #f0c040;">Worlds</span> to send them into battle and earn gems.
+            </p>
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <!-- Hub menu options -->
     <div class="flex flex-col gap-3 w-full max-w-xs">
 

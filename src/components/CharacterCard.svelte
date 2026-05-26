@@ -11,6 +11,7 @@
   import { classifyAbility, generatePowerDescription, generateWeaponDescription, generateArmorDescription, generateAbilityDescription, getAbilityTypeColor, getAbilityTypeIcon, ABILITY_BATTLE_EFFECT } from '$lib/content/descriptions'
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
+  import { toast } from '$lib/toast.svelte'
 
   interface EquippedItemProp { id: string; grade: string; name: string }
 
@@ -262,6 +263,7 @@
       } catch { /* ignore storage errors */ }
       // Notify parent so it can mark the matching history entry as saved.
       onSaved?.(shareId, startedAt)
+      toast.success('Character saved', { detail: 'Share link ready to copy below.' })
     } finally {
       saving = false
     }
