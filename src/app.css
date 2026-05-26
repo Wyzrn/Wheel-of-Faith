@@ -598,3 +598,19 @@
   -webkit-text-fill-color: transparent;
   animation: shimmer 3.5s linear infinite;
 }
+
+/*
+ * KEYBOARD-NAV FOCUS — visible gold ring on every focusable element. Uses
+ * :focus-visible so mouse clicks don't paint a ring (only Tab navigation).
+ * Critical for keyboard users; cheap polish for everyone else.
+ */
+*:focus-visible {
+  outline: 2px solid rgba(240, 192, 64, 0.85);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible {
+  outline-color: #f0c040;
+  box-shadow: 0 0 0 4px rgba(240, 192, 64, 0.22);
+}

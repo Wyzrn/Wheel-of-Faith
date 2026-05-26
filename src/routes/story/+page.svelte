@@ -28,6 +28,10 @@
   import type { WorldGrade } from '$lib/story/worlds'
   import type { StoryRosterEntry } from '$lib/story/types'
   import { extendedTierFromScore, boostedTier } from '$lib/game/scoreTier'
+  import { getArchetype } from '$lib/content/archetypes'
+  import { powerRating } from '$lib/story/powerRating'
+  import { quickEquipBestGear } from '$lib/story/saveSlots'
+  import { toast } from '$lib/toast.svelte'
   import CharacterCard from '../../components/CharacterCard.svelte'
   import TierBadge from '../../components/TierBadge.svelte'
   import RosterCard from '../../components/story/RosterCard.svelte'
@@ -49,7 +53,27 @@
   let activePlusLevel = $state(0)
 
   // ── Roster/sort/dialog state ───────────────────────────────────────────────
-  let sortBy = $state<'tier' | 'race' | 'archetype'>('tier')
+  // Roster sort + filter — persisted in localStorage so the player's preference
+  // sticks across sessions (hospitality: don't re-ask what they already told us).
+  type SortKey = 'tier' | 'power' | 'race' | 'archetype' | 'level' | 'recent'
+  type ArchetypeFilter = 'all' | 'Combat' | 'Magic' | 'Stealth' | 'Support' | 'Chaos'
+  const ROSTER_PREFS_KEY = 'wof_roster_prefs_v1'
+  function loadRosterPrefs(): { sort: SortKey; filter: ArchetypeFilter } {
+    if (typeof localStorage === 'undefined') return { sort: 'power', filter: 'all' }
+    try {
+      const raw = localStorage.getItem(ROSTER_PREFS_KEY)
+      if (!raw) return { sort: 'power', filter: 'all' }
+      const p = JSON.parse(raw)
+      return { sort: p.sort ?? 'power', filter: p.filter ?? 'all' }
+    } catch { return { sort: 'power', filter: 'all' } }
+  }
+  const _initialPrefs = loadRosterPrefs()
+  let sortBy = $state<SortKey>(_initialPrefs.sort)
+  let archetypeFilter = $state<ArchetypeFilter>(_initialPrefs.filter)
+  $effect(() => {
+    if (typeof localStorage === 'undefined') return
+    try { localStorage.setItem(ROSTER_PREFS_KEY, JSON.stringify({ sort: sortBy, filter: archetypeFilter })) } catch { /* quota */ }
+  })
   let expandedId = $state<string | null>(null)
   let sellTarget = $state<StoryRosterEntry | null>(null)
   let rosterCapAlert = $state(false)
@@ -111,10 +135,20 @@
   let legendaryCanBuy = $derived(gems >= STAT_CRYSTAL_COSTS.legendary && dailyLegendary < STAT_CRYSTAL_DAILY_LIMITS.legendary)
   let canUpgradeRoster = $derived(gems >= nextUpgradeCost)
 
+  // Filter first, then sort. Archetype filter compares against the archetype's
+  // declared archetypeType (Combat / Magic / Stealth / Support / Chaos).
+  let filteredRoster = $derived(
+    archetypeFilter === 'all'
+      ? roster
+      : roster.filter(r => (getArchetype(r.archetype)?.archetypeType ?? 'Combat') === archetypeFilter)
+  )
   let sortedRoster = $derived(
-    [...roster].sort((a, b) => {
-      if (sortBy === 'tier') return b.overallScore - a.overallScore
-      if (sortBy === 'race') return a.race.localeCompare(b.race)
+    [...filteredRoster].sort((a, b) => {
+      if (sortBy === 'power')     return powerRating(b) - powerRating(a)
+      if (sortBy === 'tier')      return b.overallScore - a.overallScore
+      if (sortBy === 'level')     return (b.level ?? 1) - (a.level ?? 1)
+      if (sortBy === 'recent')    return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+      if (sortBy === 'race')      return a.race.localeCompare(b.race)
       return a.archetype.localeCompare(b.archetype)
     })
   )
@@ -122,6 +156,24 @@
   let expandedEntry = $derived(
     expandedId !== null ? roster.find(r => r.id === expandedId) ?? null : null
   )
+
+  // Quick-equip: hand-picks the single highest-grade unequipped item from each
+  // pool (weapon/armor/power) and slots it onto the character. Toasts a summary
+  // so the player can see what changed — hospitality means showing the action.
+  function quickEquip(characterId: string) {
+    if (!currentSlot) return
+    const snap = $state.snapshot(currentSlot) as StorySaveSlot
+    const result = quickEquipBestGear(snap, characterId)
+    if (result === 'char_not_found') { toast.error('Character not found'); return }
+    if (result.equipped.length === 0) {
+      toast.show('Nothing better to equip — your roster has everything available.', 'info')
+      return
+    }
+    currentSlot = result.slot
+    saveSaveSlot(result.slot)
+    const detail = result.equipped.map(e => `${e.name} [${e.grade}]`).join(' · ')
+    toast.reward(`Equipped ${result.equipped.length} item${result.equipped.length === 1 ? '' : 's'}`, detail)
+  }
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   onMount(() => {
@@ -1553,14 +1605,24 @@
         +5 slots
       </button>
 
-      <div class="flex gap-1 ml-1">
-        {#each ['tier', 'race', 'archetype'] as sortOption}
+      <!-- Sort selector — overflow-scrolls on mobile so we can fit 6 options
+           without crowding. Hospitality: preferences persist via $effect in
+           the script so the user never has to re-pick. -->
+      <div class="flex gap-0.5 ml-1 overflow-x-auto" style="scrollbar-width: none;">
+        {#each [
+          { key: 'power',     label: 'Power' },
+          { key: 'tier',      label: 'Tier' },
+          { key: 'level',     label: 'Level' },
+          { key: 'recent',    label: 'New' },
+          { key: 'race',      label: 'Race' },
+          { key: 'archetype', label: 'Class' },
+        ] as opt}
           <button
-            class="font-mono text-sm font-bold rounded px-2"
-            style="min-height: 44px; border-radius: 4px; border: none; cursor: pointer; background: transparent; color: {sortBy === sortOption ? 'var(--gold-bright)' : 'var(--color-outline)'}; border-bottom: {sortBy === sortOption ? '2px solid #f0c040' : '2px solid transparent'}; transition: color 120ms, border-color 120ms;"
-            onclick={() => sortBy = sortOption as 'tier' | 'race' | 'archetype'}
+            class="font-mono text-xs font-bold rounded px-2.5 whitespace-nowrap"
+            style="min-height: 44px; border-radius: 4px; border: none; cursor: pointer; background: transparent; color: {sortBy === opt.key ? 'var(--gold-bright)' : 'var(--color-outline)'}; border-bottom: {sortBy === opt.key ? '2px solid #f0c040' : '2px solid transparent'}; transition: color 120ms, border-color 120ms;"
+            onclick={() => sortBy = opt.key as SortKey}
           >
-            {sortOption.charAt(0).toUpperCase() + sortOption.slice(1)}
+            {opt.label}
           </button>
         {/each}
       </div>
@@ -1580,7 +1642,7 @@
     <!-- Teams quick access -->
     <div class="flex items-center justify-between max-w-[960px] mx-auto mb-3">
       <p class="font-mono text-xs" style="color: var(--color-outline);">
-        {teams.length} team{teams.length === 1 ? '' : 's'} · {roster.length}/{rosterCapacity} chars
+        {teams.length} team{teams.length === 1 ? '' : 's'} · {sortedRoster.length} of {roster.length} shown
       </p>
       <button onclick={() => { view = 'teams'; cancelTeamForm() }}
         class="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 rounded-lg"
@@ -1589,6 +1651,28 @@
         Teams
       </button>
     </div>
+
+    <!-- Archetype filter chips — quick way to find the kind of character you
+         want for a specific battle. "All" is the default and resets the view. -->
+    {#if roster.length > 4}
+      <div class="flex gap-1.5 max-w-[960px] mx-auto mb-3 overflow-x-auto pb-1" style="scrollbar-width: none;">
+        {#each [
+          { key: 'all',     label: 'All',     color: '#f0c040' },
+          { key: 'Combat',  label: '⚔ Combat',  color: '#f87171' },
+          { key: 'Magic',   label: '✨ Magic',  color: '#a78bfa' },
+          { key: 'Stealth', label: '◐ Stealth', color: '#48c8e0' },
+          { key: 'Support', label: '✚ Support', color: '#34d399' },
+          { key: 'Chaos',   label: '◈ Chaos',   color: '#fb923c' },
+        ] as f}
+          {@const active = archetypeFilter === f.key}
+          <button
+            onclick={() => archetypeFilter = f.key as ArchetypeFilter}
+            class="font-mono text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full whitespace-nowrap transition-all active:scale-95"
+            style="background: {active ? `${f.color}1c` : 'rgba(255,255,255,0.03)'}; border: 1px solid {active ? `${f.color}66` : 'rgba(255,255,255,0.06)'}; color: {active ? f.color : '#9a907b'}; cursor: pointer;"
+          >{f.label}</button>
+        {/each}
+      </div>
+    {/if}
 
     {#if rosterCapAlert}
       <div class="flex items-center justify-between gap-3 rounded-lg px-4 py-3 mb-4 max-w-[960px] mx-auto"
@@ -1638,16 +1722,30 @@
       style="animation: slideInBottom 200ms ease-out;"
       onclick={(e) => e.stopPropagation()}
     >
-      <div class="flex items-center justify-between px-4 py-3" style="height: 48px; border-bottom: 1px solid rgba(255,223,150,0.08);">
+      <div class="flex items-center justify-between gap-2 px-4 py-3" style="height: 48px; border-bottom: 1px solid rgba(255,223,150,0.08);">
         <h3 class="font-bold truncate" style="font-family: var(--font-cinzel); font-size: 20px; color: var(--color-on-surface);">
           {expandedEntry.name}
         </h3>
-        <button
-          class="text-xl font-bold ml-4 flex-shrink-0"
-          style="background: none; border: none; cursor: pointer; color: var(--color-outline); line-height: 1;"
-          onclick={closeExpanded}
-          aria-label="Close"
-        >×</button>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <!-- Quick-equip: auto-picks highest-grade unequipped items. Subtle
+               button, fires the action on tap with a confirming toast. -->
+          <button
+            class="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
+            style="background: rgba(240,192,64,0.10); border: 1px solid rgba(240,192,64,0.32); color: #f0c040; cursor: pointer;"
+            onclick={() => quickEquip(expandedEntry!.id)}
+            data-fx="big"
+            title="Auto-equip the best available gear from your inventory"
+          >
+            <span class="material-symbols-outlined" style="font-size: 13px; font-variation-settings: 'FILL' 1;">auto_fix_high</span>
+            Quick-Equip
+          </button>
+          <button
+            class="text-xl font-bold"
+            style="background: none; border: none; cursor: pointer; color: var(--color-outline); line-height: 1;"
+            onclick={closeExpanded}
+            aria-label="Close"
+          >×</button>
+        </div>
       </div>
       <div class="p-4">
         <CharacterCard

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { StoryRosterEntry } from '$lib/story/types'
   import TierBadge from '../TierBadge.svelte'
+  import { powerRating, formatPower } from '$lib/story/powerRating'
 
   let { entry, onExpand, onSell, goldFrame = false }: {
     entry: StoryRosterEntry
@@ -95,8 +96,8 @@
     {entry.archetype}
   </p>
 
-  <!-- Level / power boost -->
-  <div class="flex items-center gap-2 mt-0.5">
+  <!-- Level / power boost + Power Rating headline -->
+  <div class="flex items-center gap-2 mt-0.5 flex-wrap">
     <span class="font-mono text-[10px]" style="color: var(--color-on-surface-variant);">
       Lv {entry.level ?? 1}{#if (entry.level ?? 1) >= 100} <span style="color: #f0c040;">MAX</span>{:else}/100{/if}
     </span>
@@ -106,6 +107,13 @@
         +{(entry.level - 1)}% Power
       </span>
     {/if}
+    <!-- Power Rating — single-number headline combining overall score, gear,
+         and level. Players can compare two roster characters at a glance. -->
+    <span class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded ml-auto"
+      style="background: rgba(240,192,64,0.12); border: 1px solid rgba(240,192,64,0.28); color: #f0c040;"
+      title="Power Rating — stats + gear + level combined">
+      PWR {formatPower(powerRating(entry))}
+    </span>
   </div>
 
   <!-- Equipped gear indicator -->

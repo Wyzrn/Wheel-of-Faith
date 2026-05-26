@@ -524,7 +524,7 @@
   {/if}
 </header>
 
-<div class="pt-20 px-4 w-full flex flex-col" style="max-width: 560px; margin: 0 auto; min-height: 100dvh; padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 96px)); contain: layout paint;">
+<div class="pt-20 px-4 w-full flex flex-col" style="max-width: 560px; margin: 0 auto; min-height: 100dvh; padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 96px)); contain: layout;">
 
   <!-- ══ Phase: pick ══════════════════════════════════════════════════════════ -->
   {#if phase === 'pick'}

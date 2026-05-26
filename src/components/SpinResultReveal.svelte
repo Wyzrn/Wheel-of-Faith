@@ -16,8 +16,10 @@
   import type { ElementType, ItemGrade } from '$lib/content/types'
   import type { TierGrade } from '$lib/game/scoreTier'
   import { normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
+  import { onMount, onDestroy } from 'svelte'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import type { ResolvedMeta } from '$lib/spinResultMeta'
+  import { settings } from '$lib/settings.svelte'
 
   let {
     result,
@@ -46,6 +48,46 @@
   let gradeInfo  = $derived(meta.grade ? ITEM_GRADE_INFO[meta.grade] : null)
   let displayTier = $derived(normalizeLegacyDisplayLabel(result.displayLabel) ?? result.tier)
   let hasBadgeRow = $derived(!!meta.element || !!gradeInfo)
+
+  // Auto-continue: when settings.autoContinueMs > 0, fire onContinue after that
+  // delay so users who've seen the cards can plow through fast. Cancellable
+  // by clicking Continue manually (the timer is cleared in onDestroy). The
+  // tutorial relies on the explicit Continue tap for pacing, so we skip
+  // auto-continue when the tutorial is showing a card (parents pass false).
+  let autoTimer: ReturnType<typeof setTimeout> | null = null
+  let countdown = $state(0)
+  let countdownInterval: ReturnType<typeof setInterval> | null = null
+
+  // Global keyboard shortcuts: Enter or Space advances the reveal; Escape also
+  // works as "dismiss/continue" since there's no destructive alternative on
+  // this panel. Cancelling the auto-continue timer feels right — the user is
+  // engaging.
+  function onKey(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
+      // Don't trigger if the user is typing into a focused input/textarea.
+      const t = e.target as HTMLElement | null
+      const tag = t?.tagName?.toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+      e.preventDefault()
+      onContinue()
+    }
+  }
+
+  onMount(() => {
+    if (settings.autoContinueMs > 0) {
+      countdown = settings.autoContinueMs
+      countdownInterval = setInterval(() => {
+        countdown = Math.max(0, countdown - 100)
+      }, 100)
+      autoTimer = setTimeout(() => onContinue(), settings.autoContinueMs)
+    }
+    if (typeof window !== 'undefined') window.addEventListener('keydown', onKey)
+  })
+  onDestroy(() => {
+    if (autoTimer) clearTimeout(autoTimer)
+    if (countdownInterval) clearInterval(countdownInterval)
+    if (typeof window !== 'undefined') window.removeEventListener('keydown', onKey)
+  })
 
   // Ability type → small icon + color
   function abilityIcon(t: string): string {
@@ -144,7 +186,7 @@
           style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;"
         >
           <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
-          <span>{continueLabel}</span>
+          <span>{continueLabel}{settings.autoContinueMs > 0 && countdown > 0 ? ` · ${Math.ceil(countdown / 1000)}s` : ""}</span>
           <span class="material-symbols-outlined leading-none" style="font-size: 16px; color: #1a0e00; font-variation-settings: 'FILL' 1;">arrow_circle_right</span>
         </button>
       </div>
@@ -207,7 +249,7 @@
         style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;"
       >
         <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
-        <span>{continueLabel}</span>
+        <span>{continueLabel}{settings.autoContinueMs > 0 && countdown > 0 ? ` · ${Math.ceil(countdown / 1000)}s` : ""}</span>
         <span class="material-symbols-outlined leading-none" style="font-size: 16px; color: #1a0e00; font-variation-settings: 'FILL' 1;">arrow_circle_right</span>
       </button>
     </div>

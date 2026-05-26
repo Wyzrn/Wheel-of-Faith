@@ -473,7 +473,7 @@
   }
 </script>
 
-<div class="flex flex-col items-center gap-5 w-full mx-auto select-none" style="contain: layout style paint;">
+<div class="flex flex-col items-center gap-5 w-full mx-auto select-none" style="contain: layout style;">
 
   <!-- Shake wrapper — GSAP applies translate() here during spin -->
   <div bind:this={shakeEl} class="flex justify-center w-full">

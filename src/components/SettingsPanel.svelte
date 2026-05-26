@@ -19,6 +19,16 @@
     { value: 99,   label: 'Instant', desc: 'Skip animation' },
   ]
 
+  // Auto-continue: how long the result reveal stays before auto-firing Continue.
+  // 0 = disabled (user must tap). Power users who've played many sessions usually
+  // want this on so they don't have to mash Continue 23 times per character.
+  const AUTO_CONTINUE_OPTIONS: { value: number; label: string; desc: string }[] = [
+    { value: 0,    label: 'Off',     desc: 'Tap to continue' },
+    { value: 1500, label: '1.5s',    desc: 'Brisk pace'      },
+    { value: 2500, label: '2.5s',    desc: 'Read each result'},
+    { value: 4000, label: '4s',      desc: 'Savor each one'  },
+  ]
+
   function toggle(key: 'soundEnabled' | 'effectsEnabled') {
     settings[key] = !settings[key]
     settings.save()
@@ -85,6 +95,26 @@
             class="speed-chip"
             style="background: {settings.spinSpeed === opt.value ? 'linear-gradient(135deg, #f0c040, #b88d00)' : 'linear-gradient(180deg, #13121c, #0c0b14)'}; color: {settings.spinSpeed === opt.value ? '#0d0d16' : '#9a907b'}; border-color: {settings.spinSpeed === opt.value ? '#ffdf97' : 'rgba(78,70,53,0.35)'}; box-shadow: {settings.spinSpeed === opt.value ? '0 3px 0 #796125, inset 0 1px 2px rgba(255,255,255,0.3)' : 'inset 1px 1px 0 rgba(255,223,150,0.06)'};"
           >{opt.label}</button>
+        {/each}
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ─ Auto-Continue ─ -->
+    <div>
+      <p class="text-sm font-semibold mb-1" style="color: #e4e1ee;">Auto-Continue</p>
+      <p class="text-xs mb-3" style="color: #9a907b;">Skip the Continue tap after each spin</p>
+      <div class="flex flex-col gap-1.5">
+        {#each AUTO_CONTINUE_OPTIONS as opt}
+          {@const active = settings.autoContinueMs === opt.value}
+          <button onclick={() => { settings.autoContinueMs = opt.value; settings.save() }}
+            class="battle-speed-chip"
+            style="background: {active ? 'linear-gradient(180deg, rgba(240,192,64,0.14), rgba(240,192,64,0.06))' : 'linear-gradient(180deg, #13121c, #0c0b14)'}; border-color: {active ? '#f0c040' : 'rgba(78,70,53,0.3)'}; box-shadow: {active ? '0 0 12px rgba(240,192,64,0.12), inset 1px 1px 0 rgba(255,223,150,0.08)' : 'inset 1px 1px 0 rgba(255,223,150,0.05)'};"
+          >
+            <span style="font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 700; color: {active ? '#f0c040' : '#9a907b'};">{opt.label}</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: {active ? '#d4a020' : '#4e4635'};">{opt.desc}</span>
+          </button>
         {/each}
       </div>
     </div>

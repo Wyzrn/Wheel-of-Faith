@@ -340,7 +340,19 @@
         {/if}
 
         {#if welcomePage < WELCOME_PAGES - 1}
+          <!-- "Played before" express path — on page 0 only, prominent next to Next so
+               returning players see it instantly. Skips the 6-page intro and starts the
+               game with the contextual in-game tutorial cards intact. -->
+          {#if welcomePage === 0}
+            <button onclick={() => { onSkip(); onStartGame() }}
+              class="px-3 py-2.5 rounded-lg text-xs font-bold transition-all"
+              style="font-family: 'Cinzel', serif; letter-spacing: 0.08em; background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.32); color: #a78bfa; cursor: pointer; white-space: nowrap;"
+              title="Skip the intro — I've played before">
+              Played before
+            </button>
+          {/if}
           <button onclick={() => welcomePage++}
+            data-fx="big"
             class="metal-stamp-gold flex-1 py-2.5 rounded-lg relative text-xs font-bold"
             style="font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;">
             <div class="l-bracket" style="color: rgba(255,255,255,0.2);"></div>
@@ -348,6 +360,7 @@
           </button>
         {:else}
           <button onclick={() => { onStartGame() }}
+            data-fx="big"
             class="metal-stamp-gold flex-1 py-2.5 rounded-lg relative text-xs font-bold"
             style="font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;">
             <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>

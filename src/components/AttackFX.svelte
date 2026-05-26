@@ -803,11 +803,24 @@
   justify-content: center;
   pointer-events: none;
   filter: drop-shadow(0 0 8px var(--c));
-  /* contain paint+layout so child animations don't trigger reflows in sibling battle UI */
-  contain: layout style paint;
+  /* contain layout+style so child animations don't trigger reflows in sibling
+     battle UI. NOTE: 'paint' is intentionally omitted — it would clip flying
+     particles to the .fx-root box, which is exactly the cutoff bug we want
+     to avoid. The trade is a little extra paint area; particles already self-
+     contain because they animate within the SVG viewport. */
+  contain: layout style;
   will-change: transform, opacity;
+  /* Belt-and-suspenders: explicitly let children render outside our box.
+     Some parent panels use overflow:hidden for rounded corners and that
+     clipping is the actual visual culprit for the "cutoff VFX" complaint. */
+  overflow: visible;
 }
-.fx-svg { width: 100%; height: 100%; }
+.fx-svg {
+  width: 100%; height: 100%;
+  /* SVG defaults to overflow:hidden on its inner box; setting visible lets
+     elements drawn beyond viewBox (slashes, shockwaves, sparks) actually paint. */
+  overflow: visible;
+}
 
 /* ── Particle sprite layer ─────────────────────────────────────────── */
 .particles {

@@ -51,18 +51,50 @@
     [...spinHistory].sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()).slice(0, 10)
   )
 
-  // Stats derived from local history
-  let totalSpins = $derived(spinHistory.reduce((s, e) => s + e.spinCount, 0))
-  let bestTier = $derived(spinHistory.length
-    ? spinHistory.reduce((best, e) => e.overallScore > best.overallScore ? e : best, spinHistory[0]).overallTier
-    : null)
-  function calcMostCommonRace(history: SpinHistoryEntry[]): string | null {
+  // Stats derived from local spin history. Computed via a single helper so the
+  // expensive O(n) pass over the full history happens once per change.
+  function calcCommonest(history: SpinHistoryEntry[], pick: (e: SpinHistoryEntry) => string): string | null {
     if (!history.length) return null
     const counts: Record<string, number> = {}
-    for (const e of history) counts[e.race] = (counts[e.race] ?? 0) + 1
+    for (const e of history) counts[pick(e)] = (counts[pick(e)] ?? 0) + 1
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
   }
-  let mostCommonRace = $derived(calcMostCommonRace(spinHistory))
+
+  // Lifetime stat aggregates — designed to surface "you've done this many runs"
+  // numbers that make the player feel their time is being measured (hospitality:
+  // celebrate the journey, not just the destination).
+  let totalSessions = $derived(spinHistory.length)
+  let totalSpins    = $derived(spinHistory.reduce((s, e) => s + e.spinCount, 0))
+  let avgScore = $derived(spinHistory.length
+    ? spinHistory.reduce((s, e) => s + (e.overallScore ?? 0), 0) / spinHistory.length
+    : 0)
+  let bestEntry = $derived(spinHistory.length
+    ? spinHistory.reduce((best, e) => e.overallScore > best.overallScore ? e : best, spinHistory[0])
+    : null)
+  let bestTier = $derived(bestEntry?.overallTier ?? null)
+  let mostCommonRace      = $derived(calcCommonest(spinHistory, e => e.race))
+  let mostCommonArchetype = $derived(calcCommonest(spinHistory, e => e.archetype))
+
+  // Rivals win-rate (computed live from auth — only meaningful with sessions)
+  let totalRivalsGames = $derived((auth.user?.rivalsWins ?? 0) + (auth.user?.rivalsLosses ?? 0))
+  let rivalsWinRate    = $derived(totalRivalsGames > 0
+    ? Math.round((auth.user!.rivalsWins / totalRivalsGames) * 100)
+    : null)
+
+  // Top-tier rolls — chase points. Counts S+ and above as "elite", SSS+ as "mythic".
+  const ELITE_TIERS = new Set([
+    'S','S+','SS-','SS','SS+','SSS-','SSS','SSS+',
+    'Z-','Z','Z+','ZZ-','ZZ','ZZ+','ZZZ-','ZZZ','ZZZ+',
+    'Celestial-','Celestial','Celestial+','Godly-','Godly',
+    'Primordial','Primordial+','Absolute-','Absolute','Absolute+',
+  ])
+  const MYTHIC_TIERS = new Set([
+    'SSS-','SSS','SSS+','Z-','Z','Z+','ZZ-','ZZ','ZZ+','ZZZ-','ZZZ','ZZZ+',
+    'Celestial-','Celestial','Celestial+','Godly-','Godly',
+    'Primordial','Primordial+','Absolute-','Absolute','Absolute+',
+  ])
+  let eliteRolls  = $derived(spinHistory.filter(e => ELITE_TIERS.has(e.overallTier)).length)
+  let mythicRolls = $derived(spinHistory.filter(e => MYTHIC_TIERS.has(e.overallTier)).length)
 
   const TIER_COLORS: Record<string, string> = {
     'F-':'#555','F':'#666','F+':'#777','E-':'#6b7280','E':'#9ca3af','E+':'#d1d5db',
@@ -184,7 +216,48 @@
             </span>
           </div>
 
-          <!-- Lifetime summary chips -->
+          <!-- Lifetime stats grid — celebrates the journey, not just the result.
+               Built from local spin history + auth rivals counters. -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-5">
+            <!-- Sessions -->
+            <div class="obsidian-slab rounded-xl px-3 py-2.5">
+              <p class="text-[9px] tracking-[0.18em] uppercase mb-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Sessions</p>
+              <p class="font-black" style="font-family: 'Cinzel', serif; font-size: 1.25rem; color: #ffdf96;">{totalSessions}</p>
+            </div>
+            <!-- Total spins -->
+            <div class="obsidian-slab rounded-xl px-3 py-2.5">
+              <p class="text-[9px] tracking-[0.18em] uppercase mb-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Total Spins</p>
+              <p class="font-black" style="font-family: 'Cinzel', serif; font-size: 1.25rem; color: #ffdf96;">{totalSpins.toLocaleString()}</p>
+            </div>
+            <!-- Avg score -->
+            <div class="obsidian-slab rounded-xl px-3 py-2.5">
+              <p class="text-[9px] tracking-[0.18em] uppercase mb-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Avg Score</p>
+              <p class="font-black" style="font-family: 'Cinzel', serif; font-size: 1.25rem; color: #ffdf96;">{avgScore.toFixed(1)}</p>
+            </div>
+            <!-- Elite rolls -->
+            {#if eliteRolls > 0}
+              <div class="obsidian-slab rounded-xl px-3 py-2.5" style="border-color: rgba(244,113,113,0.35);">
+                <p class="text-[9px] tracking-[0.18em] uppercase mb-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">S+ Rolls</p>
+                <p class="font-black" style="font-family: 'Cinzel', serif; font-size: 1.25rem; color: #f87171;">{eliteRolls}</p>
+              </div>
+            {/if}
+            <!-- Mythic rolls -->
+            {#if mythicRolls > 0}
+              <div class="obsidian-slab rounded-xl px-3 py-2.5" style="border-color: rgba(167,139,250,0.35);">
+                <p class="text-[9px] tracking-[0.18em] uppercase mb-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">SSS+ Rolls</p>
+                <p class="font-black" style="font-family: 'Cinzel', serif; font-size: 1.25rem; color: #a78bfa;">{mythicRolls}</p>
+              </div>
+            {/if}
+            <!-- Rivals win rate (if any games played) -->
+            {#if rivalsWinRate !== null}
+              <div class="obsidian-slab rounded-xl px-3 py-2.5">
+                <p class="text-[9px] tracking-[0.18em] uppercase mb-0.5" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Rivals Win %</p>
+                <p class="font-black" style="font-family: 'Cinzel', serif; font-size: 1.25rem; color: {rivalsWinRate >= 50 ? '#34d399' : '#9a907b'};">{rivalsWinRate}%</p>
+              </div>
+            {/if}
+          </div>
+
+          <!-- Tag chips for "best tier" and "favorite race/archetype" -->
           <div class="flex flex-wrap gap-2 mb-5">
             {#if bestTier}
               {@const tc = TIER_COLORS[bestTier] ?? '#9a907b'}
@@ -197,6 +270,12 @@
               <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style="background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.2);">
                 <span class="material-symbols-outlined text-xs" style="color: #f0c040; font-variation-settings: 'FILL' 1; font-size: 13px;">diversity_3</span>
                 <span class="text-[10px] tracking-[0.12em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Fav race: <span style="color: #ffdf96;">{mostCommonRace}</span></span>
+              </div>
+            {/if}
+            {#if mostCommonArchetype}
+              <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style="background: rgba(167,139,250,0.07); border: 1px solid rgba(167,139,250,0.2);">
+                <span class="material-symbols-outlined text-xs" style="color: #a78bfa; font-variation-settings: 'FILL' 1; font-size: 13px;">military_tech</span>
+                <span class="text-[10px] tracking-[0.12em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Fav class: <span style="color: #ffdf96;">{mostCommonArchetype}</span></span>
               </div>
             {/if}
           </div>

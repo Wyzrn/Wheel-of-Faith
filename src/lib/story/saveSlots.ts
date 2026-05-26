@@ -1060,6 +1060,65 @@ export function useStatCrystal(
 }
 
 /** Equips an opened item to a roster character, appending it to the character's equipped list. */
+// ── Quick-equip helper ──────────────────────────────────────────────────────
+// Picks the single highest-grade opened item of each slot type (weapon / armor /
+// power) and equips it to the target character. Already-equipped items are not
+// re-equipped. Returns the new slot + a summary of what was equipped so the
+// caller can show a meaningful toast ("Equipped 3 items: Mythril Blade [B], …").
+export interface QuickEquipResult {
+  slot: StorySaveSlot
+  equipped: { type: 'weapon' | 'armor' | 'power'; name: string; grade: string }[]
+}
+
+export function quickEquipBestGear(
+  slot: StorySaveSlot,
+  characterId: string,
+): QuickEquipResult | 'char_not_found' {
+  const char = slot.roster.find(r => r.id === characterId)
+  if (!char) return 'char_not_found'
+
+  // Grade tier order — higher index = better. Keep in sync with content/elements.GRADE_ORDER.
+  const GRADE_RANK: Record<string, number> = { F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, SS: 7, SSS: 8, God: 9 }
+  const rankOf = (g: string): number => GRADE_RANK[g] ?? 0
+
+  // Pull the single best opened item from each pool that isn't already equipped.
+  function bestOf(
+    pool: OpenedItem[],
+    alreadyEquipped: { id: string }[] | undefined,
+  ): OpenedItem | null {
+    const equippedIds = new Set((alreadyEquipped ?? []).map(e => e.id))
+    let best: OpenedItem | null = null
+    for (const item of pool) {
+      if (equippedIds.has(item.id)) continue
+      if (!best || rankOf(item.grade) > rankOf(best.grade)) best = item
+    }
+    return best
+  }
+
+  const bestWeapon = bestOf(slot.inventory.openedWeapons, char.equippedWeapons)
+  const bestArmor  = bestOf(slot.inventory.openedArmors,  char.equippedArmors)
+  const bestPower  = bestOf(slot.inventory.openedPowers,  char.equippedPowers)
+
+  if (!bestWeapon && !bestArmor && !bestPower) {
+    // Hospitality: don't silently no-op. Surface this back to the UI so it
+    // can toast "nothing better to equip" instead of just doing nothing.
+    return { slot, equipped: [] }
+  }
+
+  // Fold each pick into the slot one at a time using the existing equip helper
+  // (which handles immutable update + inventory removal correctly).
+  let next: StorySaveSlot = slot
+  const equipped: QuickEquipResult['equipped'] = []
+  for (const [type, item] of [['weapon', bestWeapon], ['armor', bestArmor], ['power', bestPower]] as const) {
+    if (!item) continue
+    const result = equipOpenedItem(next, characterId, item.id, type)
+    if (typeof result === 'string') continue
+    next = result
+    equipped.push({ type, name: item.name, grade: item.grade })
+  }
+  return { slot: next, equipped }
+}
+
 export function equipOpenedItem(
   slot: StorySaveSlot,
   characterId: string,

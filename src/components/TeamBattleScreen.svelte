@@ -977,8 +977,10 @@
     position: relative;
     isolation: isolate;
     overflow-x: hidden;
-    /* Contain paint+layout so attack FX animations don't trigger reflows up the tree */
-    contain: layout paint;
+    /* Contain layout only — 'paint' would clip flying particles to the
+       .battle-root box and chop their tail off. We pay a little extra paint
+       area but FX animations no longer look cut off at the panel edges. */
+    contain: layout;
     /* Stone-floor grid: fine rune lines + cardinal vein */
     background-image:
       radial-gradient(ellipse 70% 30% at 50% 0%,   rgba(200,136,42,0.08) 0%, transparent 70%),
