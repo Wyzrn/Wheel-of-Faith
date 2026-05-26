@@ -14,6 +14,8 @@
   } from '$lib/story/saveSlots'
   import type { StoryRosterEntry, StoryTeam } from '$lib/story/types'
   import AttackFX from '../AttackFX.svelte'
+  import DamageIndicator from '../DamageIndicator.svelte'
+  import type { DamageEvent } from '$lib/game/damageEvent'
   import { settings } from '$lib/settings.svelte'
   import { saveReplay } from '$lib/battleReplay'
   import { deriveStatusBadges } from '$lib/game/battleStatuses'
@@ -171,36 +173,52 @@
     Neutral:   { type: 'slash',     color: '#f87171' },
   }
 
-  // Per-attacker origin lookup. Tries to find the specific character's card
-  // element (so VFX shoots from THAT character, not the team column midpoint)
-  // and falls back to the team column rect → wrapper rect if the name match
-  // misses. This is what the user means by "shoot out from each attacker".
+  // Origin resolution — three-stage fallback so VFX always paints inside the
+  // battle column, never at the viewport edge.
+  //   1. Specific character card (from trackCharEl Map keyed by name)
+  //   2. Team column mid (t1PanelEl / t2PanelEl)
+  //   3. Battle wrapper rect (always available once mounted)
+  //
+  // Crucially every step returns a valid {x,y} so showAnim() always passes
+  // an `origin` and the template's viewport-relative fallback never fires.
   function getCharOriginByName(name: string | null): { x: number; y: number } | undefined {
     if (!name) return undefined
     const el = t1CharEls.get(name) ?? t2CharEls.get(name)
     if (!el) return undefined
     const r = el.getBoundingClientRect()
+    if (r.width === 0 && r.height === 0) return undefined  // element not laid out yet
     return {
       x: r.left + r.width / 2,
       y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80)),
     }
   }
 
-  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
-    // Center anims (system events / AOE) anchor on the battle wrapper midpoint.
-    if (dir === 'center') {
-      if (!battleWrapperEl) return undefined
-      const wr = battleWrapperEl.getBoundingClientRect()
-      const cx = wr.left + wr.width / 2
-      const cy = Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80))
-      return { x: cx, y: cy }
+  function getWrapperOriginForDir(dir: AnimDir): { x: number; y: number } | undefined {
+    if (!battleWrapperEl) return undefined
+    const wr = battleWrapperEl.getBoundingClientRect()
+    if (wr.width === 0) return undefined
+    const xRel = dir === 'rtl' ? 0.75 : dir === 'ltr' ? 0.25 : 0.5
+    return {
+      x: wr.left + wr.width * xRel,
+      y: Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80)),
     }
+  }
+
+  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
+    // Center anims always go to the wrapper mid.
+    if (dir === 'center') return getWrapperOriginForDir('center')
     const el = dir === 'ltr' ? t1PanelEl : dir === 'rtl' ? t2PanelEl : null
-    if (!el) return undefined
-    const r = el.getBoundingClientRect()
-    const x = r.left + r.width / 2
-    const y = Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65))
-    return { x, y }
+    if (el) {
+      const r = el.getBoundingClientRect()
+      if (r.width > 0) {
+        return {
+          x: r.left + r.width / 2,
+          y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65)),
+        }
+      }
+    }
+    // Panel refs missing / not laid out → fall back to wrapper-relative.
+    return getWrapperOriginForDir(dir)
   }
 
   // Extract the attacker's name from a log line. Battle log lines start with
@@ -233,6 +251,71 @@
   let statusByName = $derived(
     deriveStatusBadges(logLines, [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)])
   )
+
+  // Damage indicator queue — floating numbers above target characters.
+  let damageEvents = $state<DamageEvent[]>([])
+  let dmgIdCounter = 0
+  function emitDamage(targetName: string, value: number, kind: DamageEvent['kind']) {
+    const el = t1CharEls.get(targetName) ?? t2CharEls.get(targetName)
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    if (r.width === 0) return
+    const ev: DamageEvent = {
+      id: ++dmgIdCounter,
+      x: r.left + r.width / 2,
+      y: r.top + r.height * 0.3,
+      value, kind,
+    }
+    damageEvents = [...damageEvents.slice(-29), ev]
+    setTimeout(() => { damageEvents = damageEvents.filter(d => d.id !== ev.id) }, 1400)
+  }
+
+  function parseDamageNumber(s: string): number {
+    const cleaned = s.replace(/,/g, '').toUpperCase()
+    if (cleaned.endsWith('K')) return Math.round(parseFloat(cleaned) * 1_000)
+    if (cleaned.endsWith('M')) return Math.round(parseFloat(cleaned) * 1_000_000)
+    if (cleaned.endsWith('B')) return Math.round(parseFloat(cleaned) * 1_000_000_000)
+    return Math.round(parseFloat(cleaned) || 0)
+  }
+
+  // Parse a log line for damage / heal / crit / miss / shield, pop the
+  // indicator over the target. Matches the strings produced by lib/game/battle.
+  function maybeEmitDamageFromLine(line: string) {
+    if (!settings.effectsEnabled) return
+    const allNames = [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)]
+    const dmgMatch = line.match(/for\s+([\d.,]+[KMB]?)\s+damage!?/i)
+    if (dmgMatch) {
+      const preBoundary = line.lastIndexOf(' for ')
+      const head = preBoundary > 0 ? line.slice(0, preBoundary) : line
+      let target: string | null = null
+      let lastIdx = -1
+      for (const n of allNames) {
+        const i = head.lastIndexOf(n)
+        if (i > lastIdx) { lastIdx = i; target = n }
+      }
+      if (target) {
+        const isCrit = /CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)
+        emitDamage(target, parseDamageNumber(dmgMatch[1]), isCrit ? 'crit' : 'damage')
+        return
+      }
+    }
+    const healMatch = line.match(/(?:restores|recovers|mends)\s+([\d.,]+[KMB]?)\s*HP/i)
+    if (healMatch) {
+      for (const n of allNames) {
+        if (line.startsWith(n)) { emitDamage(n, parseDamageNumber(healMatch[1]), 'heal'); return }
+      }
+    }
+    if (/evades|dodges|misses/i.test(line)) {
+      for (const n of allNames) {
+        if (line.includes(n)) { emitDamage(n, 0, 'miss'); return }
+      }
+    }
+    if (/barrier forms around|defensive stance|bracing/i.test(line)) {
+      for (const n of allNames) {
+        if (line.includes(n)) { emitDamage(n, 0, 'shield'); return }
+      }
+    }
+  }
   let t2HpPct = $derived(t2Chars.map((c, i) => c.maxHp > 0 ? Math.max(0, (t2DispHp[i] ?? 0) / c.maxHp) : 0))
 
   // Teams available for battle
@@ -320,6 +403,8 @@
     const [head, ...rest] = lines
     logLines = [...logLines, head]
     scrollLog()
+    // Damage indicator pops alongside the log line — feels live.
+    maybeEmitDamageFromLine(head)
     const anim = detectAnim(head)
     if (anim) {
       const fx = currentFxEvents[fxEventIdx]
@@ -812,6 +897,9 @@
           </div>
         {/key}
       {/if}
+
+      <!-- Floating damage indicators — fixed-position layer above all chars. -->
+      <DamageIndicator events={damageEvents} />
     </div>
 
     <!-- VS splash (intro) -->

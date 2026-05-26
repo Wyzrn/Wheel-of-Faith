@@ -27,8 +27,16 @@ export interface IClan extends Document {
   minWinsRequired: number                      // analogous to "required trophies" in CoC
   maxMembers: number
   clanXp: number                               // accumulated; used to derive clanLevel
+  // Embedded message wall — capped at MAX_MESSAGES so the clan doc stays
+  // bounded. Older messages drop off as new ones arrive. Members only.
+  // System messages (kind='system') carry challenge codes auto-posted when
+  // a member taps "Challenge".
+  messages: { authorId: mongoose.Types.ObjectId; authorUsername: string; text: string; sentAt: Date; kind?: 'chat' | 'system' }[]
   createdAt: Date
 }
+
+export const MAX_CLAN_MESSAGES = 100
+export const CLAN_MESSAGE_MAX_LENGTH = 240
 
 const ClanSchema = new Schema<IClan>({
   name:           { type: String, required: true, unique: true, trim: true, minlength: 3, maxlength: 32 },
@@ -45,6 +53,13 @@ const ClanSchema = new Schema<IClan>({
   minWinsRequired: { type: Number, default: 0, min: 0 },
   maxMembers:     { type: Number, default: 50, min: 2, max: 50 },
   clanXp:         { type: Number, default: 0 },
+  messages:       { type: [{
+    authorId:       { type: Schema.Types.ObjectId, ref: 'User' },
+    authorUsername: { type: String, maxlength: 24 },
+    text:           { type: String, maxlength: CLAN_MESSAGE_MAX_LENGTH },
+    sentAt:         { type: Date, default: Date.now },
+    kind:           { type: String, enum: ['chat', 'system'], default: 'chat' },
+  }], default: [] },
   createdAt:      { type: Date, default: Date.now },
 })
 

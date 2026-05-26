@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy, tick } from 'svelte'
+  import { goto } from '$app/navigation'
   import { auth } from '$lib/stores/auth.svelte'
   import { toast } from '$lib/toast.svelte'
 
   type ClanRole = 'leader' | 'coLeader' | 'elder' | 'member' | 'none'
   type ClanMember = { _id: string; username: string; rivalsWins: number; gamesPlayed?: number; role: ClanRole }
   type JoinRequest = { userId: string; username: string; rivalsWins: number; requestedAt: string }
+  type ClanMessage = { _id?: string; authorId: string; authorUsername: string; text: string; sentAt: string; kind?: 'chat' | 'system' }
   type BrowseClan = {
     _id: string; name: string; tag: string; description: string; motd: string; badge: string
     joinType: 'open' | 'invite' | 'closed'; minWinsRequired: number; maxMembers: number
@@ -14,7 +16,15 @@
   type MyClan = BrowseClan & { members: ClanMember[]; role: ClanRole; joinRequests: JoinRequest[]; leaderId: string }
 
   // ── State ──────────────────────────────────────────────────────────────────
-  let view = $state<'mine' | 'browse' | 'create' | 'leaderboard' | 'requests' | 'settings'>('mine')
+  let view = $state<'mine' | 'browse' | 'create' | 'leaderboard' | 'requests' | 'settings' | 'chat'>('mine')
+
+  // Chat state
+  let chatMessages = $state<ClanMessage[]>([])
+  let chatInput    = $state('')
+  let chatSending  = $state(false)
+  let chatLoading  = $state(false)
+  let chatEl: HTMLDivElement | null = $state(null)
+  let chatPoll: ReturnType<typeof setInterval> | null = null
   let myClan = $state<MyClan | null>(null)
   let clans = $state<BrowseClan[]>([])
   let leaderboard = $state<BrowseClan[]>([])
@@ -134,6 +144,68 @@
     } else {
       await loadMyClan(); view = 'mine'; showToast('ok', `Joined ${c.name}`)
     }
+  }
+
+  // ── Chat ──────────────────────────────────────────────────────────────────
+  async function loadChat() {
+    if (!myClan) return
+    chatLoading = true
+    try {
+      const res = await fetch(`/api/clans/${myClan._id}/messages`, { credentials: 'include' })
+      if (res.ok) {
+        const d = await res.json()
+        chatMessages = d.messages ?? []
+        await tick()
+        if (chatEl) chatEl.scrollTop = chatEl.scrollHeight
+      }
+    } finally { chatLoading = false }
+  }
+  async function sendChat() {
+    if (!myClan || !chatInput.trim() || chatSending) return
+    chatSending = true
+    const text = chatInput.trim().slice(0, 240)
+    try {
+      const res = await fetch(`/api/clans/${myClan._id}/messages`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      })
+      if (res.ok) {
+        chatInput = ''
+        await loadChat()
+      } else {
+        const d = await res.json().catch(() => ({}))
+        toast.error(d.error ?? 'Could not send message')
+      }
+    } finally { chatSending = false }
+  }
+  function openChat() {
+    view = 'chat'
+    loadChat()
+    // Poll every 8s while the chat is open — light enough not to hammer the
+    // server, fast enough to feel like a message wall. Stops on view change.
+    if (chatPoll) clearInterval(chatPoll)
+    chatPoll = setInterval(loadChat, 8000)
+  }
+  $effect(() => {
+    if (view !== 'chat' && chatPoll) { clearInterval(chatPoll); chatPoll = null }
+  })
+  onDestroy(() => { if (chatPoll) clearInterval(chatPoll) })
+
+  // Challenge a clan member — creates a Rivals room and auto-posts the join
+  // code to clan chat as a system message so other members can drop in.
+  async function challengeMember(memberId: string, memberName: string) {
+    if (!myClan) return
+    // Open Rivals page with a flag — the rivals page will create-room +
+    // post the code back to clan chat once the room exists.
+    try {
+      sessionStorage.setItem('wof_clan_challenge', JSON.stringify({
+        clanId: myClan._id,
+        targetUsername: memberName,
+      }))
+    } catch { /* ignore */ }
+    toast.success(`Challenging ${memberName}…`, { detail: 'Share the room code in chat once it appears.' })
+    goto('/rivals?challenge=create')
   }
 
   async function leaveClan() {
@@ -302,8 +374,12 @@
             <span class="font-mono text-xs font-bold" style="color: {ROLE_META[myClan.role].color};">{ROLE_META[myClan.role].label}</span>
           </div>
 
-          <!-- Action row: settings / requests (for elder+) -->
+          <!-- Action row: chat / settings / requests -->
           <div class="flex gap-2 mb-3 flex-wrap">
+            <button onclick={openChat} data-fx="big" class="text-xs px-3 py-1.5 rounded-lg font-mono font-bold" style="background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.30); color: #34d399;">
+              <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: -2px;">chat</span>
+              Chat
+            </button>
             {#if canEdit}
               <button onclick={() => view = 'settings'} data-fx="big" class="text-xs px-3 py-1.5 rounded-lg font-mono font-bold" style="background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.30); color: #a78bfa;">
                 <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: -2px;">tune</span>
@@ -327,25 +403,43 @@
                 <span class="material-symbols-outlined" style="font-size: 14px; color: {meta.color}; font-variation-settings: 'FILL' 1;">{meta.icon}</span>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="font-mono text-xs truncate" style="color: #e4e1ee;">{m.username}</span>
+                    <!-- Member name links to their public profile (helps team-up
+                         decisions before challenging). -->
+                    <a href={`/users/${encodeURIComponent(m.username)}`}
+                      class="font-mono text-xs truncate"
+                      style="color: #e4e1ee; text-decoration: none;"
+                      onclick={(e) => e.stopPropagation()}>{m.username}</a>
                     <span class="font-mono text-[9px] px-1 rounded" style="background: {meta.color}1f; color: {meta.color};">{meta.label}</span>
                   </div>
                   <span class="font-mono text-[10px]" style="color: #4e4635;">{m.rivalsWins}W</span>
                 </div>
-                <!-- Management buttons (only for elder+ acting on lower-rank) -->
-                {#if canManageMembers && m._id !== auth.user?.id}
+                <!-- Action buttons row — Challenge always shown (if not self),
+                     management buttons gated on role. -->
+                {#if m._id !== auth.user?.id}
                   <div class="flex gap-1">
-                    {#if isLeader && m.role === 'coLeader'}
-                      <button onclick={() => transferLeadership(m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.25); color: #f0c040;" title="Transfer leadership">👑</button>
-                    {/if}
-                    {#if isLeader && (m.role === 'member' || m.role === 'elder')}
-                      <button onclick={() => memberAction('promote', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25); color: #34d399;" title="Promote">↑</button>
-                    {/if}
-                    {#if isLeader && (m.role === 'coLeader' || m.role === 'elder')}
-                      <button onclick={() => memberAction('demote', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa;" title="Demote">↓</button>
-                    {/if}
-                    {#if (myClan.role === 'leader' && m.role !== 'leader') || (myClan.role === 'coLeader' && (m.role === 'elder' || m.role === 'member')) || (myClan.role === 'elder' && m.role === 'member')}
-                      <button onclick={() => memberAction('kick', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #f87171;" title="Kick">×</button>
+                    <!-- Challenge: opens Rivals page in create-room mode. The
+                         player then shares the room code with the target via
+                         clan chat. -->
+                    <button onclick={() => challengeMember(m._id, m.username)}
+                      data-fx="big"
+                      class="text-[10px] px-2 py-1 rounded font-mono font-bold"
+                      style="background: rgba(244,113,113,0.10); border: 1px solid rgba(244,113,113,0.32); color: #f87171;"
+                      title="Challenge {m.username} to a Rivals battle">
+                      ⚔
+                    </button>
+                    {#if canManageMembers}
+                      {#if isLeader && m.role === 'coLeader'}
+                        <button onclick={() => transferLeadership(m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.25); color: #f0c040;" title="Transfer leadership">👑</button>
+                      {/if}
+                      {#if isLeader && (m.role === 'member' || m.role === 'elder')}
+                        <button onclick={() => memberAction('promote', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25); color: #34d399;" title="Promote">↑</button>
+                      {/if}
+                      {#if isLeader && (m.role === 'coLeader' || m.role === 'elder')}
+                        <button onclick={() => memberAction('demote', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa;" title="Demote">↓</button>
+                      {/if}
+                      {#if (myClan.role === 'leader' && m.role !== 'leader') || (myClan.role === 'coLeader' && (m.role === 'elder' || m.role === 'member')) || (myClan.role === 'elder' && m.role === 'member')}
+                        <button onclick={() => memberAction('kick', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #f87171;" title="Kick">×</button>
+                      {/if}
                     {/if}
                   </div>
                 {/if}
@@ -465,7 +559,11 @@
       <div class="flex flex-col gap-2">
         {#each clans as clan}
           {@const jt = JOIN_META[clan.joinType]}
-          <div class="rounded-xl px-3 py-3 flex items-center gap-3" style="background: linear-gradient(180deg, #13121c, #0c0b14); border: 1px solid rgba(78,70,53,0.3);">
+          <!-- Clan tile is now a link to /clans/[id]. Join action moved to
+               the public clan page so the click intent stays predictable. -->
+          <a href={`/clans/${clan._id}`} data-fx="big"
+            class="rounded-xl px-3 py-3 flex items-center gap-3 transition-all active:scale-98"
+            style="background: linear-gradient(180deg, #13121c, #0c0b14); border: 1px solid rgba(78,70,53,0.3); text-decoration: none;">
             <div class="shrink-0 flex items-center justify-center rounded-lg" style="width: 38px; height: 38px; background: linear-gradient(135deg, rgba(240,192,64,0.10), rgba(240,192,64,0.03)); border: 1px solid rgba(240,192,64,0.18); font-size: 18px;">{clan.badge || '⚔'}</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-1.5 flex-wrap">
@@ -480,15 +578,8 @@
                 {/if}
               </div>
             </div>
-            {#if !myClan && clan.joinType !== 'closed'}
-              <button onclick={() => joinClan(clan)} disabled={actionPending === clan._id || clan.memberCount >= clan.maxMembers}
-                data-fx="big"
-                class="px-3 py-1.5 rounded-lg font-mono text-xs font-bold shrink-0 disabled:opacity-40"
-                style="background: {clan.joinType === 'invite' ? 'rgba(240,192,64,0.10)' : 'rgba(52,211,153,0.10)'}; border: 1px solid {clan.joinType === 'invite' ? 'rgba(240,192,64,0.30)' : 'rgba(52,211,153,0.30)'}; color: {clan.joinType === 'invite' ? '#f0c040' : '#34d399'};">
-                {actionPending === clan._id ? '…' : clan.memberCount >= clan.maxMembers ? 'Full' : clan.joinType === 'invite' ? 'Request' : 'Join'}
-              </button>
-            {/if}
-          </div>
+            <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #4e4635;">chevron_right</span>
+          </a>
         {:else}
           <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">No clans found.</p>
         {/each}
@@ -497,7 +588,10 @@
     {:else if view === 'leaderboard'}
       <div class="flex flex-col gap-2">
         {#each leaderboard as clan, i}
-          <div class="flex items-center gap-3 rounded-xl px-3 py-3" style="background: linear-gradient(180deg, #161520, #0c0b14); border: 1px solid rgba(167,139,250,0.1);">
+          <!-- Leaderboard tile → public clan page. -->
+          <a href={`/clans/${clan._id}`} data-fx="big"
+            class="flex items-center gap-3 rounded-xl px-3 py-3 transition-all active:scale-98"
+            style="background: linear-gradient(180deg, #161520, #0c0b14); border: 1px solid rgba(167,139,250,0.1); text-decoration: none;">
             <div class="shrink-0 w-8 flex items-center justify-center">
               {#if i < 3}<span style="font-size: 1.2rem;">{['🥇','🥈','🥉'][i]}</span>{:else}<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #4e4635; font-weight: 700;">#{i+1}</span>{/if}
             </div>
@@ -513,10 +607,64 @@
               <p class="font-black" style="font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: #a78bfa;">{clan.totalWins}</p>
               <p class="font-mono text-[10px]" style="color: #4e4635;">total wins</p>
             </div>
-          </div>
+          </a>
         {:else}
           <p class="text-center py-10 font-mono text-xs" style="color: #4e4635;">No clans yet. Be the first!</p>
         {/each}
+      </div>
+
+    {:else if view === 'chat' && myClan}
+      <!-- Clan chat — embedded message wall, polls every 8s while open. -->
+      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to clan</button>
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-outlined" style="font-size: 18px; color: #34d399; font-variation-settings: 'FILL' 1;">chat</span>
+        <h2 style="font-family: 'Cinzel', serif; font-size: 1.05rem; color: #ffdf96;">[{myClan.tag}] Chat</h2>
+        {#if chatLoading}<span class="font-mono text-[10px]" style="color: #4e4635;">syncing…</span>{/if}
+      </div>
+      <div bind:this={chatEl} class="rounded-xl px-4 py-3 mb-3" style="background: #0c0b14; border: 1px solid rgba(52,211,153,0.18); height: 52vh; max-height: 480px; overflow-y: auto; box-shadow: inset 0 2px 12px rgba(0,0,0,0.55);">
+        {#if chatMessages.length === 0}
+          <p class="text-sm text-center py-8" style="color: #4e4635; font-style: italic;">No messages yet. Say hello.</p>
+        {/if}
+        {#each chatMessages as msg, i}
+          {@const isSelf = msg.authorId === auth.user?.id}
+          {@const isSystem = msg.kind === 'system'}
+          {@const dt = new Date(msg.sentAt)}
+          {@const time = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {@const prevAuthor = i > 0 ? chatMessages[i - 1].authorId : null}
+          {@const showAuthor = prevAuthor !== msg.authorId || isSystem}
+          {#if isSystem}
+            <div class="flex justify-center my-2">
+              <p class="font-mono text-[10px] px-3 py-1 rounded-full" style="background: rgba(240,192,64,0.10); border: 1px solid rgba(240,192,64,0.25); color: #f0c040;">{msg.text}</p>
+            </div>
+          {:else}
+            <div class="mb-1 flex flex-col" style="align-items: {isSelf ? 'flex-end' : 'flex-start'};">
+              {#if showAuthor}
+                <p class="font-mono text-[10px] mb-0.5" style="color: {isSelf ? '#a78bfa' : '#48c8e0'};">
+                  {msg.authorUsername} <span style="color: #4e4635;">· {time}</span>
+                </p>
+              {/if}
+              <p class="rounded-2xl px-3 py-1.5 text-xs max-w-[80%] break-words"
+                style="background: {isSelf ? 'rgba(167,139,250,0.10)' : 'rgba(72,200,224,0.08)'}; border: 1px solid {isSelf ? 'rgba(167,139,250,0.25)' : 'rgba(72,200,224,0.2)'}; color: #e4e1ee;">
+                {msg.text}
+              </p>
+            </div>
+          {/if}
+        {/each}
+      </div>
+      <div class="flex gap-2">
+        <input
+          bind:value={chatInput}
+          onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat() } }}
+          maxlength={240}
+          placeholder="Message your clan…"
+          class="flex-1 px-3 py-2.5 rounded-lg font-mono text-sm"
+          style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); color: #e4e1ee; outline: none;"
+        />
+        <button onclick={sendChat} disabled={!chatInput.trim() || chatSending} data-fx="big"
+          class="px-4 py-2.5 rounded-lg font-mono text-xs font-bold disabled:opacity-40"
+          style="background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.32); color: #34d399; cursor: pointer;">
+          {chatSending ? '…' : 'Send'}
+        </button>
       </div>
 
     {:else if view === 'requests' && myClan}

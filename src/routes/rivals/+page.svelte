@@ -39,6 +39,10 @@
   type PendingChallenge = { challengerUsername: string; roomCode: string }
   let pendingChallenges = $state<PendingChallenge[]>([])
 
+  // Clan challenge — set when /clan navigates here with ?challenge=create
+  type PendingClanChallenge = { clanId: string; targetUsername: string }
+  let pendingClanChallenge = $state<PendingClanChallenge | null>(null)
+
   // Matchmaking timer
   let searchSeconds = $state(0)
   let searchTimer: ReturnType<typeof setInterval> | null = null
@@ -106,6 +110,21 @@
       joinCode = joinParam.toUpperCase()
       joinRoom()
     }
+
+    // Auto-create-room flow for clan challenges. /clan stores a context
+    // payload in sessionStorage and navigates here with ?challenge=create.
+    // Once the room is created (handleMessage type='room_created') we post
+    // the join code back into the originating clan's chat as a system msg.
+    if ($page.url.searchParams.get('challenge') === 'create') {
+      try {
+        const raw = sessionStorage.getItem('wof_clan_challenge')
+        if (raw) {
+          pendingClanChallenge = JSON.parse(raw)
+          sessionStorage.removeItem('wof_clan_challenge')
+        }
+      } catch { /* ignore */ }
+      createRoom()
+    }
   })
 
   onDestroy(() => {
@@ -138,6 +157,20 @@
         roomCode = msg.code as string
         isP1 = true
         phase = 'waiting'
+        // If this room was created via a clan challenge, auto-post the join
+        // code to clan chat so the target can drop in without a copy-paste.
+        if (pendingClanChallenge) {
+          const challenge = pendingClanChallenge
+          pendingClanChallenge = null
+          fetch(`/api/clans/${challenge.clanId}/messages`, {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              kind: 'system',
+              text: `⚔ ${auth.user?.username ?? 'Someone'} challenges ${challenge.targetUsername} — join code ${roomCode}`,
+            }),
+          }).catch(() => { /* don't block the room flow on a failed chat post */ })
+        }
         break
       case 'room_joined':
         roomCode = msg.code as string

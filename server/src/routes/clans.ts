@@ -4,7 +4,7 @@
 
 import type { FastifyInstance } from 'fastify'
 import mongoose from 'mongoose'
-import { Clan, clanLevelFromXp, clanRoleOf, canManage, type ClanRole } from '../models/Clan.js'
+import { Clan, clanLevelFromXp, clanRoleOf, canManage, MAX_CLAN_MESSAGES, CLAN_MESSAGE_MAX_LENGTH, type ClanRole } from '../models/Clan.js'
 import { User } from '../models/User.js'
 
 // Shape returned to the client. Computed fields (memberCount, level, totalWins,
@@ -335,6 +335,96 @@ export async function clanRoutes(app: FastifyInstance) {
     }
     await clan.save()
     reply.send({ ok: true })
+  })
+
+  // ── GET /clans/public/:id — public clan profile ────────────────────────────
+  // Anyone can hit this (no auth) — used by /clans/[id] route when clicking a
+  // clan tile in browse / leaderboard. Returns the clan with member usernames
+  // resolved but not sensitive bits (no join requests, no message log).
+  app.get('/clans/public/:id', {
+    config: { rateLimit: { max: 60, timeWindow: '1m' } },
+  }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    if (!mongoose.Types.ObjectId.isValid(id)) return reply.status(400).send({ error: 'invalid id' })
+    const clan = await Clan.findById(id).lean()
+    if (!clan) return reply.status(404).send({ error: 'clan not found' })
+
+    const members = await User.find({ _id: { $in: clan.memberIds } })
+      .select('username rivalsWins gamesPlayed')
+      .lean()
+    const tierOf = (uid: any) => {
+      const s = uid.toString()
+      if (clan.leaderId.toString() === s) return 0
+      if (clan.coLeaderIds.some((c: any) => c.toString() === s)) return 1
+      if (clan.elderIds.some((c: any) => c.toString() === s))    return 2
+      return 3
+    }
+    const enriched = members.map(m => ({
+      ...m, role: ['leader', 'coLeader', 'elder', 'member'][tierOf(m._id)],
+      _tier: tierOf(m._id),
+    }))
+    enriched.sort((a, b) => a._tier - b._tier || (b.rivalsWins ?? 0) - (a.rivalsWins ?? 0))
+    const totalWins = members.reduce((s, m) => s + (m.rivalsWins ?? 0), 0)
+
+    reply.send({
+      clan: {
+        _id: clan._id, name: clan.name, tag: clan.tag, description: clan.description, motd: clan.motd, badge: clan.badge,
+        joinType: clan.joinType, minWinsRequired: clan.minWinsRequired, maxMembers: clan.maxMembers,
+        memberCount: clan.memberIds.length, level: clanLevelFromXp(clan.clanXp ?? 0), clanXp: clan.clanXp ?? 0,
+        totalWins, createdAt: clan.createdAt,
+        members: enriched.map(({ _tier, ...rest }) => rest),
+      },
+    })
+  })
+
+  // ── GET /clans/:id/messages — fetch chat log (members only) ────────────────
+  app.get('/clans/:id/messages', {
+    config: { rateLimit: { max: 120, timeWindow: '1m' } },
+  }, async (req: any, reply) => {
+    if (!req.userId) return reply.status(401).send({ error: 'login required' })
+    const { id } = req.params as { id: string }
+    const clan = await Clan.findById(id).lean()
+    if (!clan) return reply.status(404).send({ error: 'clan not found' })
+    if (clanRoleOf(clan as any, req.userId) === 'none') {
+      return reply.status(403).send({ error: 'not a member of this clan' })
+    }
+    // Chronological, oldest → newest. Cap returned to MAX_CLAN_MESSAGES so a
+    // pathological doc can't tank a refresh; we already cap on write.
+    reply.send({ messages: (clan.messages ?? []).slice(-MAX_CLAN_MESSAGES) })
+  })
+
+  // ── POST /clans/:id/messages — send chat / system message (members only) ──
+  app.post('/clans/:id/messages', {
+    config: { rateLimit: { max: 30, timeWindow: '1m' } },
+  }, async (req: any, reply) => {
+    if (!req.userId) return reply.status(401).send({ error: 'login required' })
+    const { id } = req.params as { id: string }
+    const { text, kind } = req.body as { text: string; kind?: 'chat' | 'system' }
+    if (!text || typeof text !== 'string') return reply.status(400).send({ error: 'text required' })
+    const cleaned = text.trim().slice(0, CLAN_MESSAGE_MAX_LENGTH)
+    if (!cleaned) return reply.status(400).send({ error: 'text empty' })
+
+    const clan = await Clan.findById(id)
+    if (!clan) return reply.status(404).send({ error: 'clan not found' })
+    if (clanRoleOf(clan, req.userId) === 'none') {
+      return reply.status(403).send({ error: 'not a member of this clan' })
+    }
+    const user = await User.findById(req.userId).select('username').lean()
+    if (!user) return reply.status(404).send({ error: 'user not found' })
+
+    clan.messages.push({
+      authorId: new mongoose.Types.ObjectId(req.userId),
+      authorUsername: user.username,
+      text: cleaned,
+      sentAt: new Date(),
+      kind: kind === 'system' ? 'system' : 'chat',
+    } as any)
+    // Trim from the front so we never exceed MAX_CLAN_MESSAGES
+    if (clan.messages.length > MAX_CLAN_MESSAGES) {
+      clan.messages = clan.messages.slice(-MAX_CLAN_MESSAGES) as any
+    }
+    await clan.save()
+    reply.send({ ok: true, message: clan.messages[clan.messages.length - 1] })
   })
 
   // ── POST /clans/:id/transfer/:userId — pass leadership ─────────────────────

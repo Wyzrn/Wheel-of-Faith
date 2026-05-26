@@ -7,6 +7,8 @@
   import type { SpinResult } from '$lib/session/types'
   import AttackFX from './AttackFX.svelte'
   import { deriveStatusBadges } from '$lib/game/battleStatuses'
+  import DamageIndicator from './DamageIndicator.svelte'
+  import type { DamageEvent } from '$lib/game/damageEvent'
 
   interface TeamMember {
     results: SpinResult[]
@@ -36,6 +38,58 @@
   let charStatusByName = $derived(
     deriveStatusBadges(logLines, [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)])
   )
+
+  // Damage indicators
+  let damageEvents = $state<DamageEvent[]>([])
+  let dmgIdCounter = 0
+  function emitDamage(targetName: string, value: number, kind: DamageEvent['kind']) {
+    const el = t1CharEls.get(targetName) ?? t2CharEls.get(targetName)
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    if (r.width === 0) return
+    const ev: DamageEvent = { id: ++dmgIdCounter, x: r.left + r.width / 2, y: r.top + r.height * 0.3, value, kind }
+    damageEvents = [...damageEvents.slice(-29), ev]
+    setTimeout(() => { damageEvents = damageEvents.filter(d => d.id !== ev.id) }, 1400)
+  }
+  function parseDamageNumber(s: string): number {
+    const cleaned = s.replace(/,/g, '').toUpperCase()
+    if (cleaned.endsWith('K')) return Math.round(parseFloat(cleaned) * 1_000)
+    if (cleaned.endsWith('M')) return Math.round(parseFloat(cleaned) * 1_000_000)
+    if (cleaned.endsWith('B')) return Math.round(parseFloat(cleaned) * 1_000_000_000)
+    return Math.round(parseFloat(cleaned) || 0)
+  }
+  function maybeEmitDamageFromLine(line: string) {
+    if (!settings.effectsEnabled) return
+    const allNames = [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)]
+    const dmgMatch = line.match(/for\s+([\d.,]+[KMB]?)\s+damage!?/i)
+    if (dmgMatch) {
+      const preBoundary = line.lastIndexOf(' for ')
+      const head = preBoundary > 0 ? line.slice(0, preBoundary) : line
+      let target: string | null = null
+      let lastIdx = -1
+      for (const n of allNames) {
+        const i = head.lastIndexOf(n)
+        if (i > lastIdx) { lastIdx = i; target = n }
+      }
+      if (target) {
+        const isCrit = /CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)
+        emitDamage(target, parseDamageNumber(dmgMatch[1]), isCrit ? 'crit' : 'damage')
+        return
+      }
+    }
+    const healMatch = line.match(/(?:restores|recovers|mends)\s+([\d.,]+[KMB]?)\s*HP/i)
+    if (healMatch) {
+      for (const n of allNames) {
+        if (line.startsWith(n)) { emitDamage(n, parseDamageNumber(healMatch[1]), 'heal'); return }
+      }
+    }
+    if (/evades|dodges|misses/i.test(line)) {
+      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'miss'); return }
+    }
+    if (/barrier forms around|defensive stance|bracing/i.test(line)) {
+      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'shield'); return }
+    }
+  }
   let phase    = $state<'intro' | 'battle' | 'result'>('intro')
   let winner   = $state<'team1' | 'team2' | 'draw' | null>(null)
 
@@ -78,24 +132,32 @@
     Neutral:   { type: 'slash',     color: '#f87171' },
   }
 
-  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
-    // For 'center' anims (AOE bursts on system events), anchor on the battle
-    // wrapper midpoint, not the viewport. Otherwise VFX from a scrolled-down
-    // battle log appears floating in the middle of the viewport.
-    if (dir === 'center') {
-      if (!wrapperEl) return undefined
-      const r = wrapperEl.getBoundingClientRect()
-      // Clamp Y into the visible viewport so the VFX never paints off-screen.
-      const cx = r.left + r.width / 2
-      const cy = Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80))
-      return { x: cx, y: cy }
+  // Wrapper-relative fallback so VFX never paints at the viewport edge when
+  // a specific panel ref hasn't bound yet.
+  function getWrapperOriginForDir(dir: AnimDir): { x: number; y: number } | undefined {
+    if (!wrapperEl) return undefined
+    const wr = wrapperEl.getBoundingClientRect()
+    if (wr.width === 0) return undefined
+    const xRel = dir === 'rtl' ? 0.75 : dir === 'ltr' ? 0.25 : 0.5
+    return {
+      x: wr.left + wr.width * xRel,
+      y: Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80)),
     }
+  }
+
+  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
+    if (dir === 'center') return getWrapperOriginForDir('center')
     const el = dir === 'ltr' ? t1PanelEl : dir === 'rtl' ? t2PanelEl : null
-    if (!el) return undefined
-    const r = el.getBoundingClientRect()
-    const x = r.left + r.width / 2
-    const y = Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65))
-    return { x, y }
+    if (el) {
+      const r = el.getBoundingClientRect()
+      if (r.width > 0) {
+        return {
+          x: r.left + r.width / 2,
+          y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65)),
+        }
+      }
+    }
+    return getWrapperOriginForDir(dir)
   }
 
   // Per-character refs so VFX shoots from the specific attacker card, not the
@@ -618,6 +680,7 @@
     logLines = [...logLines, head]
     scrollLog()
     triggerLineEffect(head)
+    maybeEmitDamageFromLine(head)
     const anim = detectAnim(head)
     if (anim) {
       const fx = currentFxEvents[fxEventIdx]
@@ -851,6 +914,9 @@
         </div>
       {/key}
     {/if}
+
+    <!-- Floating damage indicators — fixed-position layer above all chars. -->
+    <DamageIndicator events={damageEvents} />
 
     <!-- ── Team 1 (left) ── -->
     <div bind:this={t1PanelEl} class="team-col">
