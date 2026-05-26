@@ -1,0 +1,296 @@
+// teamController.ts — Stateful turn controller for team-vs-team battles.
+//
+// Mirrors BattleController1v1 but resolves at PER-ACTOR granularity: every
+// `stepTurn()` returns an ArenaRound containing exactly one actor's turn,
+// in initiative order, so the arena can play back one comet at a time and
+// the manual hotbar can ask the player for each ally's action separately.
+//
+// Player flow:
+//   • Cycle begins: status ticks + buff countdown + regen, queue actors by
+//     initiative.
+//   • Loop: pop next actor →
+//       – team1 ally + manualMode: pause (awaitingActor set), wait for
+//         submitAction(action) → resolve.
+//       – anything else: AI pick → resolve.
+//     Return ArenaRound for that one turn.
+//   • Queue empty: next call rebuilds queue + ticks statuses for the new
+//     cycle.
+
+import {
+  doAction, formatHp,
+  type BattleCharacter, type BattleMove, type RoundFxEvent,
+} from '$lib/game/battle'
+import type { ArenaRound, ArenaSide, ArenaWinner } from './arena'
+import type { PlayerAction } from './controller'
+
+export interface TeamControllerMember {
+  id: string
+  side: ArenaSide
+  char: BattleCharacter
+}
+
+type StatusType = 'burn' | 'poison' | 'freeze' | 'paralyze' | 'wither' | 'bleed'
+interface Status { intensity: number; duration: number }
+
+const STATUS_DURATIONS: Record<StatusType, number> = {
+  burn: 2, poison: 3, freeze: 1, paralyze: 1, wither: 4, bleed: 3,
+}
+
+interface DefendStance { shieldFraction: number }
+
+function pickRandom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
+
+function resolveMove(char: BattleCharacter, action: PlayerAction): BattleMove | null {
+  const pool = char.moves.filter(m => m.attackType !== 'passive')
+  switch (action.kind) {
+    case 'weapon': {
+      const phys = pool.filter(m => m.type === 'physical')
+      return phys.length > 0 ? pickRandom(phys) : null
+    }
+    case 'power': {
+      const pwr = pool.filter(m => m.type === 'power')
+      return pwr.length > 0 ? pickRandom(pwr) : null
+    }
+    case 'spell': {
+      const abil = pool.filter(m => m.type === 'ability' && m.attackType === action.spellCategory)
+      return abil.length > 0 ? pickRandom(abil) : null
+    }
+    case 'defend':
+      return null
+  }
+}
+
+export class BattleControllerTeam {
+  private team1: TeamControllerMember[]
+  private team2: TeamControllerMember[]
+  private hp: Record<string, number> = {}
+  private statuses: Record<string, Partial<Record<StatusType, Status>>> = {}
+  private defendStance: Record<string, DefendStance | null> = {}
+  private actorQueue: TeamControllerMember[] = []
+  private cycle = 0
+  private _winner: ArenaWinner | null = null
+
+  constructor(team1: TeamControllerMember[], team2: TeamControllerMember[]) {
+    this.team1 = team1
+    this.team2 = team2
+    for (const m of [...team1, ...team2]) {
+      this.hp[m.id] = m.char.hp
+      this.statuses[m.id] = {}
+      this.defendStance[m.id] = null
+    }
+  }
+
+  // ── Inspection ──────────────────────────────────────────────────────────
+  get isOver(): boolean { return this._winner !== null }
+  get winner(): ArenaWinner | null { return this._winner }
+  get currentCycle(): number { return this.cycle }
+  get awaitingActor(): TeamControllerMember | null {
+    return this.actorQueue[0] ?? null
+  }
+  getHp(id: string): number { return this.hp[id] ?? 0 }
+  member(id: string): TeamControllerMember | undefined {
+    return this.team1.find(m => m.id === id) ?? this.team2.find(m => m.id === id)
+  }
+  livingEnemies(side: ArenaSide): TeamControllerMember[] {
+    const enemy = side === 'team1' ? this.team2 : this.team1
+    return enemy.filter(m => (this.hp[m.id] ?? 0) > 0)
+  }
+  defendArmed(id: string): boolean { return this.defendStance[id] !== null }
+
+  // ── Step one actor's turn ───────────────────────────────────────────────
+  // `action` is required when awaitingActor is on team1 in manual mode
+  // (caller's responsibility). When omitted, the controller picks an AI
+  // move (random, targeting a random living enemy).
+  stepTurn(action?: PlayerAction): ArenaRound {
+    if (this._winner) {
+      return { roundNum: this.cycle, lines: [], hpAfter: { ...this.hp }, winner: this._winner }
+    }
+
+    // Refill queue if needed (start of a new cycle — tick statuses first).
+    if (this.actorQueue.length === 0) this.beginCycle()
+
+    const lines: string[] = []
+    const fxEvents: RoundFxEvent[] = []
+
+    let actor: TeamControllerMember | undefined
+    // Skip dead actors that were queued before they died.
+    while (this.actorQueue.length > 0) {
+      const candidate = this.actorQueue.shift()!
+      if ((this.hp[candidate.id] ?? 0) > 0) { actor = candidate; break }
+    }
+    if (!actor) {
+      // No living actors left in this cycle — refill & retry once.
+      this.beginCycle()
+      while (this.actorQueue.length > 0) {
+        const candidate = this.actorQueue.shift()!
+        if ((this.hp[candidate.id] ?? 0) > 0) { actor = candidate; break }
+      }
+      if (!actor) {
+        this._winner = 'draw'
+        return { roundNum: this.cycle, lines, hpAfter: { ...this.hp }, winner: 'draw' }
+      }
+    }
+
+    // Resolve this actor's turn.
+    this.resolveTurn(actor, action ?? null, lines, fxEvents)
+
+    // Winner check
+    const t1Dead = this.team1.every(m => this.hp[m.id] <= 0)
+    const t2Dead = this.team2.every(m => this.hp[m.id] <= 0)
+    let winner: ArenaWinner | undefined
+    if (t1Dead && t2Dead) winner = 'draw'
+    else if (t1Dead)      winner = 'team2'
+    else if (t2Dead)      winner = 'team1'
+    if (winner !== undefined) this._winner = winner
+
+    return {
+      roundNum: this.cycle,
+      lines,
+      hpAfter: { ...this.hp },
+      fxEvents,
+      winner,
+    }
+  }
+
+  // ── Begin a new cycle: regen + buff countdown + status ticks + queue ────
+  private beginCycle() {
+    this.cycle++
+
+    const allMembers = [...this.team1, ...this.team2]
+
+    // Passive regen
+    for (const m of allMembers) {
+      if (this.hp[m.id] <= 0) continue
+      const r = m.char.passiveHealPerRound
+      if (r > 0) this.hp[m.id] = Math.min(m.char.maxHp, this.hp[m.id] + r)
+    }
+
+    // Buff countdown
+    for (const m of allMembers) {
+      if (m.char.buffRoundsLeft > 0) {
+        m.char.buffRoundsLeft--
+        if (m.char.buffRoundsLeft === 0) m.char.buffMultiplier = 1.0
+      }
+    }
+
+    // Status ticks (silent — actor-turn lines stay clean; future polish
+    // can prepend status messages to the next actor's lines).
+    for (const m of allMembers) {
+      if (this.hp[m.id] <= 0) continue
+      const s = this.statuses[m.id]
+      const tick = (kind: StatusType, pct: number) => {
+        const e = s[kind]; if (!e) return
+        const dmg = Math.max(1, Math.round(m.char.maxHp * pct * e.intensity))
+        this.hp[m.id] = Math.max(0, this.hp[m.id] - dmg)
+        e.duration--
+        if (e.duration <= 0) delete s[kind]
+      }
+      tick('burn',   0.06)
+      tick('poison', 0.04)
+      tick('wither', 0.03)
+      tick('bleed',  0.05)
+    }
+
+    // Build initiative-ordered queue of living actors. Add a small random
+    // jitter so equal-initiative actors don't always go in a fixed order.
+    this.actorQueue = allMembers
+      .filter(m => this.hp[m.id] > 0)
+      .map(m => ({ m, roll: m.char.initiative + Math.random() * 5 }))
+      .sort((a, b) => b.roll - a.roll)
+      .map(x => x.m)
+  }
+
+  // ── Resolve a single actor's turn ──────────────────────────────────────
+  private resolveTurn(
+    actor: TeamControllerMember,
+    action: PlayerAction | null,
+    lines: string[],
+    fxEvents: RoundFxEvent[],
+  ) {
+    // Defend — reactive stance, ends the turn here.
+    if (action?.kind === 'defend') {
+      const selfHeal = Math.round(actor.char.maxHp * 0.06)
+      this.defendStance[actor.id] = { shieldFraction: 0.60 }
+      this.hp[actor.id] = Math.min(actor.char.maxHp, this.hp[actor.id] + selfHeal)
+      lines.push(`${actor.char.name} braces in a defensive stance — next blow will be turned aside!`)
+      if (selfHeal > 0) lines.push(`${actor.char.name} recovers ${formatHp(selfHeal)} HP while guarding!`)
+      return
+    }
+
+    // Frozen / paralyzed gating
+    const myStatus = this.statuses[actor.id]
+    if (myStatus.freeze) {
+      lines.push(`${actor.char.name} is frozen — can't act this turn!`)
+      return
+    }
+    if (myStatus.paralyze && Math.random() < 0.5) {
+      lines.push(`${actor.char.name} is paralyzed — can't move!`)
+      return
+    }
+
+    // Target resolution. action.targetId wins; otherwise lowest-HP living enemy.
+    const enemies = this.livingEnemies(actor.side)
+    if (enemies.length === 0) return
+
+    let target: TeamControllerMember | undefined
+    if (action?.targetId) target = this.member(action.targetId)
+    if (!target || (this.hp[target.id] ?? 0) <= 0 || target.side === actor.side) {
+      // Default targeting: lowest-HP enemy (for AOE we still pick a primary
+      // anchor, the engine handles spread).
+      target = enemies.reduce((acc, e) =>
+        (this.hp[e.id] ?? 0) < (this.hp[acc.id] ?? Infinity) ? e : acc,
+        enemies[0])
+    }
+
+    const forced = action ? resolveMove(actor.char, action) ?? undefined : undefined
+    const result = doAction(actor.char, target.char, this.hp[actor.id], forced)
+    lines.push(...result.lines)
+    if (result.skipped) return
+
+    // Damage application (with reactive Defend on the target side)
+    let damage = result.damage
+    const targetStance = this.defendStance[target.id]
+    if (damage > 0 && targetStance) {
+      const blocked = Math.round(damage * targetStance.shieldFraction)
+      damage = Math.max(0, damage - blocked)
+      lines.push(`${target.char.name}'s defensive stance turns aside ${formatHp(blocked)} damage!`)
+      this.defendStance[target.id] = null
+    }
+    this.hp[target.id] = Math.max(0, this.hp[target.id] - damage)
+    this.hp[actor.id]  = Math.min(actor.char.maxHp, this.hp[actor.id] + result.heal)
+    this.hp[actor.id]  = Math.max(0, this.hp[actor.id] - result.reflected)
+    if (result.applyStatus) this.applyStatus(target, result.applyStatus, lines)
+
+    // FX event for the projectile layer. attackerIdx / targetIdxs are
+    // indices into team1/team2 in the arena's natural order.
+    const move = forced ?? actor.char.moves.find(m => m.attackType !== 'passive')
+    const attackerTeam = actor.side === 'team1' ? this.team1 : this.team2
+    const targetTeam   = actor.side === 'team1' ? this.team2 : this.team1
+    const attackerIdx  = attackerTeam.findIndex(m => m.id === actor.id)
+    const targetIdx    = targetTeam.findIndex(m => m.id === target.id)
+    fxEvents.push({
+      attackerSide: actor.side,
+      attackerIdx: Math.max(0, attackerIdx),
+      targetIdxs:  [Math.max(0, targetIdx)],
+      element:     move?.element,
+      grade:       move?.grade,
+      attackType:  move?.attackType ?? 'attack',
+      isCrit:      false,
+    })
+
+    if (this.hp[target.id] <= 0) {
+      lines.push(`${target.char.name} has been defeated!`)
+    }
+  }
+
+  private applyStatus(target: TeamControllerMember, type: StatusType, lines: string[]) {
+    if (target.char.statusImmunities.includes(type)) return
+    const s = this.statuses[target.id]
+    const existing = s[type]
+    s[type] = {
+      intensity: 1 + (existing?.intensity ?? 0) * 0.4,
+      duration:  STATUS_DURATIONS[type],
+    }
+    lines.push(`${target.char.name} is afflicted by ${type}!`)
+  }
+}

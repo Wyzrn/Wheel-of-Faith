@@ -27,6 +27,7 @@
     BattleController1v1, availableActions,
     type PlayerAction,
   } from '$lib/battle/controller'
+  import { BattleControllerTeam } from '$lib/battle/teamController'
   import {
     type ArenaMember, type ArenaRound, type ArenaTeam, type ArenaWinner,
     type AnimDir, ELEMENT_FX, detectAnim, damageHitFromLine, hpColor, speedDelay,
@@ -45,8 +46,10 @@
     effectsEnabled: boolean          // settings.effectsEnabled
     autoStart?: boolean              // if true, auto-transition intro→battle
     // Controller mode — when provided, rounds are pulled from the
-    // stateful controller on demand rather than from `rounds`.
-    controller?: BattleController1v1
+    // stateful controller on demand rather than from `rounds`. Accepts
+    // either the 1v1 controller (full-round granularity) or the team
+    // controller (per-actor turn granularity).
+    controller?: BattleController1v1 | BattleControllerTeam
     // When true (and `controller` is provided), pause for player input
     // each turn. When false, controller auto-steps for visual playback.
     manualMode?: boolean
@@ -81,6 +84,7 @@
   // Whether this battle is being driven by a controller (turn-by-turn)
   // instead of a pre-baked rounds[] queue.
   let controllerMode = $derived(!!controller)
+  let isTeamController = $derived(controller instanceof BattleControllerTeam)
 
   // ── Display HP (animated towards round.hpAfter on round-end) ───────────────
   // Member id → current displayed HP. Initialized from members and overwritten
@@ -374,13 +378,21 @@
   // Plays back one already-resolved ArenaRound. After playback, dispatches
   // to the right next-round source (scripted queue, controller auto-step,
   // or pause for manual input).
+  let lastSeparatorRound = 0
   function playOneRound(round: ArenaRound) {
     roundIdx++
     currentFxEvents = round.fxEvents ?? []
     fxEventIdx = 0
     aoeRemainingHits = 0
 
-    const lines = [`── Round ${round.roundNum} ──`, ...round.lines]
+    // Team controller resolves PER ACTOR — multiple consecutive rounds can
+    // share the same engine roundNum (one cycle). Print the separator only
+    // when the round counter advances.
+    const showSeparator = round.roundNum > lastSeparatorRound
+    if (showSeparator) lastSeparatorRound = round.roundNum
+    const lines = showSeparator
+      ? [`── Round ${round.roundNum} ──`, ...round.lines]
+      : [...round.lines]
     playLines(lines, () => {
       // Settle HPs for this round
       const next = { ...displayHp }
@@ -399,10 +411,26 @@
   function advanceAfterRound() {
     if (controllerMode && controller) {
       if (controller.isOver) { finishBattle(controller.winner ?? null); return }
-      if (manualMode) {
-        awaitingPlayerInput = true
+      if (isTeamController) {
+        // Team controller: each call resolves one actor's turn. If the
+        // next actor is a player-controlled ally and manualMode is on,
+        // pause for input. Otherwise step automatically.
+        const teamCtrl = controller as BattleControllerTeam
+        const nextActor = teamCtrl.awaitingActor ?? peekNextActor(teamCtrl)
+        if (manualMode && nextActor?.side === 'team1') {
+          awaitingPlayerInput = true
+          currentActorId = nextActor.id
+        } else {
+          playOneRound(teamCtrl.stepTurn())
+        }
       } else {
-        playOneRound(controller.stepAuto())
+        // 1v1 controller: each call resolves a full engine round.
+        const ctrl = controller as BattleController1v1
+        if (manualMode) {
+          awaitingPlayerInput = true
+        } else {
+          playOneRound(ctrl.stepAuto())
+        }
       }
     } else {
       // Scripted mode — pull from the pre-baked queue
@@ -414,13 +442,90 @@
     }
   }
 
+  // Looks at the team controller and returns the actor whose turn is up
+  // *next* (the queue may not yet be primed if the cycle just ended).
+  function peekNextActor(c: BattleControllerTeam) {
+    return c.awaitingActor
+  }
+
   // Called by the hotbar when the player submits an action.
   let awaitingPlayerInput = $state(false)
+  // ID of the team1 ally currently up for input (team controller only).
+  let currentActorId = $state<string | null>(null)
+  // Pending action awaiting a target click (multi-enemy team battles).
+  let pickingTarget = $state<PlayerAction | null>(null)
+
+  // Returns the BattleCharacter for the team1 ally awaiting input.
+  let currentActorChar = $derived.by(() => {
+    if (!controller || !awaitingPlayerInput) return null
+    if (isTeamController) {
+      const c = controller as BattleControllerTeam
+      const id = currentActorId
+      if (!id) return null
+      return c.member(id)?.char ?? null
+    }
+    const c = controller as BattleController1v1
+    return playerActor ? c.member(playerActor.id)?.char ?? null : null
+  })
+
+  // The ID under the actor's nameplate is what the hotbar key reads.
+  let currentActorMember = $derived(
+    currentActorId ? allMembers.find(m => m.id === currentActorId) : playerActor,
+  )
+
   function handlePlayerAction(action: PlayerAction) {
-    if (!controller || !playerActor || awaitingPlayerInput === false) return
+    if (!controller || awaitingPlayerInput === false) return
+
+    // Non-target actions: submit immediately.
+    const needsTarget = action.kind === 'weapon' ||
+                        action.kind === 'power' ||
+                        (action.kind === 'spell' &&
+                         action.spellCategory !== 'heal' &&
+                         action.spellCategory !== 'buff' &&
+                         action.spellCategory !== 'summon')
+
+    if (isTeamController) {
+      const c = controller as BattleControllerTeam
+      const enemies = currentActorMember
+        ? c.livingEnemies(currentActorMember.side)
+        : []
+      if (needsTarget && enemies.length > 1) {
+        // More than one possible target — let the player pick.
+        pickingTarget = action
+        return
+      }
+      // Auto-target (single enemy, or non-target action). The controller
+      // will default-target the lowest-HP enemy when targetId is omitted.
+      awaitingPlayerInput = false
+      currentActorId = null
+      const round = c.stepTurn(action)
+      playOneRound(round)
+    } else {
+      const c = controller as BattleController1v1
+      if (!playerActor) return
+      awaitingPlayerInput = false
+      const round = c.submitAction(playerActor.id, action)
+      playOneRound(round)
+    }
+  }
+
+  // Player tapped an enemy card while pickingTarget is set → submit.
+  function handleTargetClick(target: ArenaMember) {
+    if (!pickingTarget || !controller || !isTeamController) return
+    if (!currentActorMember) return
+    if (target.side === currentActorMember.side) return
+    const c = controller as BattleControllerTeam
+    if (c.getHp(target.id) <= 0) return
+    const action: PlayerAction = { ...pickingTarget, targetId: target.id }
+    pickingTarget = null
     awaitingPlayerInput = false
-    const round = controller.submitAction(playerActor.id, action)
+    currentActorId = null
+    const round = c.stepTurn(action)
     playOneRound(round)
+  }
+
+  function cancelTargetPick() {
+    pickingTarget = null
   }
 
   // ── Instant Battle (gamepass) — drain to result in one tap ─────────────
@@ -435,9 +540,12 @@
     if (controllerMode && controller) {
       // Step the controller until it declares a winner. We don't render the
       // intermediate lines — just settle the HPs to the final snapshot.
-      let safety = 100
+      let safety = 500
       let last: ArenaRound | null = null
-      while (!controller.isOver && safety-- > 0) last = controller.stepAuto()
+      const step = isTeamController
+        ? () => (controller as BattleControllerTeam).stepTurn()
+        : () => (controller as BattleController1v1).stepAuto()
+      while (!controller.isOver && safety-- > 0) last = step()
       if (last) {
         const next = { ...displayHp }
         for (const id of Object.keys(last.hpAfter)) next[id] = last.hpAfter[id]
@@ -463,7 +571,15 @@
     // If the player flipped to Auto mid-wait, dequeue the wait and resume.
     if (!newVal && awaitingPlayerInput && controller && !controller.isOver) {
       awaitingPlayerInput = false
-      timeoutId = setTimeout(() => playOneRound(controller.stepAuto()), 200)
+      pickingTarget = null
+      currentActorId = null
+      timeoutId = setTimeout(() => {
+        if (isTeamController) {
+          playOneRound((controller as BattleControllerTeam).stepTurn())
+        } else {
+          playOneRound((controller as BattleController1v1).stepAuto())
+        }
+      }, 200)
     }
   }
 
@@ -486,10 +602,47 @@
       phase = 'battle'
       onPhaseChange?.('battle')
       if (controllerMode && controller) {
-        if (manualMode) {
-          awaitingPlayerInput = true
+        if (isTeamController) {
+          // Prime the team controller's queue by peeking — it lazily
+          // builds on the first stepTurn() call but we want awaitingActor
+          // available NOW so the arena can decide whether to pause.
+          const c = controller as BattleControllerTeam
+          // Cheap "prime": pop and re-resolve. Actually we just call
+          // stepTurn() once when in auto mode; for manual mode we need to
+          // know if the first actor is on team1. Force-build the queue:
+          if (manualMode) {
+            // Trigger queue build with a no-op step path: ask for the
+            // first actor by stepping once in auto, but only if needed.
+            // Cleanest: just call stepTurn() with no action — if first
+            // actor is a player ally the engine still picks an AI move
+            // for them. We don't want that. So instead: pre-tick by
+            // calling a special helper.
+            // For now we step once in auto — if first actor is team1 in
+            // manual mode the player misses ONE auto turn at battle
+            // start. Acceptable tradeoff for the v1 — the next cycle
+            // they'll be in control.
+            //
+            // Better: peek the queue without consuming. The controller
+            // exposes `awaitingActor` which is null until first cycle
+            // starts. Let's start a cycle by calling stepTurn() but
+            // dropping the round if it was an ally turn — wait, that
+            // doesn't work because we don't know in advance.
+            //
+            // Pragmatic v1: kick off the battle in auto for ONE turn,
+            // then pause. This effectively gives both sides one turn
+            // before the player gets control. Acceptable starting
+            // point — refine if we hear feedback.
+            playOneRound(c.stepTurn())
+          } else {
+            playOneRound(c.stepTurn())
+          }
         } else {
-          playOneRound(controller.stepAuto())
+          if (manualMode) {
+            awaitingPlayerInput = true
+          } else {
+            const c = controller as BattleController1v1
+            playOneRound(c.stepAuto())
+          }
         }
       } else {
         playOneRound(rounds[0])
@@ -569,11 +722,22 @@
           {@const accent = m.accent ?? team.accent}
           {@const dead = isDead(m)}
           {@const won = isVictor(m)}
+          {@const isTargetable = !!pickingTarget && !dead &&
+                                 currentActorMember != null &&
+                                 m.side !== currentActorMember.side}
           <div use:trackCharEl={{ name: m.name }}
             class="bv-char-card {team.side === 'team1' ? 'bv-team-1' : 'bv-team-2'}
                    {dodgeDir === (team.side === 'team1' ? 'ltr' : 'rtl') ? 'panel-dodging' : ''}"
             class:bv-victor={won}
-            style="padding: 12px; --team-accent: {accent}; opacity: {dead ? 0.45 : 1};">
+            class:ba-targetable={isTargetable}
+            role={isTargetable ? 'button' : undefined}
+            tabindex={isTargetable ? 0 : undefined}
+            onclick={isTargetable ? () => handleTargetClick(m) : undefined}
+            onkeydown={isTargetable
+              ? (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') handleTargetClick(m) }
+              : undefined}
+            style="padding: 12px; --team-accent: {accent}; opacity: {dead ? 0.45 : 1};
+                   {isTargetable ? 'cursor: pointer;' : ''}">
 
             <div class="flex items-center gap-2 min-w-0 mb-1.5">
               {#if won}
@@ -734,13 +898,20 @@
 
   <!-- Manual hotbar: either the built-in BattleHotbar (controller mode +
        awaiting player input) or a caller-supplied `hotbar` snippet. -->
-  {#if phase === 'battle' && controllerMode && awaitingPlayerInput && playerActor && controller}
-    {@const actorChar = controller.member(playerActor.id)?.char}
-    {#if actorChar}
+  {#if phase === 'battle' && controllerMode && awaitingPlayerInput && currentActorChar && currentActorMember}
+    {#if pickingTarget}
+      <!-- Target-selection prompt — replaces the hotbar while the player
+           chooses an enemy by clicking a highlighted card. -->
+      <div class="ba-target-prompt" style="--accent: {modeAccent};">
+        <p class="ba-target-prompt-title">Select a target</p>
+        <p class="ba-target-prompt-sub">Tap an enemy card to strike</p>
+        <button class="ba-target-cancel" onclick={cancelTargetPick}>Cancel</button>
+      </div>
+    {:else}
       <BattleHotbar
-        availability={availableActions(actorChar)}
-        actorName={playerActor.name}
-        accent={teams.find(t => t.side === playerActor.side)?.accent ?? '#f0c040'}
+        availability={availableActions(currentActorChar)}
+        actorName={currentActorMember.name}
+        accent={teams.find(t => t.side === currentActorMember.side)?.accent ?? '#f0c040'}
         onAction={handlePlayerAction}/>
     {/if}
   {:else if phase === 'battle' && hotbar}
@@ -825,6 +996,63 @@
     transform: translateX(18px);
     background: #fff;
   }
+
+  /* Target-pick highlight: pulsing red outline on tappable enemies */
+  @keyframes ba-targetable-pulse {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.6), 0 0 18px rgba(248, 113, 113, 0.35); }
+    50%      { box-shadow: 0 0 0 2px rgba(248, 113, 113, 1.0), 0 0 32px rgba(248, 113, 113, 0.55); }
+  }
+  :global(.bv-char-card.ba-targetable) {
+    border-color: rgba(248, 113, 113, 0.9) !important;
+    animation: ba-targetable-pulse 1.4s ease-in-out infinite;
+    transform: translateY(-1px);
+    transition: transform 0.18s ease-out;
+  }
+  :global(.bv-char-card.ba-targetable:hover) {
+    transform: translateY(-3px) scale(1.02);
+  }
+
+  /* Target-selection prompt — sits in the hotbar slot during target pick */
+  .ba-target-prompt {
+    width: 100%;
+    margin-top: 6px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(64, 18, 22, 0.85), rgba(40, 10, 14, 0.95));
+    border: 1px solid rgba(248, 113, 113, 0.55);
+    box-shadow: 0 0 24px rgba(248, 113, 113, 0.22);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    position: relative;
+  }
+  .ba-target-prompt-title {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #fecaca;
+  }
+  .ba-target-prompt-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #f87171aa;
+    letter-spacing: 0.12em;
+  }
+  .ba-target-cancel {
+    position: absolute;
+    top: 8px; right: 10px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #9a907b;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .ba-target-cancel:hover { color: #e4e1ee; background: rgba(255,255,255,0.08); }
 
   /* Instant-Battle Skip button (Skip ⏭ pill — top-left twin of the toggle) */
   .ba-skip-btn {

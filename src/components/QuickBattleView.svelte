@@ -13,17 +13,18 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import {
-    buildBattleCharacter, simulateTeamBattle, formatHp,
-    type BattleCharacter, type TeamBattleRound,
+    buildBattleCharacter, formatHp,
+    type BattleCharacter,
   } from '$lib/game/battle'
   import { settings } from '$lib/settings.svelte'
   import { auth } from '$lib/stores/auth.svelte'
   import type { SpinResult } from '$lib/session/types'
   import BattleArena from './BattleArena.svelte'
   import {
-    memberFromChar, normalizeRoundTeam, hpColor,
-    type ArenaTeam, type ArenaRound, type ArenaWinner,
+    memberFromChar, hpColor,
+    type ArenaTeam, type ArenaWinner,
   } from '$lib/battle/arena'
+  import { BattleControllerTeam } from '$lib/battle/teamController'
 
   export interface BattleTeamMember {
     results: SpinResult[]
@@ -63,10 +64,15 @@
   let t1Chars = $state<BattleCharacter[]>([])
   let t2Chars = $state<BattleCharacter[]>([])
   let arenaTeams = $state<[ArenaTeam, ArenaTeam] | null>(null)
-  let arenaRounds = $state<ArenaRound[]>([])
-  // Final HP snapshot for the survivors block in the result modal.
+  let controller = $state<BattleControllerTeam | null>(null)
+  // Live HP snapshot for the survivors block in the result modal (updated
+  // by the controller as turns resolve).
   let finalT1Hp = $state<number[]>([])
   let finalT2Hp = $state<number[]>([])
+
+  // Manual / Auto preference for this battle, seeded from settings and
+  // flippable via the in-arena switch.
+  let manualMode = $state(!settings.autoBattle)
 
   let showCritSurge = $state(false)
   let canInstant = $derived((auth.user?.gamepasses ?? []).includes('instant_battle'))
@@ -112,7 +118,9 @@
       return { ...c, hp: Math.round(c.hp * mult), maxHp: Math.round(c.maxHp * mult) }
     })
 
-    // Build ArenaTeams + ArenaRounds
+    // Build ArenaTeams + the stateful team controller. The arena drives
+    // turns through it — turn-by-turn so manual mode can pause for each
+    // ally's input.
     const t1Ids = t1Chars.map((_, i) => `t1-${i}`)
     const t2Ids = t2Chars.map((_, i) => `t2-${i}`)
     arenaTeams = [
@@ -125,18 +133,20 @@
         members: t2Chars.map((c, i) => memberFromChar(c, t2Ids[i], 'team2', formatHp)),
       },
     ]
-    const rounds: TeamBattleRound[] = simulateTeamBattle(t1Chars, t2Chars)
-    arenaRounds = rounds.map(r => normalizeRoundTeam(r, t1Ids, t2Ids))
-
-    const last = rounds.at(-1)
-    if (last) {
-      finalT1Hp = [...last.t1Hp]
-      finalT2Hp = [...last.t2Hp]
-    }
+    controller = new BattleControllerTeam(
+      t1Chars.map((c, i) => ({ id: t1Ids[i], side: 'team1', char: c })),
+      t2Chars.map((c, i) => ({ id: t2Ids[i], side: 'team2', char: c })),
+    )
+    finalT1Hp = t1Chars.map(c => c.hp)
+    finalT2Hp = t2Chars.map(c => c.hp)
   })
 
   function handleBattleEnd(w: ArenaWinner) {
     battleWinner = w
+    if (controller) {
+      finalT1Hp = t1Chars.map((_, i) => controller!.getHp(`t1-${i}`))
+      finalT2Hp = t2Chars.map((_, i) => controller!.getHp(`t2-${i}`))
+    }
     onComplete?.(w === 'draw' ? 'draw' : w)
   }
 
@@ -171,11 +181,13 @@
     </div>
   {/if}
 
-  {#if arenaTeams && arenaRounds.length > 0}
+  {#if arenaTeams && controller}
     <BattleArena
       bind:phase
       teams={arenaTeams}
-      rounds={arenaRounds}
+      controller={controller}
+      manualMode={manualMode}
+      onManualToggle={(m) => manualMode = m}
       modeTitle={title}
       modeSubtitle="⚔ Quick Battle"
       modeAccent="#f9a8d4"
