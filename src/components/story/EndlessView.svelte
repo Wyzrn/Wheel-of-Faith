@@ -741,9 +741,10 @@
   <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
     style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(88px, calc(env(safe-area-inset-bottom,0px) + 88px));">
     <div class="w-full max-w-md rounded-2xl overflow-hidden"
-      style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.35); box-shadow: 0 0 60px rgba(167,139,250,0.12); animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+      style="background: linear-gradient(135deg, rgba(167,139,250,0.16), rgba(8,7,16,0.95) 75%); border: 1px solid rgba(167,139,250,0.45); box-shadow: 0 0 32px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.06); animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
       <div class="px-5 py-5 text-center">
-        <p class="text-xs tracking-[0.25em] uppercase mb-1" style="font-family: 'JetBrains Mono', monospace; color: #a78bfa;">Wave Cleared!</p>
+        <span class="material-symbols-outlined" style="font-size: 32px; color: #a78bfa; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 12px rgba(167,139,250,0.6));">military_tech</span>
+        <p class="text-xs tracking-[0.32em] uppercase mt-1 mb-1.5" style="font-family: 'JetBrains Mono', monospace; color: #a78bfa; font-weight: 700;">Wave Cleared!</p>
         <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 1.8rem); font-weight: 900; color: #a78bfa; letter-spacing: 0.1em; filter: drop-shadow(0 0 16px rgba(167,139,250,0.55));">
           Wave {wavesCleared} — {currentGrade}
         </p>
@@ -794,10 +795,10 @@
 {#if phase === 'gameover'}
   <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
     style="background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); padding-bottom: max(88px, calc(env(safe-area-inset-bottom,0px) + 88px));">
-    <div class="w-full max-w-md rounded-2xl overflow-hidden"
-      style="background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.3); box-shadow: 0 0 60px rgba(239,68,68,0.08); animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
-      <div class="px-5 py-6 text-center">
-        <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #ef4444;">Game Over</p>
+    <div class="w-full max-w-md bv-result-banner bv-result-loss" style="padding: 18px 20px;">
+      <div class="text-center">
+        <span class="material-symbols-outlined" style="font-size: 36px; color: #ef4444; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 12px rgba(239,68,68,0.5));">sentiment_dissatisfied</span>
+        <p class="text-xs tracking-[0.32em] uppercase mt-1 mb-1.5" style="font-family: 'JetBrains Mono', monospace; color: #ef4444; font-weight: 700;">Game Over</p>
         <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: #ef4444; letter-spacing: 0.12em;">
           Survived {wavesCleared} Wave{wavesCleared !== 1 ? 's' : ''}
         </p>

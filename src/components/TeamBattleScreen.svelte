@@ -6,6 +6,7 @@
   import { settings } from '$lib/settings.svelte'
   import type { SpinResult } from '$lib/session/types'
   import AttackFX from './AttackFX.svelte'
+  import { deriveStatusBadges } from '$lib/game/battleStatuses'
 
   interface TeamMember {
     results: SpinResult[]
@@ -31,6 +32,10 @@
   let rounds   = $state<TeamBattleRound[]>([])
   let roundIdx = $state(0)
   let logLines = $state<string[]>([])
+  // Per-character status chips derived from recent log lines (poison/burn/buff/etc).
+  let charStatusByName = $derived(
+    deriveStatusBadges(logLines, [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)])
+  )
   let phase    = $state<'intro' | 'battle' | 'result'>('intro')
   let winner   = $state<'team1' | 'team2' | 'draw' | null>(null)
 
@@ -858,6 +863,7 @@
         {@const dead = hp <= 0}
         {@const won  = phase === 'result' && winner === 'team1'}
         {@const lost = phase === 'result' && winner === 'team2'}
+        {@const charBadges = charStatusByName.get(char.name) ?? []}
         <div use:trackCharEl={{ name: char.name, team: 1 }} class="member-card" style="border-color:rgba(240,192,64,{dead?'0.07':won?'0.7':'0.22'});box-shadow:0 8px 24px rgba(0,0,0,0.7),inset 1px 1px 0 rgba(255,223,150,0.08){won&&!dead?',0 0 28px rgba(240,192,64,0.22)':''};opacity:{dead?0.4:1};">
           <div class="flex items-center gap-1.5 min-w-0">
             {#if dead}<span class="material-symbols-outlined" style="font-size:13px;color:#ef4444;font-variation-settings:'FILL' 1;">skull</span>
@@ -876,6 +882,16 @@
                   <p style="color:#9a907b;font-size:7px;">{l}</p>
                   <p style="color:#ffdf96;font-size:0.68rem;font-family:'Cinzel',serif;">{v}</p>
                 </div>
+              {/each}
+            </div>
+          {/if}
+          {#if charBadges.length > 0 && !dead}
+            <div class="flex flex-wrap gap-1 justify-center mt-1">
+              {#each charBadges as b}
+                <span class="bv-status-chip" title="{b.label}: {b.description}"
+                  style="background: {b.color}22; border-color: {b.color}66;">
+                  <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+                </span>
               {/each}
             </div>
           {/if}
@@ -990,6 +1006,7 @@
         {@const dead = hp <= 0}
         {@const won  = phase === 'result' && winner === 'team2'}
         {@const lost = phase === 'result' && winner === 'team1'}
+        {@const charBadges = charStatusByName.get(char.name) ?? []}
         <div use:trackCharEl={{ name: char.name, team: 2 }} class="member-card" style="border-color:rgba(232,121,249,{dead?'0.07':won?'0.7':'0.22'});box-shadow:0 8px 24px rgba(0,0,0,0.7),inset 1px 1px 0 rgba(232,121,249,0.06){won&&!dead?',0 0 28px rgba(232,121,249,0.22)':''};opacity:{dead?0.4:1};">
           <div class="flex items-center gap-1.5 min-w-0">
             {#if dead}<span class="material-symbols-outlined" style="font-size:13px;color:#ef4444;font-variation-settings:'FILL' 1;">skull</span>
@@ -1008,6 +1025,16 @@
                   <p style="color:#9a907b;font-size:7px;">{l}</p>
                   <p style="color:#e879f9;font-size:0.68rem;font-family:'Cinzel',serif;">{v}</p>
                 </div>
+              {/each}
+            </div>
+          {/if}
+          {#if charBadges.length > 0 && !dead}
+            <div class="flex flex-wrap gap-1 justify-center mt-1">
+              {#each charBadges as b}
+                <span class="bv-status-chip" title="{b.label}: {b.description}"
+                  style="background: {b.color}22; border-color: {b.color}66;">
+                  <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+                </span>
               {/each}
             </div>
           {/if}

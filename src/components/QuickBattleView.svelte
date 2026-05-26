@@ -322,23 +322,22 @@
             {@const hp  = t1DispHp[i] ?? 0}
             {@const pct = t1HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
-            <div class="rounded-xl p-2 flex flex-col gap-1"
-              style="background: rgba(240,192,64,0.06);
-                     border: 1px solid rgba(240,192,64,{dead ? '0.07' : phase === 'result' && team1Won ? '0.6' : '0.22'});
-                     opacity: {dead ? 0.4 : 1}; transition: opacity 0.5s, border-color 0.5s;">
-              <div class="flex items-center gap-1.5 min-w-0">
+            {@const won  = phase === 'result' && team1Won}
+            <div class="bv-char-card bv-team-1"
+              class:bv-dead={dead}
+              class:bv-victor={won && !dead}>
+              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full mb-1.5">
                 {#if dead}
-                  <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
-                {:else if phase === 'result' && team1Won}
-                  <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+                  <span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
+                {:else if won}
+                  <span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
                 {/if}
-                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.75rem;">{char.name}</p>
+                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.78rem; letter-spacing: 0.03em;">{char.name}</p>
               </div>
-              <div class="rounded-full overflow-hidden" style="height: 7px; background: rgba(255,255,255,0.08);">
-                <div class="h-full rounded-full"
-                  style="width: {pct * 100}%; background: {hpColor(pct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
+              <div class="bv-hp-track">
+                <div class="bv-hp-fill" style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
               </div>
-              <p style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.6rem;">{formatHp(hp)} / {formatHp(char.maxHp)}</p>
+              <p class="text-center mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.62rem; letter-spacing: 0.04em;">{formatHp(hp)}<span style="color: #4e4635;"> / {formatHp(char.maxHp)}</span></p>
             </div>
           {/each}
         </div>
@@ -353,23 +352,23 @@
             {@const hp  = t2DispHp[i] ?? 0}
             {@const pct = t2HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
-            <div class="rounded-xl p-2 flex flex-col gap-1"
-              style="background: {team2Color}0d;
-                     border: 1px solid {team2Color}{dead ? '11' : phase === 'result' && !team1Won ? '66' : '22'};
-                     opacity: {dead ? 0.4 : 1}; transition: opacity 0.5s, border-color 0.5s;">
-              <div class="flex items-center gap-1.5 min-w-0">
+            {@const lost = phase === 'result' && !team1Won}
+            <div class="bv-char-card bv-team-2"
+              class:bv-dead={dead}
+              class:bv-victor={lost && !dead}
+              style="--team-accent: {team2Color};">
+              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full mb-1.5">
                 {#if dead}
-                  <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
-                {:else if phase === 'result' && !team1Won}
-                  <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: {team2Color}; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+                  <span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
+                {:else if lost}
+                  <span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: {team2Color}; font-variation-settings: 'FILL' 1;">workspace_premium</span>
                 {/if}
-                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: {team2Color}; font-size: 0.75rem;">{char.name}</p>
+                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: {team2Color}; font-size: 0.78rem; letter-spacing: 0.03em;">{char.name}</p>
               </div>
-              <div class="rounded-full overflow-hidden" style="height: 7px; background: rgba(255,255,255,0.08);">
-                <div class="h-full rounded-full"
-                  style="width: {pct * 100}%; background: {hpColor(pct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
+              <div class="bv-hp-track">
+                <div class="bv-hp-fill" style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
               </div>
-              <p style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.6rem;">{formatHp(hp)} / {formatHp(char.maxHp)}</p>
+              <p class="text-center mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.62rem; letter-spacing: 0.04em;">{formatHp(hp)}<span style="color: #4e4635;"> / {formatHp(char.maxHp)}</span></p>
             </div>
           {/each}
         </div>

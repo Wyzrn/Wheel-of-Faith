@@ -710,26 +710,29 @@
             {@const hp  = t1DispHp[i] ?? 0}
             {@const pct = t1HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
+            {@const won  = phase === 'result' && playerWon}
             {@const badges = statusByName.get(char.name) ?? []}
-            <div use:trackCharEl={{ name: char.name, team: 1 }} class="rounded-xl p-2 flex flex-col gap-1 items-center text-center"
-              style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,{dead ? '0.07' : phase === 'result' && playerWon ? '0.6' : '0.22'}); opacity: {dead ? 0.4 : 1}; transition: opacity 0.5s, border-color 0.5s;">
-              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full">
-                {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
-                {:else if phase === 'result' && playerWon}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+            <div
+              use:trackCharEl={{ name: char.name, team: 1 }}
+              class="bv-char-card bv-team-1"
+              class:bv-dead={dead}
+              class:bv-victor={won && !dead}
+            >
+              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full mb-1.5">
+                {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
+                {:else if won}<span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
                 {/if}
-                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.75rem;">{char.name}</p>
+                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.78rem; letter-spacing: 0.03em;">{char.name}</p>
               </div>
-              <div class="rounded-full overflow-hidden w-full" style="height: 7px; background: rgba(255,255,255,0.08);">
-                <div class="h-full rounded-full" style="width: {pct * 100}%; background: {hpColor(pct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
+              <div class="bv-hp-track">
+                <div class="bv-hp-fill" style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
               </div>
-              <p style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.6rem;">{formatHp(hp)} / {formatHp(char.maxHp)}</p>
-              <!-- Status chip strip — hover shows the description. -->
+              <p class="text-center mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.62rem; letter-spacing: 0.04em;">{formatHp(hp)}<span style="color: #4e4635;"> / {formatHp(char.maxHp)}</span></p>
               {#if badges.length > 0 && !dead}
-                <div class="flex flex-wrap gap-1 justify-center mt-0.5">
+                <div class="flex flex-wrap gap-1 justify-center mt-1.5">
                   {#each badges as b}
-                    <span class="inline-flex items-center justify-center rounded-full"
-                      title="{b.label}: {b.description}"
-                      style="width: 18px; height: 18px; background: {b.color}22; border: 1px solid {b.color}66;">
+                    <span class="bv-status-chip" title="{b.label}: {b.description}"
+                      style="background: {b.color}22; border-color: {b.color}66;">
                       <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
                     </span>
                   {/each}
@@ -749,24 +752,28 @@
             {@const pct = t2HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
             {@const badges = statusByName.get(char.name) ?? []}
-            <div use:trackCharEl={{ name: char.name, team: 2 }} class="rounded-xl p-2 flex flex-col gap-1 items-center text-center"
-              style="background: {ec}0d; border: 1px solid {ec}{dead ? '11' : phase === 'result' && !playerWon ? '66' : '22'}; opacity: {dead ? 0.4 : 1}; transition: opacity 0.5s, border-color 0.5s;">
-              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full">
-                {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
-                {:else if phase === 'result' && !playerWon}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: {ec}; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+            {@const lost = phase === 'result' && !playerWon}
+            <div
+              use:trackCharEl={{ name: char.name, team: 2 }}
+              class="bv-char-card bv-team-2"
+              class:bv-dead={dead}
+              style="--team-accent: {ec};"
+            >
+              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full mb-1.5">
+                {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
+                {:else if lost}<span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: {ec}; font-variation-settings: 'FILL' 1;">workspace_premium</span>
                 {/if}
-                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: {ec}; font-size: 0.75rem;">{char.name}</p>
+                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: {ec}; font-size: 0.78rem; letter-spacing: 0.03em;">{char.name}</p>
               </div>
-              <div class="rounded-full overflow-hidden w-full" style="height: 7px; background: rgba(255,255,255,0.08);">
-                <div class="h-full rounded-full" style="width: {pct * 100}%; background: {hpColor(pct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
+              <div class="bv-hp-track">
+                <div class="bv-hp-fill" style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
               </div>
-              <p style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.6rem;">{formatHp(hp)} / {formatHp(char.maxHp)}</p>
+              <p class="text-center mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.62rem; letter-spacing: 0.04em;">{formatHp(hp)}<span style="color: #4e4635;"> / {formatHp(char.maxHp)}</span></p>
               {#if badges.length > 0 && !dead}
-                <div class="flex flex-wrap gap-1 justify-center mt-0.5">
+                <div class="flex flex-wrap gap-1 justify-center mt-1.5">
                   {#each badges as b}
-                    <span class="inline-flex items-center justify-center rounded-full"
-                      title="{b.label}: {b.description}"
-                      style="width: 18px; height: 18px; background: {b.color}22; border: 1px solid {b.color}66;">
+                    <span class="bv-status-chip" title="{b.label}: {b.description}"
+                      style="background: {b.color}22; border-color: {b.color}66;">
                       <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
                     </span>
                   {/each}
@@ -817,35 +824,38 @@
       </div>
     {/if}
 
-    <!-- Battle log -->
+    <!-- Battle log — uses the shared .bv-log-box / .bv-log-line classes so it
+         matches every other battle view's transcript styling. -->
     {#if phase !== 'intro'}
-      <div class="w-full rounded-xl overflow-hidden mb-4" style="border: 1px solid rgba(240,192,64,0.12); background: #0d0d16;">
+      <div class="w-full rounded-xl overflow-hidden mb-4" style="border: 1px solid rgba(240,192,64,0.14); background: #0d0d16; box-shadow: 0 2px 14px rgba(0,0,0,0.5);">
         <div class="flex items-center gap-2 px-4 py-2.5" style="border-bottom: 1px solid rgba(240,192,64,0.08);">
-          <span class="material-symbols-outlined" style="font-size: 14px; color: #9a907b; font-variation-settings: 'FILL' 1;">menu_book</span>
-          <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Battle Log</p>
+          <span class="material-symbols-outlined" style="font-size: 14px; color: #f0c040; font-variation-settings: 'FILL' 1;">menu_book</span>
+          <p class="text-xs tracking-[0.18em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #f0c040; font-weight: 700;">Battle Log</p>
           {#if phase === 'fight'}
-            <span class="ml-auto text-xs px-2 py-0.5 rounded" style="background: rgba(157,23,77,0.3); border: 1px solid rgba(157,23,77,0.5); font-family: 'JetBrains Mono', monospace; color: #f9a8d4;">
+            <span class="ml-auto text-[10px] px-2 py-0.5 rounded font-mono font-bold" style="background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.32); color: #a78bfa; letter-spacing: 0.06em;">
               Round {roundIdx} / {rounds.length}
             </span>
           {/if}
         </div>
-        <div bind:this={logEl} class="overflow-y-auto px-4 py-3" style="max-height: 280px; scroll-behavior: smooth;">
+        <div bind:this={logEl} class="bv-log-box" style="max-height: 280px; border-radius: 0; border: none; padding: 12px 16px;">
           {#if logLines.length === 0}
             <p class="text-xs text-center py-4" style="color: #4e4635; font-style: italic;">The battle begins…</p>
           {/if}
           {#each logLines as line}
-            {#if line.startsWith('──')}
-              <p class="text-xs mt-3 mb-1 tracking-[0.15em]" style="font-family: 'JetBrains Mono', monospace; color: #9a907b; border-bottom: 1px solid rgba(240,192,64,0.08); padding-bottom: 4px;">{line}</p>
+            {#if line.startsWith('──') || line.startsWith('══')}
+              <p class="bv-log-line bv-log-header text-xs">{line}</p>
             {:else if line.includes('CRITICAL') || line.includes('DEVASTATING') || line.includes('PERFECT STRIKE') || line.includes('OVERWHELMING') || line.includes('UNSTOPPABLE') || line.includes('OVERKILL')}
-              <p class="text-xs mb-1 font-bold" style="color: #fde047; font-family: 'JetBrains Mono', monospace;">{line}</p>
+              <p class="bv-log-line bv-log-crit text-xs">{line}</p>
             {:else if line.includes('has been defeated!')}
-              <p class="text-xs mb-1 font-bold" style="color: #ef4444; font-family: 'JetBrains Mono', monospace;">{line}</p>
+              <p class="bv-log-line text-xs font-bold" style="color: #ef4444;">{line}</p>
+            {:else if line.includes('restores') || line.includes('recovers') || line.includes('mends')}
+              <p class="bv-log-line bv-log-heal text-xs">{line}</p>
             {:else if [...t1Names].some(n => line.startsWith(n))}
-              <p class="text-xs mb-1" style="color: #fde68a; font-family: 'JetBrains Mono', monospace;">{line}</p>
+              <p class="bv-log-line text-xs" style="color: #fde68a;">{line}</p>
             {:else if [...allT2Names].some(n => line.startsWith(n))}
-              <p class="text-xs mb-1" style="color: #e9d5ff; font-family: 'JetBrains Mono', monospace;">{line}</p>
+              <p class="bv-log-line text-xs" style="color: #e9d5ff;">{line}</p>
             {:else}
-              <p class="text-xs mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-style: italic;">{line}</p>
+              <p class="bv-log-line text-xs" style="color: #9a907b; font-style: italic;">{line}</p>
             {/if}
           {/each}
         </div>
@@ -860,12 +870,12 @@
 {#if phase === 'result'}
   <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
     style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(88px, calc(env(safe-area-inset-bottom,0px) + 88px));">
-    <div class="w-full max-w-md rounded-2xl overflow-hidden"
-      style="background: {playerWon ? 'rgba(240,192,64,0.06)' : 'rgba(239,68,68,0.04)'}; border: 1px solid {playerWon ? 'rgba(240,192,64,0.4)' : 'rgba(239,68,68,0.3)'}; box-shadow: 0 0 60px {playerWon ? 'rgba(240,192,64,0.12)' : 'rgba(239,68,68,0.08)'}; animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
-      <div class="px-5 py-6 text-center">
+    <div class="w-full max-w-md bv-result-banner" class:bv-result-win={playerWon} class:bv-result-loss={!playerWon}>
+      <div class="px-5 py-2 text-center">
         {#if playerWon}
-          <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #f0c040;">Victory</p>
-          <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: #f0c040; letter-spacing: 0.12em; filter: drop-shadow(0 0 16px rgba(240,192,64,0.55));">{selectedTeam?.name ?? 'Your Team'} WINS!</p>
+          <span class="material-symbols-outlined" style="font-size: 36px; color: #34d399; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 12px rgba(52,211,153,0.5));">emoji_events</span>
+          <p class="text-xs tracking-[0.32em] uppercase mt-1 mb-1.5" style="font-family: 'JetBrains Mono', monospace; color: #34d399; font-weight: 700;">Victory</p>
+          <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: #34d399; letter-spacing: 0.12em; filter: drop-shadow(0 0 16px rgba(52,211,153,0.6));">{selectedTeam?.name ?? 'Your Team'} WINS!</p>
           <p class="mt-1 text-sm" style="color: #9a907b;">Fate has spoken.</p>
 
           {#if lastDrops}
@@ -905,7 +915,8 @@
             </div>
           {/if}
         {:else}
-          <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #ef4444;">Defeated</p>
+          <span class="material-symbols-outlined" style="font-size: 36px; color: #ef4444; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 12px rgba(239,68,68,0.5));">sentiment_dissatisfied</span>
+          <p class="text-xs tracking-[0.32em] uppercase mt-1 mb-1.5" style="font-family: 'JetBrains Mono', monospace; color: #ef4444; font-weight: 700;">Defeated</p>
           <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: #ef4444; letter-spacing: 0.12em;">Enemy Forces WIN!</p>
           <p class="mt-1 text-sm" style="color: #9a907b;">{selectedTeam?.name ?? 'Your team'} was defeated. Try again.</p>
         {/if}

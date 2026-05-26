@@ -584,6 +584,152 @@
 }
 
 /*
+ * BATTLE VIEW CHROME — shared classes for every battle screen so the polish
+ * level stays consistent. Updated in one place, applied everywhere.
+ * Naming prefix: .bv-* (battle view) so they're easy to grep + non-clashing.
+ */
+
+/* Character card — the box around a single combatant in any battle view.
+   Subtle elevation + hover glow so cards feel like physical objects. */
+.bv-char-card {
+  position: relative;
+  border-radius: 12px;
+  padding: 10px 10px 9px;
+  background: linear-gradient(170deg, rgba(255,225,140,0.04) 0%, rgba(8,7,16,0.85) 80%);
+  border: 1px solid rgba(255,225,140,0.10);
+  box-shadow:
+    0 2px 12px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,225,140,0.06);
+  transition: border-color 0.4s, box-shadow 0.4s, opacity 0.4s, transform 0.22s;
+  overflow: hidden;
+}
+.bv-char-card.bv-team-1 {
+  background: linear-gradient(170deg, rgba(240,192,64,0.06) 0%, rgba(8,7,16,0.92) 80%);
+  border-color: rgba(240,192,64,0.20);
+}
+.bv-char-card.bv-team-2 {
+  background: linear-gradient(170deg, rgba(232,121,249,0.05) 0%, rgba(8,7,16,0.92) 80%);
+  border-color: rgba(232,121,249,0.20);
+}
+.bv-char-card.bv-dead {
+  opacity: 0.35;
+  filter: saturate(0.4) brightness(0.7);
+}
+.bv-char-card.bv-victor {
+  box-shadow:
+    0 2px 14px rgba(0,0,0,0.55),
+    0 0 24px rgba(240,192,64,0.28),
+    inset 0 1px 0 rgba(255,225,140,0.12);
+}
+
+/* HP track — the slim bar inside each char card */
+.bv-hp-track {
+  position: relative;
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(0,0,0,0.4);
+}
+.bv-hp-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.22, 0.8, 0.3, 1), background 0.5s;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* Team column wrapper — shared spacing between players in a column */
+.bv-team-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Battle log — the scrollable line-by-line transcript */
+.bv-log-box {
+  background: linear-gradient(180deg, #07060c 0%, #050308 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.72;
+  color: #d4cdb8;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 12px rgba(0,0,0,0.55);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(240,192,64,0.2) transparent;
+}
+.bv-log-box::-webkit-scrollbar { width: 5px; }
+.bv-log-box::-webkit-scrollbar-thumb { background: rgba(240,192,64,0.2); border-radius: 4px; }
+.bv-log-box::-webkit-scrollbar-track { background: transparent; }
+
+.bv-log-line {
+  margin-bottom: 1px;
+  white-space: pre-wrap;
+  animation: bvLineIn 0.22s ease-out;
+}
+.bv-log-line.bv-log-header {
+  color: #f0c040;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.bv-log-line.bv-log-crit {
+  color: #fde047;
+  font-weight: 700;
+}
+.bv-log-line.bv-log-heal {
+  color: #34d399;
+}
+@keyframes bvLineIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Status effect badge — small chip under a character card */
+.bv-status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border-width: 1px;
+  border-style: solid;
+  animation: bvChipPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes bvChipPop {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* Result banner — the slab that announces VICTORY / DEFEAT at battle end */
+.bv-result-banner {
+  position: relative;
+  border-radius: 16px;
+  padding: 18px 20px;
+  text-align: center;
+  border: 1px solid;
+  animation: bvResultIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.bv-result-banner.bv-result-win {
+  background: linear-gradient(135deg, rgba(52,211,153,0.16), rgba(8,7,16,0.95) 75%);
+  border-color: rgba(52,211,153,0.45);
+  box-shadow: 0 0 32px rgba(52,211,153,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.bv-result-banner.bv-result-loss {
+  background: linear-gradient(135deg, rgba(239,68,68,0.16), rgba(8,7,16,0.95) 75%);
+  border-color: rgba(239,68,68,0.45);
+  box-shadow: 0 0 32px rgba(239,68,68,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+@keyframes bvResultIn {
+  from { transform: scale(0.8) translateY(20px); opacity: 0; filter: blur(8px); }
+  to   { transform: scale(1) translateY(0);     opacity: 1; filter: blur(0); }
+}
+
+/*
  * KEYBOARD-NAV FOCUS — visible gold ring on every focusable element. Uses
  * :focus-visible so mouse clicks don't paint a ring (only Tab navigation).
  * Critical for keyboard users; cheap polish for everyone else.
