@@ -561,10 +561,12 @@
       </div>
     {/if}
 
-    <div class="fixed bottom-0 left-0 right-0 px-4 pt-3 z-20"
-      style="background: linear-gradient(transparent, rgba(7,7,13,0.97) 40%); padding-bottom: max(28px, env(safe-area-inset-bottom, 28px));">
+    <!-- Sits above the 64px bottom nav so it isn't half-occluded by the hotbar. -->
+    <div class="fixed left-0 right-0 px-4 pt-3 z-20"
+      style="bottom: 64px; background: linear-gradient(transparent, rgba(7,7,13,0.97) 40%); padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));">
       <div class="max-w-md mx-auto">
         <button onclick={startRun} disabled={!selectedTeam || teamMembers.length === 0}
+          data-fx="big"
           class="{selectedTeam && teamMembers.length > 0 ? '' : 'obsidian-slab'} w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-widest"
           style="{selectedTeam && teamMembers.length > 0 ? 'background: rgba(167,139,250,0.15); border: 1.5px solid rgba(167,139,250,0.5); color: #a78bfa; cursor: pointer;' : 'opacity: 0.4; cursor: not-allowed; color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07);'}">
           ∞ Enter Endless

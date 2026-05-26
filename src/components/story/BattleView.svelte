@@ -620,10 +620,14 @@
         {/each}
       </div>
 
-      <div class="fixed bottom-0 left-0 right-0 px-4 pt-3 z-20"
-        style="background: linear-gradient(transparent, rgba(7,7,13,0.97) 40%); padding-bottom: max(28px, env(safe-area-inset-bottom, 28px));">
+      <!-- Fight CTA — sits ABOVE the 64px bottom hotbar instead of behind it.
+           The previous `bottom: 0` put the button half-occluded by the nav on
+           every screen. Adding the nav height to the offset clears it cleanly. -->
+      <div class="fixed left-0 right-0 px-4 pt-3 z-20"
+        style="bottom: 64px; background: linear-gradient(transparent, rgba(7,7,13,0.97) 40%); padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));">
         <div class="max-w-md mx-auto">
           <button onclick={startFight} disabled={!selectedTeam || teamMembers.length === 0}
+            data-fx="big"
             class="{selectedTeam && teamMembers.length > 0 ? 'metal-stamp-gold' : 'obsidian-slab'} w-full py-3.5 rounded-xl font-bold font-mono text-sm tracking-widest"
             style="{!selectedTeam || teamMembers.length === 0 ? 'opacity: 0.4; cursor: not-allowed; color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07);' : ''}">
             ⚔ Fight
