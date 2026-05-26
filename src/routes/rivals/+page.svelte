@@ -6,6 +6,7 @@
   import { normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import QuickBattleView from '../../components/QuickBattleView.svelte'
   import RivalsPreviewIntro from '../../components/RivalsPreviewIntro.svelte'
+  import { recordOpponent } from '$lib/recentOpponents'
   import type { SpinResult } from '$lib/session/types'
   import { setRivalsWs, getRivalsWs, clearRivalsWs } from '$lib/stores/rivalsWs'
   import { startOfflineRivals, getOfflineRivalsResult, clearOfflineRivals } from '$lib/stores/offlineRivals'
@@ -556,6 +557,13 @@
           try { wsData.ws.send(JSON.stringify({ type: 'battle_result', won: iWon })) } catch { /* socket closed */ }
         }
         if (auth.loggedIn) auth.recordBattleResult(iWon)
+        // Record opponent locally so the profile page can show "play again /
+        // view profile" links for recent battles. Strips bot/anon usernames.
+        recordOpponent({
+          username: partnerName || 'Opponent',
+          myResult: winner === 'draw' ? 'draw' : (iWon ? 'won' : 'lost'),
+          mode: isBotBattle ? 'bot' : 'rivals',
+        })
       }}
       onRematch={() => {
         phase = 'menu'

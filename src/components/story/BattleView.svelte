@@ -16,6 +16,7 @@
   import AttackFX from '../AttackFX.svelte'
   import { settings } from '$lib/settings.svelte'
   import { saveReplay } from '$lib/battleReplay'
+  import { deriveStatusBadges } from '$lib/game/battleStatuses'
 
   let { slot, world, absolutePlusLevel = 0, onBattleComplete, onNextBattle, onBack, onGoToTeams, gamepasses = [] }: {
     slot: StorySaveSlot
@@ -125,6 +126,16 @@
   let t1PanelEl      = $state<HTMLDivElement | null>(null)
   let t2PanelEl      = $state<HTMLDivElement | null>(null)
   let battleWrapperEl = $state<HTMLDivElement | null>(null)
+  // Per-character element refs so VFX can fire from the actual attacker's
+  // card rect (not just the team column mid-point). Keyed by character name
+  // — populated by the `track` Svelte action on each card.
+  const t1CharEls = new Map<string, HTMLElement>()
+  const t2CharEls = new Map<string, HTMLElement>()
+  function trackCharEl(node: HTMLElement, args: { name: string; team: 1 | 2 }) {
+    const map = args.team === 1 ? t1CharEls : t2CharEls
+    map.set(args.name, node)
+    return { destroy() { map.delete(args.name) } }
+  }
 
   type AnimDir = 'ltr' | 'rtl' | 'center'
   let activeAnim    = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; origin?: { x: number; y: number }; attackType?: string } | null>(null)
@@ -160,6 +171,21 @@
     Neutral:   { type: 'slash',     color: '#f87171' },
   }
 
+  // Per-attacker origin lookup. Tries to find the specific character's card
+  // element (so VFX shoots from THAT character, not the team column midpoint)
+  // and falls back to the team column rect → wrapper rect if the name match
+  // misses. This is what the user means by "shoot out from each attacker".
+  function getCharOriginByName(name: string | null): { x: number; y: number } | undefined {
+    if (!name) return undefined
+    const el = t1CharEls.get(name) ?? t2CharEls.get(name)
+    if (!el) return undefined
+    const r = el.getBoundingClientRect()
+    return {
+      x: r.left + r.width / 2,
+      y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80)),
+    }
+  }
+
   function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
     // Center anims (system events / AOE) anchor on the battle wrapper midpoint.
     if (dir === 'center') {
@@ -177,6 +203,15 @@
     return { x, y }
   }
 
+  // Extract the attacker's name from a log line. Battle log lines start with
+  // the actor's name in patterns like "Aria slashes for 220 damage!".
+  function inferAttackerName(line: string): string | null {
+    for (const n of [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)]) {
+      if (line.startsWith(n)) return n
+    }
+    return null
+  }
+
   function speedDelay(ms: number): number {
     if (settings.battleSpeed >= 99) return 10
     return Math.max(50, ms / settings.battleSpeed)
@@ -192,6 +227,12 @@
   let t1Names = $derived(new Set(t1Chars.map(c => c.name)))
   let t2Names = $derived(new Set(t2Chars.map(c => c.name)))
   let t1HpPct = $derived(t1Chars.map((c, i) => c.maxHp > 0 ? Math.max(0, (t1DispHp[i] ?? 0) / c.maxHp) : 0))
+  // Status badges derived from the last few log lines — gives players visible
+  // feedback on poison/burn/freeze/etc. without needing the battle engine to
+  // expose persistent status state (a bigger refactor).
+  let statusByName = $derived(
+    deriveStatusBadges(logLines, [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)])
+  )
   let t2HpPct = $derived(t2Chars.map((c, i) => c.maxHp > 0 ? Math.max(0, (t2DispHp[i] ?? 0) / c.maxHp) : 0))
 
   // Teams available for battle
@@ -304,7 +345,14 @@
         const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
         const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
         const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
-        const origin = getPanelOrigin(originDir)
+        // Prefer the specific character's rect — if the line names a known
+        // combatant, fire FX from their card. AOE/debuff bursts on the target
+        // team's panel instead. Fallback chain: char el → panel mid → wrapper.
+        const attackerName = inferAttackerName(head)
+        let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
+          ? getCharOriginByName(attackerName)
+          : undefined
+        if (!origin) origin = getPanelOrigin(originDir)
         showAnim(type, color, direction, grade, origin, fxAttackType)
       }
     }
@@ -379,8 +427,9 @@
     } else {
       lastDrops = null
     }
-    // Persist a text replay (last 5 kept) so the player can re-read what
-    // happened. Battle log is the source of truth; this is just a snapshot.
+    // Persist a replay (last 5 kept) including the raw simulation state so
+    // the viewer can render the full battle UI — character panels, HP bars,
+    // status badges, log — not just a text dump.
     try {
       saveReplay({
         mode: 'story',
@@ -391,6 +440,14 @@
         team2Chars: t2Chars.map(c => ({ name: c.name })),
         logLines: [...logLines],
         playerWon,
+        // Snapshot the BattleCharacter rosters at their initial state and all
+        // simulated rounds. The viewer can replay these straight through the
+        // existing playRound() pipeline if we ever wire it up.
+        fullState: {
+          team1: $state.snapshot(t1Chars),
+          team2: $state.snapshot(t2Chars),
+          allWaves: $state.snapshot(allWaves),
+        },
       })
     } catch { /* localStorage quota — skip silently */ }
     phase = 'result'
@@ -653,7 +710,8 @@
             {@const hp  = t1DispHp[i] ?? 0}
             {@const pct = t1HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
-            <div class="rounded-xl p-2 flex flex-col gap-1 items-center text-center"
+            {@const badges = statusByName.get(char.name) ?? []}
+            <div use:trackCharEl={{ name: char.name, team: 1 }} class="rounded-xl p-2 flex flex-col gap-1 items-center text-center"
               style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,{dead ? '0.07' : phase === 'result' && playerWon ? '0.6' : '0.22'}); opacity: {dead ? 0.4 : 1}; transition: opacity 0.5s, border-color 0.5s;">
               <div class="flex items-center justify-center gap-1.5 min-w-0 w-full">
                 {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
@@ -665,6 +723,18 @@
                 <div class="h-full rounded-full" style="width: {pct * 100}%; background: {hpColor(pct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
               </div>
               <p style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.6rem;">{formatHp(hp)} / {formatHp(char.maxHp)}</p>
+              <!-- Status chip strip — hover shows the description. -->
+              {#if badges.length > 0 && !dead}
+                <div class="flex flex-wrap gap-1 justify-center mt-0.5">
+                  {#each badges as b}
+                    <span class="inline-flex items-center justify-center rounded-full"
+                      title="{b.label}: {b.description}"
+                      style="width: 18px; height: 18px; background: {b.color}22; border: 1px solid {b.color}66;">
+                      <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+                    </span>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/each}
         </div>
@@ -678,7 +748,8 @@
             {@const hp  = t2DispHp[i] ?? 0}
             {@const pct = t2HpPct[i]  ?? 0}
             {@const dead = hp <= 0}
-            <div class="rounded-xl p-2 flex flex-col gap-1 items-center text-center"
+            {@const badges = statusByName.get(char.name) ?? []}
+            <div use:trackCharEl={{ name: char.name, team: 2 }} class="rounded-xl p-2 flex flex-col gap-1 items-center text-center"
               style="background: {ec}0d; border: 1px solid {ec}{dead ? '11' : phase === 'result' && !playerWon ? '66' : '22'}; opacity: {dead ? 0.4 : 1}; transition: opacity 0.5s, border-color 0.5s;">
               <div class="flex items-center justify-center gap-1.5 min-w-0 w-full">
                 {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
@@ -690,6 +761,17 @@
                 <div class="h-full rounded-full" style="width: {pct * 100}%; background: {hpColor(pct)}; transition: width 0.8s ease-out, background 0.5s;"></div>
               </div>
               <p style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.6rem;">{formatHp(hp)} / {formatHp(char.maxHp)}</p>
+              {#if badges.length > 0 && !dead}
+                <div class="flex flex-wrap gap-1 justify-center mt-0.5">
+                  {#each badges as b}
+                    <span class="inline-flex items-center justify-center rounded-full"
+                      title="{b.label}: {b.description}"
+                      style="width: 18px; height: 18px; background: {b.color}22; border: 1px solid {b.color}66;">
+                      <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+                    </span>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/each}
         </div>

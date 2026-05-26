@@ -4,10 +4,16 @@
   import { auth } from '$lib/stores/auth.svelte'
   import { loadSpinHistory } from '$lib/spinHistory'
   import type { SpinHistoryEntry } from '$lib/spinHistory'
+  import { ACHIEVEMENTS, buildContext, evaluateAll, colorForTier, type AchievementState, type AchievementTier } from '$lib/achievements'
+  import { loadRecentOpponents, type RecentOpponent } from '$lib/recentOpponents'
 
   let characters = $state<any[]>([])
   let loading = $state(true)
   let spinHistory = $state<SpinHistoryEntry[]>([])
+  // Achievements computed locally on mount + after auth settles
+  let achievementStates = $state<AchievementState[]>([])
+  let unlockedAchievements = $derived(achievementStates.filter(a => a.condition.met))
+  let recentOpponents = $state<RecentOpponent[]>([])
 
   function formatDate(iso: string) {
     try {
@@ -33,8 +39,21 @@
       const data = await res.json()
       characters = data.characters ?? []
     }
+    // Evaluate achievements with full context (auth + history + slots).
+    achievementStates = evaluateAll(buildContext(auth.user)).states
+    recentOpponents = loadRecentOpponents()
     loading = false
   })
+
+  function timeAgoShort(iso: string): string {
+    const ms = Date.now() - new Date(iso).getTime()
+    const m = Math.floor(ms / 60000)
+    if (m < 1) return 'now'
+    if (m < 60) return `${m}m`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `${h}h`
+    return `${Math.floor(h / 24)}d`
+  }
 
   // Top 10 characters by score (strongest first)
   let topCharacters = $derived(
@@ -202,6 +221,70 @@
               </a>
             {/each}
           </div>
+        </section>
+      {/if}
+
+      <!-- ─── Recent Opponents ─────────────────────────────────────────── -->
+      {#if recentOpponents.length > 0}
+        <section class="mb-8">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: #a78bfa; font-variation-settings: 'FILL' 1;">swords</span>
+            <h2 style="font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 700; color: #ffdf96; letter-spacing: 0.1em;">Recent Opponents</h2>
+            <span class="font-mono text-xs" style="color: #4e4635;">last {recentOpponents.length} fought</span>
+          </div>
+          <div class="flex flex-col gap-2">
+            {#each recentOpponents as opp}
+              {@const resultColor = opp.myResult === 'won' ? '#34d399' : opp.myResult === 'lost' ? '#f87171' : '#9a907b'}
+              <a href={`/users/${encodeURIComponent(opp.username)}`}
+                class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all hover:brightness-110"
+                style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid {resultColor}33; text-decoration: none;">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: {resultColor}; font-variation-settings: 'FILL' 1;">
+                  {opp.myResult === 'won' ? 'emoji_events' : opp.myResult === 'lost' ? 'sentiment_dissatisfied' : 'handshake'}
+                </span>
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold truncate text-sm" style="font-family: 'Cinzel', serif; color: #ffdf96;">{opp.username}</p>
+                  <p class="font-mono text-[10px]" style="color: #9a907b;">
+                    <span style="color: {resultColor};">{opp.myResult === 'won' ? 'Victory' : opp.myResult === 'lost' ? 'Defeat' : 'Draw'}</span>
+                    · {opp.mode} · {timeAgoShort(opp.lastBattledAt)} ago
+                  </p>
+                </div>
+                <span class="material-symbols-outlined shrink-0" style="color: #4e4635; font-size: 18px;">chevron_right</span>
+              </a>
+            {/each}
+          </div>
+        </section>
+      {/if}
+
+      <!-- ─── Achievements ─────────────────────────────────────────────── -->
+      {#if achievementStates.length > 0}
+        <section class="mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined" style="font-size: 20px; color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+              <h2 style="font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 700; color: #ffdf96; letter-spacing: 0.1em;">Achievements</h2>
+              <span class="font-mono text-xs" style="color: #4e4635;">{unlockedAchievements.length}/{ACHIEVEMENTS.length}</span>
+            </div>
+            <a href="/achievements" class="font-mono text-xs px-3 py-1.5 rounded-lg" style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.22); color: #f0c040; text-decoration: none;">
+              View all →
+            </a>
+          </div>
+          {#if unlockedAchievements.length === 0}
+            <p class="text-sm text-center py-6" style="color: #4e4635; font-style: italic;">No achievements yet — keep playing to unlock badges.</p>
+          {:else}
+            <!-- Grid of unlocked badge tiles (compact, latest 12) -->
+            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {#each unlockedAchievements.slice(0, 12) as a}
+                {@const color = colorForTier(a.tier)}
+                <div class="rounded-xl px-3 py-3 text-center" style="background: linear-gradient(135deg, {color}10, {color}03); border: 1px solid {color}55; box-shadow: 0 0 12px {color}18;" title={a.description}>
+                  <span class="material-symbols-outlined" style="font-size: 26px; color: {color}; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 6px {color}aa);">{a.icon}</span>
+                  <p class="text-[10px] font-bold mt-1 truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{a.name}</p>
+                </div>
+              {/each}
+            </div>
+            {#if unlockedAchievements.length > 12}
+              <p class="text-xs text-center mt-3" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">+{unlockedAchievements.length - 12} more on the achievements page</p>
+            {/if}
+          {/if}
         </section>
       {/if}
 

@@ -161,6 +161,47 @@
   let playerWon    = $state(false)
   let isNewRecord  = $state(false)
 
+  // Autoplay — when on, the wave_result screen auto-advances to the next wave
+  // after a short delay. Player can interrupt by tapping Quit. Persisted in
+  // localStorage so the preference survives page reloads.
+  const AUTOPLAY_KEY = 'wof_endless_autoplay_v1'
+  function loadAutoplay(): boolean {
+    if (typeof localStorage === 'undefined') return false
+    try { return localStorage.getItem(AUTOPLAY_KEY) === '1' } catch { return false }
+  }
+  let autoplay = $state(loadAutoplay())
+  let autoplayCountdown = $state(0)
+  let autoplayTimer: ReturnType<typeof setInterval> | null = null
+  let autoplayTimeout: ReturnType<typeof setTimeout> | null = null
+  function toggleAutoplay() {
+    autoplay = !autoplay
+    if (typeof localStorage !== 'undefined') {
+      try { localStorage.setItem(AUTOPLAY_KEY, autoplay ? '1' : '0') } catch { /* quota */ }
+    }
+    if (!autoplay) cancelAutoplayTimer()
+    else if (phase === 'wave_result') startAutoplayTimer()
+  }
+  function startAutoplayTimer() {
+    cancelAutoplayTimer()
+    autoplayCountdown = 3000
+    autoplayTimer = setInterval(() => {
+      autoplayCountdown = Math.max(0, autoplayCountdown - 100)
+    }, 100)
+    autoplayTimeout = setTimeout(() => {
+      cancelAutoplayTimer()
+      advanceToNextWave()
+    }, 3000)
+  }
+  function cancelAutoplayTimer() {
+    if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null }
+    if (autoplayTimeout) { clearTimeout(autoplayTimeout); autoplayTimeout = null }
+    autoplayCountdown = 0
+  }
+  $effect(() => {
+    if (phase === 'wave_result' && autoplay) startAutoplayTimer()
+    else if (phase !== 'wave_result') cancelAutoplayTimer()
+  })
+
   // Combat state
   let allSubWaves  = $state<Enemy[][]>([])
   let subWaveIdx   = $state(0)
@@ -514,7 +555,7 @@
   <!-- ══ Pick phase ══════════════════════════════════════════════════════════ -->
   {#if phase === 'pick'}
     <!-- Info card -->
-    <div class="rounded-xl px-4 py-4 mb-5" style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2);">
+    <div class="rounded-xl px-4 py-4 mb-3" style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2);">
       <p class="font-bold text-sm mb-2" style="font-family: var(--font-cinzel); color: #a78bfa;">How Endless Works</p>
       <ul class="font-mono text-xs flex flex-col gap-1" style="color: var(--color-outline);">
         <li>• Fight waves that grow stronger every 3 waves</li>
@@ -526,6 +567,23 @@
         {/if}
       </ul>
     </div>
+
+    <!-- Autoplay toggle — power-user feature for AFK grinding. Persists across
+         sessions. Saves you tapping "Next Wave" 30 times in a row. -->
+    <button onclick={toggleAutoplay} data-fx="big"
+      class="flex items-center justify-between gap-3 rounded-xl px-4 py-3 mb-5 transition-all active:scale-95"
+      style="background: {autoplay ? 'rgba(52,211,153,0.10)' : 'rgba(255,255,255,0.03)'}; border: 1px solid {autoplay ? 'rgba(52,211,153,0.32)' : 'rgba(255,255,255,0.08)'}; cursor: pointer;">
+      <div class="flex items-center gap-2.5">
+        <span class="material-symbols-outlined" style="font-size: 18px; color: {autoplay ? '#34d399' : '#9a907b'}; font-variation-settings: 'FILL' 1;">{autoplay ? 'play_circle' : 'pause_circle'}</span>
+        <div class="text-left">
+          <p class="font-bold text-sm" style="font-family: 'Cinzel', serif; color: {autoplay ? '#34d399' : '#e4e1ee'};">Autoplay</p>
+          <p class="font-mono text-[10px]" style="color: #9a907b;">Auto-advance to next wave after a 3s breather</p>
+        </div>
+      </div>
+      <div class="rounded-full transition-all" style="width: 38px; height: 22px; padding: 2px; background: {autoplay ? '#34d399' : '#3a3a48'};">
+        <div class="rounded-full transition-all" style="width: 18px; height: 18px; background: #0d0d16; transform: translateX({autoplay ? '16px' : '0'});"></div>
+      </div>
+    </button>
 
     {#if teams.length === 0}
       <div class="text-center pt-8">
@@ -715,12 +773,13 @@
           </div>
         {/if}
         <div class="mt-4 flex flex-col gap-2">
-          <button onclick={advanceToNextWave}
+          <button onclick={() => { cancelAutoplayTimer(); advanceToNextWave() }}
+            data-fx="big"
             class="w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest"
             style="background: rgba(167,139,250,0.15); border: 1.5px solid rgba(167,139,250,0.5); color: #a78bfa; cursor: pointer;">
-            ⚔ Wave {currentWave + 1}
+            ⚔ Wave {currentWave + 1}{autoplay && autoplayCountdown > 0 ? ` · auto in ${Math.ceil(autoplayCountdown / 1000)}s` : ''}
           </button>
-          <button onclick={handleQuit}
+          <button onclick={() => { cancelAutoplayTimer(); handleQuit() }}
             class="w-full obsidian-slab py-2.5 rounded-xl font-mono text-sm tracking-widest"
             style="border: 1px solid rgba(167,139,250,0.2); color: var(--color-outline);">
             ↩ Quit & Save

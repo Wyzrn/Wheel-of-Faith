@@ -32,6 +32,7 @@
   import { powerRating } from '$lib/story/powerRating'
   import { quickEquipBestGear } from '$lib/story/saveSlots'
   import { toast } from '$lib/toast.svelte'
+  import CharacterCompare from '../../components/CharacterCompare.svelte'
   import CharacterCard from '../../components/CharacterCard.svelte'
   import TierBadge from '../../components/TierBadge.svelte'
   import RosterCard from '../../components/story/RosterCard.svelte'
@@ -160,6 +161,15 @@
   // Quick-equip: hand-picks the single highest-grade unequipped item from each
   // pool (weapon/armor/power) and slots it onto the character. Toasts a summary
   // so the player can see what changed — hospitality means showing the action.
+  // Compare picker — when active, clicking a roster card sets compareWithId.
+  let comparePickerOpen = $state(false)
+  let compareWithId     = $state<string | null>(null)
+  let comparePair = $derived(
+    expandedEntry && compareWithId
+      ? { left: expandedEntry, right: roster.find(r => r.id === compareWithId) ?? null }
+      : null
+  )
+
   function quickEquip(characterId: string) {
     if (!currentSlot) return
     const snap = $state.snapshot(currentSlot) as StorySaveSlot
@@ -1727,6 +1737,17 @@
           {expandedEntry.name}
         </h3>
         <div class="flex items-center gap-2 flex-shrink-0">
+          <!-- Compare: opens a picker for the second character. -->
+          <button
+            class="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
+            style="background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.32); color: #a78bfa; cursor: pointer;"
+            onclick={() => comparePickerOpen = true}
+            data-fx="big"
+            title="Compare side-by-side against another roster character"
+          >
+            <span class="material-symbols-outlined" style="font-size: 13px;">compare_arrows</span>
+            Compare
+          </button>
           <!-- Quick-equip: auto-picks highest-grade unequipped items. Subtle
                button, fires the action on tap with a confirming toast. -->
           <button
@@ -1759,6 +1780,42 @@
       </div>
     </div>
   </div>
+{/if}
+
+<!-- Compare picker — choose the second character. Sits on top of the expanded
+     view so closing returns to the character sheet. -->
+{#if comparePickerOpen && expandedEntry}
+  <div class="fixed inset-0 z-[60] flex items-center justify-center px-4"
+    style="background: rgba(7,7,13,0.92); backdrop-filter: blur(12px);"
+    onclick={() => comparePickerOpen = false} role="presentation">
+    <div class="obsidian-slab w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl p-5"
+      onclick={(e) => e.stopPropagation()}
+      role="dialog" aria-modal="true" aria-labelledby="compare-pick-title"
+      style="border: 1px solid rgba(167,139,250,0.32);">
+      <h3 id="compare-pick-title" class="font-bold mb-1" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 1rem;">Compare with</h3>
+      <p class="text-xs mb-4" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Pick a roster character to stack against <span style="color: #ffdf96;">{expandedEntry.name}</span>.</p>
+      <div class="flex flex-col gap-2">
+        {#each roster.filter(r => r.id !== expandedEntry!.id) as r}
+          <button onclick={() => { compareWithId = r.id; comparePickerOpen = false }}
+            class="text-left rounded-lg px-3 py-2.5 flex items-center justify-between gap-3"
+            style="background: rgba(255,255,255,0.03); border: 1px solid rgba(167,139,250,0.18); cursor: pointer;">
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-sm truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{r.name}</p>
+              <p class="text-xs truncate" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">{r.race} · {r.archetype}</p>
+            </div>
+            <span class="font-mono text-xs font-bold px-2 py-0.5 rounded" style="background: rgba(240,192,64,0.10); color: #f0c040;">{r.overallTier}</span>
+          </button>
+        {:else}
+          <p class="text-sm text-center py-4" style="color: #4e4635; font-style: italic;">No other characters to compare with yet.</p>
+        {/each}
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Final compare overlay — shows stat-by-stat once a partner is picked. -->
+{#if comparePair?.left && comparePair?.right}
+  <CharacterCompare left={comparePair.left} right={comparePair.right} onClose={() => compareWithId = null} />
 {/if}
 
 <!-- ── Worlds view ───────────────────────────────────────────────────────────── -->

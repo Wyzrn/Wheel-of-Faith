@@ -30,7 +30,13 @@ column flips to ✅ as they ship.
 |---|---|---|
 | ✅ | Achievement / badge system | 20 achievements (bronze/silver/gold/mythic), `lib/achievements.ts` + `/achievements` route. Auto-celebrates new unlocks. |
 | ✅ | Pre-battle preview screen (rivals) | `RivalsPreviewIntro.svelte` — 4s countdown showing both characters side-by-side; Enter/Space skips. |
-| ✅ | Battle replay (story mode first) | MVP text replay — `lib/battleReplay.ts` saves last 5 battles; `/replays` route renders the log + combatants. Visual frame-by-frame replay still on the wishlist. |
+| ✅ | Battle replay (story mode first) | v2: animated playback with team panels, speed controls (0.5×/1×/2×/4×/skip), play-pause-replay buttons, animated log line-by-line. Full FX-pipeline replay still wishlist. |
+| ✅ | Status effect badges in battle | Client-side derivation from log lines — 9 status kinds (buff/poison/burn/freeze/stun/bleed/shield/rage/curse). Chip strip under each char with hover description. |
+| ✅ | Per-character VFX origins | Both `BattleView` and `TeamBattleScreen` now track per-character element refs via `trackCharEl` action. VFX shoots from the attacking character's card, not the column midpoint. |
+| ✅ | Compare two characters | New `CharacterCompare.svelte` modal + picker in roster expanded view. Stat-by-stat diff with lead indicators + Power Rating banner. |
+| ✅ | Endless autoplay | Toggle on pick screen; auto-advances 3s after each wave-clear with a live countdown in the Next Wave button. |
+| ✅ | Recent opponents on profile | `recentOpponents.ts` records last 8 fought from rivals battles, surfaced on profile with profile links to each. |
+| ⏳ | Donation system for clans | Deferred to its own session — needs new endpoints + schema additions. |
 | ✅ | Tier-scaled landing intensity + sound design pass | `tierIntensity()` in SpinWheel scales audio gain/pitch/sustain + haptic pattern; mythic+ adds a fifth-harmonic shimmer + bright wheel flash. |
 | ⏳ | Donation system for clans | Members request gems, others fulfill, daily caps |
 | ⏳ | Status effect badges in battle | Chip strip under each character (buff/debuff/poisoned/frozen/stunned/burning) with hover descriptions. Requires plumbing `activeStatuses[]` through `BattleCharacter` + round results, then UI consumes it. Bigger than it looks — deferred to its own session. |

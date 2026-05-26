@@ -2176,18 +2176,24 @@
           </a>
         </div>
 
-        <!-- Clan + Achievements row -->
+        <!-- Clan + Achievements + Replays row -->
         <div class="flex gap-2">
           <a href="/clan" style="text-decoration: none; flex: 1;">
             <div class="metal-stamp-amber w-full py-3 rounded-lg relative text-center cursor-pointer"
-              style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #1c0a00;">
+              style="font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: #1c0a00;">
               ⚑ Clan
             </div>
           </a>
           <a href="/achievements" style="text-decoration: none; flex: 1;">
             <div class="metal-stamp-gold w-full py-3 rounded-lg relative text-center cursor-pointer"
-              style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #1a0e00;">
+              style="font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: #1a0e00;">
               ★ Badges
+            </div>
+          </a>
+          <a href="/replays" style="text-decoration: none; flex: 1;">
+            <div class="metal-stamp-purple w-full py-3 rounded-lg relative text-center cursor-pointer"
+              style="font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: #1e0a3c;">
+              ↻ Replays
             </div>
           </a>
         </div>

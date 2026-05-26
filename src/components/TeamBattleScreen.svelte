@@ -93,6 +93,32 @@
     return { x, y }
   }
 
+  // Per-character refs so VFX shoots from the specific attacker card, not the
+  // column mid-point. Populated by the `trackCharEl` action on each card.
+  const t1CharEls = new Map<string, HTMLElement>()
+  const t2CharEls = new Map<string, HTMLElement>()
+  function trackCharEl(node: HTMLElement, args: { name: string; team: 1 | 2 }) {
+    const map = args.team === 1 ? t1CharEls : t2CharEls
+    map.set(args.name, node)
+    return { destroy() { map.delete(args.name) } }
+  }
+  function getCharOriginByName(name: string | null): { x: number; y: number } | undefined {
+    if (!name) return undefined
+    const el = t1CharEls.get(name) ?? t2CharEls.get(name)
+    if (!el) return undefined
+    const r = el.getBoundingClientRect()
+    return {
+      x: r.left + r.width / 2,
+      y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80)),
+    }
+  }
+  function inferAttackerName(line: string): string | null {
+    for (const n of [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)]) {
+      if (line.startsWith(n)) return n
+    }
+    return null
+  }
+
   function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, origin?: { x: number; y: number }, attackType?: string) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
     activeAnim = { type, color, key: ++animKey, direction, grade, origin, attackType }
@@ -612,7 +638,14 @@
         const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
         const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
         const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
-        const origin = getPanelOrigin(originDir)
+        // Per-character origin first (FX from the actual attacker's card);
+        // fall back to the team column if name match misses (AOE / debuff
+        // intentionally targets the enemy column rather than a specific char).
+        const attackerName = inferAttackerName(head)
+        let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
+          ? getCharOriginByName(attackerName)
+          : undefined
+        if (!origin) origin = getPanelOrigin(originDir)
         showAnim(type, color, direction, grade, origin, fxAttackType)
       }
     }
@@ -825,7 +858,7 @@
         {@const dead = hp <= 0}
         {@const won  = phase === 'result' && winner === 'team1'}
         {@const lost = phase === 'result' && winner === 'team2'}
-        <div class="member-card" style="border-color:rgba(240,192,64,{dead?'0.07':won?'0.7':'0.22'});box-shadow:0 8px 24px rgba(0,0,0,0.7),inset 1px 1px 0 rgba(255,223,150,0.08){won&&!dead?',0 0 28px rgba(240,192,64,0.22)':''};opacity:{dead?0.4:1};">
+        <div use:trackCharEl={{ name: char.name, team: 1 }} class="member-card" style="border-color:rgba(240,192,64,{dead?'0.07':won?'0.7':'0.22'});box-shadow:0 8px 24px rgba(0,0,0,0.7),inset 1px 1px 0 rgba(255,223,150,0.08){won&&!dead?',0 0 28px rgba(240,192,64,0.22)':''};opacity:{dead?0.4:1};">
           <div class="flex items-center gap-1.5 min-w-0">
             {#if dead}<span class="material-symbols-outlined" style="font-size:13px;color:#ef4444;font-variation-settings:'FILL' 1;">skull</span>
             {:else if won}<span class="material-symbols-outlined" style="font-size:13px;color:#f0c040;font-variation-settings:'FILL' 1;">workspace_premium</span>
@@ -957,7 +990,7 @@
         {@const dead = hp <= 0}
         {@const won  = phase === 'result' && winner === 'team2'}
         {@const lost = phase === 'result' && winner === 'team1'}
-        <div class="member-card" style="border-color:rgba(232,121,249,{dead?'0.07':won?'0.7':'0.22'});box-shadow:0 8px 24px rgba(0,0,0,0.7),inset 1px 1px 0 rgba(232,121,249,0.06){won&&!dead?',0 0 28px rgba(232,121,249,0.22)':''};opacity:{dead?0.4:1};">
+        <div use:trackCharEl={{ name: char.name, team: 2 }} class="member-card" style="border-color:rgba(232,121,249,{dead?'0.07':won?'0.7':'0.22'});box-shadow:0 8px 24px rgba(0,0,0,0.7),inset 1px 1px 0 rgba(232,121,249,0.06){won&&!dead?',0 0 28px rgba(232,121,249,0.22)':''};opacity:{dead?0.4:1};">
           <div class="flex items-center gap-1.5 min-w-0">
             {#if dead}<span class="material-symbols-outlined" style="font-size:13px;color:#ef4444;font-variation-settings:'FILL' 1;">skull</span>
             {:else if won}<span class="material-symbols-outlined" style="font-size:13px;color:#e879f9;font-variation-settings:'FILL' 1;">workspace_premium</span>

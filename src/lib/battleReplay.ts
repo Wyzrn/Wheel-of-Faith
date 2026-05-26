@@ -16,6 +16,12 @@ export interface ReplayEntry {
   team2Chars: { name: string; race?: string; archetype?: string; tier?: string }[]
   logLines: string[]
   playerWon: boolean
+  // Optional raw battle simulation state — when present, the viewer can use
+  // the existing TeamBattleScreen in replay mode (rather than just dumping
+  // log lines). Stored as `unknown` because the full BattleCharacter / round
+  // shape is internal to lib/game/battle and importing it here creates a
+  // circular dep with the route; the viewer route does the type cast.
+  fullState?: unknown
 }
 
 const STORAGE_KEY = 'wof_battle_replays_v1'
