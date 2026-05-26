@@ -318,6 +318,10 @@
   }
 </script>
 
+<!-- Menu chrome is hidden during the battle / preview phases so it doesn't
+     reserve a full viewport above the BattleArena (which has its own
+     fixed top header) and force the player to scroll down to see the fight. -->
+{#if phase !== 'battle' && phase !== 'preview'}
 <main class="min-h-screen pt-16 pb-24 px-4" style="background: #07070d;">
   <div class="max-w-md mx-auto">
 
@@ -556,6 +560,7 @@
 
   </div>
 </main>
+{/if}
 
 <!-- ── Pre-battle preview ─────────────────────────────────────────────────────
      Auto-advances to 'battle' after 4 seconds; Enter / click "Begin" skips. -->
