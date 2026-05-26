@@ -32,6 +32,8 @@
   import Tutorial from '../components/Tutorial.svelte'
   import { appendSpinHistory } from '$lib/spinHistory'
   import { loadCharHistory, pushCharHistory, migrateLegacyLastChar, markCharSaved, type CharHistoryEntry } from '$lib/charHistory'
+  import SpinResultReveal from '../components/SpinResultReveal.svelte'
+  import type { ResolvedMeta } from '$lib/spinResultMeta'
   import { randomCharacterName } from '$lib/story/naming'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import type { ElementType, ItemGrade } from '$lib/content/types'
@@ -2049,6 +2051,16 @@
     </div>
   </nav>
 
+  <!-- Spin progress bar — pinned below nav, matches the Story Mode bar so both
+       game modes feel parallel. Hidden on menu since there's no active session. -->
+  {#if !showMenu && spinQueue.length > 0}
+    <div class="fixed inset-x-0 z-40 pointer-events-none" style="top: 56px;">
+      <div class="h-[3px] mx-auto max-w-[640px] rounded-full overflow-hidden" style="background: rgba(255,255,255,0.04);">
+        <div style="height: 100%; width: {Math.round((currentSpinIndex / spinQueue.length) * 100)}%; background: linear-gradient(90deg, #c0882a, #f0c040); box-shadow: 0 0 6px rgba(240,192,64,0.5); transition: width 0.4s cubic-bezier(0.22, 0.8, 0.3, 1);"></div>
+      </div>
+    </div>
+  {/if}
+
   {#if showSettings}
     <SettingsPanel onClose={() => showSettings = false} />
   {/if}
@@ -2533,126 +2545,29 @@
             />
           {/key}
 
-          <!-- Result reveal overlay (appears once wheel lands) -->
+          <!-- Result reveal overlay — shared SpinResultReveal component so the
+               main game and Story Mode render the post-spin panel identically. -->
           {#if isRevealed}
             {@const last = results.at(-1)}
-            {@const tc = TIER_COLORS[last?.tier ?? ''] ?? null}
-            <div
-              class="absolute inset-0 flex flex-col items-center justify-center rounded-2xl z-10"
-              style="background: rgba(0,0,0,0.78); backdrop-filter: blur(4px); animation: fadeIn 0.18s ease-out forwards;"
-            >
-              <div class="flex flex-col items-center gap-4 px-8 text-center"
-                style="animation: resultReveal 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;"
-              >
-
-                <!-- Tier badge (stats only) -->
-                {#if last?.tier && tc}
-                  <div class="px-4 py-1.5 rounded-lg"
-                    style="background: {tc}18; border: 1px solid {tc}55; box-shadow: 0 0 20px {tc}35;">
-                    <span class="font-black" style="font-family: 'Cinzel', serif; font-size: 2rem; color: {tc}; filter: drop-shadow(0 0 8px {tc}66);">
-                      {normalizeLegacyDisplayLabel(last.displayLabel) ?? last.tier}
-                    </span>
-                  </div>
-                {/if}
-
-                <!-- Power / weapon / armor / enchantment: element + grade badge -->
-                {#if last?.category === 'power' || last?.category === 'weapon' || last?.category === 'armor' || last?.category === 'weaponEnchantment' || last?.category === 'armorEnchantment'}
-                  {@const item = last.category === 'power' ? _powerLookup.get(last.resultLabel ?? '')
-                    : last.category === 'weapon' ? _weaponLookup.get(last.resultLabel ?? '')
-                    : last.category === 'armor' ? _armorLookup.get(last.resultLabel ?? '')
-                    : _enchantLookup.get(last.resultLabel ?? '')}
-                  {#if item?.element || item?.grade}
-                    {@const elColor = item.element ? ELEMENT_COLORS[item.element] : '#9a907b'}
-                    {@const gradeInfo = item.grade ? ITEM_GRADE_INFO[item.grade] : null}
-                    <div class="flex items-center gap-2 flex-wrap justify-center">
-                      {#if item.element}
-                        <span class="px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"
-                          style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
-                          <img src={ELEMENT_ICONS[item.element]} class="w-4 h-4 object-contain" alt={item.element} style="filter: drop-shadow(0 0 3px {elColor});" />
-                          {item.element}
-                        </span>
-                      {/if}
-                      {#if gradeInfo}
-                        <span class="px-2 py-0.5 rounded text-xs font-bold"
-                          style="background: {gradeInfo.color}22; border: 1px solid {gradeInfo.color}55; color: {gradeInfo.color}; font-family: 'JetBrains Mono', monospace; box-shadow: 0 0 8px {gradeInfo.glow}; letter-spacing: 0.05em;">
-                          {item.grade} · {gradeInfo.label}
-                        </span>
-                      {/if}
-                    </div>
-                  {/if}
-                {/if}
-
-                <!-- Race subType / class / transformation: element + grade badge -->
-                {#if last?.category === 'raceSubType' || last?.category === 'raceClass' || last?.category === 'raceTransformation'}
-                  {@const poolMeta = _racePoolLookup.get(last.resultLabel ?? '')}
-                  {#if poolMeta?.element || poolMeta?.grade}
-                    {@const elColor = poolMeta.element ? ELEMENT_COLORS[poolMeta.element] : '#9a907b'}
-                    {@const gradeInfo = poolMeta.grade ? ITEM_GRADE_INFO[poolMeta.grade] : null}
-                    <div class="flex items-center gap-2 flex-wrap justify-center">
-                      {#if poolMeta.element}
-                        <span class="px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"
-                          style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
-                          <img src={ELEMENT_ICONS[poolMeta.element]} class="w-4 h-4 object-contain" alt={poolMeta.element} style="filter: drop-shadow(0 0 3px {elColor});" />
-                          {poolMeta.element}
-                        </span>
-                      {/if}
-                      {#if gradeInfo}
-                        <span class="px-2 py-0.5 rounded text-xs font-bold"
-                          style="background: {gradeInfo.color}22; border: 1px solid {gradeInfo.color}55; color: {gradeInfo.color}; font-family: 'JetBrains Mono', monospace; box-shadow: 0 0 8px {gradeInfo.glow}; letter-spacing: 0.05em;">
-                          {poolMeta.grade} · {gradeInfo.label}
-                        </span>
-                      {/if}
-                    </div>
-                  {/if}
-                {/if}
-
-                <!-- Racial / archetype ability: element + grade from data lookup -->
-                {#if last?.category === 'racialAbility' || last?.category === 'archetypeAbility'}
-                  {@const abilMeta = _abilityLookup.get(last.resultLabel ?? '')}
-                  {#if abilMeta?.element || abilMeta?.grade}
-                    {@const elColor = abilMeta.element ? ELEMENT_COLORS[abilMeta.element] : '#9a907b'}
-                    {@const gradeInfo = abilMeta.grade ? ITEM_GRADE_INFO[abilMeta.grade] : null}
-                    <div class="flex items-center gap-2 flex-wrap justify-center">
-                      {#if abilMeta.element}
-                        <span class="px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"
-                          style="background: {elColor}22; border: 1px solid {elColor}55; color: {elColor}; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
-                          <img src={ELEMENT_ICONS[abilMeta.element]} class="w-4 h-4 object-contain" alt={abilMeta.element} style="filter: drop-shadow(0 0 3px {elColor});" />
-                          {abilMeta.element}
-                        </span>
-                      {/if}
-                      {#if gradeInfo}
-                        <span class="px-2 py-0.5 rounded text-xs font-bold"
-                          style="background: {gradeInfo.color}22; border: 1px solid {gradeInfo.color}55; color: {gradeInfo.color}; font-family: 'JetBrains Mono', monospace; box-shadow: 0 0 8px {gradeInfo.glow}; letter-spacing: 0.05em;">
-                          {abilMeta.grade} · {gradeInfo.label}
-                        </span>
-                      {/if}
-                    </div>
-                  {/if}
-                {/if}
-
-                <!-- Result label -->
-                <p style="font-family: 'Cinzel', serif; font-size: clamp(0.95rem, 3.5vw, 1.3rem); font-weight: 700; color: #ffdf96; line-height: 1.35; max-width: 26ch;">
-                  {last?.resultLabel ?? ''}
-                </p>
-
-                <!-- Announcement (bonus spins, enchantment unlock, etc.) -->
-                {#if showAnnouncement}
-                  <p class="text-sm" style="color: #a78bfa; max-width: 28ch; line-height: 1.4;">{showAnnouncement}</p>
-                {/if}
-
-                <!-- Continue button -->
-                <button
-                  onclick={handleNextSpin}
-                  class="metal-stamp-gold mt-1 flex items-center gap-2 px-8 py-3 rounded-lg relative"
-                  style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;"
-                >
-                  <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
-                  <span>Continue</span>
-                  <span class="material-symbols-outlined leading-none" style="font-size: 16px; color: #1a0e00; font-variation-settings: 'FILL' 1;">arrow_circle_right</span>
-                </button>
-
-              </div>
-            </div>
+            {#if last}
+              {@const tc = TIER_COLORS[last.tier ?? ''] ?? null}
+              {@const itemMeta = last.category === 'power' ? _powerLookup.get(last.resultLabel ?? '')
+                : last.category === 'weapon' ? _weaponLookup.get(last.resultLabel ?? '')
+                : last.category === 'armor' ? _armorLookup.get(last.resultLabel ?? '')
+                : (last.category === 'weaponEnchantment' || last.category === 'armorEnchantment') ? _enchantLookup.get(last.resultLabel ?? '')
+                : (last.category === 'raceSubType' || last.category === 'raceClass' || last.category === 'raceTransformation') ? _racePoolLookup.get(last.resultLabel ?? '')
+                : (last.category === 'racialAbility' || last.category === 'archetypeAbility') ? _abilityLookup.get(last.resultLabel ?? '')
+                : undefined}
+              {@const resolvedMeta = (itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}) as ResolvedMeta}
+              <SpinResultReveal
+                result={last}
+                meta={resolvedMeta}
+                tierColor={tc}
+                announcement={showAnnouncement}
+                onContinue={handleNextSpin}
+                layout="overlay"
+              />
+            {/if}
           {/if}
 
         </div><!-- end wheel container -->

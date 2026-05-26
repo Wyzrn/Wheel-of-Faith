@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
+  import { toast } from '$lib/toast.svelte'
 
   type ChallengeStatus = 'locked' | 'ready' | 'claimed'
   type Challenge = {
@@ -18,8 +19,6 @@
   let challenges = $state<Challenge[]>([])
   let loading = $state(true)
   let claiming = $state<string | null>(null)
-  let claimResult = $state<{ type: string; reward: number } | null>(null)
-  let claimError = $state<string | null>(null)
   let nowMs = $state(Date.now())
   let tickInterval: ReturnType<typeof setInterval> | null = null
 
@@ -50,21 +49,17 @@
   async function claim(type: string) {
     if (claiming) return
     claiming = type
-    claimError = null
     try {
       const res = await fetch(`/api/challenges/${type}/claim`, { method: 'POST', credentials: 'include' })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
         challenges = challenges.map(c => c.type === type ? { ...c, status: 'claimed', completed: true, progress: c.threshold } : c)
-        claimResult = { type, reward: data.reward }
         auth.updateShopData(data.shards, auth.user?.gamepasses ?? [])
-        setTimeout(() => { claimResult = null }, 3000)
+        toast.reward('Challenge claimed!', `+${data.reward} Fate Shards`)
       } else if (res.status === 403) {
-        claimError = data.error ?? 'Complete the task first to claim this reward.'
-        setTimeout(() => { claimError = null }, 4000)
+        toast.error(data.error ?? 'Complete the task first to claim this reward.')
       } else {
-        claimError = data.error ?? 'Could not claim — try again.'
-        setTimeout(() => { claimError = null }, 4000)
+        toast.error(data.error ?? 'Could not claim — try again.')
       }
     } finally {
       claiming = null
@@ -104,16 +99,8 @@
       {/if}
     </div>
 
-    {#if claimResult}
-      <div class="mb-4 rounded-xl px-5 py-3 text-center" style="background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3);">
-        <p class="font-bold text-sm" style="font-family: 'Cinzel', serif; color: #34d399;">+{claimResult.reward} Fate Shards claimed!</p>
-      </div>
-    {/if}
-    {#if claimError}
-      <div class="mb-4 rounded-xl px-5 py-3 text-center" style="background: rgba(244,113,113,0.1); border: 1px solid rgba(244,113,113,0.3);">
-        <p class="text-sm" style="color: #f87171;">{claimError}</p>
-      </div>
-    {/if}
+    <!-- Claim feedback now surfaced via the global Toaster. -->
+
 
     {#if !auth.loggedIn}
       <div class="rounded-xl px-5 py-4 text-center mb-6" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">

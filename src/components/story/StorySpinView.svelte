@@ -2,6 +2,8 @@
   import { onMount } from 'svelte'
   import SpinWheel from '../SpinWheel.svelte'
   import TierBadge from '../TierBadge.svelte'
+  import SpinResultReveal from '../SpinResultReveal.svelte'
+  import type { ResolvedMeta } from '$lib/spinResultMeta'
   import {
     createStorySession,
     loadStorySession,
@@ -922,21 +924,31 @@
 <!-- ── Story Mode spin UI ─────────────────────────────────────────────────────── -->
 <div class="min-h-screen flex flex-col items-center justify-center px-4 relative">
 
-  <!-- Top bar: mode indicator + exit link -->
-  <div class="fixed top-4 left-0 right-0 flex items-center justify-between px-4 z-20 pointer-events-none">
+  <!-- Top bar: mode indicator + progress bar + exit link. The progress bar is
+       new — gives the player a constant sense of "how far am I" instead of just
+       a "12/23" counter at the bottom. -->
+  <div class="fixed top-4 left-0 right-0 flex items-center justify-between gap-3 px-4 z-20 pointer-events-none">
     <span
       class="pointer-events-none"
-      style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: 14px; color: var(--color-outline); opacity: {showModeIndicator ? '1' : '0'}; transition: opacity 0.6s ease;"
+      style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: 13px; color: var(--color-outline); opacity: {showModeIndicator ? '1' : '0'}; transition: opacity 0.6s ease;"
     >
-      Story Mode — Stage {stage}
+      Story · Stage {stage}
     </span>
 
+    <!-- Animated progress bar -->
+    <div class="flex-1 h-1.5 max-w-[260px] mx-2 rounded-full overflow-hidden pointer-events-none"
+      style="background: rgba(255,255,255,0.05); border: 1px solid rgba(240,192,64,0.12);">
+      <div style="height: 100%; width: {Math.round(((currentIndex) / Math.max(1, queue.length)) * 100)}%; background: linear-gradient(90deg, #c0882a, #f0c040); box-shadow: 0 0 6px rgba(240,192,64,0.6); transition: width 0.4s cubic-bezier(0.22, 0.8, 0.3, 1);"></div>
+    </div>
+
     <button
-      class="pointer-events-auto"
-      style="font-family: var(--font-mono, monospace); font-size: 12px; color: var(--color-outline); background: none; border: none; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;"
+      class="pointer-events-auto flex items-center gap-1"
+      style="font-family: var(--font-mono, monospace); font-size: 11px; color: var(--color-outline); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); cursor: pointer; padding: 4px 10px; border-radius: 6px;"
       onclick={onCancel}
+      title="Exit to Menu"
     >
-      Exit to Menu
+      <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+      Exit
     </button>
   </div>
 
@@ -954,13 +966,13 @@
         />
       {/key}
 
-      <!-- Spin label + progress -->
-      <div class="flex flex-col items-center gap-1">
+      <!-- Spin label + progress counter under the wheel -->
+      <div class="flex flex-col items-center gap-1 mt-1">
         <p style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: 15px; color: var(--color-on-surface); font-weight: 600;">
           {currentDef.displayName}
         </p>
-        <p style="font-family: monospace; font-size: 13px; color: var(--color-outline); letter-spacing: 0.05em;">
-          {currentIndex + 1} / {queue.length}
+        <p style="font-family: monospace; font-size: 12px; color: var(--color-outline); letter-spacing: 0.05em;">
+          Spin {currentIndex + 1} of {queue.length}
         </p>
       </div>
     </div>
@@ -1003,107 +1015,34 @@
   </div>
 {/if}
 
-<!-- ── Result popup — shown after every spin before advancing ────────────────── -->
+<!-- ── Result reveal — same SpinResultReveal panel the main game uses, in modal
+     mode so it overlays the Story Mode UI without conflicting with the
+     fixed left sidebar (running spin log). ────────────────────────────────── -->
 {#if pendingResult}
-  <div
-    class="fixed inset-0 z-40 flex items-center justify-center px-4"
-    style="background: rgba(7,7,13,0.88); backdrop-filter: blur(12px);"
-  >
-    <div
-      class="obsidian-slab w-full max-w-sm rounded-xl p-7 text-center relative overflow-hidden"
-      style="border: 1px solid {pendingResult.color}55; box-shadow: 0 0 80px rgba(0,0,0,0.98), 0 0 50px {pendingResult.color}22, 0 0 18px {pendingResult.color}0e, inset 0 1px 0 rgba(255,255,255,0.04);"
-    >
-      <div class="noise-overlay"></div>
-      <div class="absolute top-3 left-3 w-8 h-8" style="border-top: 2px solid {pendingResult.color}66; border-left: 2px solid {pendingResult.color}66; box-shadow: -1px -1px 8px {pendingResult.color}22;"></div>
-      <div class="absolute top-3 right-3 w-8 h-8" style="border-top: 2px solid {pendingResult.color}66; border-right: 2px solid {pendingResult.color}66; box-shadow: 1px -1px 8px {pendingResult.color}22;"></div>
-      <div class="absolute bottom-3 left-3 w-8 h-8" style="border-bottom: 2px solid {pendingResult.color}66; border-left: 2px solid {pendingResult.color}66; box-shadow: -1px 1px 8px {pendingResult.color}22;"></div>
-      <div class="absolute bottom-3 right-3 w-8 h-8" style="border-bottom: 2px solid {pendingResult.color}66; border-right: 2px solid {pendingResult.color}66; box-shadow: 1px 1px 8px {pendingResult.color}22;"></div>
-
-      <div class="relative z-10 flex flex-col items-center gap-3">
-        <!-- Category label -->
-        <p class="font-mono text-xs tracking-widest uppercase" style="color: var(--color-outline);">
-          {pendingResult.categoryDisplayName}
-        </p>
-
-        <!-- Result label -->
-        <p
-          class="font-bold leading-snug"
-          style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: clamp(1.1rem, 5vw, 1.5rem); color: {pendingResult.color}; filter: drop-shadow(0 0 10px {pendingResult.color}66); max-width: 280px;"
-        >
-          {pendingResult.label}
-        </p>
-
-        <!-- Tier badge for stat spins -->
-        {#if pendingResult.tier}
-          <div class="mt-1">
-            <TierBadge grade={pendingResult.tier as import('$lib/game/scoreTier').TierGrade} />
-          </div>
-        {/if}
-
-        <!-- Element + grade badges for powers, weapons, abilities, etc. -->
-        {#if pendingResult.element || pendingResult.grade}
-          {@const elColor = pendingResult.element ? ELEMENT_COLORS[pendingResult.element] : '#9a907b'}
-          {@const gradeInfo = pendingResult.grade ? ITEM_GRADE_INFO[pendingResult.grade] : null}
-          <div class="flex items-center gap-2 flex-wrap justify-center mt-1">
-            {#if pendingResult.element}
-              <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-xs font-semibold"
-                style="background: {elColor}1a; border: 1px solid {elColor}55; color: {elColor};">
-                <img src={ELEMENT_ICONS[pendingResult.element]} class="w-3.5 h-3.5 object-contain" alt={pendingResult.element}
-                  style="filter: drop-shadow(0 0 3px {elColor});" />
-                {pendingResult.element}
-              </span>
-            {/if}
-            {#if gradeInfo}
-              <span class="px-2.5 py-1 rounded-full font-mono text-xs font-bold"
-                style="background: {gradeInfo.color}22; border: 1px solid {gradeInfo.color}55; color: {gradeInfo.color}; box-shadow: 0 0 8px {gradeInfo.glow};">
-                {pendingResult.grade} · {gradeInfo.label}
-              </span>
-            {/if}
-          </div>
-        {/if}
-
-        <!-- Ability type badge (powers, racial/archetype abilities) -->
-        {#if pendingResult.abilityType}
-          {@const aColor = getAbilityTypeColor(pendingResult.abilityType)}
-          {@const aIcon  = getAbilityTypeIcon(pendingResult.abilityType)}
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-xs font-semibold"
-            style="background: {aColor}1a; border: 1px solid {aColor}55; color: {aColor};">
-            <span class="material-symbols-outlined" style="font-size: 12px; font-variation-settings: 'FILL' 1;">{aIcon}</span>
-            {pendingResult.abilityType}
-          </div>
-        {/if}
-
-        <!-- Description text -->
-        {#if pendingResult.description}
-          <p class="text-xs leading-relaxed text-center"
-            style="color: #9a907b; max-width: 260px; font-family: 'JetBrains Mono', monospace;">
-            {pendingResult.description}
-          </p>
-        {/if}
-
-        <!-- Battle stat effect -->
-        {#if pendingResult.statEffect}
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-xs"
-            style="background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.18); color: #9a907b;">
-            <span class="material-symbols-outlined" style="font-size: 11px; color: #f0c040; font-variation-settings: 'FILL' 1;">bolt</span>
-            {pendingResult.statEffect}
-          </div>
-        {/if}
-
-        <!-- Divider -->
-        <div class="w-full mt-1" style="height: 1px; background: linear-gradient(90deg, transparent, {pendingResult.color}44, transparent);"></div>
-
-        <!-- Continue button -->
-        <button
-          onclick={handleContinue}
-          class="metal-stamp-gold w-full py-3 rounded-lg font-bold text-sm tracking-widest"
-          style="font-family: var(--font-cinzel, 'Cinzel', serif); margin-top: 4px;"
-        >
-          {isSessionDone ? 'Complete!' : 'Continue →'}
-        </button>
-      </div>
-    </div>
-  </div>
+  {@const lastResult = results.at(-1) ?? ({
+    step: results.length + 1,
+    category: 'race' as const,
+    resultLabel: pendingResult.label,
+    resultIndex: 0,
+    timestamp: new Date().toISOString(),
+    tier: pendingResult.tier as any,
+  } as SpinResult)}
+  {@const resolvedMeta = {
+    element: pendingResult.element,
+    grade:   pendingResult.grade,
+    abilityType:  pendingResult.abilityType,
+    description:  pendingResult.description,
+    statEffect:   pendingResult.statEffect,
+  } as ResolvedMeta}
+  <SpinResultReveal
+    result={lastResult}
+    meta={resolvedMeta}
+    tierColor={pendingResult.color}
+    categoryDisplayName={pendingResult.categoryDisplayName}
+    continueLabel={isSessionDone ? 'Complete!' : 'Continue'}
+    onContinue={handleContinue}
+    layout="modal"
+  />
 {/if}
 
 <!-- ── Running spin log ───────────────────────────────────────────────────────── -->

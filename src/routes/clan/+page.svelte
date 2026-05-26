@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
+  import { toast } from '$lib/toast.svelte'
 
   type ClanRole = 'leader' | 'coLeader' | 'elder' | 'member' | 'none'
   type ClanMember = { _id: string; username: string; rivalsWins: number; gamesPlayed?: number; role: ClanRole }
@@ -19,7 +20,6 @@
   let leaderboard = $state<BrowseClan[]>([])
   let loading = $state(true)
   let actionPending = $state<string | null>(null)
-  let toast = $state<{ kind: 'ok' | 'err'; message: string } | null>(null)
 
   // Browse filters
   let search = $state('')
@@ -94,10 +94,11 @@
     if (res.ok) leaderboard = (await res.json()).clans ?? []
   }
 
-  // ── Toast helper ───────────────────────────────────────────────────────────
+  // Toast helper — delegates to the global toast store so messages get the
+  // same visual treatment as the rest of the app.
   function showToast(kind: 'ok' | 'err', message: string) {
-    toast = { kind, message }
-    setTimeout(() => { toast = null }, 3000)
+    if (kind === 'ok') toast.success(message)
+    else toast.error(message)
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -247,10 +248,7 @@
 
   <div class="pt-20 pb-24 px-4 max-w-lg mx-auto">
 
-    <!-- Toast -->
-    {#if toast}
-      <div class="mb-3 rounded-lg px-4 py-2.5 text-center text-xs" style="background: {toast.kind === 'ok' ? 'rgba(52,211,153,0.10)' : 'rgba(244,113,113,0.10)'}; border: 1px solid {toast.kind === 'ok' ? 'rgba(52,211,153,0.30)' : 'rgba(244,113,113,0.30)'}; color: {toast.kind === 'ok' ? '#34d399' : '#f87171'}; font-family: 'JetBrains Mono', monospace;">{toast.message}</div>
-    {/if}
+    <!-- Toast — now rendered globally by <Toaster /> in +layout.svelte. -->
 
     <!-- Tab bar -->
     <div class="flex gap-1.5 mb-5">

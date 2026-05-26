@@ -3,6 +3,7 @@
   import { onMount } from 'svelte'
   import SettingsPanel from '../components/SettingsPanel.svelte'
   import ClickParticles from '../components/ClickParticles.svelte'
+  import Toaster from '../components/Toaster.svelte'
   import { page } from '$app/stores'
   import { goto, onNavigate } from '$app/navigation'
   import { triggerMenu, triggerStoryHome } from '$lib/menuState.svelte'
@@ -102,6 +103,10 @@
      short-lived particles at the click location. Skipped on low perf tier and
      when settings.effectsEnabled is off. -->
 <ClickParticles />
+
+<!-- Global toast notifications — anything in the app can call toast.show(),
+     toast.success(), etc. and a single Toaster renders the queue here. -->
+<Toaster />
 
 <style>
   /* Stone fortress floor — the nav bar is a carved obsidian shelf */

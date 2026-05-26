@@ -709,17 +709,25 @@
   </div>
   </div><!-- end shake wrapper -->
 
-  <!-- Spin button -->
+  <!-- Spin button — pulses gently when idle so new users notice the call-to-action -->
   <button
     onclick={handleSpin}
     disabled={!canSpin}
     data-fx="big"
-    class="{canSpin ? 'metal-stamp-gold spin-fx' : 'obsidian-slab'} px-10 py-3 rounded-lg relative disabled:opacity-40 disabled:cursor-not-allowed"
+    class="{canSpin ? 'metal-stamp-gold spin-fx spin-btn-idle' : 'obsidian-slab'} px-10 py-3 rounded-lg relative disabled:opacity-40 disabled:cursor-not-allowed"
     style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; {!canSpin ? 'color: #9a907b; border: 1px solid #4e4635;' : ''}"
   >
     {#if canSpin}<div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>{/if}
     {spinStatus === 'IDLE' ? 'Spin Fate' : spinStatus === 'SPINNING' ? 'Spinning…' : 'Spun'}
   </button>
+
+  <!-- Segment count + max-weight peek — small data badge under the button so
+       users always know how many possible outcomes are on this wheel. -->
+  {#if spinStatus === 'IDLE'}
+    <p class="font-mono text-[10px] tracking-[0.16em] uppercase" style="color: #4e4635;">
+      {activeSegments.length} possible outcomes
+    </p>
+  {/if}
 
 </div>
 
@@ -739,4 +747,17 @@
   .rune-ring-main { animation: runeRingPulse 3.5s ease-in-out infinite; }
   .rune-ring-slow  { animation: runeRingPulse 7s   ease-in-out infinite 2s; }
   .hub-jewel       { animation: hubJewelPulse 2.4s ease-in-out infinite; }
+
+  /* Soft attention pulse on the idle spin button — draws the eye for new users
+     without being intrusive. Only fires when the button is enabled. */
+  @keyframes spinBtnPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(240, 192, 64, 0.35); }
+    50%      { box-shadow: 0 0 0 10px rgba(240, 192, 64, 0); }
+  }
+  .spin-btn-idle:not(:disabled) {
+    animation: spinBtnPulse 2.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spin-btn-idle:not(:disabled) { animation: none; }
+  }
 </style>
