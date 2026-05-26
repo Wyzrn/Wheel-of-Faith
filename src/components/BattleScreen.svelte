@@ -1,14 +1,23 @@
+<!--
+  BattleScreen.svelte — Rivals Mode 1v1.
+
+  This view is now a thin caller of the unified BattleArena shell: it builds
+  the two BattleCharacters from spin results, simulates the rounds, hands
+  them to the arena, and supplies the mode-specific intro/result UI (Rivals
+  "VS" splash + champions-save flow).
+-->
 <script lang="ts">
-  import { onMount, onDestroy, tick } from 'svelte'
+  import { onMount } from 'svelte'
   import { buildBattleCharacter, simulateBattle, formatHp, detectWeaknessElement } from '$lib/game/battle'
   import type { BattleCharacter, BattleRound } from '$lib/game/battle'
   import { computeOverallScore, scoreTier } from '$lib/game/scoreTier'
   import type { SpinResult } from '$lib/session/types'
-  import AttackFX from './AttackFX.svelte'
-  import DamageIndicator from './DamageIndicator.svelte'
-  import type { DamageEvent } from '$lib/game/damageEvent'
-  import { deriveStatusBadges } from '$lib/game/battleStatuses'
   import { settings } from '$lib/settings.svelte'
+  import BattleArena from './BattleArena.svelte'
+  import {
+    memberFromChar, normalizeRound1v1,
+    type ArenaTeam, type ArenaRound, type ArenaWinner,
+  } from '$lib/battle/arena'
 
   interface Props {
     p1Results: SpinResult[]
@@ -29,316 +38,54 @@
     onRematch, onBackToMenu, onChallengeWinner,
   }: Props = $props()
 
-  let p1Char   = $state<BattleCharacter | null>(null)
-  let p2Char   = $state<BattleCharacter | null>(null)
-  let rounds   = $state<BattleRound[]>([])
-  let roundIdx = $state(0)
+  // ── Engine state (computed once on mount) ──────────────────────────────────
+  let p1Char = $state<BattleCharacter | null>(null)
+  let p2Char = $state<BattleCharacter | null>(null)
+  let teams  = $state<[ArenaTeam, ArenaTeam] | null>(null)
+  let arenaRounds = $state<ArenaRound[]>([])
 
-  let p1DisplayHp = $state(0)
-  let p2DisplayHp = $state(0)
+  // Arena drives this binding; the result modal keys off it.
+  let phase  = $state<'intro' | 'battle' | 'result'>('intro')
+  let winner = $state<ArenaWinner | null>(null)
 
-  let logLines = $state<string[]>([])
-  let phase    = $state<'intro' | 'battle' | 'result'>('intro')
-  let winner   = $state<'p1' | 'p2' | 'draw' | null>(null)
-
-  // Winner save state
+  // Winner save state (mode-specific — stays in this view)
   let saveStatus   = $state<'idle' | 'saving' | 'saved' | 'error'>('idle')
-  let savedShareId = $state('')    // shareId of saved winner (empty until saved)
+  let savedShareId = $state('')
   let savedWins    = $state(0)
 
-  let logEl = $state<HTMLDivElement | null>(null)
-  let p1PanelEl = $state<HTMLDivElement | null>(null)
-  let p2PanelEl = $state<HTMLDivElement | null>(null)
+  const TEAM1_ACCENT = '#f0c040'
+  const TEAM2_ACCENT = '#e879f9'
 
-  const ELEMENT_FX: Record<string, { type: string; color: string }> = {
-    Fire:      { type: 'fire',      color: '#f97316' },
-    Ice:       { type: 'ice',       color: '#7dd3fc' },
-    Lightning: { type: 'lightning', color: '#fbbf24' },
-    Earth:     { type: 'earth',     color: '#a16207' },
-    Wind:      { type: 'wind',      color: '#e2e8f0' },
-    Shadow:    { type: 'shadow',    color: '#8b5cf6' },
-    Light:     { type: 'holy',      color: '#fde68a' },
-    Arcane:    { type: 'energy',    color: '#c084fc' },
-    Nature:    { type: 'poison',    color: '#22c55e' },
-    Void:      { type: 'void',      color: '#6b21a8' },
-    Cosmic:    { type: 'energy',    color: '#818cf8' },
-    Blood:     { type: 'blood',     color: '#dc2626' },
-    Metal:     { type: 'slash',     color: '#94a3b8' },
-    Soul:      { type: 'holy',      color: '#f9a8d4' },
-    Poison:    { type: 'poison',    color: '#84cc16' },
-    Time:      { type: 'time',      color: '#a78bfa' },
-    Water:     { type: 'water',     color: '#38bdf8' },
-    Sound:     { type: 'lightning', color: '#e0f2fe' },
-    Gravity:   { type: 'gravity',   color: '#6366f1' },
-    Psychic:   { type: 'psychic',   color: '#e879f9' },
-    Chaos:     { type: 'cursed',    color: '#f43f5e' },
-    Neutral:   { type: 'slash',     color: '#f87171' },
-  }
+  onMount(() => {
+    const c1 = buildBattleCharacter(p1Results, p1Name)
+    const c2 = buildBattleCharacter(p2Results, p2Name)
+    p1Char = c1
+    p2Char = c2
 
-  let timeoutId: ReturnType<typeof setTimeout> | null = null
-  let animTimeoutId: ReturnType<typeof setTimeout> | null = null
+    const m1 = memberFromChar(c1, 'p1', 'team1', formatHp)
+    const m2 = memberFromChar(c2, 'p2', 'team2', formatHp)
+    teams = [
+      { side: 'team1', label: c1.name, accent: TEAM1_ACCENT, members: [m1] },
+      { side: 'team2', label: c2.name, accent: TEAM2_ACCENT, members: [m2] },
+    ]
 
-  type AnimDir = 'ltr' | 'rtl' | 'center'
-  let activeAnim = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; origin?: { x: number; y: number }; attackType?: string } | null>(null)
-  let animKey = 0
-  let dodgeDir = $state<'ltr' | 'rtl' | null>(null)
+    const rounds: BattleRound[] = simulateBattle(c1, c2, 10)
+    arenaRounds = rounds.map(r => normalizeRound1v1(r, 'p1', 'p2'))
+  })
 
-  // Battle wrapper ref + per-character refs — match the polish pattern used
-  // by every other battle view so VFX shoots from the right place.
-  let battleWrapperEl = $state<HTMLDivElement | null>(null)
-  const charEls = new Map<string, HTMLElement>()
-  function trackCharEl(node: HTMLElement, args: { name: string }) {
-    charEls.set(args.name, node)
-    return { destroy() { charEls.delete(args.name) } }
-  }
-  function getCharOriginByName(name: string | null): { x: number; y: number } | undefined {
-    if (!name) return undefined
-    const el = charEls.get(name)
-    if (!el) return undefined
-    const r = el.getBoundingClientRect()
-    if (r.width === 0) return undefined
-    return {
-      x: r.left + r.width / 2,
-      y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80)),
-    }
-  }
-  function getWrapperOriginForDir(dir: AnimDir): { x: number; y: number } | undefined {
-    if (!battleWrapperEl) return undefined
-    const wr = battleWrapperEl.getBoundingClientRect()
-    if (wr.width === 0) return undefined
-    const xRel = dir === 'rtl' ? 0.75 : dir === 'ltr' ? 0.25 : 0.5
-    return {
-      x: wr.left + wr.width * xRel,
-      y: Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80)),
-    }
-  }
-  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
-    if (dir === 'center') return getWrapperOriginForDir('center')
-    const el = dir === 'ltr' ? p1PanelEl : dir === 'rtl' ? p2PanelEl : null
-    if (el) {
-      const r = el.getBoundingClientRect()
-      if (r.width > 0) {
-        return {
-          x: r.left + r.width / 2,
-          y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65)),
-        }
-      }
-    }
-    return getWrapperOriginForDir(dir)
-  }
-  function inferAttackerName(line: string): string | null {
-    const names: string[] = []
-    if (p1Char) names.push(p1Char.name)
-    if (p2Char) names.push(p2Char.name)
-    for (const n of names) if (line.startsWith(n)) return n
-    return null
-  }
-
-  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, origin?: { x: number; y: number }, attackType?: string) {
-    if (animTimeoutId) clearTimeout(animTimeoutId)
-    activeAnim = { type, color, key: ++animKey, direction, grade, origin, attackType }
-    dodgeDir = type === 'dodge' ? (direction === 'ltr' ? 'ltr' : direction === 'rtl' ? 'rtl' : null) : null
-    animTimeoutId = setTimeout(() => { activeAnim = null; dodgeDir = null }, 950)
-  }
-
-  function detectAnim(line: string): { type: string; color: string; direction: AnimDir } | null {
-    const direction: AnimDir =
-      (p1Char && line.startsWith(p1Char.name)) ? 'ltr' :
-      (p2Char && line.startsWith(p2Char.name)) ? 'rtl' :
-      'center'
-
-    const hasAction = line.includes('damage!') || line.includes('restores') ||
-      line.includes('recovers') || line.includes('barrier') || line.includes('defensive') ||
-      /BERSERK|combo finisher|follow-up/i.test(line) ||
-      /narrowly dodges|weaves around|barely evades|slips past|anticipates|phases through|blinks away|mirrors away|deflects/i.test(line)
-    if (!hasAction) return null
-
-    if (/narrowly dodges|weaves around|barely evades|slips past|anticipates and sidesteps|phases through|blinks away from|mirrors away/i.test(line))
-      return { type: 'dodge', color: '#a5f3fc', direction }
-    if (/barrier forms|defensive stance|protective shell|bracing/i.test(line))
-      return { type: 'shield', color: '#93c5fd', direction }
-    if (/CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)) return { type: 'crit', color: '#fde047', direction }
-    if (/berserk|frenzy/i.test(line)) return { type: 'berserker', color: '#ef4444', direction }
-    if (/combo finisher|follow-up/i.test(line)) return { type: 'combo', color: '#f59e0b', direction }
-    if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction }
-    if (/fire|flame|blaze|inferno|burn|ember|magma|lava|heat/i.test(line)) return { type: 'fire', color: '#f97316', direction }
-    if (/shadow|void|abyss|soul drain|leech/i.test(line)) return { type: 'shadow', color: '#8b5cf6', direction }
-    if (/blood|crimson/i.test(line)) return { type: 'blood', color: '#dc2626', direction }
-    if (/curse/i.test(line)) return { type: 'cursed', color: '#7c3aed', direction }
-    if (/lightning|thunder|electric|storm|volt|spark|shock|arc/i.test(line)) return { type: 'lightning', color: '#fbbf24', direction }
-    if (/ice|frost|freeze|cryo|blizzard|snow|cold|glacier/i.test(line)) return { type: 'ice', color: '#7dd3fc', direction }
-    if (/divine|holy|celestial|angel|sacred|radiant|blessed/i.test(line)) return { type: 'holy', color: '#fde68a', direction }
-    if (/water|wave|aqua|flood|tidal|ocean|torrent/i.test(line)) return { type: 'water', color: '#38bdf8', direction }
-    if (/time|temporal|chrono|rewind|haste|blink|phase/i.test(line)) return { type: 'time', color: '#a78bfa', direction }
-    if (/psychic|mind|telepathy|mental|chaos|reality|warp|phantom/i.test(line)) return { type: 'psychic', color: '#e879f9', direction }
-    if (/poison|acid|toxic|venom|plague|rot/i.test(line)) return { type: 'poison', color: '#84cc16', direction }
-    if (/gravity|black hole|collapse|crush|singularity|weight/i.test(line)) return { type: 'gravity', color: '#6366f1', direction }
-    if (/wind|gust|tornado|vortex|cyclone|whirlwind/i.test(line)) return { type: 'wind', color: '#e2e8f0', direction }
-    if (/earth|rock|stone|ground|quake|mountain|boulder/i.test(line)) return { type: 'earth', color: '#a16207', direction }
-    if (/energy|power|force|blast|surge|beam/i.test(line)) return { type: 'energy', color: '#60a5fa', direction }
-    if (line.includes('damage!')) return { type: 'slash', color: '#f87171', direction }
-    return null
-  }
-
-  let p1HpPct = $derived(p1Char ? Math.max(0, p1DisplayHp / p1Char.maxHp) : 1)
-  let p2HpPct = $derived(p2Char ? Math.max(0, p2DisplayHp / p2Char.maxHp) : 1)
-
-  function hpColor(pct: number): string {
-    if (pct > 0.50) return '#22c55e'
-    if (pct > 0.25) return '#eab308'
-    return '#ef4444'
-  }
-
-  async function scrollLog() {
-    await tick()
-    if (logEl) logEl.scrollTop = logEl.scrollHeight
-  }
-
-  // Status chips + damage indicators (matches every other battle view)
-  let allNames = $derived([p1Char?.name, p2Char?.name].filter((n): n is string => !!n))
-  let charStatusByName = $derived(deriveStatusBadges(logLines, allNames))
-  let damageEvents = $state<DamageEvent[]>([])
-  let dmgIdCounter = 0
-  function emitDamage(targetName: string, value: number, kind: DamageEvent['kind']) {
-    const el = charEls.get(targetName)
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    if (r.width === 0) return
-    const ev: DamageEvent = { id: ++dmgIdCounter, x: r.left + r.width / 2, y: r.top + r.height * 0.3, value, kind }
-    damageEvents = [...damageEvents.slice(-29), ev]
-    setTimeout(() => { damageEvents = damageEvents.filter(d => d.id !== ev.id) }, 1400)
-  }
-  function parseDamageNumber(s: string): number {
-    const cleaned = s.replace(/,/g, '').toUpperCase()
-    if (cleaned.endsWith('K')) return Math.round(parseFloat(cleaned) * 1_000)
-    if (cleaned.endsWith('M')) return Math.round(parseFloat(cleaned) * 1_000_000)
-    if (cleaned.endsWith('B')) return Math.round(parseFloat(cleaned) * 1_000_000_000)
-    return Math.round(parseFloat(cleaned) || 0)
-  }
-  function maybeEmitDamageFromLine(line: string) {
-    if (!settings.effectsEnabled) return
-    const dmgMatch = line.match(/for\s+([\d.,]+[KMB]?)\s+damage!?/i)
-    if (dmgMatch) {
-      const preBoundary = line.lastIndexOf(' for ')
-      const head = preBoundary > 0 ? line.slice(0, preBoundary) : line
-      let target: string | null = null
-      let lastIdx = -1
-      for (const n of allNames) {
-        const i = head.lastIndexOf(n)
-        if (i > lastIdx) { lastIdx = i; target = n }
-      }
-      if (target) {
-        const isCrit = /CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)
-        emitDamage(target, parseDamageNumber(dmgMatch[1]), isCrit ? 'crit' : 'damage')
-        return
-      }
-    }
-    const healMatch = line.match(/(?:restores|recovers|mends)\s+([\d.,]+[KMB]?)\s*HP/i)
-    if (healMatch) {
-      for (const n of allNames) if (line.startsWith(n)) { emitDamage(n, parseDamageNumber(healMatch[1]), 'heal'); return }
-    }
-    if (/evades|dodges|misses/i.test(line)) {
-      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'miss'); return }
-    }
-    if (/barrier forms around|defensive stance|bracing/i.test(line)) {
-      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'shield'); return }
-    }
-  }
-
-  // fxEvents from current round — used by detectAnim to pull grade/element
-  let currentFxEvents = $state<import('$lib/game/battle').RoundFxEvent[]>([])
-  let fxEventIdx = 0
-  let aoeRemainingHits = 0
-
-  function playLines(lines: string[], onDone: () => void) {
-    if (lines.length === 0) { onDone(); return }
-    const [head, ...rest] = lines
-    logLines = [...logLines, head]
-    scrollLog()
-    maybeEmitDamageFromLine(head)
-    const anim = detectAnim(head)
-    if (anim) {
-      const fx = currentFxEvents[fxEventIdx]
-      const isDamage = head.includes('damage!')
-      const isHealLine = /restores|recovers.*HP|vital force|mends/i.test(head)
-      const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
-      let aoeSkip = false
-      if (isDamage && aoeRemainingHits > 0) {
-        aoeRemainingHits--
-        aoeSkip = true
-      } else if (fx && (isDamage || isHealLine)) {
-        fxEventIdx++
-        if (isDamage && fx.attackType === 'aoe' && fx.targetIdxs) {
-          aoeRemainingHits = Math.max(0, fx.targetIdxs.length - 1)
-        }
-      }
-      if (!aoeSkip) {
-        let { type, color, direction } = anim
-        // Override FX type from the battle simulation's element — much more accurate than text regex
-        if (fx && isDamage && type !== 'crit' && type !== 'berserker' && type !== 'dodge') {
-          const elFx = fx.element ? ELEMENT_FX[fx.element] : null
-          if (elFx) { type = elFx.type; color = elFx.color }
-        }
-        const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
-        const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
-        const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
-        // Three-stage origin: char card → team panel → wrapper.
-        const attackerName = inferAttackerName(head)
-        let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
-          ? getCharOriginByName(attackerName)
-          : undefined
-        if (!origin) origin = getPanelOrigin(originDir)
-        showAnim(type, color, direction, grade, origin, fxAttackType)
-      }
-    }
-    const delay = head.startsWith('──') ? 550 : 1000
-    timeoutId = setTimeout(() => playLines(rest, onDone), delay)
-  }
-
-  function playRound() {
-    if (roundIdx >= rounds.length) {
-      phase  = 'result'
-      winner = rounds.at(-1)?.winner ?? null
-      afterBattle()
-      return
-    }
-
-    const round = rounds[roundIdx]
-    roundIdx++
-    currentFxEvents = round.fxEvents ?? []
-    fxEventIdx = 0
-    aoeRemainingHits = 0
-
-    const lines = [`── Round ${round.roundNum} ──`, ...round.lines]
-
-    playLines(lines, () => {
-      p1DisplayHp = round.p1Hp
-      p2DisplayHp = round.p2Hp
-
-      if (round.winner !== undefined) {
-        phase  = 'result'
-        winner = round.winner
-        afterBattle()
-      } else {
-        timeoutId = setTimeout(playRound, 900)
-      }
-    })
-  }
-
-  function afterBattle() {
-    if (winner && winner !== 'draw') {
-      saveWinnerToBackend()
-    }
+  function handleBattleEnd(w: ArenaWinner) {
+    winner = w
+    if (w !== 'draw') saveWinnerToBackend()
   }
 
   async function saveWinnerToBackend() {
     if (!winner || winner === 'draw') return
     saveStatus = 'saving'
 
-    const winnerResults   = winner === 'p1' ? p1Results : p2Results
-    const winnerName      = winner === 'p1' ? p1Name    : p2Name
-    const winnerStartedAt = winner === 'p1' ? p1StartedAt : p2StartedAt
-    const existingShareId = winner === 'p1' ? p1ShareId  : p2ShareId
+    const winnerResults   = winner === 'team1' ? p1Results : p2Results
+    const winnerName      = winner === 'team1' ? p1Name    : p2Name
+    const winnerStartedAt = winner === 'team1' ? p1StartedAt : p2StartedAt
+    const existingShareId = winner === 'team1' ? p1ShareId  : p2ShareId
 
     try {
       let shareId = existingShareId
@@ -370,10 +117,7 @@
           }),
         })
 
-        if (!res.ok) {
-          saveStatus = 'error'
-          return
-        }
+        if (!res.ok) { saveStatus = 'error'; return }
 
         const data = await res.json() as { shareId: string }
         shareId = data.shareId
@@ -397,273 +141,101 @@
         savedShareId = shareId
         saveStatus   = 'saved'
       } else {
-        savedShareId = shareId
-        saveStatus   = 'saved'
+        saveStatus = 'error'
       }
     } catch {
       saveStatus = 'error'
     }
   }
-
-  onMount(() => {
-    p1Char = buildBattleCharacter(p1Results, p1Name)
-    p2Char = buildBattleCharacter(p2Results, p2Name)
-    p1DisplayHp = p1Char.hp
-    p2DisplayHp = p2Char.hp
-    rounds = simulateBattle(p1Char, p2Char, 10)
-
-    timeoutId = setTimeout(() => {
-      phase = 'battle'
-      playRound()
-    }, 2600)
-  })
-
-  onDestroy(() => {
-    if (timeoutId) clearTimeout(timeoutId)
-    if (animTimeoutId) clearTimeout(animTimeoutId)
-  })
 </script>
 
-<div class="w-full flex flex-col px-3 py-5 sm:px-6 sm:py-8 sm:items-center" style="min-height: 100dvh; max-width: 800px; margin: 0 auto;">
+<div class="w-full flex flex-col px-3 py-5 sm:px-6 sm:py-8 sm:items-center"
+     style="min-height: 100dvh; max-width: 800px; margin: 0 auto;">
+  {#if teams && arenaRounds.length > 0}
+    <BattleArena
+      bind:phase
+      teams={teams}
+      rounds={arenaRounds}
+      modeTitle="RIVALS BATTLE"
+      modeSubtitle="⚔ Rivals Mode"
+      modeAccent="#f9a8d4"
+      speedFactor={settings.battleSpeed}
+      effectsEnabled={settings.effectsEnabled}
+      onBattleEnd={handleBattleEnd}
+    >
+      {#snippet result()}
+        {@const winnerName = winner === 'team1' ? p1Char?.name : winner === 'team2' ? p2Char?.name : null}
+        {@const winColor   = winner === 'draw' ? '#9ca3af' : winner === 'team1' ? TEAM1_ACCENT : TEAM2_ACCENT}
+        <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
+          style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px);
+                 padding-bottom: max(88px, calc(env(safe-area-inset-bottom,0px) + 88px));">
+          <div class="w-full max-w-md rounded-2xl overflow-hidden"
+            style="background: {winner === 'draw' ? 'rgba(156,163,175,0.06)' : winner === 'team1' ? 'rgba(240,192,64,0.06)' : 'rgba(232,121,249,0.06)'};
+                   border: 1px solid {winColor}44; box-shadow: 0 0 60px {winColor}14;
+                   animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+            <div class="px-5 py-6 text-center">
+              {#if winner === 'draw'}
+                <p class="text-xs tracking-[0.25em] uppercase mb-2"
+                   style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">The battle concludes</p>
+                <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem);
+                          font-weight: 900; color: #d1d5db; letter-spacing: 0.15em;">IT'S A DRAW!</p>
+                <p class="mt-2 text-sm" style="color: #9a907b;">Two warriors of equal destiny.</p>
+              {:else}
+                <p class="text-xs tracking-[0.25em] uppercase mb-2"
+                   style="font-family: 'JetBrains Mono', monospace; color: {winColor};">Victory</p>
+                <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem);
+                          font-weight: 900; color: {winColor}; letter-spacing: 0.12em;
+                          filter: drop-shadow(0 0 16px {winColor}55);">{winnerName} WINS!</p>
+                <p class="mt-2 text-sm" style="color: #9a907b;">Fate has spoken.</p>
 
-  <!-- Header — compact on mobile -->
-  <div class="text-center mb-4 sm:mb-8" style="animation: fadeIn 0.3s ease-out forwards;">
-    <p class="text-xs tracking-[0.28em] uppercase mb-1 sm:mb-2" style="font-family: 'JetBrains Mono', monospace; color: #f9a8d4;">⚔ Rivals Mode</p>
-    <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.2rem, 5vw, 2.4rem); font-weight: 900; color: #ffdf96; letter-spacing: 0.15em;">RIVALS BATTLE</h1>
-  </div>
+                {#if saveStatus === 'saving'}
+                  <p class="mt-3 text-xs"
+                     style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Saving to champions record…</p>
+                {:else if saveStatus === 'saved'}
+                  <div class="mt-3 flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined"
+                          style="font-size: 14px; color: #34d399; font-variation-settings: 'FILL' 1;">check_circle</span>
+                    <p class="text-xs"
+                       style="font-family: 'JetBrains Mono', monospace; color: #34d399;">Saved — {savedWins} rival win{savedWins !== 1 ? 's' : ''} total</p>
+                  </div>
+                {:else if saveStatus === 'error'}
+                  <p class="mt-3 text-xs"
+                     style="font-family: 'JetBrains Mono', monospace; color: #f87171;">Could not save — session too brief or server unavailable.</p>
+                {/if}
+              {/if}
 
-  <!-- Character panels + attack animation overlay — always 2 columns on all screen sizes -->
-  {#if p1Char && p2Char}
-    {@const p1Badges = charStatusByName.get(p1Char.name) ?? []}
-    {@const p2Badges = charStatusByName.get(p2Char.name) ?? []}
-    {@const p1Won = phase === 'result' && winner === 'p1'}
-    {@const p2Won = phase === 'result' && winner === 'p2'}
-    <div bind:this={battleWrapperEl} class="w-full relative mb-3 sm:mb-6" style="overflow:visible;">
-    <div class="grid grid-cols-2 gap-2 sm:gap-4">
-
-      <!-- P1 panel -->
-      <div bind:this={p1PanelEl} use:trackCharEl={{ name: p1Char.name }}
-        class="bv-char-card bv-team-1 {dodgeDir === 'ltr' ? 'panel-dodging' : ''}"
-        class:bv-victor={p1Won}
-        style="padding: 12px;">
-        <div class="flex items-center gap-2 min-w-0 mb-1.5">
-          {#if p1Won}
-            <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #f0c040; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-          {:else if p2Won}
-            <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
-          {/if}
-          <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.95rem;">{p1Char.name}</p>
-        </div>
-        <p class="text-xs truncate mb-1.5" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{p1Char.raceLabel} · {p1Char.archetypeLabel}</p>
-        <div class="bv-hp-track" style="height: 10px;">
-          <div class="bv-hp-fill" style="width: {p1HpPct * 100}%; background: {hpColor(p1HpPct)}; color: {hpColor(p1HpPct)};"></div>
-        </div>
-        <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(p1HpPct)};">{formatHp(p1DisplayHp)}<span style="color: #4e4635;"> / {formatHp(p1Char.maxHp)} HP</span></p>
-        <div class="grid grid-cols-3 gap-1 mt-2">
-          {#each [['ATK', formatHp(p1Char.physicalDamage)], ['DEF', Math.round(p1Char.armorReduction * 100) + '%'], ['INIT', Math.round(p1Char.initiative)]] as [lbl, val]}
-            <div class="text-center rounded py-1" style="background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,0.12);">
-              <p style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 9px;">{lbl}</p>
-              <p class="font-bold text-xs" style="font-family: 'Cinzel', serif; color: #ffdf96;">{val}</p>
+              <!-- Action buttons -->
+              <div class="flex flex-col gap-2 mt-5">
+                {#if winner !== 'draw' && onChallengeWinner && saveStatus === 'saved'}
+                  {@const winResults = winner === 'team1' ? p1Results : p2Results}
+                  {@const winName    = winner === 'team1' ? p1Name    : p2Name}
+                  <button
+                    onclick={() => onChallengeWinner!(winResults, winName, savedShareId)}
+                    class="w-full py-3 rounded-xl text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95"
+                    style="font-family: 'Cinzel', serif; color: #fde68a;
+                           background: linear-gradient(135deg, #1c1a2a, #13121c);
+                           border: 1px solid #f0c040; box-shadow: 0 0 20px rgba(240,192,64,0.18);"
+                  >Challenge Winner</button>
+                {/if}
+                <div class="flex gap-2">
+                  <button
+                    onclick={onRematch}
+                    class="flex-1 py-3 rounded-xl text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95"
+                    style="font-family: 'Cinzel', serif; color: #f9a8d4;
+                           background: rgba(157,23,77,0.12); border: 1px solid #9d174d;"
+                  >⚔ Rematch</button>
+                  <button
+                    onclick={onBackToMenu}
+                    class="flex-1 py-3 rounded-xl text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95"
+                    style="font-family: 'Cinzel', serif; color: #9a907b;
+                           background: rgba(255,255,255,0.03); border: 1px solid #4e4635;"
+                  >Menu</button>
+                </div>
+              </div>
             </div>
-          {/each}
-        </div>
-        {#if p1Badges.length > 0}
-          <div class="flex flex-wrap gap-1 justify-center mt-2">
-            {#each p1Badges as b}
-              <span class="bv-status-chip" title="{b.label}: {b.description}"
-                style="background: {b.color}22; border-color: {b.color}66;">
-                <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
-              </span>
-            {/each}
           </div>
-        {/if}
-      </div>
-
-      <!-- P2 panel -->
-      <div bind:this={p2PanelEl} use:trackCharEl={{ name: p2Char.name }}
-        class="bv-char-card bv-team-2 {dodgeDir === 'rtl' ? 'panel-dodging' : ''}"
-        class:bv-victor={p2Won}
-        style="padding: 12px; --team-accent: #e879f9;">
-        <div class="flex items-center gap-2 min-w-0 mb-1.5">
-          {#if p2Won}
-            <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #e879f9; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-          {:else if p1Won}
-            <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
-          {/if}
-          <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #e879f9; font-size: 0.95rem;">{p2Char.name}</p>
         </div>
-        <p class="text-xs truncate mb-1.5" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{p2Char.raceLabel} · {p2Char.archetypeLabel}</p>
-        <div class="bv-hp-track" style="height: 10px;">
-          <div class="bv-hp-fill" style="width: {p2HpPct * 100}%; background: {hpColor(p2HpPct)}; color: {hpColor(p2HpPct)};"></div>
-        </div>
-        <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(p2HpPct)};">{formatHp(p2DisplayHp)}<span style="color: #4e4635;"> / {formatHp(p2Char.maxHp)} HP</span></p>
-        <div class="grid grid-cols-3 gap-1 mt-2">
-          {#each [['ATK', formatHp(p2Char.physicalDamage)], ['DEF', Math.round(p2Char.armorReduction * 100) + '%'], ['INIT', Math.round(p2Char.initiative)]] as [lbl, val]}
-            <div class="text-center rounded py-1" style="background: rgba(232,121,249,0.06); border: 1px solid rgba(232,121,249,0.12);">
-              <p style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 9px;">{lbl}</p>
-              <p class="font-bold text-xs" style="font-family: 'Cinzel', serif; color: #e879f9;">{val}</p>
-            </div>
-          {/each}
-        </div>
-        {#if p2Badges.length > 0}
-          <div class="flex flex-wrap gap-1 justify-center mt-2">
-            {#each p2Badges as b}
-              <span class="bv-status-chip" title="{b.label}: {b.description}"
-                style="background: {b.color}22; border-color: {b.color}66;">
-                <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
-              </span>
-            {/each}
-          </div>
-        {/if}
-      </div>
-
-    </div>
-
-    <!-- Attack FX overlay — three-stage origin fallback (char → panel → wrapper)
-         so VFX never lands at the viewport edge. -->
-    {#if phase === 'battle' && activeAnim}
-      {#key activeAnim.key}
-        {@const ox = activeAnim.origin?.x}
-        {@const oy = activeAnim.origin?.y}
-        {@const _wr = battleWrapperEl?.getBoundingClientRect()}
-        <div style="position:fixed;
-                    left:{ox != null ? ox + 'px' : _wr != null
-                          ? (activeAnim.direction === 'rtl' ? (_wr.left + _wr.width * 0.75) + 'px'
-                            : activeAnim.direction === 'ltr' ? (_wr.left + _wr.width * 0.25) + 'px'
-                            : (_wr.left + _wr.width / 2) + 'px')
-                          : (activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw')};
-                    top:{oy != null ? oy + 'px' : _wr != null
-                          ? (_wr.top + _wr.height / 2) + 'px' : '50vh'};
-                    transform:translate(-50%,-50%);
-                    z-index:9999;pointer-events:none;">
-          <AttackFX type={activeAnim.type} color={activeAnim.color}
-                    direction={activeAnim.direction} size={76} grade={activeAnim.grade} attackType={activeAnim.attackType}/>
-        </div>
-      {/key}
-    {/if}
-
-    <!-- Floating damage indicators -->
-    <DamageIndicator events={damageEvents} />
-
-    </div>
+      {/snippet}
+    </BattleArena>
   {/if}
-
-  <!-- Intro VS splash -->
-  {#if phase === 'intro' && p1Char && p2Char}
-    <div class="text-center py-6" style="animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
-      <p style="font-family: 'Cinzel', serif; font-size: 3rem; font-weight: 900; color: #f0c040; letter-spacing: 0.2em; filter: drop-shadow(0 0 20px rgba(240,192,64,0.5));">VS</p>
-      <p class="mt-2 text-sm tracking-[0.2em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Calculating fate…</p>
-    </div>
-  {/if}
-
-  <!-- Battle log — full width below character panels on mobile, centered on desktop -->
-  {#if phase !== 'intro'}
-    <div class="w-full rounded-xl overflow-hidden mb-4 sm:mb-6" style="border: 1px solid rgba(240,192,64,0.12); background: #0d0d16;">
-      <div class="flex items-center gap-2 px-4 py-2.5" style="border-bottom: 1px solid rgba(240,192,64,0.08);">
-        <span class="material-symbols-outlined" style="font-size: 14px; color: #9a907b; font-variation-settings: 'FILL' 1;">menu_book</span>
-        <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Battle Log</p>
-        {#if phase === 'battle'}
-          <span class="ml-auto text-xs px-2 py-0.5 rounded" style="background: rgba(157,23,77,0.3); border: 1px solid rgba(157,23,77,0.5); font-family: 'JetBrains Mono', monospace; color: #f9a8d4;">
-            Round {roundIdx} of {rounds.length}
-          </span>
-        {/if}
-      </div>
-      <div bind:this={logEl} class="overflow-y-auto px-4 py-3" style="max-height: 300px; scroll-behavior: smooth;">
-        {#if logLines.length === 0}
-          <p class="text-xs text-center py-4" style="color: #4e4635; font-style: italic;">The battle begins…</p>
-        {/if}
-        {#each logLines as line}
-          {#if line.startsWith('──')}
-            <p class="text-xs mt-3 mb-1 tracking-[0.15em]" style="font-family: 'JetBrains Mono', monospace; color: #9a907b; border-bottom: 1px solid rgba(240,192,64,0.08); padding-bottom: 4px;">{line}</p>
-          {:else if line.includes('CRITICAL') || line.includes('DEVASTATING') || line.includes('PERFECT STRIKE') || line.includes('OVERWHELMING') || line.includes('UNSTOPPABLE') || line.includes('OVERKILL')}
-            <p class="text-xs mb-1 font-bold" style="color: #fde047; font-family: 'JetBrains Mono', monospace;">{line}</p>
-          {:else if p1Char && line.startsWith(p1Char.name)}
-            <p class="text-xs mb-1" style="color: #fde68a; font-family: 'JetBrains Mono', monospace;">{line}</p>
-          {:else if p2Char && line.startsWith(p2Char.name)}
-            <p class="text-xs mb-1" style="color: #e9d5ff; font-family: 'JetBrains Mono', monospace;">{line}</p>
-          {:else}
-            <p class="text-xs mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-style: italic;">{line}</p>
-          {/if}
-        {/each}
-      </div>
-    </div>
-  {/if}
-
-
 </div>
-
-<!-- ══ Result overlay (dark modal) ══════════════════════════════════════════ -->
-{#if phase === 'result' && winner}
-  {@const winnerName = winner === 'p1' ? p1Char?.name : winner === 'p2' ? p2Char?.name : null}
-  {@const winColor   = winner === 'draw' ? '#9ca3af' : winner === 'p1' ? '#f0c040' : '#e879f9'}
-  <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
-    style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(88px, calc(env(safe-area-inset-bottom,0px) + 88px));">
-    <div class="w-full max-w-md rounded-2xl overflow-hidden"
-      style="background: {winner === 'draw' ? 'rgba(156,163,175,0.06)' : winner === 'p1' ? 'rgba(240,192,64,0.06)' : 'rgba(232,121,249,0.06)'}; border: 1px solid {winColor}44; box-shadow: 0 0 60px {winColor}14; animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
-      <div class="px-5 py-6 text-center">
-        {#if winner === 'draw'}
-          <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">The battle concludes</p>
-          <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: #d1d5db; letter-spacing: 0.15em;">IT'S A DRAW!</p>
-          <p class="mt-2 text-sm" style="color: #9a907b;">Two warriors of equal destiny.</p>
-        {:else}
-          <p class="text-xs tracking-[0.25em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: {winColor};">Victory</p>
-          <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: {winColor}; letter-spacing: 0.12em; filter: drop-shadow(0 0 16px {winColor}55);">{winnerName} WINS!</p>
-          <p class="mt-2 text-sm" style="color: #9a907b;">Fate has spoken.</p>
-
-          {#if saveStatus === 'saving'}
-            <p class="mt-3 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Saving to champions record…</p>
-          {:else if saveStatus === 'saved'}
-            <div class="mt-3 flex items-center justify-center gap-1.5">
-              <span class="material-symbols-outlined" style="font-size: 14px; color: #34d399; font-variation-settings: 'FILL' 1;">check_circle</span>
-              <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #34d399;">Saved — {savedWins} rival win{savedWins !== 1 ? 's' : ''} total</p>
-            </div>
-          {:else if saveStatus === 'error'}
-            <p class="mt-3 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">Could not save — session too brief or server unavailable.</p>
-          {/if}
-        {/if}
-
-        <!-- Action buttons -->
-        <div class="flex flex-col gap-2 mt-5">
-          {#if winner !== 'draw' && onChallengeWinner && saveStatus === 'saved'}
-            {@const winResults = winner === 'p1' ? p1Results : p2Results}
-            {@const winName    = winner === 'p1' ? p1Name    : p2Name}
-            <button
-              onclick={() => onChallengeWinner!(winResults, winName, savedShareId)}
-              class="w-full py-3 rounded-xl text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95"
-              style="font-family: 'Cinzel', serif; color: #fde68a; background: linear-gradient(135deg, #1c1a2a, #13121c); border: 1px solid #f0c040; box-shadow: 0 0 20px rgba(240,192,64,0.18);"
-            >Challenge Winner</button>
-          {/if}
-          <div class="flex gap-2">
-            <button
-              onclick={onRematch}
-              class="flex-1 py-3 rounded-xl text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95"
-              style="font-family: 'Cinzel', serif; color: #f9a8d4; background: rgba(157,23,77,0.12); border: 1px solid #9d174d;"
-            >⚔ Rematch</button>
-            <button
-              onclick={onBackToMenu}
-              class="flex-1 py-3 rounded-xl text-sm tracking-[0.14em] uppercase font-bold transition-all active:scale-95"
-              style="font-family: 'Cinzel', serif; color: #9a907b; background: rgba(255,255,255,0.03); border: 1px solid #4e4635;"
-            >Menu</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-{/if}
-
-<style>
-/* Rune-flash dodge — panel phases through reality */
-@keyframes panel-dodge {
-  0%   { opacity: 1;    transform: translateX(0)     skewX(0deg);   filter: none; }
-  10%  { opacity: 0.18; transform: translateX(-18px) skewX(-4deg);  filter: brightness(2.2) blur(3px) hue-rotate(30deg); }
-  28%  { opacity: 0.40; transform: translateX(14px)  skewX(3deg);   filter: brightness(1.6) blur(2px); }
-  48%  { opacity: 0.15; transform: translateX(-11px) skewX(-2deg);  filter: brightness(2.5) blur(3px) hue-rotate(-20deg); }
-  66%  { opacity: 0.52; transform: translateX(7px)   skewX(1deg);   filter: blur(1px); }
-  83%  { opacity: 0.88; transform: translateX(-3px)  skewX(0deg);   filter: none; }
-  100% { opacity: 1;    transform: translateX(0)     skewX(0deg);   filter: none; }
-}
-.panel-dodging {
-  animation: panel-dodge 0.80s ease-out forwards;
-  will-change: transform, opacity, filter;
-}
-</style>

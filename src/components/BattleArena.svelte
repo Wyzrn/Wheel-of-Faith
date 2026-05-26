@@ -1,0 +1,496 @@
+<!--
+  BattleArena.svelte — Unified shell used by all 4 battle modes (Rivals,
+  Quick, Team, Story). Owns the chrome that used to be duplicated across
+  views: header, character cards, HP bars, status badges, battle log,
+  VFX overlay, floating damage indicators, and intro/result phase gating.
+
+  Modes plug in via snippets (`prebattle`, `result`, `hotbar`, `cardExtra`)
+  and supply their own normalized rounds + teams. The arena drives playback
+  internally via a single round/line state machine.
+
+  Segment 1 (this file): behaviour-preserving extraction of the existing
+  auto-playback path. Segment 2 will replace the VFX overlay block with a
+  projectile system; Segment 3 layers a stateful turn controller for manual
+  input.
+-->
+<script lang="ts">
+  import { onDestroy, tick, type Snippet } from 'svelte'
+  import AttackFX from './AttackFX.svelte'
+  import DamageIndicator from './DamageIndicator.svelte'
+  import type { DamageEvent } from '$lib/game/damageEvent'
+  import { deriveStatusBadges } from '$lib/game/battleStatuses'
+  import { formatHp } from '$lib/game/battle'
+  import type { RoundFxEvent } from '$lib/game/battle'
+  import {
+    type ArenaMember, type ArenaRound, type ArenaTeam, type ArenaWinner,
+    type AnimDir, ELEMENT_FX, detectAnim, damageHitFromLine, hpColor, speedDelay,
+  } from '$lib/battle/arena'
+
+  interface Props {
+    teams: [ArenaTeam, ArenaTeam]
+    rounds: ArenaRound[]
+    phase: 'intro' | 'battle' | 'result'
+    modeTitle: string
+    modeSubtitle?: string
+    modeAccent?: string
+    introMs?: number
+    speedFactor: number              // settings.battleSpeed (legacy)
+    effectsEnabled: boolean          // settings.effectsEnabled
+    autoStart?: boolean              // if true, auto-transition intro→battle
+    // Snippets
+    prebattle?: Snippet
+    result?: Snippet
+    hotbar?: Snippet
+    cardExtra?: Snippet<[ArenaMember]>
+    // Callbacks
+    onPhaseChange?: (p: 'intro' | 'battle' | 'result') => void
+    onRoundEnd?: (round: ArenaRound) => void
+    onLineShown?: (line: string) => void
+    onBattleEnd?: (winner: ArenaWinner) => void
+  }
+  let {
+    teams, rounds, phase = $bindable(), modeTitle, modeSubtitle = '',
+    modeAccent = '#f0c040', introMs = 2600, speedFactor, effectsEnabled,
+    autoStart = true,
+    prebattle, result, hotbar, cardExtra,
+    onPhaseChange, onRoundEnd, onLineShown, onBattleEnd,
+  }: Props = $props()
+
+  // ── Display HP (animated towards round.hpAfter on round-end) ───────────────
+  // Member id → current displayed HP. Initialized from members and overwritten
+  // as rounds resolve.
+  let displayHp = $state<Record<string, number>>({})
+  $effect(() => {
+    const next: Record<string, number> = {}
+    for (const t of teams) for (const m of t.members) next[m.id] = m.hp
+    displayHp = next
+  })
+
+  let allMembers = $derived([...teams[0].members, ...teams[1].members])
+  let allNames   = $derived(allMembers.map(m => m.name))
+  let t1Names    = $derived(new Set(teams[0].members.map(m => m.name)))
+  let t2Names    = $derived(new Set(teams[1].members.map(m => m.name)))
+
+  let logLines = $state<string[]>([])
+  let charStatusByName = $derived(deriveStatusBadges(logLines, allNames))
+
+  let roundIdx = $state(0)
+  let roundDisplayN = $derived(Math.max(1, roundIdx))
+  let totalRounds = $derived(rounds.length)
+  let winner = $state<ArenaWinner | null>(null)
+
+  // ── DOM refs for VFX anchoring ─────────────────────────────────────────────
+  let wrapperEl: HTMLDivElement | null = $state(null)
+  const charEls = new Map<string, HTMLElement>()
+  function trackCharEl(node: HTMLElement, args: { name: string }) {
+    charEls.set(args.name, node)
+    return { destroy() { charEls.delete(args.name) } }
+  }
+  function memberOrigin(name: string | null): { x: number; y: number } | undefined {
+    if (!name) return undefined
+    const el = charEls.get(name)
+    if (!el) return undefined
+    const r = el.getBoundingClientRect()
+    if (r.width === 0) return undefined
+    return {
+      x: r.left + r.width / 2,
+      y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80)),
+    }
+  }
+  function wrapperOrigin(dir: AnimDir): { x: number; y: number } | undefined {
+    if (!wrapperEl) return undefined
+    const wr = wrapperEl.getBoundingClientRect()
+    if (wr.width === 0) return undefined
+    const xRel = dir === 'rtl' ? 0.75 : dir === 'ltr' ? 0.25 : 0.5
+    return {
+      x: wr.left + wr.width * xRel,
+      y: Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80)),
+    }
+  }
+
+  // ── VFX overlay state (Segment 1: 1:1 with legacy behaviour) ──────────────
+  let activeAnim = $state<{
+    type: string; color: string; key: number; direction: AnimDir;
+    grade?: string; origin?: { x: number; y: number }; attackType?: string
+  } | null>(null)
+  let animKey = 0
+  let dodgeDir = $state<'ltr' | 'rtl' | null>(null)
+  let animTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+  function showAnim(
+    type: string, color: string, direction: AnimDir,
+    grade: string | undefined, origin: { x: number; y: number } | undefined,
+    attackType: string | undefined,
+  ) {
+    if (animTimeoutId) clearTimeout(animTimeoutId)
+    activeAnim = { type, color, key: ++animKey, direction, grade, origin, attackType }
+    dodgeDir = type === 'dodge' ? (direction === 'ltr' ? 'ltr' : direction === 'rtl' ? 'rtl' : null) : null
+    animTimeoutId = setTimeout(() => { activeAnim = null; dodgeDir = null }, 950)
+  }
+
+  // ── Damage indicators ──────────────────────────────────────────────────────
+  let damageEvents = $state<DamageEvent[]>([])
+  let dmgIdCounter = 0
+  function emitDamage(targetName: string, value: number, kind: DamageEvent['kind']) {
+    const el = charEls.get(targetName)
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    if (r.width === 0) return
+    const ev: DamageEvent = {
+      id: ++dmgIdCounter,
+      x: r.left + r.width / 2,
+      y: r.top + r.height * 0.3,
+      value, kind,
+    }
+    damageEvents = [...damageEvents.slice(-29), ev]
+    setTimeout(() => { damageEvents = damageEvents.filter(d => d.id !== ev.id) }, 1400)
+  }
+
+  function inferAttackerName(line: string): string | null {
+    for (const n of allNames) if (line.startsWith(n)) return n
+    return null
+  }
+
+  // ── Round / line playback ─────────────────────────────────────────────────
+  let logEl: HTMLDivElement | null = $state(null)
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+  let currentFxEvents: RoundFxEvent[] = []
+  let fxEventIdx = 0
+  let aoeRemainingHits = 0
+
+  async function scrollLog() {
+    await tick()
+    if (logEl) logEl.scrollTop = logEl.scrollHeight
+  }
+
+  function maybeEmitDamageFromLine(line: string) {
+    if (!effectsEnabled) return
+    const hit = damageHitFromLine(line, allNames)
+    if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
+  }
+
+  function playLines(lines: string[], onDone: () => void) {
+    if (lines.length === 0) { onDone(); return }
+    const [head, ...rest] = lines
+    logLines = [...logLines, head]
+    onLineShown?.(head)
+    scrollLog()
+    maybeEmitDamageFromLine(head)
+
+    const anim = detectAnim(head, t1Names, t2Names)
+    if (anim && effectsEnabled) {
+      const fx = currentFxEvents[fxEventIdx]
+      const isDamage   = head.includes('damage!')
+      const isHealLine = /restores|recovers.*HP|vital force|mends/i.test(head)
+      const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
+
+      let aoeSkip = false
+      if (isDamage && aoeRemainingHits > 0) {
+        aoeRemainingHits--
+        aoeSkip = true
+      } else if (fx && (isDamage || isHealLine)) {
+        fxEventIdx++
+        if (isDamage && fx.attackType === 'aoe' && fx.targetIdxs) {
+          aoeRemainingHits = Math.max(0, fx.targetIdxs.length - 1)
+        }
+      }
+
+      if (!aoeSkip) {
+        let { type, color, direction } = anim
+        // Override FX type/color from the simulator's element when present —
+        // more accurate than the text-regex fallback in detectAnim.
+        if (fx && isDamage && type !== 'crit' && type !== 'berserker' && type !== 'dodge') {
+          const elFx = fx.element ? ELEMENT_FX[fx.element] : null
+          if (elFx) { type = elFx.type; color = elFx.color }
+        }
+        const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
+        const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
+        const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
+        const attackerName = inferAttackerName(head)
+        let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
+          ? memberOrigin(attackerName)
+          : undefined
+        if (!origin) origin = wrapperOrigin(originDir)
+        showAnim(type, color, direction, grade, origin, fxAttackType)
+      }
+    }
+
+    const base = head.startsWith('──') ? 550 : 1000
+    timeoutId = setTimeout(() => playLines(rest, onDone), speedDelay(base, speedFactor))
+  }
+
+  function playRound() {
+    if (roundIdx >= rounds.length) {
+      finishBattle(rounds.at(-1)?.winner ?? null)
+      return
+    }
+    const round = rounds[roundIdx]
+    roundIdx++
+    currentFxEvents = round.fxEvents ?? []
+    fxEventIdx = 0
+    aoeRemainingHits = 0
+
+    const lines = [`── Round ${round.roundNum} ──`, ...round.lines]
+    playLines(lines, () => {
+      // Settle HPs for this round
+      const next = { ...displayHp }
+      for (const id of Object.keys(round.hpAfter)) next[id] = round.hpAfter[id]
+      displayHp = next
+      onRoundEnd?.(round)
+      if (round.winner !== undefined) {
+        finishBattle(round.winner)
+      } else {
+        timeoutId = setTimeout(playRound, speedDelay(900, speedFactor))
+      }
+    })
+  }
+
+  function finishBattle(w: ArenaWinner | null) {
+    winner = w
+    phase = 'result'
+    onPhaseChange?.('result')
+    if (w) onBattleEnd?.(w)
+  }
+
+  // ── Lifecycle: kick off playback when battle phase begins ─────────────────
+  let started = false
+  $effect(() => {
+    if (!autoStart || started) return
+    if (phase !== 'intro' || rounds.length === 0) return
+    started = true
+    timeoutId = setTimeout(() => {
+      phase = 'battle'
+      onPhaseChange?.('battle')
+      playRound()
+    }, introMs)
+  })
+
+  onDestroy(() => {
+    if (timeoutId) clearTimeout(timeoutId)
+    if (animTimeoutId) clearTimeout(animTimeoutId)
+  })
+
+  // ── Per-card rendering helpers ─────────────────────────────────────────────
+  function hpPctFor(m: ArenaMember): number {
+    return m.maxHp > 0 ? Math.max(0, (displayHp[m.id] ?? m.hp) / m.maxHp) : 0
+  }
+  function isVictor(m: ArenaMember): boolean {
+    return phase === 'result' && winner === m.side && hpPctFor(m) > 0
+  }
+  function isDead(m: ArenaMember): boolean {
+    return (displayHp[m.id] ?? m.hp) <= 0
+  }
+</script>
+
+<div bind:this={wrapperEl} class="ba-wrapper" style="overflow:visible;">
+
+  <!-- Header -->
+  <div class="text-center mb-4 sm:mb-6" style="animation: fadeIn 0.3s ease-out forwards;">
+    {#if modeSubtitle}
+      <p class="text-xs tracking-[0.28em] uppercase mb-1 sm:mb-2"
+         style="font-family: 'JetBrains Mono', monospace; color: {modeAccent};">{modeSubtitle}</p>
+    {/if}
+    <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.2rem, 5vw, 2.4rem); font-weight: 900;
+               color: #ffdf96; letter-spacing: 0.15em;">{modeTitle}</h1>
+  </div>
+
+  <!-- Two-team grid -->
+  <div class="grid grid-cols-2 gap-2 sm:gap-4 relative w-full" style="overflow:visible;">
+    {#each teams as team (team.side)}
+      <div class="flex flex-col gap-2">
+        {#if team.members.length > 1}
+          <p class="text-[10px] tracking-[0.22em] uppercase mb-0.5"
+             style="font-family: 'JetBrains Mono', monospace; color: {team.accent};">{team.label}</p>
+        {/if}
+        {#each team.members as m (m.id)}
+          {@const pct = hpPctFor(m)}
+          {@const badges = charStatusByName.get(m.name) ?? []}
+          {@const accent = m.accent ?? team.accent}
+          {@const dead = isDead(m)}
+          {@const won = isVictor(m)}
+          <div use:trackCharEl={{ name: m.name }}
+            class="bv-char-card {team.side === 'team1' ? 'bv-team-1' : 'bv-team-2'}
+                   {dodgeDir === (team.side === 'team1' ? 'ltr' : 'rtl') ? 'panel-dodging' : ''}"
+            class:bv-victor={won}
+            style="padding: 12px; --team-accent: {accent}; opacity: {dead ? 0.45 : 1};">
+
+            <div class="flex items-center gap-2 min-w-0 mb-1.5">
+              {#if won}
+                <span class="material-symbols-outlined shrink-0"
+                  style="font-size: 18px; color: {accent}; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+              {:else if phase === 'result' && winner && winner !== 'draw' && winner !== team.side}
+                <span class="material-symbols-outlined shrink-0"
+                  style="font-size: 18px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
+              {/if}
+              <p class="font-bold truncate"
+                 style="font-family: 'Cinzel', serif; color: {accent}; font-size: 0.95rem;">{m.name}</p>
+            </div>
+
+            {#if m.raceLabel || m.archetypeLabel}
+              <p class="text-xs truncate mb-1.5"
+                 style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{[m.raceLabel, m.archetypeLabel].filter(Boolean).join(' · ')}</p>
+            {/if}
+
+            <div class="bv-hp-track" style="height: 10px;">
+              <div class="bv-hp-fill"
+                style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
+            </div>
+            <p class="text-xs mt-1"
+               style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)};">
+              {formatHp(displayHp[m.id] ?? m.hp)}<span style="color: #4e4635;"> / {formatHp(m.maxHp)} HP</span>
+            </p>
+
+            {#if m.stats && m.stats.length > 0}
+              <div class="grid gap-1 mt-2"
+                   style="grid-template-columns: repeat({m.stats.length}, minmax(0, 1fr));">
+                {#each m.stats as s}
+                  <div class="text-center rounded py-1"
+                       style="background: {accent}10; border: 1px solid {accent}1f;">
+                    <p style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 9px;">{s.label}</p>
+                    <p class="font-bold text-xs" style="font-family: 'Cinzel', serif; color: {accent};">{s.value}</p>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+
+            {#if badges.length > 0}
+              <div class="flex flex-wrap gap-1 justify-center mt-2">
+                {#each badges as b}
+                  <span class="bv-status-chip" title="{b.label}: {b.description}"
+                    style="background: {b.color}22; border-color: {b.color}66;">
+                    <span class="material-symbols-outlined"
+                      style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+                  </span>
+                {/each}
+              </div>
+            {/if}
+
+            {#if cardExtra}{@render cardExtra(m)}{/if}
+          </div>
+        {/each}
+      </div>
+    {/each}
+  </div>
+
+  <!-- VFX overlay (Segment 1: legacy behaviour preserved) -->
+  {#if phase === 'battle' && activeAnim && effectsEnabled}
+    {#key activeAnim.key}
+      {@const ox = activeAnim.origin?.x}
+      {@const oy = activeAnim.origin?.y}
+      {@const _wr = wrapperEl?.getBoundingClientRect()}
+      <div style="position:fixed;
+                  left:{ox != null ? ox + 'px' : _wr != null
+                        ? (activeAnim.direction === 'rtl' ? (_wr.left + _wr.width * 0.75) + 'px'
+                          : activeAnim.direction === 'ltr' ? (_wr.left + _wr.width * 0.25) + 'px'
+                          : (_wr.left + _wr.width / 2) + 'px')
+                        : (activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw')};
+                  top:{oy != null ? oy + 'px' : _wr != null
+                        ? (_wr.top + _wr.height / 2) + 'px' : '50vh'};
+                  transform:translate(-50%,-50%);
+                  z-index:9999;pointer-events:none;">
+        <AttackFX type={activeAnim.type} color={activeAnim.color}
+                  direction={activeAnim.direction} size={76}
+                  grade={activeAnim.grade} attackType={activeAnim.attackType}/>
+      </div>
+    {/key}
+  {/if}
+
+  <!-- Floating damage / heal / miss indicators -->
+  <DamageIndicator events={damageEvents} />
+
+  <!-- Intro splash -->
+  {#if phase === 'intro'}
+    {#if prebattle}
+      {@render prebattle()}
+    {:else}
+      <div class="text-center py-6" style="animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+        <p style="font-family: 'Cinzel', serif; font-size: 3rem; font-weight: 900;
+                  color: {modeAccent}; letter-spacing: 0.2em;
+                  filter: drop-shadow(0 0 20px {modeAccent}55);">VS</p>
+        <p class="mt-2 text-sm tracking-[0.2em] uppercase"
+           style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Calculating fate…</p>
+      </div>
+    {/if}
+  {/if}
+
+  <!-- Battle log -->
+  {#if phase !== 'intro'}
+    <div class="w-full rounded-xl overflow-hidden mt-4 mb-4 sm:mb-6"
+         style="border: 1px solid {modeAccent}1f; background: #0d0d16;">
+      <div class="flex items-center gap-2 px-4 py-2.5"
+           style="border-bottom: 1px solid {modeAccent}14;">
+        <span class="material-symbols-outlined"
+              style="font-size: 14px; color: #9a907b; font-variation-settings: 'FILL' 1;">menu_book</span>
+        <p class="text-xs tracking-[0.15em] uppercase"
+           style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Battle Log</p>
+        {#if phase === 'battle' && totalRounds > 0}
+          <span class="ml-auto text-xs px-2 py-0.5 rounded"
+                style="background: {modeAccent}22; border: 1px solid {modeAccent}55;
+                       font-family: 'JetBrains Mono', monospace; color: {modeAccent};">
+            Round {roundDisplayN} of {totalRounds}
+          </span>
+        {/if}
+      </div>
+      <div bind:this={logEl} class="overflow-y-auto px-4 py-3"
+           style="max-height: 300px; scroll-behavior: smooth;">
+        {#if logLines.length === 0}
+          <p class="text-xs text-center py-4" style="color: #4e4635; font-style: italic;">The battle begins…</p>
+        {/if}
+        {#each logLines as line}
+          {#if line.startsWith('──')}
+            <p class="text-xs mt-3 mb-1 tracking-[0.15em]"
+               style="font-family: 'JetBrains Mono', monospace; color: #9a907b;
+                      border-bottom: 1px solid {modeAccent}14; padding-bottom: 4px;">{line}</p>
+          {:else if /CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/.test(line)}
+            <p class="text-xs mb-1 font-bold"
+               style="color: #fde047; font-family: 'JetBrains Mono', monospace;">{line}</p>
+          {:else if [...t1Names].some(n => line.startsWith(n))}
+            <p class="text-xs mb-1"
+               style="color: #fde68a; font-family: 'JetBrains Mono', monospace;">{line}</p>
+          {:else if [...t2Names].some(n => line.startsWith(n))}
+            <p class="text-xs mb-1"
+               style="color: #e9d5ff; font-family: 'JetBrains Mono', monospace;">{line}</p>
+          {:else}
+            <p class="text-xs mb-1"
+               style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-style: italic;">{line}</p>
+          {/if}
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Manual hotbar slot (Segment 4 will populate this) -->
+  {#if phase === 'battle' && hotbar}
+    {@render hotbar()}
+  {/if}
+
+  <!-- Result overlay slot — each mode renders its own modal -->
+  {#if phase === 'result' && result}
+    {@render result()}
+  {/if}
+</div>
+
+<style>
+  .ba-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Rune-flash dodge — panel phases through reality. Inherited from
+     the per-view CSS so the look is identical. */
+  @keyframes panel-dodge {
+    0%   { opacity: 1;    transform: translateX(0)     skewX(0deg);   filter: none; }
+    10%  { opacity: 0.18; transform: translateX(-18px) skewX(-4deg);  filter: brightness(2.2) blur(3px) hue-rotate(30deg); }
+    28%  { opacity: 0.40; transform: translateX(14px)  skewX(3deg);   filter: brightness(1.6) blur(2px); }
+    48%  { opacity: 0.15; transform: translateX(-11px) skewX(-2deg);  filter: brightness(2.5) blur(3px) hue-rotate(-20deg); }
+    66%  { opacity: 0.52; transform: translateX(7px)   skewX(1deg);   filter: blur(1px); }
+    83%  { opacity: 0.88; transform: translateX(-3px)  skewX(0deg);   filter: none; }
+    100% { opacity: 1;    transform: translateX(0)     skewX(0deg);   filter: none; }
+  }
+  :global(.panel-dodging) {
+    animation: panel-dodge 0.80s ease-out forwards;
+    will-change: transform, opacity, filter;
+  }
+</style>
