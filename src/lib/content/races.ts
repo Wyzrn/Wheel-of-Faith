@@ -4,6 +4,7 @@ export const races: Race[] = [
   // ── Common (weight 30–40, abilitySpinCount 1) ──
   {
     label: 'Human',
+    spinIdentity: ['FateManipulator', 'Scaling'],
     limitBreakOdds: 20,
     weight: 15,
     abilitySpinCount: 1,
@@ -39,6 +40,7 @@ export const races: Race[] = [
   },
   {
     label: 'Orc',
+    spinIdentity: ['Scaling'],
     limitBreakOdds: 24,
     weight: 10,
     abilitySpinCount: 1,
@@ -74,6 +76,7 @@ export const races: Race[] = [
   },
   {
     label: 'Halfling',
+    spinIdentity: ['FateManipulator'],
     limitBreakOdds: 22,
     weight: 15,
     abilitySpinCount: 1,
@@ -108,6 +111,7 @@ export const races: Race[] = [
   },
   {
     label: 'Dwarf',
+    spinIdentity: ['Scaling'],
     limitBreakOdds: 26,
     weight: 12,
     abilitySpinCount: 1,
@@ -143,6 +147,7 @@ export const races: Race[] = [
   },
   {
     label: 'Goblin',
+    spinIdentity: ['HighVariance'],
     limitBreakOdds: 24,
     weight: 15,
     abilitySpinCount: 1,
@@ -177,6 +182,7 @@ export const races: Race[] = [
   },
   {
     label: 'Half-Elf',
+    spinIdentity: ['FateManipulator'],
     limitBreakOdds: 26,
     weight: 10,
     abilitySpinCount: 1,
@@ -210,6 +216,7 @@ export const races: Race[] = [
   },
   {
     label: 'Half-Orc',
+    spinIdentity: ['Scaling'],
     limitBreakOdds: 24,
     weight: 10,
     abilitySpinCount: 1,
@@ -243,6 +250,7 @@ export const races: Race[] = [
   },
   {
     label: 'Gnome',
+    spinIdentity: ['HighVariance'],
     limitBreakOdds: 22,
     weight: 15,
     abilitySpinCount: 2,
@@ -277,6 +285,7 @@ export const races: Race[] = [
   },
   {
     label: 'Robot',
+    spinIdentity: ['HighVariance', 'Scaling'],
     limitBreakOdds: 36,
     weight: 12,
     abilitySpinCount: 1,
@@ -329,6 +338,7 @@ export const races: Race[] = [
   // ── Uncommon / Tier 2 (weight 14–22, F tier locked → minStatTier E-) ──
   {
     label: 'Elf',
+    spinIdentity: ['FateManipulator'],
     limitBreakOdds: 28,
     weight: 10,
     abilitySpinCount: 2,
@@ -362,6 +372,7 @@ export const races: Race[] = [
   },
   {
     label: 'Tiefling',
+    spinIdentity: ['Corruption', 'Combo'],
     limitBreakOdds: 30,
     weight: 9,
     abilitySpinCount: 2,
@@ -402,6 +413,7 @@ export const races: Race[] = [
   },
   {
     label: 'Dragonborn',
+    spinIdentity: ['Evolution', 'Combo'],
     limitBreakOdds: 34,
     weight: 8,
     abilitySpinCount: 2,
@@ -438,6 +450,7 @@ export const races: Race[] = [
   },
   {
     label: 'Aasimar',
+    spinIdentity: ['FateManipulator'],
     limitBreakOdds: 34,
     weight: 8,
     abilitySpinCount: 2,
@@ -476,6 +489,7 @@ export const races: Race[] = [
   },
   {
     label: 'Lizardfolk',
+    spinIdentity: ['Evolution', 'Scaling'],
     limitBreakOdds: 30,
     weight: 9,
     abilitySpinCount: 1,
@@ -511,6 +525,7 @@ export const races: Race[] = [
   },
   {
     label: 'Tabaxi',
+    spinIdentity: ['Scaling'],
     limitBreakOdds: 30,
     weight: 9,
     abilitySpinCount: 2,
@@ -544,6 +559,7 @@ export const races: Race[] = [
   },
   {
     label: 'Goliath',
+    spinIdentity: ['Scaling'],
     limitBreakOdds: 32,
     weight: 8,
     abilitySpinCount: 1,
@@ -575,6 +591,7 @@ export const races: Race[] = [
   },
   {
     label: 'Genasi (Fire)',
+    spinIdentity: ['Combo'],
     limitBreakOdds: 32,
     weight: 7,
     abilitySpinCount: 2,
@@ -606,6 +623,7 @@ export const races: Race[] = [
   },
   {
     label: 'Genasi (Water)',
+    spinIdentity: ['Combo', 'FateManipulator'],
     limitBreakOdds: 32,
     weight: 7,
     abilitySpinCount: 2,
@@ -636,6 +654,7 @@ export const races: Race[] = [
   },
   {
     label: 'Genasi (Air)',
+    spinIdentity: ['Combo', 'FateManipulator'],
     limitBreakOdds: 32,
     weight: 7,
     abilitySpinCount: 2,
@@ -667,6 +686,7 @@ export const races: Race[] = [
   },
   {
     label: 'Genasi (Earth)',
+    spinIdentity: ['Combo'],
     limitBreakOdds: 32,
     weight: 7,
     abilitySpinCount: 1,
@@ -697,6 +717,7 @@ export const races: Race[] = [
   },
   {
     label: 'Warforged',
+    spinIdentity: ['HighVariance', 'Evolution'],
     limitBreakOdds: 38,
     weight: 7,
     abilitySpinCount: 2,
@@ -738,6 +759,7 @@ export const races: Race[] = [
   // ── Cyborg (Tier 3 — F+E locked) ──
   {
     label: 'Cyborg',
+    spinIdentity: ['HighVariance'],
     limitBreakOdds: 38,
     weight: 7,
     abilitySpinCount: 2,
@@ -772,6 +794,7 @@ export const races: Race[] = [
   // Bender (Avatar: The Last Airbender / The Legend of Korra)
   {
     label: 'Bender',
+    spinIdentity: ['Combo'],
     limitBreakOdds: 40,
     weight: 7,
     abilitySpinCount: 2,
@@ -811,6 +834,7 @@ export const races: Race[] = [
   // Shinobi (Naruto / Naruto Shippuden)
   {
     label: 'Shinobi',
+    spinIdentity: ['Combo'],
     limitBreakOdds: 42,
     weight: 6,
     abilitySpinCount: 2,
@@ -862,6 +886,7 @@ export const races: Race[] = [
   // Mutant (X-Men / Marvel)
   {
     label: 'Mutant',
+    spinIdentity: ['HighVariance', 'Scaling'],
     limitBreakOdds: 44,
     weight: 6,
     abilitySpinCount: 2,
@@ -897,6 +922,7 @@ export const races: Race[] = [
   // Nen User (Hunter × Hunter)
   {
     label: 'Nen User',
+    spinIdentity: ['Combo'],
     limitBreakOdds: 46,
     weight: 6,
     abilitySpinCount: 2,
@@ -939,6 +965,7 @@ export const races: Race[] = [
   // Namekian (Dragon Ball Z)
   {
     label: 'Namekian',
+    spinIdentity: ['Scaling', 'Summoner'],
     limitBreakOdds: 48,
     weight: 5,
     abilitySpinCount: 2,
@@ -975,6 +1002,7 @@ export const races: Race[] = [
   // Titan Shifter (Attack on Titan)
   {
     label: 'Titan Shifter',
+    spinIdentity: ['Evolution'],
     limitBreakOdds: 50,
     weight: 6,
     abilitySpinCount: 3,
@@ -1021,6 +1049,7 @@ export const races: Race[] = [
   // ── Rare / Tier 4 (weight 5–9, F+E+D locked → minStatTier C-) ──
   {
     label: 'Vampire',
+    spinIdentity: ['Evolution', 'Corruption'],
     limitBreakOdds: 46,
     weight: 5,
     abilitySpinCount: 3,
@@ -1054,6 +1083,7 @@ export const races: Race[] = [
   },
   {
     label: 'Werewolf',
+    spinIdentity: ['Evolution'],
     limitBreakOdds: 44,
     weight: 5,
     abilitySpinCount: 3,
@@ -1087,6 +1117,7 @@ export const races: Race[] = [
   },
   {
     label: 'Undead (Revenant)',
+    spinIdentity: ['Corruption', 'Scaling'],
     limitBreakOdds: 50,
     weight: 4,
     abilitySpinCount: 3,
@@ -1120,6 +1151,7 @@ export const races: Race[] = [
   },
   {
     label: 'Dragon',
+    spinIdentity: ['Evolution', 'Scaling'],
     limitBreakOdds: 54,
     weight: 5,
     abilitySpinCount: 3,
@@ -1161,6 +1193,7 @@ export const races: Race[] = [
   },
   {
     label: 'Sphinx',
+    spinIdentity: ['FateManipulator'],
     limitBreakOdds: 52,
     weight: 4,
     abilitySpinCount: 3,
@@ -1193,6 +1226,7 @@ export const races: Race[] = [
   },
   {
     label: 'Saiyan',
+    spinIdentity: ['Evolution', 'Scaling'],
     limitBreakOdds: 55,
     weight: 4,
     abilitySpinCount: 3,
@@ -1234,6 +1268,7 @@ export const races: Race[] = [
   },
   {
     label: 'Githyanki',
+    spinIdentity: ['Combo'],
     limitBreakOdds: 44,
     weight: 4,
     abilitySpinCount: 2,
@@ -1265,6 +1300,7 @@ export const races: Race[] = [
   },
   {
     label: 'Mindflayer',
+    spinIdentity: ['Corruption', 'Summoner'],
     limitBreakOdds: 48,
     weight: 4,
     abilitySpinCount: 3,
@@ -1309,6 +1345,7 @@ export const races: Race[] = [
   // Symbiote (Marvel)
   {
     label: 'Symbiote',
+    spinIdentity: ['Evolution', 'Scaling'],
     limitBreakOdds: 46,
     weight: 4,
     abilitySpinCount: 3,
@@ -1350,6 +1387,7 @@ export const races: Race[] = [
   // Hollow / Arrancar (Bleach)
   {
     label: 'Hollow / Arrancar',
+    spinIdentity: ['Evolution', 'Corruption'],
     limitBreakOdds: 52,
     weight: 4,
     abilitySpinCount: 3,
@@ -1391,6 +1429,7 @@ export const races: Race[] = [
   // Demon (Demon Slayer / Blue Exorcist / general anime)
   {
     label: 'Demon',
+    spinIdentity: ['Corruption'],
     limitBreakOdds: 50,
     weight: 5,
     abilitySpinCount: 3,
@@ -1434,6 +1473,7 @@ export const races: Race[] = [
   // ── Half-Dragon (Tier 4 — F+E+D locked) ──
   {
     label: 'Half-Dragon',
+    spinIdentity: ['Evolution'],
     limitBreakOdds: 50,
     weight: 4,
     abilitySpinCount: 2,
@@ -1466,6 +1506,7 @@ export const races: Race[] = [
   // ── Angel (Tier 4 — F+E+D locked) ──
   {
     label: 'Angel',
+    spinIdentity: ['FateManipulator'],
     limitBreakOdds: 56,
     weight: 4,
     abilitySpinCount: 3,
@@ -1511,6 +1552,7 @@ export const races: Race[] = [
   // ── Beast (Tier 4 — F+E+D locked; rare subtype upgrades to Mythological Creature) ──
   {
     label: 'Beast',
+    spinIdentity: ['Summoner', 'Scaling'],
     limitBreakOdds: 40,
     weight: 5,
     abilitySpinCount: 2,
@@ -1547,6 +1589,7 @@ export const races: Race[] = [
   // ── Eldritch Being (Tier 5 — F+E+D+C locked) ──
   {
     label: 'Eldritch Being',
+    spinIdentity: ['Corruption', 'RuleBreaker'],
     limitBreakOdds: 60,
     weight: 3,
     abilitySpinCount: 3,
@@ -1591,6 +1634,7 @@ export const races: Race[] = [
   // ── Mythological Creature (Tier 5 — F+E+D+C locked) ──
   {
     label: 'Mythological Creature',
+    spinIdentity: ['Summoner', 'Combo'],
     limitBreakOdds: 56,
     weight: 3,
     abilitySpinCount: 3,
@@ -1632,12 +1676,13 @@ export const races: Race[] = [
   // ── Legendary (weight 1–2, abilitySpinCount 3–4) ──
   {
     label: 'Viltrumite',
+    spinIdentity: ['Scaling', 'Evolution'],
     limitBreakOdds: 70,
-    weight: 1,
+    weight: 3,
     abilitySpinCount: 4,
     extraPowerSpins: 3,
     weaknessProbabilityModifier: 0.1,
-    minStatTier: 'A-',
+    minStatTier: 'B',
     weaknessCount: 0,
     description: 'Biologically perfect alien conquerors. No weaknesses on record. Technically a few. They don\'t discuss them.',
     statModifiers: { strength: 2.8, durability: 2.6, speed: 2.5, fightingSkill: 2.8, potential: 1.8 },
@@ -1672,6 +1717,7 @@ export const races: Race[] = [
   },
   {
     label: 'Asgardian',
+    spinIdentity: ['Evolution'],
     limitBreakOdds: 65,
     weight: 3,
     abilitySpinCount: 4,
@@ -1713,6 +1759,7 @@ export const races: Race[] = [
   },
   {
     label: 'Kryptonian',
+    spinIdentity: ['Evolution', 'Scaling'],
     limitBreakOdds: 70,
     weight: 3,
     abilitySpinCount: 4,
@@ -1752,6 +1799,7 @@ export const races: Race[] = [
   },
   {
     label: 'Kaiju',
+    spinIdentity: ['Scaling'],
     limitBreakOdds: 60,
     weight: 3,
     abilitySpinCount: 4,
@@ -1800,6 +1848,7 @@ export const races: Race[] = [
   // Time Lord (Doctor Who)
   {
     label: 'Time Lord',
+    spinIdentity: ['FateManipulator', 'RuleBreaker'],
     limitBreakOdds: 65,
     weight: 3,
     abilitySpinCount: 4,
@@ -1840,6 +1889,7 @@ export const races: Race[] = [
   },
   {
     label: 'Demi-god',
+    spinIdentity: ['Combo', 'Summoner'],
     limitBreakOdds: 70,
     weight: 3,
     abilitySpinCount: 3,
@@ -1875,6 +1925,7 @@ export const races: Race[] = [
   // ── Legendary / Divine (weight 1, minStatTier A- — F through B all locked) ──
   {
     label: 'God',
+    spinIdentity: ['RuleBreaker'],
     weight: 2,
     abilitySpinCount: 4,
     extraPowerSpins: 3,
@@ -1920,6 +1971,7 @@ export const races: Race[] = [
   },
   {
     label: 'Primordial',
+    spinIdentity: ['RuleBreaker'],
     weight: 2,
     abilitySpinCount: 4,
     extraPowerSpins: 3,
@@ -1964,7 +2016,8 @@ export const races: Race[] = [
   },
   {
     label: 'Creator',
-    weight: 2,
+    spinIdentity: ['FateManipulator', 'RuleBreaker', 'Summoner'],
+    weight: 1,
     abilitySpinCount: 4,
     extraPowerSpins: 4,
     weaknessProbabilityModifier: 0.05,
@@ -2004,6 +2057,7 @@ export const races: Race[] = [
   // Alien — Extraterrestrial beings with advanced technology and bizarre biology
   {
     label: 'Alien',
+    spinIdentity: ['HighVariance', 'Summoner'],
     limitBreakOdds: 50,
     weight: 5,
     abilitySpinCount: 2,
@@ -2043,6 +2097,7 @@ export const races: Race[] = [
   // Immortals — Truly deathless beings whose bodies regenerate indefinitely
   {
     label: 'Immortal',
+    spinIdentity: ['Scaling'],
     limitBreakOdds: 65,
     weight: 3,
     abilitySpinCount: 2,
@@ -2081,6 +2136,7 @@ export const races: Race[] = [
   // Dinosaur — Prehistoric apex predators given sentient form
   {
     label: 'Dinosaur',
+    spinIdentity: ['Scaling'],
     limitBreakOdds: 38,
     weight: 4,
     abilitySpinCount: 2,
@@ -2118,6 +2174,7 @@ export const races: Race[] = [
   // Cybertronian — Living mechanical lifeforms, transforming war machines
   {
     label: 'Cybertronian',
+    spinIdentity: ['Evolution', 'Combo'],
     limitBreakOdds: 60,
     weight: 3,
     abilitySpinCount: 2,
@@ -2157,6 +2214,7 @@ export const races: Race[] = [
   // Spirit — Incorporeal beings of pure spiritual energy
   {
     label: 'Spirit',
+    spinIdentity: ['Summoner'],
     limitBreakOdds: 55,
     weight: 5,
     abilitySpinCount: 2,
@@ -2195,6 +2253,7 @@ export const races: Race[] = [
   // Ghoul — Flesh-devouring monsters with regeneration and a RC cell kagune
   {
     label: 'Ghoul',
+    spinIdentity: ['Corruption', 'Scaling'],
     limitBreakOdds: 42,
     weight: 7,
     abilitySpinCount: 2,
@@ -2234,6 +2293,7 @@ export const races: Race[] = [
   // Shinigami — Death gods who wield soul-cutting blades and reiatsu
   {
     label: 'Shinigami',
+    spinIdentity: ['Combo', 'Evolution'],
     limitBreakOdds: 60,
     weight: 4,
     abilitySpinCount: 3,
@@ -2273,8 +2333,9 @@ export const races: Race[] = [
   // Sea King — Gargantuan monsters of the deep ocean
   {
     label: 'Sea King',
+    spinIdentity: ['Scaling'],
     limitBreakOdds: 50,
-    weight: 2,
+    weight: 3,
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 0.6,
     weaknessCount: 1,
@@ -2309,6 +2370,7 @@ export const races: Race[] = [
   // Atlantean — Children of the sunken kingdom, masters of the sea
   {
     label: 'Atlantean',
+    spinIdentity: ['Combo', 'Summoner'],
     limitBreakOdds: 48,
     weight: 4,
     abilitySpinCount: 2,
@@ -2345,6 +2407,7 @@ export const races: Race[] = [
   // Hybrid — Dual heritage, draws on two bloodlines simultaneously
   {
     label: 'Hybrid',
+    spinIdentity: ['Combo', 'HighVariance'],
     limitBreakOdds: 40,
     weight: 3,
     abilitySpinCount: 0,
@@ -2383,6 +2446,7 @@ export const races: Race[] = [
   // Giant — Massively oversized humanoids of immense strength
   {
     label: 'Giant',
+    spinIdentity: ['Scaling'],
     limitBreakOdds: 42,
     weight: 4,
     abilitySpinCount: 2,
@@ -2421,6 +2485,7 @@ export const races: Race[] = [
   // Parasite — Symbiotic organism that bonds with and enhances its host
   {
     label: 'Parasite',
+    spinIdentity: ['Corruption', 'HighVariance'],
     limitBreakOdds: 44,
     weight: 5,
     abilitySpinCount: 2,

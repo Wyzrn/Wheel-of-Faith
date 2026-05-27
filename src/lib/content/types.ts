@@ -25,6 +25,36 @@ export type ElementType =
   | 'Poison' | 'Time' | 'Water' | 'Sound' | 'Gravity' | 'Psychic' | 'Chaos'
   | 'Neutral'
 
+// Spin Identity taxonomy — what a race DOES to the spin loop, not just to
+// stats. Surfaces internally to route per-race mechanics (extra wheels,
+// secret-event weighting, archetype mutation rules). Players never see the
+// label directly — they experience it through differentiated wheel feel.
+export type SpinIdentity =
+  | 'FateManipulator'   // Influence wheel outcomes (Human, Halfling, Time Lord, Creator)
+  | 'Evolution'         // Unlock more spins as the run progresses (Saiyan, Dragon, Vampire, Titan Shifter)
+  | 'Corruption'        // Risk/reward instability (Demon, Hollow, Eldritch Being, Parasite)
+  | 'Combo'             // Heavy archetype interaction (Shinigami, Nen User, Shinobi, Bender)
+  | 'Scaling'           // Start weak, snowball (Human, Ghoul, Symbiote, Dragon)
+  | 'RuleBreaker'       // Modify normal spin rules (Creator, Primordial, Time Lord)
+  | 'Summoner'          // Inject companion systems (Beast, Spirit, Creator, Alien)
+  | 'HighVariance'      // Can be garbage or unstoppable (Mutant, Alien, Parasite, Cyborg)
+
+// A custom wheel injected by a race at a specific point in the spin sequence.
+// Each entry resolves to an extra spin slot during race-extras splice — same
+// mechanism as the existing classPool / subTypePool entries, but generalised
+// so a single race can inject many named wheels (Vampire wants Bloodline +
+// Age + Corruption; Creator wants Reality Law + Creation Domain + Architecture).
+export interface RaceWheel {
+  /** Internal id used by archetype mutations to override segment pools. */
+  id: string
+  /** Display name on the spin queue ("Bloodline", "Reality Law"). */
+  displayName: string
+  /** When this wheel fires relative to other race extras. Lower = sooner. */
+  order?: number
+  /** Segments shown on the wheel. */
+  segments: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; description?: string }[]
+}
+
 export interface Race {
   label: string                       // display name shown on wheel and in results
   weight: number                      // for weightedRandom(); determines rarity
@@ -42,6 +72,22 @@ export interface Race {
   // chance (Human ≈ 20, Viltrumite ≈ 70). Omit / 0 = race cannot Limit Break.
   // The Limit Break spin fires before the class spin for eligible races.
   limitBreakOdds?: number
+  // Spin identity taxonomy — drives which routing hooks fire (Evolution races
+  // unlock transformation wheels, Corruption races re-roll segments mid-spin,
+  // RuleBreaker races can override caps, etc.). A race can hold multiple
+  // identities (Dragon is both Evolution AND Scaling). Empty/missing = no
+  // identity-specific behaviour beyond the standard race extras.
+  spinIdentity?: SpinIdentity[]
+  // Race-specific injected wheels. Each entry adds one extra spin slot after
+  // the race result lands. Resolved by the race-extras splice in +page.svelte
+  // and StorySpinView.svelte; segments come from RaceWheel.segments but can
+  // be overridden by archetype mutation rules (see archetypeMutations.ts).
+  injectedWheels?: RaceWheel[]
+  // Secret-event weighting — multiplier applied to the base random chance of
+  // a secret event firing during this character's spin run. >1 means events
+  // are more likely (Eldritch, Mutant, Mythological Creature); <1 means
+  // less likely (Robot, Human, baseline races).
+  secretEventBias?: number
   customHeightPool?: { label: string; weight: number }[]
   customGenderPool?: { label: string; weight: number }[]  // overrides default height labels for this race
   // Multipliers applied to base weaponType/armorType segment weights for this race.

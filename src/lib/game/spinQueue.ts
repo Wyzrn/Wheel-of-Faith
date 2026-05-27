@@ -177,6 +177,11 @@ export type SpinCategory =
   // to Weak / Mild / Strong / Limitless (steep rarity). The +N stat-tier shift
   // is encoded in the resultLabel and applied to stat-wheel filters downstream.
   | 'limitBreakLevel'
+  // Generic race-injected wheel. Each entry's `raceWheelId` on SpinDefinition
+  // names which wheel to render (e.g. 'destiny', 'bloodline', 'realityLaw').
+  // Segments come from raceWheelRegistry.ts; archetype mutations
+  // (archetypeMutations.ts) can override the pool keyed off (race, archetype).
+  | 'raceWheel'
 
 export interface SpinDefinition {
   category: SpinCategory
@@ -197,6 +202,10 @@ export interface SpinDefinition {
   // filters Hybrid itself out of the parent pool (no infinite recursion) and
   // the result handler applies the second race's extras to the character.
   isHybridParent?: boolean
+  // For 'raceWheel' category slots — identifies which RaceWheel.id to render.
+  // Resolved against raceWheelRegistry at spin time. Mutually exclusive with
+  // the other category-specific fields.
+  raceWheelId?: string
   // For race-derived sub-spins (raceSubType / raceClass / raceTransformation /
   // racialAbility / racial weapon / racial weakness), the race label that
   // spawned this spin. When unset, downstream resolvers fall back to the
@@ -441,6 +450,13 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
       // How-Broken wheel — only spun when limitBreak landed on "Limit Break".
       // Steep rarity: Limitless is jackpot-on-a-jackpot.
       return LIMIT_BREAK_LEVEL_POOL
+
+    case 'raceWheel':
+      // Fallback only — actual segments come from raceWheelRegistry via the
+      // resolveSegments() hook in +page.svelte / StorySpinView using the
+      // SpinDefinition.raceWheelId + the active race. This default is what
+      // renders if a registry miss happens (shouldn't ever in production).
+      return [{ label: '—', weight: 1 }]
 
     default:
       // Unknown category — return empty array, no throw
