@@ -581,7 +581,9 @@ export function buildBattleCharacter(
       effectTag: detectEffectTag(r.resultLabel),
       behavior: detectMoveBehavior(r.resultLabel),
       attackType: 'attack',
-      element: wepData?.element,
+      // Weapons intentionally have NO element so weapon attacks render
+      // as a plain weapon slash rather than borrowing the element's FX
+      // (e.g. an Inferno Sword should slash, not detonate a fireball).
       grade: wepData?.grade,
     })
   }

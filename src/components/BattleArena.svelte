@@ -463,21 +463,24 @@
         const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
 
         // ── Dispatch by FX category ────────────────────────────────────────
-        // Three rendering paths now:
-        //   1. IN_PLACE_TYPES (slash / fire / lightning / water) — burst at
-        //      the target's card. No projectile, no beam — the effect
-        //      visualizes "happening to" the target (engulf / strike from
-        //      above / wave crashing in / multi-direction slashes).
-        //   2. BEAM_TYPES (holy / arcane / cosmic / energy / void / sound) —
-        //      a beam line from the attacker's anchor to the target's
-        //      anchor, then an impact burst at the target end. Reads as a
-        //      sustained channel rather than a thrown object.
-        //   3. PROJECTILE (everything else) — a comet flies from attacker
-        //      to target; impact burst at the target on arrival.
-        const isInPlace = IN_PLACE_TYPES.has(type)
-        const isBeam    = BEAM_TYPES.has(type)
+        // Four rendering paths:
+        //   1. HEAL (fxAttackType==='heal') — anchors on the CASTER (line's
+        //      leading name) and renders the holy heal-rise burst, never
+        //      a beam, even when the element is Light.
+        //   2. IN_PLACE_TYPES (slash / fire / lightning / water) — burst on
+        //      the target's card using the SAME positioning model as
+        //      status effects: parse the target's name from the line text,
+        //      look it up via memberOrigin(name), fall back to wrapper
+        //      center. Fixes the previous fx-index-based lookup that
+        //      mispositioned attacks on team 2.
+        //   3. BEAM_TYPES (holy / arcane / cosmic / energy / void / sound)
+        //      — beam line from attacker anchor to target anchor.
+        //   4. PROJECTILE (everything else) — comet flies attacker → target.
+        const isHeal    = fxAttackType === 'heal'
+        const isInPlace = !isHeal && IN_PLACE_TYPES.has(type)
+        const isBeam    = !isHeal && BEAM_TYPES.has(type)
 
-        const canProjectile = isDamage && fx && !isInPlace && !isBeam &&
+        const canProjectile = isDamage && fx && !isHeal && !isInPlace && !isBeam &&
                               type !== 'crit' && type !== 'dodge' &&
                               type !== 'shield' && type !== 'berserker'
 
@@ -487,22 +490,45 @@
           const att = memberFromFxIndex(fx.attackerSide, fx.attackerIdx)
           return att ? memberOriginById(att.id) : undefined
         }
+        // Find the target the same way status effects do: parse the target
+        // name out of the damage line, look it up in the live charEls map.
+        // Falls back to fxEvent.targetIdxs[0], then to undefined.
         const resolveTargetOrigin = (): { x: number; y: number } | undefined => {
-          if (!fx) return undefined
-          const enemySide = oppositeSide(fx.attackerSide)
-          const tgt = (fx.targetIdxs ?? [0])
-            .map(i => memberFromFxIndex(enemySide, i))
-            .filter((m): m is ArenaMember => !!m)[0]
-          return tgt ? memberOriginById(tgt.id) : undefined
+          const hit = damageHitFromLine(head, allNames)
+          if (hit) {
+            const fromLine = memberOrigin(hit.targetName)
+            if (fromLine) return fromLine
+          }
+          if (fx) {
+            const enemySide = oppositeSide(fx.attackerSide)
+            const tgt = (fx.targetIdxs ?? [0])
+              .map(i => memberFromFxIndex(enemySide, i))
+              .filter((m): m is ArenaMember => !!m)[0]
+            if (tgt) {
+              const o = memberOriginById(tgt.id)
+              if (o) return o
+            }
+          }
+          return undefined
         }
 
-        if (isInPlace && fx) {
-          // In-place at the target's card. The SVG itself handles whatever
-          // directionality the effect needs (e.g. lightning extends UP from
-          // the strike point; water uses isRtl to flip the wave).
-          const targetOrigin = resolveTargetOrigin() ?? wrapperOrigin(direction)
-          // For water we want the wave to sweep from the attacker's side —
-          // direction tells AttackFX which way is `isRtl`.
+        if (isHeal) {
+          // Heal — anchor on the CASTER (line's leading name), trigger the
+          // holy heal-rise mode by passing direction='center' + 'heal'
+          // attackType. Never a beam, even when element is Light.
+          const casterName = inferAttackerName(head)
+          const origin = (casterName ? memberOrigin(casterName) : undefined)
+                       ?? wrapperOrigin('center')
+          showAnim('holy', color, 'center', grade, origin, 'heal')
+          const hit = damageHitFromLine(head, allNames)
+          if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
+          deferDamageEmit = true
+        } else if (isInPlace) {
+          // In-place at the target's card — uses status-effect positioning
+          // (line-text → name → memberOrigin). Falls back to wrapper
+          // CENTER instead of the previous direction-based offset which
+          // misplaced attacks toward one side of the column.
+          const targetOrigin = resolveTargetOrigin() ?? wrapperOrigin('center')
           showAnim(type, color, direction, grade, targetOrigin, fxAttackType)
           const hit = damageHitFromLine(head, allNames)
           if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
@@ -708,13 +734,26 @@
   function handlePlayerAction(action: PlayerAction) {
     if (!controller || awaitingPlayerInput === false) return
 
+    // Some powers are buffs/heals/summons — they target the caster, not
+    // an enemy. Look up the specific power's attackType so the target
+    // picker only opens for actions that actually need an enemy.
+    let powerNeedsTarget = true
+    if (action.kind === 'power' && action.moveName && currentActorChar) {
+      const move = currentActorChar.moves.find(m => m.name === action.moveName)
+      if (move) {
+        const at = move.attackType
+        powerNeedsTarget = at !== 'buff' && at !== 'heal' && at !== 'summon'
+      }
+    }
+
     // Non-target actions: submit immediately.
-    const needsTarget = action.kind === 'weapon' ||
-                        action.kind === 'power' ||
-                        (action.kind === 'spell' &&
-                         action.spellCategory !== 'heal' &&
-                         action.spellCategory !== 'buff' &&
-                         action.spellCategory !== 'summon')
+    const needsTarget =
+      action.kind === 'weapon' ||
+      (action.kind === 'power' && powerNeedsTarget) ||
+      (action.kind === 'spell' &&
+       action.spellCategory !== 'heal' &&
+       action.spellCategory !== 'buff' &&
+       action.spellCategory !== 'summon')
 
     if (isTeamController) {
       const c = controller as BattleControllerTeam

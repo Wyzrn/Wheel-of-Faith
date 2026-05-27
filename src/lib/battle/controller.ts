@@ -117,6 +117,10 @@ export interface PowerOption {
   grade?: string
   damage: number
   cooldown: number   // 0 = ready, >0 = turns until usable
+  // The power's underlying attackType — exposed so the hotbar knows
+  // whether the move needs an enemy target (attack/aoe/debuff) or fires
+  // on the caster (buff/heal/summon).
+  attackType: AttackType
 }
 
 // Deterministic mid-range damage estimate FOR A SPECIFIC POWER. Folds in
@@ -141,11 +145,12 @@ export function powerOptions(
   for (const m of char.moves) {
     if (m.type !== 'power' || m.attackType === 'passive') continue
     out.push({
-      name:     m.name,
-      element:  m.element,
-      grade:    m.grade,
-      damage:   powerDamageEstimate(char, m),
-      cooldown: cooldowns[m.name] ?? 0,
+      name:       m.name,
+      element:    m.element,
+      grade:      m.grade,
+      damage:     powerDamageEstimate(char, m),
+      cooldown:   cooldowns[m.name] ?? 0,
+      attackType: m.attackType,
     })
   }
   // Sort by descending damage so the heaviest hitter sits at the top of
