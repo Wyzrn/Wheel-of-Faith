@@ -21,7 +21,7 @@ import {
   type BattleCharacter, type BattleMove, type RoundFxEvent,
 } from '$lib/game/battle'
 import type { ArenaRound, ArenaSide, ArenaWinner } from './arena'
-import type { PlayerAction } from './controller'
+import { POWER_COOLDOWN_TURNS, pickAutoMove, type PlayerAction } from './controller'
 
 export interface TeamControllerMember {
   id: string
@@ -40,7 +40,11 @@ interface DefendStance { shieldFraction: number }
 
 function pickRandom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
 
-function resolveMove(char: BattleCharacter, action: PlayerAction): BattleMove | null {
+function resolveMove(
+  char: BattleCharacter,
+  action: PlayerAction,
+  powerCooldowns: Record<string, number> = {},
+): BattleMove | null {
   const pool = char.moves.filter(m => m.attackType !== 'passive')
   switch (action.kind) {
     case 'weapon': {
@@ -49,7 +53,12 @@ function resolveMove(char: BattleCharacter, action: PlayerAction): BattleMove | 
     }
     case 'power': {
       const pwr = pool.filter(m => m.type === 'power')
-      return pwr.length > 0 ? pickRandom(pwr) : null
+      if (pwr.length === 0) return null
+      if (action.moveName) {
+        return pwr.find(m => m.name === action.moveName) ?? null
+      }
+      const ready = pwr.filter(m => (powerCooldowns[m.name] ?? 0) <= 0)
+      return ready.length > 0 ? pickRandom(ready) : pickRandom(pwr)
     }
     case 'spell': {
       const abil = pool.filter(m => m.type === 'ability' && m.attackType === action.spellCategory)
@@ -66,6 +75,8 @@ export class BattleControllerTeam {
   private hp: Record<string, number> = {}
   private statuses: Record<string, Partial<Record<StatusType, Status>>> = {}
   private defendStance: Record<string, DefendStance | null> = {}
+  // Per-actor power cooldowns — see comment in controller.ts.
+  private powerCooldowns: Record<string, Record<string, number>> = {}
   private actorQueue: TeamControllerMember[] = []
   private cycle = 0
   private _winner: ArenaWinner | null = null
@@ -77,6 +88,21 @@ export class BattleControllerTeam {
       this.hp[m.id] = m.char.hp
       this.statuses[m.id] = {}
       this.defendStance[m.id] = null
+      this.powerCooldowns[m.id] = {}
+    }
+  }
+
+  // Cooldown inspection for the UI (hotbar's Power popover).
+  getPowerCooldowns(id: string): Record<string, number> {
+    return { ...(this.powerCooldowns[id] ?? {}) }
+  }
+
+  private tickCooldowns(actorId: string) {
+    const cds = this.powerCooldowns[actorId]
+    if (!cds) return
+    for (const name of Object.keys(cds)) {
+      cds[name]--
+      if (cds[name] <= 0) delete cds[name]
     }
   }
 
@@ -242,9 +268,23 @@ export class BattleControllerTeam {
         enemies[0])
     }
 
-    const forced = action ? resolveMove(actor.char, action) ?? undefined : undefined
+    // Decrement this actor's power cooldowns at the start of their turn.
+    this.tickCooldowns(actor.id)
+
+    const forced = action
+      ? resolveMove(actor.char, action, this.powerCooldowns[actor.id]) ?? undefined
+      : pickAutoMove(actor.char, this.powerCooldowns[actor.id])
+
     const result = doAction(actor.char, target.char, this.hp[actor.id], forced)
     lines.push(...result.lines)
+
+    // If a power was used, set its cooldown so it can't be re-fired
+    // immediately. +1 because tickCooldowns already ran this turn — net
+    // wait is exactly POWER_COOLDOWN_TURNS of THIS actor's turns.
+    if (forced && forced.type === 'power') {
+      this.powerCooldowns[actor.id][forced.name] = POWER_COOLDOWN_TURNS + 1
+    }
+
     if (result.skipped) return
 
     // Damage application (with reactive Defend on the target side)

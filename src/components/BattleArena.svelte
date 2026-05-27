@@ -116,6 +116,20 @@
   let winner = $state<ArenaWinner | null>(null)
 
   // ── DOM refs for VFX anchoring ─────────────────────────────────────────────
+  //
+  // Positioning model (NEW — replaces the old viewport-fixed approach that
+  // drifted off-card on Story Mode's narrow centered column and on any view
+  // where the parent applied transforms or non-default writing modes):
+  //
+  //   1. The arena's outer wrapper is `position: relative`.
+  //   2. ALL overlays — projectiles, impact bursts, damage numbers — are
+  //      `position: absolute` inside that wrapper.
+  //   3. Coords are computed by subtracting the wrapper's bounding rect from
+  //      the card's bounding rect (so they're wrapper-local pixels, not
+  //      viewport pixels).
+  //
+  // This means VFX always lands on the actual card, regardless of scroll,
+  // transforms, parent widths, or whether the wrapper is centered.
   let wrapperEl: HTMLDivElement | null = $state(null)
   const charEls = new Map<string, HTMLElement>()
   function trackCharEl(node: HTMLElement, args: { name: string }) {
@@ -123,14 +137,15 @@
     return { destroy() { charEls.delete(args.name) } }
   }
   function memberOrigin(name: string | null): { x: number; y: number } | undefined {
-    if (!name) return undefined
+    if (!name || !wrapperEl) return undefined
     const el = charEls.get(name)
     if (!el) return undefined
-    const r = el.getBoundingClientRect()
-    if (r.width === 0) return undefined
+    const cardRect = el.getBoundingClientRect()
+    const wrapRect = wrapperEl.getBoundingClientRect()
+    if (cardRect.width === 0 || wrapRect.width === 0) return undefined
     return {
-      x: r.left + r.width / 2,
-      y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80)),
+      x: cardRect.left - wrapRect.left + cardRect.width / 2,
+      y: cardRect.top  - wrapRect.top  + cardRect.height / 2,
     }
   }
   function wrapperOrigin(dir: AnimDir): { x: number; y: number } | undefined {
@@ -139,8 +154,8 @@
     if (wr.width === 0) return undefined
     const xRel = dir === 'rtl' ? 0.75 : dir === 'ltr' ? 0.25 : 0.5
     return {
-      x: wr.left + wr.width * xRel,
-      y: Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80)),
+      x: wr.width * xRel,
+      y: wr.height / 2,
     }
   }
 
@@ -169,13 +184,17 @@
   let dmgIdCounter = 0
   function emitDamage(targetName: string, value: number, kind: DamageEvent['kind']) {
     const el = charEls.get(targetName)
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    if (r.width === 0) return
+    if (!el || !wrapperEl) return
+    const cardRect = el.getBoundingClientRect()
+    const wrapRect = wrapperEl.getBoundingClientRect()
+    if (cardRect.width === 0 || wrapRect.width === 0) return
+    // Wrapper-relative coords. DamageIndicator is rendered absolutely
+    // inside the wrapper so positioning stays glued to the card across
+    // scroll / transform / mobile viewport changes.
     const ev: DamageEvent = {
       id: ++dmgIdCounter,
-      x: r.left + r.width / 2,
-      y: r.top + r.height * 0.3,
+      x: cardRect.left - wrapRect.left + cardRect.width / 2,
+      y: cardRect.top  - wrapRect.top  + cardRect.height * 0.3,
       value, kind,
     }
     damageEvents = [...damageEvents.slice(-29), ev]
@@ -267,12 +286,69 @@
     if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
   }
 
+  // Status-effect → FX mapping. Fires an in-place burst on the target
+  // when the controller (or simulator) logs an "X is afflicted by Y" line
+  // or one of the flavorful STATUS_APPLY_LINES variants.
+  const STATUS_FX: Record<string, { type: string; color: string }> = {
+    burn:     { type: 'fire',      color: '#f97316' },
+    poison:   { type: 'poison',    color: '#84cc16' },
+    freeze:   { type: 'ice',       color: '#7dd3fc' },
+    paralyze: { type: 'lightning', color: '#fbbf24' },
+    wither:   { type: 'shadow',    color: '#8b5cf6' },
+    bleed:    { type: 'blood',     color: '#dc2626' },
+    weaken:   { type: 'cursed',    color: '#7c3aed' },
+    stun:     { type: 'lightning', color: '#fbbf24' },
+  }
+
+  // Returns {type, color, targetName} when the line announces a status
+  // application. Recognizes both the controller's simple form ("X is
+  // afflicted by Y!") and the simulator's flavorful variants ("X ignites
+  // — they're on fire!", "Ice encases X — they can't move!", etc.).
+  function detectStatusApply(line: string): { fx: { type: string; color: string }; targetName: string } | null {
+    // Simple form first.
+    const m = line.match(/^(.+?) is afflicted by (\w+)/)
+    if (m) {
+      const target = m[1]
+      const kind   = m[2].toLowerCase()
+      const fx = STATUS_FX[kind]
+      if (fx && allNames.includes(target)) return { fx, targetName: target }
+    }
+    // Flavorful variants (text-only — no status word in line).
+    for (const [kind, fx] of Object.entries(STATUS_FX)) {
+      const patterns: Record<string, RegExp> = {
+        burn:     /(.+?) ignites — they'?re on fire|(.+?)'?s form erupts in flame/,
+        poison:   /(.+?) is poisoned — toxin spreads|(.+?) staggers, venom coursing/,
+        freeze:   /(.+?) is frozen solid|Ice encases (.+?) —/,
+        paralyze: /(.+?)'?s strength is sapped/,  // weaken-like; closest match
+      }
+      const re = patterns[kind]
+      if (re) {
+        const match = line.match(re)
+        if (match) {
+          const target = match[1] || match[2]
+          if (target && allNames.includes(target)) return { fx, targetName: target }
+        }
+      }
+    }
+    return null
+  }
+
   function playLines(lines: string[], onDone: () => void) {
     if (lines.length === 0) { onDone(); return }
     const [head, ...rest] = lines
     logLines = [...logLines, head]
     onLineShown?.(head)
     scrollLog()
+
+    // Status-apply VFX — fires regardless of `anim` detection. The burst
+    // lands on the afflicted target's card with the matching element color.
+    const statusHit = effectsEnabled ? detectStatusApply(head) : null
+    if (statusHit) {
+      const origin = memberOrigin(statusHit.targetName) ?? wrapperOrigin('center')
+      if (origin) {
+        showAnim(statusHit.fx.type, statusHit.fx.color, 'center', undefined, origin, undefined)
+      }
+    }
 
     const anim = detectAnim(head, t1Names, t2Names)
     const isDamage   = head.includes('damage!')
@@ -809,22 +885,22 @@
     {/each}
   {/if}
 
-  <!-- Impact / non-projectile burst overlay -->
+  <!-- Impact / non-projectile burst overlay. Wrapper-relative absolute
+       positioning — coords passed in are already local to .ba-wrapper so
+       this never drifts off-card when the parent re-flows. -->
   {#if phase === 'battle' && activeAnim && effectsEnabled}
     {#key activeAnim.key}
       {@const ox = activeAnim.origin?.x}
       {@const oy = activeAnim.origin?.y}
-      {@const _wr = wrapperEl?.getBoundingClientRect()}
-      <div style="position:fixed;
-                  left:{ox != null ? ox + 'px' : _wr != null
-                        ? (activeAnim.direction === 'rtl' ? (_wr.left + _wr.width * 0.75) + 'px'
-                          : activeAnim.direction === 'ltr' ? (_wr.left + _wr.width * 0.25) + 'px'
-                          : (_wr.left + _wr.width / 2) + 'px')
-                        : (activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw')};
-                  top:{oy != null ? oy + 'px' : _wr != null
-                        ? (_wr.top + _wr.height / 2) + 'px' : '50vh'};
-                  transform:translate(-50%,-50%);
-                  z-index:9999;pointer-events:none;">
+      {@const wr = wrapperEl?.getBoundingClientRect()}
+      <div style="position: absolute;
+                  left: {ox != null ? ox + 'px'
+                         : (activeAnim.direction === 'rtl' ? (wr ? wr.width * 0.75 : 0) + 'px'
+                            : activeAnim.direction === 'ltr' ? (wr ? wr.width * 0.25 : 0) + 'px'
+                            : (wr ? wr.width / 2 : 0) + 'px')};
+                  top:  {oy != null ? oy + 'px' : (wr ? wr.height / 2 : 0) + 'px'};
+                  transform: translate(-50%, -50%);
+                  z-index: 30; pointer-events: none;">
         <AttackFX type={activeAnim.type} color={activeAnim.color}
                   direction={activeAnim.direction} size={76}
                   grade={activeAnim.grade} attackType={activeAnim.attackType}/>
@@ -908,8 +984,9 @@
         <button class="ba-target-cancel" onclick={cancelTargetPick}>Cancel</button>
       </div>
     {:else}
+      {@const cd = controller!.getPowerCooldowns(currentActorMember.id)}
       <BattleHotbar
-        availability={availableActions(currentActorChar)}
+        availability={availableActions(currentActorChar, cd)}
         actorName={currentActorMember.name}
         accent={teams.find(t => t.side === currentActorMember.side)?.accent ?? '#f0c040'}
         onAction={handlePlayerAction}/>

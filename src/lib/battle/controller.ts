@@ -31,9 +31,20 @@ export interface PlayerAction {
   // category (matching the prompt: "it will use a random attack from that
   // category that's in your character's ability list").
   spellCategory?: AttackType
+  // For 'power' actions — the exact power move to fire. Power picks are
+  // explicit (not random) because each power surfaces individually in the
+  // hotbar's power popover with its own damage estimate + cooldown badge.
+  moveName?: string
   // For multi-enemy battles only — defaults to the lone opponent in 1v1.
   targetId?: string
 }
+
+// ── Per-power cooldown ─────────────────────────────────────────────────────
+// Every time the actor fires a power move it goes on cooldown for this many
+// of THAT actor's own turns. Decremented at the start of each turn the
+// actor takes (not on every engine cycle), so a power locked on turn N is
+// available again on turn N + POWER_COOLDOWN_TURNS + 1.
+export const POWER_COOLDOWN_TURNS = 3
 
 // ── Defend state (reactive — auto-applies on next incoming hit) ─────────────
 // Per the locked decision: "Defend stays armed across multiple hits until
@@ -91,33 +102,79 @@ export function castableSpellCategories(char: BattleCharacter): AttackType[] {
   return SPELL_CATEGORIES.filter(c => out.has(c))
 }
 
-// ── Controller availability summary (UI helper) ─────────────────────────────
-export interface ActionAvailability {
-  weapon: boolean                       // has any 'physical' attack move
-  power:  boolean                       // has any 'power' attack move
-  defend: boolean                       // always true — defend is intrinsic
-  spell:  AttackType[]                  // categories with at least one move
+// ── Power option (UI helper) ──────────────────────────────────────────────
+// One entry per power move on a character — surfaces the move name, an
+// optional element, a deterministic damage estimate, and remaining cooldown
+// turns (0 = ready). Used by the manual hotbar's Power popover.
+export interface PowerOption {
+  name: string
+  element?: string
+  grade?: string
+  damage: number
+  cooldown: number   // 0 = ready, >0 = turns until usable
 }
 
-export function availableActions(char: BattleCharacter): ActionAvailability {
+// Deterministic mid-range damage estimate. The actual battle damage varies
+// with variance, crit, armor, and weakness multipliers — this is just the
+// "typical hit" preview so the player can compare powers at a glance.
+function powerDamageEstimate(char: BattleCharacter): number {
+  const energyBonus = char.energyRank >= 30 ? 1.25 : 1.0
+  const buffMult    = char.buffRoundsLeft > 0 ? char.buffMultiplier : 1.0
+  // Power moveMult: 0.55–1.05, average ~0.80
+  return Math.max(1, Math.round(char.powerDamage * 0.80 * energyBonus * buffMult))
+}
+
+export function powerOptions(
+  char: BattleCharacter,
+  cooldowns: Record<string, number> = {},
+): PowerOption[] {
+  const out: PowerOption[] = []
+  for (const m of char.moves) {
+    if (m.type !== 'power' || m.attackType === 'passive') continue
+    out.push({
+      name:     m.name,
+      element:  m.element,
+      grade:    m.grade,
+      damage:   powerDamageEstimate(char),
+      cooldown: cooldowns[m.name] ?? 0,
+    })
+  }
+  return out
+}
+
+// ── Controller availability summary (UI helper) ─────────────────────────────
+export interface ActionAvailability {
+  weapon:  boolean                       // has any 'physical' attack move
+  defend:  boolean                       // always true — defend is intrinsic
+  spell:   AttackType[]                  // categories with at least one move
+  powers:  PowerOption[]                 // per-power entries with cooldowns
+}
+
+export function availableActions(
+  char: BattleCharacter,
+  powerCooldowns: Record<string, number> = {},
+): ActionAvailability {
   let hasPhysical = false
-  let hasPower    = false
   for (const m of char.moves) {
     if (m.attackType === 'passive') continue
     if (m.type === 'physical') hasPhysical = true
-    if (m.type === 'power')    hasPower    = true
   }
   return {
     weapon: hasPhysical,
-    power:  hasPower,
     defend: true,
     spell:  castableSpellCategories(char),
+    powers: powerOptions(char, powerCooldowns),
   }
 }
 
-// Resolve a PlayerAction into a concrete BattleMove on the actor.
-// Returns null if no move matches (caller should fall back).
-function resolveMove(char: BattleCharacter, action: PlayerAction): BattleMove | null {
+// Resolve a PlayerAction into a concrete BattleMove on the actor. Honors
+// per-power cooldowns: random-power AI picks (no moveName specified) skip
+// powers that are still cooling down. Returns null if no move matches.
+function resolveMove(
+  char: BattleCharacter,
+  action: PlayerAction,
+  powerCooldowns: Record<string, number> = {},
+): BattleMove | null {
   const pool = char.moves.filter(m => m.attackType !== 'passive')
   switch (action.kind) {
     case 'weapon': {
@@ -126,7 +183,15 @@ function resolveMove(char: BattleCharacter, action: PlayerAction): BattleMove | 
     }
     case 'power': {
       const pwr = pool.filter(m => m.type === 'power')
-      return pwr.length > 0 ? pickRandom(pwr) : null
+      if (pwr.length === 0) return null
+      // Explicit pick from the hotbar's power popover.
+      if (action.moveName) {
+        const exact = pwr.find(m => m.name === action.moveName)
+        return exact ?? null   // don't silently fall through if the named power isn't theirs
+      }
+      // AI / random pick — prefer powers off cooldown.
+      const ready = pwr.filter(m => (powerCooldowns[m.name] ?? 0) <= 0)
+      return ready.length > 0 ? pickRandom(ready) : pickRandom(pwr)
     }
     case 'spell': {
       const abil = pool.filter(m => m.type === 'ability' && m.attackType === action.spellCategory)
@@ -138,6 +203,28 @@ function resolveMove(char: BattleCharacter, action: PlayerAction): BattleMove | 
 }
 
 function pickRandom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
+
+// AI / auto-mode move picker. Mirrors the simulator's behaviour (skip
+// passives; energy-rank≤5 biases toward non-power) but ALSO filters out
+// power moves that are currently on cooldown so the AI doesn't try to fire
+// a locked power. Returns undefined if no specific pick — caller passes
+// that through and lets doAction pick on its own.
+export function pickAutoMove(
+  char: BattleCharacter,
+  powerCooldowns: Record<string, number> = {},
+): BattleMove | undefined {
+  let pool = char.moves.filter(m => m.attackType !== 'passive')
+  // Low-energy bias: 35% of the time, drop power moves entirely.
+  if (char.energyRank <= 5 && Math.random() < 0.35) {
+    const nonPower = pool.filter(m => m.type !== 'power')
+    if (nonPower.length > 0) pool = nonPower
+  }
+  // Remove power moves currently on cooldown — keeps the AI from spamming
+  // the same recently-fired power and matches the manual mode's rules.
+  const ready = pool.filter(m => m.type !== 'power' || (powerCooldowns[m.name] ?? 0) <= 0)
+  const final = ready.length > 0 ? ready : pool
+  return final.length > 0 ? pickRandom(final) : undefined
+}
 
 // ── BattleController (1v1) ──────────────────────────────────────────────────
 
@@ -153,6 +240,8 @@ export class BattleController1v1 {
   private hp: Record<string, number> = {}
   private statuses: Record<string, Partial<Record<StatusType, Status>>> = {}
   private defendStance: Record<string, DefendStance | null> = {}
+  // Per-actor power cooldowns. `{ actorId: { moveName: turnsRemaining } }`.
+  private powerCooldowns: Record<string, Record<string, number>> = {}
   private roundNum = 0
   private _winner: ArenaWinner | null = null
   // Whose turn the controller is awaiting input for (null = controller can
@@ -167,7 +256,13 @@ export class BattleController1v1 {
       this.hp[m.id] = m.char.hp
       this.statuses[m.id] = {}
       this.defendStance[m.id] = null
+      this.powerCooldowns[m.id] = {}
     }
+  }
+
+  // Cooldown inspection for the UI (hotbar's Power popover).
+  getPowerCooldowns(id: string): Record<string, number> {
+    return { ...(this.powerCooldowns[id] ?? {}) }
   }
 
   // ── Inspection ──────────────────────────────────────────────────────────
@@ -310,9 +405,28 @@ export class BattleController1v1 {
       return
     }
 
-    const forced = action ? resolveMove(actor.char, action) ?? undefined : undefined
+    // Decrement this actor's power cooldowns at the start of their turn —
+    // a cooldown set on turn N expires after N + POWER_COOLDOWN_TURNS.
+    this.tickCooldowns(actor.id)
+
+    // Resolve the move to play. Manual-mode actions name an exact move (or
+    // a category to pick from); AI turns force a non-cooldown-aware random
+    // pick that nonetheless avoids re-using a power that's still cooling.
+    const forced = action
+      ? resolveMove(actor.char, action, this.powerCooldowns[actor.id]) ?? undefined
+      : pickAutoMove(actor.char, this.powerCooldowns[actor.id])
+
     const result = doAction(actor.char, target.char, this.hp[actor.id], forced)
     lines.push(...result.lines)
+
+    // If a power move was used, set its cooldown so the same power can't be
+    // re-fired immediately. We add +1 because tickCooldowns already ran at
+    // the start of THIS turn — net effect is exactly POWER_COOLDOWN_TURNS
+    // skipped before the move is usable again.
+    if (forced && forced.type === 'power') {
+      this.powerCooldowns[actor.id][forced.name] = POWER_COOLDOWN_TURNS + 1
+    }
+
     if (result.skipped) return
 
     // Apply target defend-stance reduction (reactive shield)
@@ -382,6 +496,18 @@ export class BattleController1v1 {
       if (s.paralyze.duration <= 0) delete s.paralyze
     }
     return blocked
+  }
+
+  // Decrement all of `actorId`'s power cooldowns by 1. Called at the start
+  // of every turn the actor takes — so cooldowns advance with the actor's
+  // own pacing rather than wall-clock rounds.
+  private tickCooldowns(actorId: string) {
+    const cds = this.powerCooldowns[actorId]
+    if (!cds) return
+    for (const name of Object.keys(cds)) {
+      cds[name]--
+      if (cds[name] <= 0) delete cds[name]
+    }
   }
 
   private applyStatus(m: ControllerMember, type: StatusType, lines: string[]) {

@@ -51,14 +51,14 @@
 
 <style>
   .dmg-layer {
-    position: fixed;
+    position: absolute;
     inset: 0;
-    z-index: 9998;          /* below AttackFX (9999) but above battle UI */
+    z-index: 29;            /* below AttackFX (30) but above battle UI */
     pointer-events: none;
     overflow: visible;
   }
   .dmg-pop {
-    position: fixed;
+    position: absolute;
     transform: translate(-50%, -50%);
     font-family: 'Cinzel', serif;
     font-weight: 900;

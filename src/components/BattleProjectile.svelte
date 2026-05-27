@@ -49,10 +49,13 @@
   onDestroy(() => { if (timer) clearTimeout(timer) })
 </script>
 
+<!-- Anchored inside the BattleArena's `.ba-wrapper` (position: relative)
+     so the coords are wrapper-local pixels, not viewport pixels. This is
+     the new positioning model — see the comment in BattleArena.svelte. -->
 <div class="proj-anchor"
-  style="position: fixed; left: {startX}px; top: {startY}px;
+  style="position: absolute; left: {startX}px; top: {startY}px;
          --dist: {distance}px; --dur: {durationMs}ms; --rot: {angleDeg}deg;
-         z-index: 9998; pointer-events: none;">
+         z-index: 28; pointer-events: none;">
   <div class="proj-comet"
     style="--color: {color}; --head: {head}px; --trail: {trail}px;
            transform: rotate(var(--rot));">
