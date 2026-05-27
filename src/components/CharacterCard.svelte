@@ -10,6 +10,7 @@
   import type { ItemGrade } from '$lib/content/types'
   import { classifyAbility, generatePowerDescription, generateWeaponDescription, generateArmorDescription, generateAbilityDescription, getAbilityTypeColor, getAbilityTypeIcon, ABILITY_BATTLE_EFFECT } from '$lib/content/descriptions'
   import { generateCharacterSummary } from '$lib/characterSummary'
+  import { raceGlyph } from '$lib/raceGlyphs'
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
   import { toast } from '$lib/toast.svelte'
@@ -109,6 +110,18 @@
     Object.fromEntries(statCategories.map(cat => [cat, results.find(r => r.category === cat)?.score ?? 0]))
   ))
   let overallGrade = $derived(scoreTier(overallScore))
+  // Tier-bucket the overall grade for the card aura animation strength.
+  // Higher buckets get more dramatic glow + animation — F/E cards look
+  // matte; God/Primordial/Absolute cards animate with rotating halo.
+  let auraTier = $derived.by((): 'matte' | 'soft' | 'medium' | 'strong' | 'cosmic' => {
+    const g = overallGrade
+    if (!g) return 'matte'
+    if (/Absolute|Primordial|Godly|^God$|Celestial/i.test(g)) return 'cosmic'
+    if (/^Z|SSS/i.test(g)) return 'strong'
+    if (/^SS/i.test(g) || /^S/i.test(g) && !/SS/.test(g)) return 'medium'
+    if (/^[ABCD]/.test(g)) return 'soft'
+    return 'matte'
+  })
 
   // Content lookup maps — built once from static pool arrays
   const powerMap  = new Map(powersPool.map(p => [p.label, p]))
@@ -290,10 +303,15 @@
 
 <div class="w-full max-w-xl flex flex-col gap-5" style="animation: slideUp 0.4s ease-out forwards;">
 
-  <!-- Hero banner: grade + name + identity -->
-  <div class="rounded-xl p-6 relative overflow-hidden"
-    style="background: linear-gradient(135deg, {TIER_COLORS[overallGrade] ?? '#1f1f28'}22 0%, #0d0c16 100%); border: 1px solid {TIER_COLORS[overallGrade] ?? '#4e4635'}55; box-shadow: 0 0 50px {TIER_COLORS[overallGrade] ?? '#374151'}28, inset 1px 1px 0 rgba(255,223,150,0.1);"
+  <!-- Hero banner: grade + name + identity. Aura class scales with tier
+       (matte for F/E up to animated halo for God/Primordial/Absolute). -->
+  <div class="rounded-xl p-6 relative overflow-hidden character-aura character-aura-{auraTier}"
+    style="--aura-color: {TIER_COLORS[overallGrade] ?? '#374151'}; background: linear-gradient(135deg, {TIER_COLORS[overallGrade] ?? '#1f1f28'}22 0%, #0d0c16 100%); border: 1px solid {TIER_COLORS[overallGrade] ?? '#4e4635'}55; box-shadow: 0 0 50px {TIER_COLORS[overallGrade] ?? '#374151'}28, inset 1px 1px 0 rgba(255,223,150,0.1);"
   >
+    <!-- Aura halo — pseudo layer that pulses/rotates for high tiers. -->
+    {#if auraTier !== 'matte'}
+      <div class="character-aura-halo" aria-hidden="true"></div>
+    {/if}
     <!-- Noise texture -->
     <div class="noise-overlay"></div>
     <!-- Corner brackets -->
@@ -309,13 +327,20 @@
         <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Score {overallScore} / 170</p>
       </div>
       <!-- Identity column -->
-      <div class="text-right min-w-0">
+      <div class="text-right min-w-0 flex-1">
         {#if title !== '—'}
           <p class="text-xs tracking-[0.18em] uppercase mb-1" style="color: #a78bfa;">{title}</p>
         {/if}
         <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 6vw, 2rem); font-weight: 700; color: #ffdf96; line-height: 1.15; word-break: break-word;">{displayName}</h1>
-        <p class="text-sm mt-1.5" style="color: #d2c5ae;">
-          {raceType !== '—' ? `${raceType} ` : ''}{race} · {archetype}{archetypeTypeLabel ? ` · ${archetypeTypeLabel}` : ''}
+        <p class="text-sm mt-1.5 flex items-center justify-end gap-1.5 flex-wrap" style="color: #d2c5ae;">
+          <!-- Race glyph — picks a Material Symbols icon per race so
+               Saiyan (flame), Vampire (crescent), Dragon (fire), etc.
+               are visually distinct at a glance. Color-tinted by the
+               overall tier so high-rolls glow brighter. -->
+          <span class="material-symbols-outlined character-race-glyph"
+            style="font-size: 22px; color: {TIER_COLORS[overallGrade] ?? '#ffdf96'}; filter: drop-shadow(0 0 6px {TIER_COLORS[overallGrade] ?? '#f0c040'}66); font-variation-settings: 'FILL' 1;"
+            aria-hidden="true">{raceGlyph(race === '—' ? null : race)}</span>
+          <span>{raceType !== '—' ? `${raceType} ` : ''}{race} · {archetype}{archetypeTypeLabel ? ` · ${archetypeTypeLabel}` : ''}</span>
         </p>
         {#if raceClass !== '—'}
           <p class="text-xs mt-0.5 font-semibold" style="color: #fb923c;">{raceClass}</p>
@@ -978,3 +1003,107 @@
   {/if}
 
 </div>
+
+<style>
+  /* ── Race glyph subtle pulse so the icon "lives" on the card ──────────── */
+  .character-race-glyph {
+    animation: charGlyphPulse 4.5s ease-in-out infinite;
+  }
+  @keyframes charGlyphPulse {
+    0%, 100% { transform: scale(1);    opacity: 1; }
+    50%      { transform: scale(1.08); opacity: 0.85; }
+  }
+
+  /* ── Tier-scaled aura halo — pseudo layer behind the hero banner ──────── */
+  .character-aura {
+    position: relative;
+    isolation: isolate;
+  }
+  .character-aura-halo {
+    position: absolute;
+    inset: -2px;
+    border-radius: 0.75rem;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+  }
+
+  /* Soft (C-D tiers): faint pulse */
+  .character-aura-soft .character-aura-halo {
+    box-shadow: 0 0 30px 4px color-mix(in srgb, var(--aura-color) 35%, transparent);
+    animation: charAuraSoft 5s ease-in-out infinite;
+  }
+  @keyframes charAuraSoft {
+    0%, 100% { opacity: 0.5; }
+    50%      { opacity: 1.0; }
+  }
+
+  /* Medium (S, A-tier-ish): stronger pulse + slight breathing */
+  .character-aura-medium .character-aura-halo {
+    box-shadow:
+      0 0 50px 6px color-mix(in srgb, var(--aura-color) 50%, transparent),
+      inset 0 0 30px color-mix(in srgb, var(--aura-color) 30%, transparent);
+    animation: charAuraMedium 4s ease-in-out infinite;
+  }
+  @keyframes charAuraMedium {
+    0%, 100% { opacity: 0.7; transform: scale(1); }
+    50%      { opacity: 1.0; transform: scale(1.005); }
+  }
+
+  /* Strong (SSS, Z tiers): bigger outer ring + faster pulse */
+  .character-aura-strong .character-aura-halo {
+    box-shadow:
+      0 0 80px 10px color-mix(in srgb, var(--aura-color) 60%, transparent),
+      0 0 30px color-mix(in srgb, var(--aura-color) 80%, transparent),
+      inset 0 0 40px color-mix(in srgb, var(--aura-color) 45%, transparent);
+    animation: charAuraStrong 3s ease-in-out infinite;
+  }
+  @keyframes charAuraStrong {
+    0%, 100% { opacity: 0.8; transform: scale(1); }
+    50%      { opacity: 1.0; transform: scale(1.01); }
+  }
+
+  /* Cosmic (Celestial/Godly/Primordial/Absolute): animated holofoil halo
+     that rotates with a conic gradient, plus a sustained outer glow.
+     The conic mixes the tier accent color with white for a prismatic
+     effect — feels appropriately mythic. */
+  .character-aura-cosmic .character-aura-halo {
+    box-shadow:
+      0 0 120px 14px color-mix(in srgb, var(--aura-color) 70%, transparent),
+      0 0 40px color-mix(in srgb, var(--aura-color) 90%, transparent),
+      inset 0 0 60px color-mix(in srgb, var(--aura-color) 55%, transparent);
+    background:
+      conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        color-mix(in srgb, var(--aura-color) 60%, transparent) 30deg,
+        transparent 60deg,
+        color-mix(in srgb, var(--aura-color) 50%, white) 120deg,
+        transparent 150deg,
+        color-mix(in srgb, var(--aura-color) 60%, transparent) 210deg,
+        transparent 240deg,
+        color-mix(in srgb, var(--aura-color) 50%, white) 300deg,
+        transparent 330deg,
+        transparent 360deg
+      );
+    filter: blur(18px);
+    mix-blend-mode: screen;
+    animation: charAuraCosmic 6s linear infinite, charAuraCosmicPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes charAuraCosmic {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes charAuraCosmicPulse {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 0.95; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .character-race-glyph,
+    .character-aura-halo {
+      animation: none !important;
+      opacity: 0.7 !important;
+    }
+  }
+</style>
