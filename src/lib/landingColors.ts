@@ -9,7 +9,8 @@ import { powers as powersPool } from '$lib/content/powers'
 import { weapons as weaponsPool } from '$lib/content/weapons'
 import { armors as armorsPool } from '$lib/content/armors'
 import { enchantments as enchantmentsPool } from '$lib/content/enchantments'
-import { racePoolLookup, abilityLookup } from '$lib/content/races'
+import { racePoolLookup, abilityLookup, racesByLabel } from '$lib/content/races'
+import { archetypesByLabel } from '$lib/content/archetypes'
 import { ELEMENT_COLORS, ITEM_GRADE_INFO } from '$lib/content/elements'
 import type { ElementType, ItemGrade } from '$lib/content/types'
 
@@ -23,11 +24,30 @@ const _enchantLookup  = new Map(enchantmentsPool.map(e => [e.label, e]))
 
 // ItemGrade → celebration intensity (0..1). F-tier sits at the noise floor;
 // God maxes out the mythic tier so the banner + sustained shockwave fire.
-// Tuned so SS, SSS, God all pass the 0.85 mythic threshold — those should
-// always feel huge regardless of whether the item also carries a TierGrade.
+// Tuned so S+ items hit "great", SS items hit mythic, and God always pops.
 const _GRADE_INTENSITY: Record<ItemGrade, number> = {
-  F: 0.05, E: 0.20, D: 0.35, C: 0.45, B: 0.55,
-  A: 0.65, S: 0.75, SS: 0.85, SSS: 0.92, God: 1.0,
+  F: 0.05, E: 0.15, D: 0.28, C: 0.40, B: 0.55,
+  A: 0.65, S: 0.75, SS: 0.85, SSS: 0.93, God: 1.0,
+}
+
+// Race spin weight → intensity. Race weights span ~1 (Viltrumite, God-tier
+// rares) to ~15 (Human, Goblin — basics). Rarer = bigger celebration. The
+// player just rolled a 1-in-200 race; they deserve fireworks. A common race
+// still gets a basic puff so EVERY race spin has a payoff.
+function raceWeightIntensity(weight: number): number {
+  // Smooth curve: weight 1 → 0.98, weight 5 → 0.65, weight 10 → 0.35, weight 15 → 0.10.
+  // Capped to keep weight-15 races above 'silent' threshold.
+  return Math.max(0.12, Math.min(0.98, 1.05 - weight * 0.06))
+}
+
+// Archetype weights are tighter (1-6). Tuned per-row so the 1-weight
+// archetypes (Sorcerer, Time Traveler, Awakened, Chaos Gremlin) trigger
+// mythic, while 6-weight (Warrior) still gets a 'good' celebration.
+const _ARCHETYPE_INTENSITY: Record<number, number> = {
+  1: 0.95, 2: 0.78, 3: 0.62, 4: 0.48, 5: 0.36, 6: 0.30,
+}
+function archetypeWeightIntensity(weight: number): number {
+  return _ARCHETYPE_INTENSITY[weight] ?? Math.max(0.20, 0.95 - (weight - 1) * 0.13)
 }
 
 export interface LandingResolution {
@@ -35,6 +55,26 @@ export interface LandingResolution {
   tierColor?: string | null
   elementColor?: string | null
   intensityOverride?: number
+  // Shown under the mythic banner. For items: the grade label
+  // (e.g. "Legendary"). For races/archetypes: the rarity bucket
+  // ("Mythological", "Legendary", etc.). For stats: undefined (the wheel
+  // falls back to the segment tier label).
+  subtitle?: string | null
+}
+
+// Map a race/archetype weight to a "rarity bucket" label shown under the
+// mythic banner. Tight, evocative, ALL-CAPS friendly.
+function raceRarityLabel(weight: number): string {
+  if (weight <= 2) return 'Mythological'
+  if (weight <= 4) return 'Legendary'
+  if (weight <= 7) return 'Uncommon'
+  return 'Common'
+}
+function archetypeRarityLabel(weight: number): string {
+  if (weight === 1) return 'Mythological'
+  if (weight === 2) return 'Legendary'
+  if (weight <= 4) return 'Rare'
+  return 'Common'
 }
 
 export function resolveLandingForCategory(
@@ -43,6 +83,10 @@ export function resolveLandingForCategory(
 ): LandingResolution {
   let element: ElementType | undefined
   let grade: ItemGrade | undefined
+  // Weight-derived intensity for race/archetype top-level spins. Returned
+  // verbatim when set; takes precedence over grade-based intensity since
+  // there's no grade on the race itself.
+  let weightIntensity: number | undefined
 
   switch (category) {
     case 'power': {
@@ -79,17 +123,68 @@ export function resolveLandingForCategory(
       element = m?.element; grade = m?.grade
       break
     }
+    case 'race': {
+      // Top-level race spin. No grade on the race itself, so intensity is
+      // weight-driven (rarer race = bigger celebration). Use the rarest
+      // element from the race's class pool as the celebration tint when
+      // we can find one — gives Saiyan a Fire bias, Kryptonian a Cosmic
+      // bias, etc. — falls back to a neutral gold accent.
+      const race = racesByLabel.get(label)
+      if (race) {
+        weightIntensity = raceWeightIntensity(race.weight)
+        // Pull a representative element from the race's class pool if any
+        // class entry carries one. We prefer the highest-grade class's
+        // element so the tint reads as "the legendary class of this race."
+        const classes = race.classPool ?? []
+        let bestEl: ElementType | undefined
+        let bestGrade: ItemGrade | undefined
+        for (const c of classes) {
+          if (!c.element) continue
+          if (!bestGrade || _GRADE_INTENSITY[c.grade ?? 'F'] > _GRADE_INTENSITY[bestGrade]) {
+            bestEl = c.element
+            bestGrade = c.grade
+          }
+        }
+        element = bestEl
+      }
+      break
+    }
+    case 'archetype': {
+      const arc = archetypesByLabel.get(label)
+      if (arc) weightIntensity = archetypeWeightIntensity(arc.weight)
+      // Archetype tint comes from its first elemental ability when present,
+      // falling back to gold.
+      const arcAbil = arc?.abilities?.find(a => a.element)
+      if (arcAbil?.element) element = arcAbil.element
+      break
+    }
   }
 
   const elementColor = element ? ELEMENT_COLORS[element] : null
-  // For item-style spins the grade is the rarity. Stat spins land tier on the
-  // segment itself and SpinWheel reads it directly — we leave tierColor null
-  // there so the wheel's default tier color path runs.
-  const intensityOverride = grade ? _GRADE_INTENSITY[grade] : undefined
+  // Intensity precedence: weight (race/archetype) > grade (items) > undefined
+  // (stat spins fall through to the wheel's tier-based ladder).
+  const intensityOverride =
+    weightIntensity !== undefined ? weightIntensity :
+    grade ? _GRADE_INTENSITY[grade] : undefined
   const gradeColor = grade ? ITEM_GRADE_INFO[grade]?.color : null
+
+  // Subtitle: grade label for items, race/archetype rarity bucket otherwise.
+  // Stat spins return undefined and SpinWheel falls back to the tier label.
+  let subtitle: string | null = null
+  if (category === 'race') {
+    const race = racesByLabel.get(label)
+    if (race) subtitle = raceRarityLabel(race.weight) + ' Race'
+  } else if (category === 'archetype') {
+    const arc = archetypesByLabel.get(label)
+    if (arc) subtitle = archetypeRarityLabel(arc.weight) + ' Archetype'
+  } else if (grade) {
+    subtitle = ITEM_GRADE_INFO[grade]?.label ?? grade
+  }
+
   return {
     tierColor: gradeColor ?? null,
     elementColor,
     intensityOverride,
+    subtitle,
   }
 }

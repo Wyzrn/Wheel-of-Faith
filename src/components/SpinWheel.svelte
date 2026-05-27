@@ -40,11 +40,14 @@
     // intensityOverride: 0..1; when provided overrides the tier-based scalar.
     // Use it for item spins so a God-tier weapon triggers mythic celebration
     // even though the segment carries no TierGrade.
+    //
+    // subtitle: shown under the mythic banner (e.g. "S+ TIER" or "Sea King").
     resolveLandingColors?: (resultIndex: number, label: string) => {
       tier?: string | null
       tierColor?: string | null
       elementColor?: string | null
       intensityOverride?: number
+      subtitle?: string | null
     } | null
   } = $props()
 
@@ -57,6 +60,7 @@
     tierColor: string
     elementColor: string | null
     tier: string | null
+    subtitle: string | null
   } | null>(null)
   let celebrationKey = 0
 
@@ -547,19 +551,22 @@
 
         // ── Tier-scaled landing celebration overlay ──────────────────────
         // The host resolver can override intensity (grade-based for item
-        // spins, custom for races/archetypes). Skip below 0.25 (mundane).
+        // spins, weight-based for race/archetype). Anything ≥ 0.10 mounts —
+        // even E-tier rolls get a small puff so EVERY spin has a payoff.
+        let finalIntensity = intensity
         if (effectsEnabled) {
           const resolved = resolveLandingColors?.(resultIndex, landed.label)
           // Host can return null to suppress the overlay (e.g. tutorial pacing).
           if (resolved !== null) {
-            const finalIntensity = resolved?.intensityOverride ?? intensity
-            if (finalIntensity >= 0.25) {
+            finalIntensity = resolved?.intensityOverride ?? intensity
+            if (finalIntensity >= 0.10) {
               celebration = {
                 key: ++celebrationKey,
                 intensity: finalIntensity,
                 tierColor: resolved?.tierColor ?? '#f0c040',
                 elementColor: resolved?.elementColor ?? null,
                 tier: resolved?.tier ?? landedTier ?? null,
+                subtitle: resolved?.subtitle ?? landedTier ?? null,
               }
             }
           }
@@ -569,7 +576,15 @@
         lastResult = { index: resultIndex, label: segments[resultIndex].label }
         spinStatus = 'LANDED'
         onSpinComplete(resultIndex, segments[resultIndex].label)
-        setTimeout(() => { spinStatus = 'REVEALED' }, 500)
+        // Delay reveal panel so the celebration's first wave (flash, banner
+        // pop) gets clean air before the panel pops at center screen. Higher
+        // intensity = more crescendo to honor, so the panel waits longer.
+        const revealDelay =
+          finalIntensity >= 0.70 ? 1100 :  // mythic — banner finishes its pop
+          finalIntensity >= 0.50 ? 850  :  // great
+          finalIntensity >= 0.30 ? 700  :  // good
+                                   550     // basic / silent
+        setTimeout(() => { spinStatus = 'REVEALED' }, revealDelay)
       }
     })
   }
@@ -840,6 +855,7 @@
       tierColor={celebration.tierColor}
       elementColor={celebration.elementColor}
       tier={celebration.tier}
+      subtitle={celebration.subtitle}
       onComplete={() => { celebration = null }}
     />
   {/key}

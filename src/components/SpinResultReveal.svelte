@@ -162,7 +162,7 @@
             {meta.abilityType}
           </span>
         {/if}
-        <p class="font-bold leading-snug"
+        <p class="srr-label font-bold leading-snug"
           style="font-family: 'Cinzel', serif; font-size: clamp(1rem, 4.5vw, 1.35rem); color: #ffdf96; max-width: 26ch;">
           {result.resultLabel}
         </p>
@@ -233,7 +233,7 @@
           {meta.abilityType}
         </span>
       {/if}
-      <p style="font-family: 'Cinzel', serif; font-size: clamp(0.95rem, 3.5vw, 1.3rem); font-weight: 700; color: #ffdf96; line-height: 1.35; max-width: 26ch;">
+      <p class="srr-label" style="font-family: 'Cinzel', serif; font-size: clamp(0.95rem, 3.5vw, 1.3rem); font-weight: 700; color: #ffdf96; line-height: 1.35; max-width: 26ch;">
         {result.resultLabel}
       </p>
       {#if meta.description}
@@ -265,5 +265,23 @@
     0%   { transform: scale(0.6) translateY(20px); opacity: 0; filter: blur(8px); }
     60%  { transform: scale(1.05) translateY(-2px); opacity: 1; filter: blur(0); }
     100% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
+  }
+  /* Result label cascades in slightly after the rest of the panel — gives
+     the eye time to see the tier badge + element + grade chips first, then
+     the headline name lands as the reveal's "drop the mic" moment. */
+  .srr-label {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+    filter: blur(6px);
+    animation: srrLabelDrop 0.7s cubic-bezier(0.22, 0.85, 0.3, 1.05) 0.42s forwards;
+    will-change: transform, opacity, filter;
+  }
+  @keyframes srrLabelDrop {
+    0%   { opacity: 0; transform: translateY(14px) scale(0.92); filter: blur(6px); }
+    60%  { opacity: 1; transform: translateY(-2px) scale(1.04); filter: blur(0); }
+    100% { opacity: 1; transform: translateY(0)   scale(1);    filter: blur(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .srr-label { animation-duration: 0.01ms !important; animation-delay: 0ms !important; }
   }
 </style>
