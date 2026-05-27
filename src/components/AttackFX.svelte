@@ -20,8 +20,22 @@
   let scaleMult  = $derived(GRADE_SCALE[gradeIdx] ?? 1.0)
   let spreadMult = $derived(GRADE_SPREAD[gradeIdx] ?? 1.0)
 
-  // Shockwave count: 0 for < S, 1 for S, 2 for SSS, 3 for God
-  let shockwaveCount = $derived(gradeIdx >= 6 ? Math.min(3, gradeIdx - 5) : 0)
+  // Shockwave rings — expanding concentric rings behind the main FX.
+  // Tuned per FX category so power + spell hits feel weighty at every
+  // grade, while weapon slashes keep their grade-scaled rendering as the
+  // primary intensity signal.
+  //   slash (weapon):  0 / 0 / 0 / 0 / 0 / 0 / 0 / 0 / 1 / 2   (SSS+ only)
+  //   dodge / shield:  0  (no shockwaves — separate kinetic anims)
+  //   everything else (powers + spells): 0 / 0 / 1 / 1 / 2 / 2 / 3 / 3 / 3 / 3
+  //                                       F   E   D   C   B   A   S   SS  SSS God
+  let shockwaveCount = $derived.by(() => {
+    if (type === 'slash')                       return gradeIdx >= 9 ? 2 : gradeIdx >= 8 ? 1 : 0
+    if (type === 'dodge' || type === 'shield')  return 0
+    if (gradeIdx >= 6) return 3
+    if (gradeIdx >= 4) return 2
+    if (gradeIdx >= 2) return 1
+    return 0
+  })
 
   // Per-grade slash intensity for weapon attacks. The slash SVG renders this
   // many primary blade lines (plus matching echoes + sparks) so an F-grade
@@ -321,14 +335,18 @@
 </script>
 
 <div class="fx-root {flyClass} {gradeClass}" style="width:{size}px;height:{size}px;--c:{color};">
+  <!-- Shockwave rings. The thick primary ring sells the impact; secondary
+       and tertiary rings layer over for the high-grade screen-shake feel.
+       Each ring has its own width, color opacity, and animation offset
+       so they read as overlapping kinetic waves, not stacked clones. -->
   {#if shockwaveCount >= 1}
-    <div class="fx-shockwave sw1" style="border-color:{color}66;"></div>
+    <div class="fx-shockwave sw-primary" style="border-color:{color};box-shadow:0 0 18px {color}88;"></div>
   {/if}
   {#if shockwaveCount >= 2}
-    <div class="fx-shockwave sw2" style="border-color:{color}44;animation-delay:0.08s;"></div>
+    <div class="fx-shockwave sw-secondary" style="border-color:{color}aa;animation-delay:0.08s;"></div>
   {/if}
   {#if shockwaveCount >= 3}
-    <div class="fx-shockwave sw3" style="border-color:{color}33;animation-delay:0.16s;"></div>
+    <div class="fx-shockwave sw-tertiary" style="border-color:{color}66;animation-delay:0.16s;"></div>
   {/if}
 
   {#if type === 'slash'}
@@ -1864,12 +1882,33 @@
   border-radius: 50%;
   border: 2px solid transparent;
   transform: translate(-50%, -50%);
-  animation: fx-shockwave-expand 0.55s ease-out forwards;
   pointer-events: none;
 }
-@keyframes fx-shockwave-expand {
-  0%   { width: 0; height: 0; opacity: 1; }
-  100% { width: 160px; height: 160px; opacity: 0; }
+.sw-primary {
+  border-width: 4px;
+  animation: fx-shockwave-primary 0.62s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+}
+.sw-secondary {
+  border-width: 2.5px;
+  animation: fx-shockwave-secondary 0.7s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+}
+.sw-tertiary {
+  border-width: 1.5px;
+  animation: fx-shockwave-tertiary 0.8s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+}
+/* Primary: punches outward fast, with a starting flash to sell the impact */
+@keyframes fx-shockwave-primary {
+  0%   { width: 0;    height: 0;    opacity: 1.0; filter: brightness(2.5); }
+  20%  { width: 60px; height: 60px; opacity: 1.0; filter: brightness(1.8); }
+  100% { width: 200px;height: 200px;opacity: 0;   filter: brightness(1); }
+}
+@keyframes fx-shockwave-secondary {
+  0%   { width: 0;    height: 0;    opacity: 0.9; }
+  100% { width: 240px;height: 240px;opacity: 0; }
+}
+@keyframes fx-shockwave-tertiary {
+  0%   { width: 0;    height: 0;    opacity: 0.7; }
+  100% { width: 280px;height: 280px;opacity: 0; }
 }
 
 /* ─── ARCANE ─────────────────────────────────────────────────────── */

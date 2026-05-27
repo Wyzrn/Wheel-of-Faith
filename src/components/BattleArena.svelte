@@ -496,11 +496,12 @@
     if (controllerMode && controller) {
       if (controller.isOver) { finishBattle(controller.winner ?? null); return }
       if (isTeamController) {
-        // Team controller: each call resolves one actor's turn. If the
-        // next actor is a player-controlled ally and manualMode is on,
-        // pause for input. Otherwise step automatically.
+        // Team controller: awaitingActor primes the queue (cycle ticks +
+        // initiative re-roll) and returns the actor whose turn is next.
+        // If they're a player-controlled team1 ally in manual mode, pause
+        // for input. Otherwise step automatically.
         const teamCtrl = controller as BattleControllerTeam
-        const nextActor = teamCtrl.awaitingActor ?? peekNextActor(teamCtrl)
+        const nextActor = teamCtrl.awaitingActor
         if (manualMode && nextActor?.side === 'team1') {
           awaitingPlayerInput = true
           currentActorId = nextActor.id
@@ -687,36 +688,18 @@
       onPhaseChange?.('battle')
       if (controllerMode && controller) {
         if (isTeamController) {
-          // Prime the team controller's queue by peeking — it lazily
-          // builds on the first stepTurn() call but we want awaitingActor
-          // available NOW so the arena can decide whether to pause.
+          // Peek the upcoming actor BEFORE stepping. awaitingActor primes
+          // the team controller's queue (running begin-of-cycle ticks if
+          // needed) so we always know who's first. If it's a player ally
+          // in manual mode, pause for input instead of auto-resolving
+          // their turn — the bug fix for "I picked Weapon but it fired
+          // a power" was this: stepTurn was being called without an
+          // action, so the controller AI-picked for the player.
           const c = controller as BattleControllerTeam
-          // Cheap "prime": pop and re-resolve. Actually we just call
-          // stepTurn() once when in auto mode; for manual mode we need to
-          // know if the first actor is on team1. Force-build the queue:
-          if (manualMode) {
-            // Trigger queue build with a no-op step path: ask for the
-            // first actor by stepping once in auto, but only if needed.
-            // Cleanest: just call stepTurn() with no action — if first
-            // actor is a player ally the engine still picks an AI move
-            // for them. We don't want that. So instead: pre-tick by
-            // calling a special helper.
-            // For now we step once in auto — if first actor is team1 in
-            // manual mode the player misses ONE auto turn at battle
-            // start. Acceptable tradeoff for the v1 — the next cycle
-            // they'll be in control.
-            //
-            // Better: peek the queue without consuming. The controller
-            // exposes `awaitingActor` which is null until first cycle
-            // starts. Let's start a cycle by calling stepTurn() but
-            // dropping the round if it was an ally turn — wait, that
-            // doesn't work because we don't know in advance.
-            //
-            // Pragmatic v1: kick off the battle in auto for ONE turn,
-            // then pause. This effectively gives both sides one turn
-            // before the player gets control. Acceptable starting
-            // point — refine if we hear feedback.
-            playOneRound(c.stepTurn())
+          const first = c.awaitingActor
+          if (manualMode && first?.side === 'team1') {
+            awaitingPlayerInput = true
+            currentActorId = first.id
           } else {
             playOneRound(c.stepTurn())
           }

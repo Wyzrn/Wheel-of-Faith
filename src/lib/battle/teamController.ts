@@ -110,8 +110,33 @@ export class BattleControllerTeam {
   get isOver(): boolean { return this._winner !== null }
   get winner(): ArenaWinner | null { return this._winner }
   get currentCycle(): number { return this.cycle }
+  // The actor whose turn will resolve on the NEXT stepTurn() call. Read by
+  // the arena to decide whether to pause for player input. Primes the queue
+  // (begin-of-cycle status ticks + initiative roll) if it's empty so this
+  // value is never stale at the start of a cycle.
   get awaitingActor(): TeamControllerMember | null {
+    if (this._winner) return null
+    this.ensureQueueReady()
     return this.actorQueue[0] ?? null
+  }
+
+  // Make sure the actor queue has a living member at the front, ticking
+  // cycles forward (regen / statuses / new initiative roll) as needed.
+  // Idempotent — safe to call before every awaitingActor read.
+  private ensureQueueReady() {
+    if (this._winner) return
+    // Drop any dead members at the front of the current queue.
+    while (this.actorQueue.length > 0 && (this.hp[this.actorQueue[0].id] ?? 0) <= 0) {
+      this.actorQueue.shift()
+    }
+    if (this.actorQueue.length === 0) {
+      // Cycle finished. Start a new one (regen / status ticks / re-roll).
+      this.beginCycle()
+      // Strip dead members the new cycle might still have queued at the front.
+      while (this.actorQueue.length > 0 && (this.hp[this.actorQueue[0].id] ?? 0) <= 0) {
+        this.actorQueue.shift()
+      }
+    }
   }
   getHp(id: string): number { return this.hp[id] ?? 0 }
   member(id: string): TeamControllerMember | undefined {
@@ -132,29 +157,18 @@ export class BattleControllerTeam {
       return { roundNum: this.cycle, lines: [], hpAfter: { ...this.hp }, winner: this._winner }
     }
 
-    // Refill queue if needed (start of a new cycle — tick statuses first).
-    if (this.actorQueue.length === 0) this.beginCycle()
+    // Make sure the queue is primed (cycle ticks / initiative re-rolled if needed).
+    this.ensureQueueReady()
 
     const lines: string[] = []
     const fxEvents: RoundFxEvent[] = []
 
-    let actor: TeamControllerMember | undefined
-    // Skip dead actors that were queued before they died.
-    while (this.actorQueue.length > 0) {
-      const candidate = this.actorQueue.shift()!
-      if ((this.hp[candidate.id] ?? 0) > 0) { actor = candidate; break }
-    }
+    // Pop the next living actor — ensureQueueReady already cleared dead front entries.
+    const actor = this.actorQueue.shift()
     if (!actor) {
-      // No living actors left in this cycle — refill & retry once.
-      this.beginCycle()
-      while (this.actorQueue.length > 0) {
-        const candidate = this.actorQueue.shift()!
-        if ((this.hp[candidate.id] ?? 0) > 0) { actor = candidate; break }
-      }
-      if (!actor) {
-        this._winner = 'draw'
-        return { roundNum: this.cycle, lines, hpAfter: { ...this.hp }, winner: 'draw' }
-      }
+      // No living actors left even after a cycle refill — draw.
+      this._winner = 'draw'
+      return { roundNum: this.cycle, lines, hpAfter: { ...this.hp }, winner: 'draw' }
     }
 
     // Resolve this actor's turn.
