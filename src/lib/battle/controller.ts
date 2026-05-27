@@ -39,12 +39,17 @@ export interface PlayerAction {
   targetId?: string
 }
 
-// ── Per-power cooldown ─────────────────────────────────────────────────────
-// Every time the actor fires a power move it goes on cooldown for this many
-// of THAT actor's own turns. Decremented at the start of each turn the
-// actor takes (not on every engine cycle), so a power locked on turn N is
-// available again on turn N + POWER_COOLDOWN_TURNS + 1.
+// ── Per-move cooldowns ─────────────────────────────────────────────────────
+// Powers and spell abilities each go on cooldown after use. Decremented at
+// the start of each turn the actor takes (not on every engine cycle), so a
+// move locked on turn N is available again on turn N + COOLDOWN + 1.
+//
+// Spells (especially heals) used to lock characters into invincibility
+// loops — full heal every turn outpaced incoming damage. Cooldowns + a
+// 12% heal cap (in battle.ts) keep healers useful without making them
+// unkillable.
 export const POWER_COOLDOWN_TURNS = 3
+export const SPELL_COOLDOWN_TURNS = 3
 
 // ── Defend state (reactive — auto-applies on next incoming hit) ─────────────
 // Per the locked decision: "Defend stays armed across multiple hits until
@@ -201,7 +206,11 @@ function resolveMove(
     }
     case 'spell': {
       const abil = pool.filter(m => m.type === 'ability' && m.attackType === action.spellCategory)
-      return abil.length > 0 ? pickRandom(abil) : null
+      if (abil.length === 0) return null
+      // Prefer abilities off cooldown if any — fall back to any matching
+      // ability when all are recharging.
+      const ready = abil.filter(m => (powerCooldowns[m.name] ?? 0) <= 0)
+      return ready.length > 0 ? pickRandom(ready) : pickRandom(abil)
     }
     case 'defend':
       return null   // defend has no underlying move — handled directly
@@ -212,12 +221,12 @@ function pickRandom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.
 
 // AI / auto-mode move picker. Mirrors the simulator's behaviour (skip
 // passives; energy-rank≤5 biases toward non-power) but ALSO filters out
-// power moves that are currently on cooldown so the AI doesn't try to fire
-// a locked power. Returns undefined if no specific pick — caller passes
-// that through and lets doAction pick on its own.
+// power and spell moves that are currently on cooldown so the AI doesn't
+// spam the same recently-fired ability. Returns undefined if no specific
+// pick — caller passes that through and lets doAction pick on its own.
 export function pickAutoMove(
   char: BattleCharacter,
-  powerCooldowns: Record<string, number> = {},
+  cooldowns: Record<string, number> = {},
 ): BattleMove | undefined {
   let pool = char.moves.filter(m => m.attackType !== 'passive')
   // Low-energy bias: 35% of the time, drop power moves entirely.
@@ -225,9 +234,12 @@ export function pickAutoMove(
     const nonPower = pool.filter(m => m.type !== 'power')
     if (nonPower.length > 0) pool = nonPower
   }
-  // Remove power moves currently on cooldown — keeps the AI from spamming
-  // the same recently-fired power and matches the manual mode's rules.
-  const ready = pool.filter(m => m.type !== 'power' || (powerCooldowns[m.name] ?? 0) <= 0)
+  // Remove cooled-down moves — applies to BOTH power and spell (ability)
+  // moves. Weapons (type='physical') are never on cooldown.
+  const ready = pool.filter(m => {
+    if (m.type === 'physical') return true
+    return (cooldowns[m.name] ?? 0) <= 0
+  })
   const final = ready.length > 0 ? ready : pool
   return final.length > 0 ? pickRandom(final) : undefined
 }
@@ -425,12 +437,13 @@ export class BattleController1v1 {
     const result = doAction(actor.char, target.char, this.hp[actor.id], forced)
     lines.push(...result.lines)
 
-    // If a power move was used, set its cooldown so the same power can't be
-    // re-fired immediately. We add +1 because tickCooldowns already ran at
-    // the start of THIS turn — net effect is exactly POWER_COOLDOWN_TURNS
-    // skipped before the move is usable again.
+    // If a power or spell move was used, set its cooldown so the same
+    // ability can't be re-fired immediately. +1 because tickCooldowns
+    // already ran at the start of THIS turn.
     if (forced && forced.type === 'power') {
       this.powerCooldowns[actor.id][forced.name] = POWER_COOLDOWN_TURNS + 1
+    } else if (forced && forced.type === 'ability') {
+      this.powerCooldowns[actor.id][forced.name] = SPELL_COOLDOWN_TURNS + 1
     }
 
     if (result.skipped) return

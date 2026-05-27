@@ -21,7 +21,7 @@ import {
   type BattleCharacter, type BattleMove, type RoundFxEvent,
 } from '$lib/game/battle'
 import type { ArenaRound, ArenaSide, ArenaWinner } from './arena'
-import { POWER_COOLDOWN_TURNS, pickAutoMove, type PlayerAction } from './controller'
+import { POWER_COOLDOWN_TURNS, SPELL_COOLDOWN_TURNS, pickAutoMove, type PlayerAction } from './controller'
 
 export interface TeamControllerMember {
   id: string
@@ -292,11 +292,13 @@ export class BattleControllerTeam {
     const result = doAction(actor.char, target.char, this.hp[actor.id], forced)
     lines.push(...result.lines)
 
-    // If a power was used, set its cooldown so it can't be re-fired
-    // immediately. +1 because tickCooldowns already ran this turn — net
-    // wait is exactly POWER_COOLDOWN_TURNS of THIS actor's turns.
+    // If a power or spell was used, set its cooldown so it can't be
+    // re-fired immediately. +1 because tickCooldowns already ran this
+    // turn — net wait is the full cooldown of THIS actor's own turns.
     if (forced && forced.type === 'power') {
       this.powerCooldowns[actor.id][forced.name] = POWER_COOLDOWN_TURNS + 1
+    } else if (forced && forced.type === 'ability') {
+      this.powerCooldowns[actor.id][forced.name] = SPELL_COOLDOWN_TURNS + 1
     }
 
     if (result.skipped) return

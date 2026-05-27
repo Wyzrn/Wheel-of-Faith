@@ -239,32 +239,55 @@
     color: string
     gradeIdx: number
     onImpact: () => void
+    durationMs: number
+    fadeMs: number
+    widthMult: number
   }
   let beams = $state<Beam[]>([])
   let beamIdCounter = 0
   const BEAM_DURATION_MS = 380
   const BEAM_FADE_DURATION_MS = 220
 
+  // Per-type beam width multipliers — kamehameha-style elements get wider
+  // glow/main/core layers so they read as massive channeled blasts vs the
+  // narrower precise lances of arcane/void.
+  const BEAM_WIDTH_MULT: Record<string, number> = {
+    cosmic: 1.8,   // wide cosmic ray
+    energy: 2.0,   // KAMEHAMEHA — widest of all
+    sound:  1.6,   // wide sonic blast
+    holy:   1.1,   // baseline divine beam
+    arcane: 0.85,  // focused arcane lance
+    void:   0.95,  // tight void ray
+  }
+
   function spawnBeam(
     startX: number, startY: number,
     endX: number, endY: number,
     color: string, grade: string | undefined,
     onImpact: () => void,
+    typeKey?: string,
   ) {
     const gradeIdx = GRADE_IDX[grade ?? 'C'] ?? 3
+    // Speed-scale the beam duration so "fast" actually feels fast — the
+    // glow/main/core all share these timings via CSS variables below.
+    const speed = Math.max(0.4, Math.min(4, speedFactor))
+    const dur = Math.max(140, Math.round(BEAM_DURATION_MS / speed))
+    const fade = Math.max(80, Math.round(BEAM_FADE_DURATION_MS / speed))
+    const widthMult: number = (typeKey && BEAM_WIDTH_MULT[typeKey]) || 1.0
     const b: Beam = {
       id: ++beamIdCounter,
       startX, startY, endX, endY,
       color, gradeIdx,
       onImpact,
+      durationMs: dur,
+      fadeMs: fade,
+      widthMult,
     }
     beams = [...beams, b]
-    // Impact fires when the beam reaches the target.
-    setTimeout(() => onImpact(), BEAM_DURATION_MS)
-    // Remove the beam after the fade completes.
+    setTimeout(() => onImpact(), dur)
     setTimeout(() => {
       beams = beams.filter(x => x.id !== b.id)
-    }, BEAM_DURATION_MS + BEAM_FADE_DURATION_MS)
+    }, dur + fade)
   }
 
   // FX types that should render as a beam line attacker→target instead of
@@ -498,6 +521,7 @@
                 showAnim(type, color, direction, grade, targetOrigin, fxAttackType)
                 if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
               },
+              type,
             )
             deferDamageEmit = true
           } else {
@@ -574,7 +598,11 @@
 
     if (!deferDamageEmit) maybeEmitDamageFromLine(head)
 
-    const base = head.startsWith('──') ? 550 : 1000
+    // Base line pacing. Damage lines need to land roughly after the VFX
+    // does — projectile is ~450ms, beam is ~380ms, in-place burst is
+    // 600-900ms. 800ms reads as comfortable at Normal (1.0×); Fast (2.4×)
+    // brings it to ~330ms which is genuinely brisk.
+    const base = head.startsWith('──') ? 420 : 800
     timeoutId = setTimeout(() => playLines(rest, onDone), speedDelay(base, speedFactor))
   }
 
@@ -606,7 +634,7 @@
         finishBattle(round.winner)
         return
       }
-      timeoutId = setTimeout(advanceAfterRound, speedDelay(900, speedFactor))
+      timeoutId = setTimeout(advanceAfterRound, speedDelay(650, speedFactor))
     })
   }
 
@@ -997,26 +1025,33 @@
 
   <!-- Beam layer: a static line from attacker anchor to target anchor that
        draws in (stroke-dashoffset), holds, and fades. Used by beam-type
-       elements (holy / arcane / cosmic / energy / void / sound). -->
+       elements (holy / arcane / cosmic / energy / void / sound). Widths
+       are kamehameha-scaled — wider for energy/cosmic/sound, narrower for
+       arcane/void. All scaled by grade + per-beam widthMult. -->
   {#if phase === 'battle' && effectsEnabled && beams.length > 0}
     {#each beams as b (b.id)}
       {@const dx = b.endX - b.startX}
       {@const dy = b.endY - b.startY}
       {@const dist = Math.max(8, Math.sqrt(dx * dx + dy * dy))}
       {@const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI}
-      {@const intensity = 1 + Math.max(0, b.gradeIdx - 3) * 0.18}
-      {@const glowW = (10 + b.gradeIdx * 1.2) * intensity}
-      {@const mainW = (4  + b.gradeIdx * 0.5) * intensity}
-      {@const coreW = (1.6 + b.gradeIdx * 0.2) * intensity}
+      {@const intensity = 1 + Math.max(0, b.gradeIdx - 3) * 0.30}
+      {@const glowW = (18 + b.gradeIdx * 3.5) * intensity * b.widthMult}
+      {@const mainW = (7  + b.gradeIdx * 1.2) * intensity * b.widthMult}
+      {@const coreW = (2.4 + b.gradeIdx * 0.4) * intensity * b.widthMult}
+      {@const totalMs = b.durationMs + b.fadeMs}
       <div class="ba-beam-anchor"
            style="position: absolute; left: {b.startX}px; top: {b.startY}px;
                   --beam-len: {dist}px; --beam-rot: {angleDeg}deg;
                   --beam-color: {b.color};
                   --beam-w-glow: {glowW}px; --beam-w-main: {mainW}px; --beam-w-core: {coreW}px;
+                  --beam-dur: {totalMs}ms;
                   z-index: 27; pointer-events: none;">
         <div class="ba-beam ba-beam-glow"></div>
         <div class="ba-beam ba-beam-main"></div>
         <div class="ba-beam ba-beam-core"></div>
+        <!-- Charge-up bulb at the attacker end — sells the "channeled
+             power" feel that makes wide beams read as kamehameha. -->
+        <div class="ba-beam-charge"></div>
       </div>
     {/each}
   {/if}
@@ -1179,44 +1214,69 @@
     background: var(--beam-color);
     transform-origin: 0 50%;
     transform: rotate(var(--beam-rot)) scaleX(0);
-    box-shadow: 0 0 12px var(--beam-color);
-    animation: ba-beam-fire 0.6s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+    box-shadow: 0 0 24px var(--beam-color);
   }
   .ba-beam-glow {
     height: var(--beam-w-glow);
     margin-top: calc(var(--beam-w-glow) / -2);
     width: var(--beam-len);
     opacity: 0;
-    filter: blur(6px);
-    animation: ba-beam-fire-glow 0.6s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+    filter: blur(8px);
+    animation: ba-beam-fire-glow var(--beam-dur) cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
   }
   .ba-beam-main {
     height: var(--beam-w-main);
     margin-top: calc(var(--beam-w-main) / -2);
     width: var(--beam-len);
     opacity: 0;
-    animation: ba-beam-fire 0.5s 0.04s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+    animation: ba-beam-fire var(--beam-dur) cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
   }
   .ba-beam-core {
     height: var(--beam-w-core);
     margin-top: calc(var(--beam-w-core) / -2);
     width: var(--beam-len);
     background: white;
-    box-shadow: 0 0 8px var(--beam-color);
+    box-shadow: 0 0 12px var(--beam-color);
     opacity: 0;
-    animation: ba-beam-fire 0.45s 0.06s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+    animation: ba-beam-fire var(--beam-dur) cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+  }
+  /* Charge bulb at the source — radial glow that pulses as the beam
+     fires. Sells the "channeled energy" kamehameha feel. */
+  .ba-beam-charge {
+    position: absolute;
+    left: 0; top: 0;
+    width: calc(var(--beam-w-glow) * 2);
+    height: calc(var(--beam-w-glow) * 2);
+    margin-left: calc(var(--beam-w-glow) * -1);
+    margin-top:  calc(var(--beam-w-glow) * -1);
+    border-radius: 50%;
+    background: radial-gradient(circle,
+                                var(--beam-color) 0%,
+                                var(--beam-color) 20%,
+                                color-mix(in srgb, var(--beam-color) 50%, transparent) 50%,
+                                transparent 80%);
+    opacity: 0;
+    filter: blur(2px);
+    animation: ba-beam-charge var(--beam-dur) ease-out forwards;
   }
   @keyframes ba-beam-fire {
     0%   { transform: rotate(var(--beam-rot)) scaleX(0);    opacity: 0; }
-    18%  { transform: rotate(var(--beam-rot)) scaleX(0.4);  opacity: 1; filter: brightness(3); }
-    55%  { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 1; filter: brightness(2); }
-    80%  { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0.7; }
+    14%  { transform: rotate(var(--beam-rot)) scaleX(0.5);  opacity: 1; filter: brightness(3.2); }
+    45%  { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 1; filter: brightness(2.2); }
+    75%  { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0.75; }
     100% { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0; }
   }
   @keyframes ba-beam-fire-glow {
     0%   { transform: rotate(var(--beam-rot)) scaleX(0);    opacity: 0; }
-    25%  { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0.5; }
+    22%  { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0.65; }
+    65%  { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0.45; }
     100% { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0; }
+  }
+  @keyframes ba-beam-charge {
+    0%   { transform: scale(0.2); opacity: 0; }
+    18%  { transform: scale(1.6); opacity: 1; filter: brightness(3); }
+    55%  { transform: scale(1.3); opacity: 0.7; }
+    100% { transform: scale(0.7); opacity: 0; }
   }
 
   /* Auto / Manual visible switch */

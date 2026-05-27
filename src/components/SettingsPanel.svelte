@@ -17,7 +17,8 @@
   const AUTO_SPEED_OPTIONS: { value: number; label: string; desc: string }[] = [
     { value: 0.7,  label: 'Relaxed', desc: 'Easy to read'  },
     { value: 1.0,  label: 'Normal',  desc: 'Default'       },
-    { value: 1.6,  label: 'Fast',    desc: 'Quick fights'  },
+    { value: 2.4,  label: 'Fast',    desc: 'Quick fights'  },
+    { value: 4.0,  label: 'Turbo',   desc: 'Lightning playback' },
   ]
 
   // Auto-continue: how long the result reveal stays before auto-firing Continue.

@@ -51,14 +51,19 @@
 
 <!-- Anchored inside the BattleArena's `.ba-wrapper` (position: relative)
      so the coords are wrapper-local pixels, not viewport pixels. This is
-     the new positioning model — see the comment in BattleArena.svelte. -->
+     the new positioning model — see the comment in BattleArena.svelte.
+
+     The anchor translates by the SIGNED delta (dx, dy) rather than the
+     positive distance, so team-2 attacks (which fly right-to-left) move
+     in the correct direction. The inner .proj-comet handles facing via
+     a separate rotation. -->
 <div class="proj-anchor"
   style="position: absolute; left: {startX}px; top: {startY}px;
-         --dist: {distance}px; --dur: {durationMs}ms; --rot: {angleDeg}deg;
+         --dx: {dx}px; --dy: {dy}px; --dur: {durationMs}ms;
          z-index: 28; pointer-events: none;">
   <div class="proj-comet"
     style="--color: {color}; --head: {head}px; --trail: {trail}px;
-           transform: rotate(var(--rot));">
+           transform: rotate({angleDeg}deg);">
     <!-- Trail (extends backward from head) -->
     <div class="proj-trail"
       style="width: var(--trail); height: calc(var(--head) * 0.55);
@@ -75,13 +80,14 @@
 </div>
 
 <style>
-  /* The anchor sits at the start point and is animated horizontally along
-     its local x-axis. The inner .proj-comet is rotated by --rot so the
-     local +x direction lines up with the vector to the target. */
+  /* Anchor translates from (0,0) to (dx, dy) in WORLD coords — so the
+     trajectory always lands on the target, regardless of attacker side.
+     The inner .proj-comet is rotated to face the target so the head
+     points the right way along the path. */
   @keyframes proj-fly {
-    0%   { transform: translateX(0)              scale(0.6); opacity: 0.0; }
+    0%   { transform: translate(0, 0)                          scale(0.6); opacity: 0.0; }
     8%   { opacity: 1.0; }
-    100% { transform: translateX(var(--dist))    scale(1.05); opacity: 1.0; }
+    100% { transform: translate(var(--dx), var(--dy))          scale(1.05); opacity: 1.0; }
   }
   .proj-anchor {
     width: 0; height: 0;

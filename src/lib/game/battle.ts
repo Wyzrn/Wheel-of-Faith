@@ -745,8 +745,18 @@ export function doAction(
   }
 
   // ── Heal behavior / attackType ────────────────────────────────────────────
+  // Heal scales with maxHp but caps at 12% per cast — combined with the
+  // 3-turn spell cooldown in the manual controller, this keeps healers
+  // alive long enough to be useful without rendering them invincible.
+  // Heals also have diminishing returns the higher the caster's current
+  // HP is, so a near-full caster doesn't waste cycles on heals.
   if (move.behavior === 'heal' || move.attackType === 'heal') {
-    const selfHeal = Math.round(attacker.maxHp * 0.22)
+    const currentHp = attackerCurrentHp ?? attacker.hp
+    const hpFraction = currentHp / attacker.maxHp
+    // Full-strength heal at low HP, scales down toward 60% at full HP so
+    // overhealing isn't free. At 50% HP → 100% effective, at 100% HP → 60%.
+    const effectiveness = 1.0 - Math.max(0, (hpFraction - 0.5)) * 0.8
+    const selfHeal = Math.round(attacker.maxHp * 0.12 * effectiveness)
     lines.push(pick(HEAL_PHRASES).replace('{name}', attacker.name) + ` [${move.name}]`)
     lines.push(`${attacker.name} restores ${formatHp(selfHeal)} HP!`)
     return { skipped: false, damage: 0, heal: selfHeal, reflected: 0, stun: false, shieldFraction: 0, lines }
