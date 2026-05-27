@@ -7,6 +7,16 @@ import type { TierGrade } from '$lib/game/scoreTier'
 import { powers as powersPool } from '$lib/content/powers'
 import { weapons as weaponsPool } from '$lib/content/weapons'
 import { armors as armorsPool } from '$lib/content/armors'
+// abilityLookup is populated by races.ts at module load and then augmented by
+// archetypes.ts via mergeAbilityLookup() (see archetypes.ts:860). Pulling it
+// in here is what lets racial/archetype ability moves carry their element +
+// grade through into damage scaling and per-element VFX dispatch — without
+// it they default to element=undefined, grade=undefined and read as plain
+// neutral C-tier slashes regardless of what the spin said.
+import { abilityLookup as _abilityLookup } from '$lib/content/races'
+// Touch the archetypes module so its top-level mergeAbilityLookup() side
+// effect runs before we read _abilityLookup. Imported solely for side effect.
+import '$lib/content/archetypes'
 import { ITEM_GRADE_INFO, highestGrade } from '$lib/content/elements'
 import type { AttackType, ElementType } from '$lib/content/types'
 
@@ -14,6 +24,18 @@ import type { AttackType, ElementType } from '$lib/content/types'
 const _powerMap  = new Map(powersPool.map(p => [p.label, p]))
 const _weaponMap = new Map(weaponsPool.map(w => [w.label, w]))
 const _armorMap  = new Map(armorsPool.map(a => [a.label, a]))
+
+// Unified move data lookup: powers first (they carry attackType), then
+// fall back to the racial/archetype ability map (element + grade only).
+// Used for ability moves so racial abilities like "Battle Hardened" or
+// "Backstab" pick up their element/grade for damage scaling and VFX.
+function lookupMoveData(label: string): { element?: ElementType; grade?: string; attackType?: AttackType } {
+  const p = _powerMap.get(label)
+  if (p) return { element: p.element, grade: p.grade, attackType: p.attackType }
+  const a = _abilityLookup.get(label)
+  if (a) return { element: a.element, grade: a.grade }
+  return {}
+}
 
 // ─── Move-grade damage multiplier ─────────────────────────────────────────────
 // Scales an attack's damage by the grade of the underlying move (power /
@@ -531,7 +553,7 @@ export function buildBattleCharacter(
 
   // Process passives first (they modify build stats, not moves)
   for (const r of [...allPowerResults, ...allAbilityResults]) {
-    const at = detectAttackType(r.resultLabel, _powerMap.get(r.resultLabel)?.attackType)
+    const at = detectAttackType(r.resultLabel, lookupMoveData(r.resultLabel).attackType)
     if (at !== 'passive') continue
     const lower = r.resultLabel.toLowerCase()
     if (PASSIVE_KW.slice(0, 8).some(k => lower.includes(k))) damageReductionCap = 0.88
@@ -555,11 +577,15 @@ export function buildBattleCharacter(
 
   // Build moves (passives excluded)
   const moves: BattleMove[] = []
-  const powerSpins = allPowerResults.filter(r => detectAttackType(r.resultLabel, _powerMap.get(r.resultLabel)?.attackType) !== 'passive').slice(0, 5)
+  const powerSpins = allPowerResults.filter(r => detectAttackType(r.resultLabel, lookupMoveData(r.resultLabel).attackType) !== 'passive').slice(0, 5)
   const weaponSpins = rs.filter(r =>
     r.category === 'weapon' && !r.resultLabel.includes('No Weapon') && !r.resultLabel.includes('Unarmed')
   ).slice(0, 2)
-  const abilitySpins = allAbilityResults.filter(r => detectAttackType(r.resultLabel, _powerMap.get(r.resultLabel)?.attackType) !== 'passive').slice(0, 2)
+  // Racial + archetype abilities. Slice raised from 2 → 4 so a Mage with
+  // 3 archetype ability spins doesn't have one of them silently dropped.
+  // Without raising this cap, ability spins past the second one would land
+  // in the roster but never reach the move list.
+  const abilitySpins = allAbilityResults.filter(r => detectAttackType(r.resultLabel, lookupMoveData(r.resultLabel).attackType) !== 'passive').slice(0, 4)
 
   for (const r of powerSpins) {
     const powerData = _powerMap.get(r.resultLabel)
@@ -588,16 +614,20 @@ export function buildBattleCharacter(
     })
   }
   for (const r of abilitySpins) {
-    const at = detectAttackType(r.resultLabel)
-    const abilData = _powerMap.get(r.resultLabel)
+    // Look up the racial/archetype ability's element + grade from the
+    // shared abilityLookup (races.ts + archetypes.ts). Without this the
+    // ability would carry no element (→ neutral slash VFX) and no grade
+    // (→ default 1.0× damage multiplier instead of grade-scaled).
+    const abilData = lookupMoveData(r.resultLabel)
+    const at = detectAttackType(r.resultLabel, abilData.attackType)
     moves.push({
       name: r.resultLabel,
       type: 'ability',
       effectTag: detectEffectTag(r.resultLabel),
       behavior: detectMoveBehavior(r.resultLabel),
       attackType: at,
-      element: abilData?.element,
-      grade: abilData?.grade,
+      element: abilData.element,
+      grade: abilData.grade,
     })
   }
   if (moves.length === 0) {
