@@ -11,6 +11,7 @@
   import { classifyAbility, generatePowerDescription, generateWeaponDescription, generateArmorDescription, generateAbilityDescription, getAbilityTypeColor, getAbilityTypeIcon, ABILITY_BATTLE_EFFECT } from '$lib/content/descriptions'
   import { generateCharacterSummary } from '$lib/characterSummary'
   import { raceGlyph } from '$lib/raceGlyphs'
+  import { getPerfTier } from '$lib/perf'
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
   import { toast } from '$lib/toast.svelte'
@@ -122,6 +123,11 @@
     if (/^[ABCD]/.test(g)) return 'soft'
     return 'matte'
   })
+  // Low-tier devices skip the rotating cosmic halo (conic-gradient +
+  // filter:blur + animation = expensive) and drop strong-tier rotation
+  // too. Mid stays as designed.
+  const _perfTier = getPerfTier()
+  const cheapAura = _perfTier === 'low'
 
   // Content lookup maps — built once from static pool arrays
   const powerMap  = new Map(powersPool.map(p => [p.label, p]))
@@ -304,12 +310,15 @@
 <div class="w-full max-w-xl flex flex-col gap-5" style="animation: slideUp 0.4s ease-out forwards;">
 
   <!-- Hero banner: grade + name + identity. Aura class scales with tier
-       (matte for F/E up to animated halo for God/Primordial/Absolute). -->
+       (matte for F/E up to animated halo for God/Primordial/Absolute).
+       Low-tier devices skip the rotating cosmic halo entirely to avoid
+       sustained GPU spin on conic-gradient + blur. -->
   <div class="rounded-xl p-6 relative overflow-hidden character-aura character-aura-{auraTier}"
+    class:character-aura-cheap={cheapAura}
     style="--aura-color: {TIER_COLORS[overallGrade] ?? '#374151'}; background: linear-gradient(135deg, {TIER_COLORS[overallGrade] ?? '#1f1f28'}22 0%, #0d0c16 100%); border: 1px solid {TIER_COLORS[overallGrade] ?? '#4e4635'}55; box-shadow: 0 0 50px {TIER_COLORS[overallGrade] ?? '#374151'}28, inset 1px 1px 0 rgba(255,223,150,0.1);"
   >
     <!-- Aura halo — pseudo layer that pulses/rotates for high tiers. -->
-    {#if auraTier !== 'matte'}
+    {#if auraTier !== 'matte' && !cheapAura}
       <div class="character-aura-halo" aria-hidden="true"></div>
     {/if}
     <!-- Noise texture -->

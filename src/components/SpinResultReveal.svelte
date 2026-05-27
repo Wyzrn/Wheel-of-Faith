@@ -21,6 +21,7 @@
   import type { ResolvedMeta } from '$lib/spinResultMeta'
   import { settings } from '$lib/settings.svelte'
   import TierGlossary from './TierGlossary.svelte'
+  import { getPerfTier } from '$lib/perf'
 
   let {
     result,
@@ -82,6 +83,10 @@
   // the reveal so new players can see where their roll sits on the
   // 28-grade ladder. Reuses the shared TierGlossary component.
   let glossaryOpen = $state(false)
+  // Perf tier captured once. Low-tier drops backdrop-filter blur (very
+  // expensive on mobile GPUs) and reduces box-shadow blur radii.
+  const _perfTier = getPerfTier()
+  const cheapBackdrop = _perfTier === 'low'
 
   // Auto-continue: when settings.autoContinueMs > 0, fire onContinue after that
   // delay so users who've seen the cards can plow through fast. Cancellable
@@ -150,7 +155,7 @@
   {@const hasAnchor = anchorX != null && anchorY != null}
   <div
     class="fixed inset-0 z-50 {hasAnchor ? '' : 'flex items-center justify-center'} px-4"
-    style="background: rgba(7,7,13,0.88); backdrop-filter: blur(12px); animation: srrFadeIn 0.18s ease-out forwards;"
+    style="background: rgba(7,7,13,{cheapBackdrop ? '0.94' : '0.88'});{cheapBackdrop ? '' : ' backdrop-filter: blur(12px);'} animation: srrFadeIn 0.18s ease-out forwards;"
   >
     <div
       class="srr-modal-card obsidian-slab w-full max-w-sm rounded-xl p-6 text-center relative overflow-hidden"
@@ -300,7 +305,7 @@
   <div
     class="absolute left-0 right-0 top-0 mx-auto flex flex-col items-center justify-center rounded-2xl z-50"
     class:srr-id-card={!!idCard}
-    style="aspect-ratio: 1/1; width: 100%; max-width: 100%; background: rgba(0,0,0,0.78); backdrop-filter: blur(4px); animation: srrFadeIn 0.18s ease-out forwards; box-shadow: inset 0 0 60px {panelAccent}33, inset 0 0 0 1px {panelAccent}66;"
+    style="aspect-ratio: 1/1; width: 100%; max-width: 100%; background: rgba(0,0,0,{cheapBackdrop ? '0.86' : '0.78'});{cheapBackdrop ? '' : ' backdrop-filter: blur(4px);'} animation: srrFadeIn 0.18s ease-out forwards; box-shadow: inset 0 0 60px {panelAccent}33, inset 0 0 0 1px {panelAccent}66;"
   >
     <div class="flex flex-col items-center gap-3 px-6 text-center max-h-full overflow-y-auto py-6"
       style="animation: srrPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">

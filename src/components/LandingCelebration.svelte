@@ -16,6 +16,7 @@
   // The component is fire-and-forget: parent passes intensity + colors,
   // we mount, animate, fire onComplete, and unmount.
   import { onMount } from 'svelte'
+  import { getPerfTier, effectsMultiplier, prefersReducedMotion } from '$lib/perf'
 
   let {
     intensity,
@@ -105,21 +106,34 @@
      0)
   )
 
-  let particleCount = $derived(
+  // Perf tier — scales particle counts + skips expensive layers on low/mid.
+  // Captured once at mount so the entire celebration uses the same tier
+  // (no flicker if matchMedia changes mid-animation).
+  const perfTier = getPerfTier()
+  const fxMult = effectsMultiplier()         // low 0.4, mid 0.75, high 1.0
+  const reducedMotion = prefersReducedMotion()
+  // Low-tier devices skip transcendent-only heavy layers (cosmic flare
+  // orbitals, sky pillar, reality cracks, portal rings) since each layer
+  // adds its own blur + animation. Mid-tier keeps most but skips a few.
+  let cheap = perfTier === 'low'
+
+  let particleCount = $derived(Math.round((
     level === 'transcendent' ? 84 :
     level === 'mythic'       ? 56 :
     level === 'great'        ? 34 :
     level === 'good'         ? 18 :
     level === 'basic'        ? 10 :
-    0,
-  )
+    0
+  ) * fxMult))
 
   // Bonus drifting "confetti" / spark trail at mythic + transcendent.
-  let confettiCount = $derived(
+  // Skipped entirely on low tier (cheap fall = many img elements with
+  // long-running animations is the most expensive layer per ms).
+  let confettiCount = $derived(cheap ? 0 : Math.round((
     level === 'transcendent' ? 42 :
     level === 'mythic'       ? 24 :
-    0,
-  )
+    0
+  ) * fxMult))
 
   type Particle = {
     id: number
@@ -150,27 +164,39 @@
   let confetti = $state<Confetti[]>([])
 
   let showRing = $derived(level !== 'silent')
-  let ringCount = $derived(
-    level === 'transcendent' ? 7 :
-    level === 'mythic'       ? 5 :
-    level === 'great'        ? 4 :
-    level === 'good'         ? 3 :
-                                1,
-  )
+  // Ring count capped on lower-perf tiers — each ring is a separate animated
+  // box-shadow which adds up. Low: max 2, Mid: max 4, High: as designed.
+  let ringCount = $derived.by(() => {
+    const target =
+      level === 'transcendent' ? 7 :
+      level === 'mythic'       ? 5 :
+      level === 'great'        ? 4 :
+      level === 'good'         ? 3 :
+                                  1
+    if (cheap) return Math.min(target, 2)
+    if (perfTier === 'mid') return Math.min(target, 4)
+    return target
+  })
+  // Screen-wide layers — flash is cheap, vignette is cheap, but aurora +
+  // light rays involve heavy blur/conic-gradient + animation. Drop those
+  // on low tier and reduce blur strength on mid via .lc-perf-mid class.
   let showVignette = $derived(level === 'great' || level === 'mythic' || level === 'transcendent')
-  let showAurora = $derived(level === 'great' || level === 'mythic' || level === 'transcendent')
-  let showRays = $derived(level === 'great' || level === 'mythic' || level === 'transcendent')
+  let showAurora = $derived(!cheap && (level === 'great' || level === 'mythic' || level === 'transcendent'))
+  let showRays = $derived(!cheap && (level === 'great' || level === 'mythic' || level === 'transcendent'))
   let showFlash = $derived(level === 'great' || level === 'mythic' || level === 'transcendent')
-  let showLensFlare = $derived(level === 'mythic' || level === 'transcendent')
+  // Lens flare (4 blurred layers) skipped on low tier — too pricey.
+  let showLensFlare = $derived(!cheap && (level === 'mythic' || level === 'transcendent'))
   let showBanner = $derived(level === 'mythic' || level === 'transcendent')
-  // Transcendent-only layers
+  // Transcendent-only layers — heaviest of the lot. On low tier none of
+  // these fire; on mid the orbital flares are dropped. Sky pillar, cracks,
+  // portal, rim pulse, hue shift only show on high tier.
   let isTranscendent = $derived(level === 'transcendent')
-  let showSkyPillar = $derived(isTranscendent)
-  let showPortal = $derived(isTranscendent)
-  let showHueShift = $derived(isTranscendent)
-  let showRimPulse = $derived(isTranscendent)
-  let showRealityCracks = $derived(isTranscendent)
-  let crackCount = 12
+  let showSkyPillar = $derived(isTranscendent && !cheap)
+  let showPortal = $derived(isTranscendent && !cheap)
+  let showHueShift = $derived(isTranscendent && perfTier === 'high')
+  let showRimPulse = $derived(isTranscendent && perfTier === 'high')
+  let showRealityCracks = $derived(isTranscendent && perfTier === 'high')
+  let crackCount = $derived(perfTier === 'high' ? 12 : 6)
 
 
   function buildParticles() {
@@ -297,6 +323,8 @@
   <div
     use:portal
     class="lc-root"
+    class:lc-perf-low={cheap}
+    class:lc-perf-mid={perfTier === 'mid'}
     style="--accent: {accent}; --accent2: {accent2}; --tier-color: {tierColor}; --origin-x: {originX}; --origin-y: {originY};"
     aria-hidden="true"
   >
@@ -410,6 +438,8 @@
         <img
           src="/fx/p/{p.sprite}"
           alt=""
+          loading="lazy"
+          decoding="async"
           class="lc-particle"
           style="
             --angle: {p.angle}rad;
@@ -419,7 +449,7 @@
             --rotBy: {p.rotateBy}deg;
             --delay: {p.delay}ms;
             --dur: {p.duration}ms;
-            filter: drop-shadow(0 0 {Math.round(p.size / 4)}px {accent}) drop-shadow(0 0 {Math.round(p.size / 8)}px {accent2});
+            filter: {cheap ? 'none' : `drop-shadow(0 0 ${Math.round(p.size / 4)}px ${accent})${perfTier === 'high' ? ` drop-shadow(0 0 ${Math.round(p.size / 8)}px ${accent2})` : ''}`};
           "
         />
       {/each}
@@ -1278,6 +1308,39 @@
     20%  { transform: translateY(0);    opacity: 1; letter-spacing: 0.5em; }
     85%  { transform: translateY(0);    opacity: 1; letter-spacing: 0.5em; }
     100% { transform: translateY(0);    opacity: 0; letter-spacing: 0.6em; }
+  }
+
+  /* ── Perf-tier overrides ─────────────────────────────────────────────
+     Low-tier devices (mobile / older / save-data / reduce-motion) drop
+     blur radii way down, skip mix-blend-mode (which forces compositing
+     overhead), and reduce ring shadows. Mid-tier shaves the worst-cost
+     filters but keeps the look. High-tier renders at design fidelity. */
+  .lc-perf-low .lc-aurora,
+  .lc-perf-low .lc-rays {
+    filter: blur(6px);                /* was 28 / 2 */
+    mix-blend-mode: normal;
+    opacity: 0.55;
+  }
+  .lc-perf-low .lc-flash {
+    /* Single flash instead of mythic double-beat to cut paint cost. */
+    animation-duration: 380ms !important;
+  }
+  .lc-perf-low .lc-ring {
+    box-shadow: 0 0 14px var(--accent);
+  }
+  .lc-perf-low .lc-banner {
+    text-shadow:
+      0 0 6px var(--accent),
+      0 2px 4px rgba(0,0,0,0.6);       /* drop the 60px soft halo */
+  }
+  .lc-perf-low .lc-banner-bg {
+    filter: none;                      /* drop the 2px blur */
+  }
+  .lc-perf-mid .lc-aurora {
+    filter: blur(14px);                /* was 28 */
+  }
+  .lc-perf-mid .lc-ring {
+    box-shadow: 0 0 18px var(--accent);
   }
 
   @media (prefers-reduced-motion: reduce) {
