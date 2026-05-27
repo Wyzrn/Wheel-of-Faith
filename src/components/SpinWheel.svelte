@@ -579,11 +579,16 @@
         // Delay reveal panel so the celebration's first wave (flash, banner
         // pop) gets clean air before the panel pops at center screen. Higher
         // intensity = more crescendo to honor, so the panel waits longer.
+        // Transcendent (cosmic stat tiers Celestial-Absolute) lands at ≥0.83
+        // — give the letter-by-letter banner cascade time to finish typing
+        // before the panel intrudes.
+        const isTranscendent = !!landedTier && /Celestial|Godly|Primordial|Absolute/i.test(landedTier)
         const revealDelay =
-          finalIntensity >= 0.70 ? 1100 :  // mythic — banner finishes its pop
-          finalIntensity >= 0.50 ? 850  :  // great
-          finalIntensity >= 0.30 ? 700  :  // good
-                                   550     // basic / silent
+          isTranscendent          ? 2400 :  // transcendent — full letter cascade
+          finalIntensity >= 0.70  ? 1100 :  // mythic
+          finalIntensity >= 0.50  ? 850  :  // great
+          finalIntensity >= 0.30  ? 700  :  // good
+                                    550     // basic / silent
         setTimeout(() => { spinStatus = 'REVEALED' }, revealDelay)
       }
     })
