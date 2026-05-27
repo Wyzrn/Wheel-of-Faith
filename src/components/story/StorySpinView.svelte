@@ -24,6 +24,7 @@
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
   import { buildIdentityCard } from '$lib/identityCard'
+  import { twistByKey, RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS } from '$lib/twists'
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   import { settings } from '$lib/settings.svelte'
@@ -78,6 +79,7 @@
     armorType:           28,
     armor:               32,
     armorStrength:      216,
+    twistSpin:           45,  // fallback; twistSpin uses twist.hue when set
   }
 
   // ── Stat tier caps per stage (scores above this are dimmed / unspinnable) ────
@@ -144,6 +146,10 @@
 
   // Pending stat bonus/penalty spins — keyed by stat category, consumed when that stat is spun
   let pendingStatBonuses = $state<Record<string, Array<'statBonus' | 'statPenalty'>>>({})
+  // Element locked in by a twist sub-spin (Bender, Demi-God, Cursed
+  // Sorcerer, Breath of Sun, etc.). Power + ability spins downstream
+  // prefer this element when set. Null = no lock. Mirrors main game.
+  let lockedElement = $state<ElementType | null>(null)
 
   // ── Wildcard state ────────────────────────────────────────────────────────
   let wildcardPhase = $state<'idle' | 'flashing' | 'reveal'>('idle')
@@ -264,8 +270,12 @@
   // ── Derived values ────────────────────────────────────────────────────────────
   let currentDef = $derived(queue[currentIndex] as SpinDefinition | undefined)
 
+  // Per-twist hue override (twistSpin uses the registered hue), otherwise
+  // fall back to the category default. Mirrors main game.
   let currentCategoryHue = $derived(
-    currentDef ? (CATEGORY_HUES[currentDef.category] ?? 45) : 45
+    currentDef?.category === 'twistSpin' && currentDef.twistKind
+      ? (twistByKey(currentDef.twistKind)?.hue ?? CATEGORY_HUES.twistSpin ?? 45)
+      : currentDef ? (CATEGORY_HUES[currentDef.category] ?? 45) : 45
   )
 
   // Stage-aware race segments
@@ -280,6 +290,19 @@
   let currentSegments = $derived.by((): WeightedSegment[] => {
     if (!currentDef) return []
 
+    // Hybrid parent race spin — filter Hybrid out so the parent wheel
+    // doesn't recurse Hybrid → Hybrid forever. Mirrors main game.
+    if (currentDef.category === 'race' && currentDef.isHybridParent) {
+      return stageRaceSegments.filter(s => s.label !== 'Hybrid')
+    }
+
+    // Twist sub-wheel — pull segments from the twist registry by key.
+    // Triggered by God/Saiyan/Bender/Stand User/Demon Slayer/etc.
+    if (currentDef.category === 'twistSpin' && currentDef.twistKind) {
+      const twist = twistByKey(currentDef.twistKind)
+      if (twist) return twist.segments
+    }
+
     // Race wheel: only show races available at current stage
     if (currentDef.category === 'race') {
       return stageRaceSegments
@@ -290,11 +313,13 @@
       return stageArchetypeSegments
     }
 
-    // Racial ability: use race-specific pool with dimming for used abilities
+    // Racial ability: use race-specific pool (prefer forRace for Hybrid
+    // parent-derived slots and Possessed-grafted slots).
     if (currentDef.category === 'racialAbility') {
       const raceResult = results.find(r => r.category === 'race')
-      if (raceResult) {
-        const race = getRace(raceResult.resultLabel)
+      const effectiveLabel = currentDef.forRace ?? raceResult?.resultLabel
+      if (effectiveLabel) {
+        const race = getRace(effectiveLabel)
         const classResult = results.find(r => r.category === 'raceClass')
         const classItem = race?.classPool?.find(c => c.label === classResult?.resultLabel)
         const subTypeResult = results.find(r => r.category === 'raceSubType')
@@ -324,17 +349,18 @@
       return getSegmentsForCategory('archetypeAbility')
     }
 
-    // Race sub-type: use race's subTypePool
+    // Race sub-type: use race's subTypePool (prefer forRace for Hybrid +
+    // Possessed grafted slots)
     if (currentDef.category === 'raceSubType') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = getRace(raceResult?.resultLabel)
+      const race = getRace(currentDef.forRace ?? raceResult?.resultLabel)
       return (race?.subTypePool as WeightedSegment[] | undefined) ?? getSegmentsForCategory('raceSubType')
     }
 
     // Race class: use race's classPool
     if (currentDef.category === 'raceClass') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = getRace(raceResult?.resultLabel)
+      const race = getRace(currentDef.forRace ?? raceResult?.resultLabel)
       return (race?.classPool as WeightedSegment[] | undefined) ?? getSegmentsForCategory('raceClass')
     }
 
@@ -381,6 +407,17 @@
       const rWeight = Math.max(1, Math.round(p * 100))
       const nWeight = Math.max(1, 100 - rWeight)
       return [{ label: 'Redemption', weight: rWeight }, { label: 'No Redemption', weight: nWeight }] as WeightedSegment[]
+    }
+
+    // Power category: when a twist has locked an element, boost matching-
+    // element powers 3x so the locked element wins more often. Mirrors
+    // main game's element-bias logic.
+    if (currentDef.category === 'power' && lockedElement) {
+      const baseSegs = getSegmentsForCategory('power')
+      return baseSegs.map(s => {
+        const el = (s as { element?: string }).element
+        return el === lockedElement ? { ...s, weight: s.weight * 3 } : s
+      })
     }
 
     return getSegmentsForCategory(currentDef.category as SpinCategory)
@@ -558,36 +595,63 @@
       const insertSlots: SpinDefinition[] = []
 
       if (currentDef.category === 'race') {
-        const race = getRace(resultLabel)
-        if (race) {
-          if (race.subTypePool?.length) {
-            insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Sub-Type` })
+        // ── Hybrid twist: spin race wheel TWO more times for the parent
+        // bloodlines. The Hybrid result itself adds no extras; each parent
+        // race resolves through this branch with isHybridParent=true and
+        // contributes its full extras to the character. Mirrors main game.
+        if (resultLabel === 'Hybrid' && !currentDef.isHybridParent) {
+          queue.splice(currentIndex + 1, 0,
+            { category: 'race' as const, displayName: 'Hybrid: First Parent',  isHybridParent: true },
+            { category: 'race' as const, displayName: 'Hybrid: Second Parent', isHybridParent: true },
+          )
+        } else {
+          const race = getRace(resultLabel)
+          // forRace tags each spliced sub-spin with the race that spawned
+          // it so Hybrid parents' extras each draw from the correct pool.
+          const forRace = resultLabel
+          if (race) {
+            // Twist sub-wheel splice for God/Saiyan/Bender/Vampire/etc.
+            const raceTwistKey = RACE_TWIST_TRIGGERS[resultLabel]
+            if (raceTwistKey) {
+              const twist = twistByKey(raceTwistKey)
+              if (twist) {
+                insertSlots.push({
+                  category: 'twistSpin' as const,
+                  displayName: `${resultLabel}: ${twist.title}`,
+                  twistKind: raceTwistKey,
+                })
+              }
+            }
+            if (race.subTypePool?.length) {
+              insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Sub-Type`, forRace })
+            }
+            if (race.classPool?.length) {
+              insertSlots.push({ category: 'raceClass' as const, displayName: `${resultLabel} Class`, forRace })
+            }
+            const count = race.abilitySpinCount ?? 1
+            for (let i = 0; i < count; i++) {
+              insertSlots.push({
+                category: 'racialAbility' as const,
+                displayName: count > 1 ? `Racial Ability ${i + 1}` : 'Racial Ability',
+                forRace,
+              })
+            }
+            const extraPowers = race.extraPowerSpins ?? 0
+            for (let i = 0; i < extraPowers; i++) {
+              insertSlots.push({ category: 'power' as const, displayName: extraPowers > 1 ? `Racial Power ${i + 1}` : 'Racial Power', forRace })
+            }
+            const weaknessCount = race.weaknessCount ?? deriveWeaknessCount(race.weaknessProbabilityModifier ?? 1.0)
+            for (let i = 0; i < weaknessCount; i++) {
+              insertSlots.push({ category: 'weakness' as const, displayName: weaknessCount > 1 ? `Weakness ${i + 1}` : 'Weakness', forRace })
+            }
           }
-          if (race.classPool?.length) {
-            insertSlots.push({ category: 'raceClass' as const, displayName: `${resultLabel} Class` })
-          }
-          const count = race.abilitySpinCount ?? 1
-          for (let i = 0; i < count; i++) {
-            insertSlots.push({
-              category: 'racialAbility' as const,
-              displayName: count > 1 ? `Racial Ability ${i + 1}` : 'Racial Ability',
-            })
-          }
-          const extraPowers = race.extraPowerSpins ?? 0
-          for (let i = 0; i < extraPowers; i++) {
-            insertSlots.push({ category: 'power' as const, displayName: extraPowers > 1 ? `Racial Power ${i + 1}` : 'Racial Power' })
-          }
-          const weaknessCount = race.weaknessCount ?? deriveWeaknessCount(race.weaknessProbabilityModifier ?? 1.0)
-          for (let i = 0; i < weaknessCount; i++) {
-            insertSlots.push({ category: 'weakness' as const, displayName: weaknessCount > 1 ? `Weakness ${i + 1}` : 'Weakness' })
-          }
+          if (insertSlots.length > 0) queue.splice(currentIndex + 1, 0, ...insertSlots)
         }
-        if (insertSlots.length > 0) queue.splice(currentIndex + 1, 0, ...insertSlots)
       }
 
       if (currentDef.category === 'raceSubType') {
         const raceResult = results.find(r => r.category === 'race')
-        const race = getRace(raceResult?.resultLabel)
+        const race = getRace(currentDef.forRace ?? raceResult?.resultLabel)
         const subTypeItem = race?.subTypePool?.find(s => s.label === resultLabel)
         if (subTypeItem?.statBonusGrants) {
           for (const [stat, bonusType] of Object.entries(subTypeItem.statBonusGrants)) {
@@ -598,7 +662,7 @@
 
       if (currentDef.category === 'raceClass') {
         const raceResult = results.find(r => r.category === 'race')
-        const race = getRace(raceResult?.resultLabel)
+        const race = getRace(currentDef.forRace ?? raceResult?.resultLabel)
         const classItem = race?.classPool?.find(c => c.label === resultLabel)
         if (classItem?.statBonusGrants) {
           for (const [stat, bonusType] of Object.entries(classItem.statBonusGrants)) {
@@ -621,6 +685,21 @@
           const abilityLabel = archetype.abilitySpinDisplayName ?? 'Archetype Ability'
           const count = archetype.abilitySpinCount ?? 2
           const abilitySlots: SpinDefinition[] = []
+          // Archetype twist sub-wheel (Time Traveler, Chaos Gremlin, Stand
+          // User, Bounty Hunter, Demon Slayer, Sorcerer, Esper, Necromancer,
+          // Cursed Sorcerer). Prepended so it lands BEFORE ability spins
+          // so a locked element can bias them. Mirrors main game.
+          const arcTwistKey = ARCHETYPE_TWIST_TRIGGERS[resultLabel]
+          if (arcTwistKey) {
+            const twist = twistByKey(arcTwistKey)
+            if (twist) {
+              abilitySlots.push({
+                category: 'twistSpin' as const,
+                displayName: `${resultLabel}: ${twist.title}`,
+                twistKind: arcTwistKey,
+              })
+            }
+          }
           for (let i = 0; i < count; i++) {
             abilitySlots.push({
               category: 'archetypeAbility' as const,
@@ -639,6 +718,21 @@
               pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType as 'statBonus' | 'statPenalty']
             }
           }
+        }
+      }
+
+      // ── Twist sub-spin result — apply registered effects (stat grants +
+      // optional element lock). Mirrors main game's twistSpin handler.
+      if (currentDef.category === 'twistSpin' && currentDef.twistKind) {
+        const twist = twistByKey(currentDef.twistKind)
+        const eff = twist?.effects[resultLabel]
+        if (eff?.statBonusGrants) {
+          for (const [stat, bonusType] of Object.entries(eff.statBonusGrants)) {
+            pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+          }
+        }
+        if (eff?.lockElement) {
+          lockedElement = eff.lockElement
         }
       }
 

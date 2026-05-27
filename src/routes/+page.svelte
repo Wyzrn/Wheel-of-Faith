@@ -2801,7 +2801,7 @@
                 tierColor={tc}
                 announcement={null}
                 onContinue={handleNextSpin}
-                layout="overlay"
+                layout="modal"
               />
             {/if}
           {/if}
