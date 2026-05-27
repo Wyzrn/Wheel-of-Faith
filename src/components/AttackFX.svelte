@@ -89,21 +89,26 @@
 
   let isRtl = $derived(direction === 'rtl')
 
-  const noFlyTypes  = new Set(['dodge', 'shield'])
-  const swirlTypes  = new Set(['void', 'psychic', 'time', 'shadow', 'gravity', 'cursed', 'arcane', 'cosmic', 'soul', 'chaos'])
-  const crashTypes  = new Set(['crit', 'berserker', 'earth', 'slash', 'metal'])
+  // (Legacy `noFlyTypes` / `swirlTypes` / `crashTypes` sets were retired
+  // when flyClass stopped applying directional translations — kept the
+  // names here as a breadcrumb in case the trajectory animations ever
+  // come back for specific edge cases.)
 
+  // All damage attacks now render STATIONARY at their anchor point. The
+  // legacy `fx-ltr-arc` / `fx-rtl-crash` / `fx-ltr-swirl` translate-across-
+  // screen animations made every directional attack look like it was
+  // launching itself off the target's card — replaced with no-op '' so
+  // the SVG plays in place. Special-purpose attackType animations (aoe
+  // burst, heal rise, buff pulse, debuff spread, summon portal) still
+  // apply because they're in-place motions (expand / pulse / rise),
+  // not directional travel.
   let flyClass = $derived(
     attackType === 'aoe'    ? 'fx-aoe-burst' :
     attackType === 'heal'   ? 'fx-heal-rise' :
     attackType === 'buff'   ? 'fx-buff-pulse' :
     attackType === 'debuff' ? 'fx-debuff-spread' :
     attackType === 'summon' ? 'fx-summon-portal' :
-    direction === 'center' ? '' :
-    noFlyTypes.has(type)   ? '' :
-    swirlTypes.has(type)   ? `fx-${direction}-swirl` :
-    crashTypes.has(type)   ? `fx-${direction}-crash` :
-    `fx-${direction}-arc`
+    ''
   )
 
   // ─── Particle sprite definitions ─────────────────────────────────────────
