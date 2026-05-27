@@ -604,19 +604,11 @@
         lastResult = { index: resultIndex, label: segments[resultIndex].label }
         spinStatus = 'LANDED'
         onSpinComplete(resultIndex, segments[resultIndex].label)
-        // Hold the reveal panel until the celebration's last lingering
-        // particle has fully faded. effectiveDur is when LandingCelebration
-        // calls onComplete, but confetti + rings can keep animating up to
-        // ~500ms past that. Adding 500ms grace guarantees the reveal pops
-        // into a clean frame, never on top of fading VFX.
-        const isTranscendent = !!landedTier && /Celestial|Godly|Primordial|Absolute/i.test(landedTier)
-        const revealDelay =
-          isTranscendent          ? 4000 :  // transcendent (VFX ~3400 + 600 grace)
-          finalIntensity >= 0.70  ? 3000 :  // mythic        (VFX ~2400 + 600)
-          finalIntensity >= 0.50  ? 2200 :  // great         (VFX ~1700 + 500)
-          finalIntensity >= 0.30  ? 1600 :  // good          (VFX ~1200 + 400)
-                                    1100    // basic / silent (VFX ~800 + 300)
-        setTimeout(() => { spinStatus = 'REVEALED' }, revealDelay)
+        // Pop the reveal card early — the celebration layers OVER the
+        // card (z-60) so the player sees fireworks crash on top of the
+        // result. Short delay just so the wheel finishes its landing
+        // pin before the panel arrives.
+        setTimeout(() => { spinStatus = 'REVEALED' }, 350)
       }
     })
   }
