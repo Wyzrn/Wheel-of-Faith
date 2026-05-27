@@ -53,7 +53,11 @@
 
   // ── Landing celebration overlay state ──────────────────────────────────────
   // Set in the spin's onComplete; LandingCelebration is mounted as a fixed
-  // overlay until it self-completes and clears this.
+  // overlay until it self-completes and clears this. Center coords are
+  // captured from svgEl.getBoundingClientRect() at landing time so emanating
+  // VFX layers (particles, rings, lens flare, portal, sky pillar) burst
+  // from the actual wheel center instead of viewport center — important
+  // on desktop where the wheel sits in the right column.
   let celebration = $state<{
     key: number
     intensity: number
@@ -61,6 +65,8 @@
     elementColor: string | null
     tier: string | null
     subtitle: string | null
+    centerX: number | null
+    centerY: number | null
   } | null>(null)
   let celebrationKey = 0
 
@@ -560,6 +566,17 @@
           if (resolved !== null) {
             finalIntensity = resolved?.intensityOverride ?? intensity
             if (finalIntensity >= 0.10) {
+              // Capture wheel center in viewport pixels. svgEl is the
+              // bound <svg> element; its bounding rect reflects current
+              // layout (right-column on desktop, centered on mobile,
+              // centered in Story Mode). Falls back to null if the SVG
+              // isn't mounted (shouldn't happen after a spin completes).
+              let cx: number | null = null, cy: number | null = null
+              if (svgEl) {
+                const r = svgEl.getBoundingClientRect()
+                cx = r.left + r.width / 2
+                cy = r.top + r.height / 2
+              }
               celebration = {
                 key: ++celebrationKey,
                 intensity: finalIntensity,
@@ -567,6 +584,8 @@
                 elementColor: resolved?.elementColor ?? null,
                 tier: resolved?.tier ?? landedTier ?? null,
                 subtitle: resolved?.subtitle ?? landedTier ?? null,
+                centerX: cx,
+                centerY: cy,
               }
             }
           }
@@ -576,19 +595,17 @@
         lastResult = { index: resultIndex, label: segments[resultIndex].label }
         spinStatus = 'LANDED'
         onSpinComplete(resultIndex, segments[resultIndex].label)
-        // Delay reveal panel so the celebration's first wave (flash, banner
-        // pop) gets clean air before the panel pops at center screen. Higher
-        // intensity = more crescendo to honor, so the panel waits longer.
-        // Transcendent (cosmic stat tiers Celestial-Absolute) lands at ≥0.83
-        // — give the letter-by-letter banner cascade time to finish typing
-        // before the panel intrudes.
+        // Hold the reveal panel until the celebration VFX is finishing its
+        // fade. Lines up with LandingCelebration's effectiveDur ladder, with
+        // a 250ms lead so the panel arrives as the VFX is dying down rather
+        // than after a black hole of silence.
         const isTranscendent = !!landedTier && /Celestial|Godly|Primordial|Absolute/i.test(landedTier)
         const revealDelay =
-          isTranscendent          ? 2400 :  // transcendent — full letter cascade
-          finalIntensity >= 0.70  ? 1100 :  // mythic
-          finalIntensity >= 0.50  ? 850  :  // great
-          finalIntensity >= 0.30  ? 700  :  // good
-                                    550     // basic / silent
+          isTranscendent          ? 3150 :  // transcendent (VFX 3400)
+          finalIntensity >= 0.70  ? 2150 :  // mythic        (VFX 2400)
+          finalIntensity >= 0.50  ? 1450 :  // great         (VFX 1700)
+          finalIntensity >= 0.30  ? 1000 :  // good          (VFX 1200)
+                                     650    // basic / silent (VFX 800)
         setTimeout(() => { spinStatus = 'REVEALED' }, revealDelay)
       }
     })
@@ -861,6 +878,8 @@
       elementColor={celebration.elementColor}
       tier={celebration.tier}
       subtitle={celebration.subtitle}
+      centerX={celebration.centerX}
+      centerY={celebration.centerY}
       onComplete={() => { celebration = null }}
     />
   {/key}

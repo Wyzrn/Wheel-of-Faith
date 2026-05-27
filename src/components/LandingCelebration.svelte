@@ -23,6 +23,8 @@
     elementColor = null,
     tier = null,
     subtitle = null,
+    centerX = null,
+    centerY = null,
     durationMs,
     onComplete,
   }: {
@@ -31,9 +33,21 @@
     elementColor?: string | null
     tier?: string | null
     subtitle?: string | null   // shown under the banner (e.g. "S+ TIER" or "Mythological")
+    // Pixel coords of the wheel center in viewport space. When set,
+    // emanating layers (particles, rings, lens flare, portal, sky pillar,
+    // light rays, reality cracks) burst from these coords instead of
+    // viewport center. Screen-wide layers (flash, vignette, aurora, rim
+    // pulse, hue shift) stay screen-anchored regardless.
+    centerX?: number | null
+    centerY?: number | null
     durationMs?: number        // override; defaults by level (mythic holds longer)
     onComplete?: () => void
   } = $props()
+
+  // CSS custom-prop values for the emanating-layer origin. Default to
+  // viewport center when caller didn't pass coords.
+  let originX = $derived(centerX != null ? `${centerX}px` : '50vw')
+  let originY = $derived(centerY != null ? `${centerY}px` : '50vh')
 
   // Primary accent — element color when available (so a Fire roll bursts red,
   // not generic gold), tier color otherwise.
@@ -271,7 +285,7 @@
        still receives clicks. -->
   <div
     class="lc-root"
-    style="--accent: {accent}; --accent2: {accent2}; --tier-color: {tierColor};"
+    style="--accent: {accent}; --accent2: {accent2}; --tier-color: {tierColor}; --origin-x: {originX}; --origin-y: {originY};"
     aria-hidden="true"
   >
     <!-- TRANSCENDENT-ONLY: reality hue-shift wash. Briefly tints the whole
@@ -524,8 +538,8 @@
   /* ── Light rays (conic-gradient shutter rays) ──────────────────────────── */
   .lc-rays {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    left: var(--origin-x);
+    top: var(--origin-y);
     width: 220vmax;
     height: 220vmax;
     margin-left: -110vmax;
@@ -621,8 +635,8 @@
   /* ── Expanding energy rings ──────────────────────────────────────────── */
   .lc-ring {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    left: var(--origin-x);
+    top: var(--origin-y);
     width: 64px;
     height: 64px;
     margin-left: -32px;
@@ -648,8 +662,8 @@
   /* ── Lens flare ──────────────────────────────────────────────────────── */
   .lc-flare {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    left: var(--origin-x);
+    top: var(--origin-y);
     width: 0;
     height: 0;
     pointer-events: none;
@@ -747,8 +761,8 @@
   /* ── Particle field ──────────────────────────────────────────────────── */
   .lc-particles {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    left: var(--origin-x);
+    top: var(--origin-y);
     width: 0;
     height: 0;
   }
@@ -791,7 +805,7 @@
   /* ── Confetti (mythic only) ──────────────────────────────────────────── */
   .lc-confetti {
     position: absolute;
-    left: 50%;
+    left: var(--origin-x);
     top: 0;
     width: 0;
     height: 0;
@@ -1036,7 +1050,7 @@
   /* ── Sky pillar — vertical beam through the impact point ───────────── */
   .lc-sky-pillar {
     position: absolute;
-    left: 50%;
+    left: var(--origin-x);
     top: 0;
     bottom: 0;
     width: 360px;
@@ -1086,8 +1100,8 @@
   /* ── Reality cracks — radial light streaks from center ─────────────── */
   .lc-cracks {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    left: var(--origin-x);
+    top: var(--origin-y);
     width: 0;
     height: 0;
   }
@@ -1121,8 +1135,8 @@
   /* ── Portal ring — rotating notched ring around impact ─────────────── */
   .lc-portal {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    left: var(--origin-x);
+    top: var(--origin-y);
     border-radius: 50%;
     border: 4px dashed var(--accent);
     box-shadow:

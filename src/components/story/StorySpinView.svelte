@@ -1030,9 +1030,13 @@
     timestamp: new Date().toISOString(),
     tier: pendingResult.tier as any,
   } as SpinResult)}
-  {@const _identityCard = (lastResult.category === 'race' || lastResult.category === 'archetype')
-    ? buildIdentityCard(lastResult.category, lastResult.resultLabel ?? '')
-    : null}
+  {@const _identityCard = (
+    lastResult.category === 'race' ||
+    lastResult.category === 'archetype' ||
+    lastResult.category === 'raceSubType' ||
+    lastResult.category === 'raceClass' ||
+    lastResult.category === 'raceTransformation'
+  ) ? buildIdentityCard(lastResult.category, lastResult.resultLabel ?? '') : null}
   {@const resolvedMeta = {
     element: pendingResult.element,
     grade:   pendingResult.grade,

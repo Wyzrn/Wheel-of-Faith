@@ -4,7 +4,7 @@
 // Saiyan should FEEL different than rolling a Human, before they even
 // see what gets spliced into the queue.
 
-import { getRace } from '$lib/content/races'
+import { getRace, racesByLabel } from '$lib/content/races'
 import { getArchetype } from '$lib/content/archetypes'
 import { ELEMENT_COLORS } from '$lib/content/elements'
 import type { ElementType, ItemGrade, Race } from '$lib/content/types'
@@ -349,12 +349,139 @@ export function buildArchetypeIdentityCard(label: string): IdentityCard | null {
   }
 }
 
-// Convenience: resolves either kind from a SpinCategory + label.
+// ── Pool entry (subType / class / transformation) identity card ────────
+// Race pool entries (e.g. "Vampire Elder", "Saiyan: Super Saiyan",
+// "Symbiote Bonded") sit one level below the race itself but still carry
+// their own perks (granted powers, ability list, stat bonus grants,
+// element + grade, transformation statBonus). Landing on one is a major
+// identity moment so we surface its perks the same way.
+export function buildPoolEntryIdentityCard(
+  kind: 'raceSubType' | 'raceClass' | 'raceTransformation',
+  label: string,
+): IdentityCard | null {
+  // Scan every race's pools to find an entry with matching label. There's
+  // no central index for subtype/class/transformation labels so we accept
+  // the O(N) loop — only runs once per landing.
+  let entry: {
+    label: string
+    element?: ElementType
+    grade?: ItemGrade
+    statBonus?: number
+    statBonusGrants?: Record<string, 'statBonus' | 'statPenalty'>
+    grantedPowers?: string[]
+    powerPool?: { label: string; weight: number }[]
+    abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
+  } | undefined
+  let parentRace: Race | undefined
+
+  for (const r of racesByLabel.values()) {
+    const pool =
+      kind === 'raceClass' ? r.classPool :
+      kind === 'raceTransformation' ? r.transformationPool :
+      r.subTypePool
+    const found = pool?.find(e => e.label === label)
+    if (found) { entry = found; parentRace = r; break }
+  }
+  if (!entry) return null
+
+  const accentColor = entry.element ? ELEMENT_COLORS[entry.element] : '#f0c040'
+  const perks: IdentityPerk[] = []
+
+  // Transformation stat bonus — major perk, lead with it.
+  if (kind === 'raceTransformation' && entry.statBonus) {
+    perks.push({
+      icon: 'rocket_launch',
+      label: `+${entry.statBonus} Stat Bonus`,
+      detail: 'Applied to base stats when active',
+    })
+  }
+  // Granted powers — surface up to 2.
+  if (entry.grantedPowers && entry.grantedPowers.length > 0) {
+    const lead = entry.grantedPowers.slice(0, 2).join(', ')
+    perks.push({
+      icon: 'card_giftcard',
+      label: 'Auto-Granted',
+      detail: lead + (entry.grantedPowers.length > 2 ? ` + ${entry.grantedPowers.length - 2} more` : ''),
+    })
+  }
+  // Stat bonus / penalty grants.
+  if (entry.statBonusGrants) {
+    const boosts = Object.entries(entry.statBonusGrants).filter(([, v]) => v === 'statBonus').map(([k]) => statLabel(k))
+    const pens   = Object.entries(entry.statBonusGrants).filter(([, v]) => v === 'statPenalty').map(([k]) => statLabel(k))
+    if (boosts.length > 0) {
+      perks.push({
+        icon: 'arrow_upward',
+        label: `Bonus: ${boosts.join(' + ')}`,
+        detail: 'Free stat boost spins',
+      })
+    }
+    if (pens.length > 0) {
+      perks.push({
+        icon: 'arrow_downward',
+        label: `Penalty: ${pens.join(' + ')}`,
+      })
+    }
+  }
+  // Custom ability pool size.
+  if (entry.abilities && entry.abilities.length > 0) {
+    perks.push({
+      icon: 'auto_awesome',
+      label: `${entry.abilities.length} unique abilities`,
+      detail: 'Drawn from this entry\'s pool when ability spins fire',
+    })
+  }
+  // Custom power pool size.
+  if (entry.powerPool && entry.powerPool.length > 0) {
+    perks.push({
+      icon: 'flash_on',
+      label: `${entry.powerPool.length} biased powers`,
+      detail: 'Power spins weighted toward this list',
+    })
+  }
+  // Parent race trail — gives context for what this entry belongs to.
+  if (parentRace) {
+    perks.push({
+      icon: 'family_tree',
+      label: `From: ${parentRace.label}`,
+    })
+  }
+
+  const kindLabel =
+    kind === 'raceClass' ? 'CLASS' :
+    kind === 'raceTransformation' ? 'TRANSFORMATION' :
+    'SUBTYPE'
+
+  // Rarity bucket from grade — pool entries don't carry weight in the
+  // same sense as races, so derive from grade.
+  const gradeRank = entry.grade ? _GRADE_RANK[entry.grade] : 0
+  const rarity =
+    gradeRank >= 8 ? 'Mythological' :
+    gradeRank >= 6 ? 'Legendary' :
+    gradeRank >= 4 ? 'Rare' :
+    gradeRank >= 2 ? 'Uncommon' :
+    'Common'
+
+  return {
+    kind: 'race',  // share the race card styling
+    name: entry.label,
+    description: `${kindLabel.charAt(0) + kindLabel.slice(1).toLowerCase()} of ${parentRace?.label ?? 'unknown lineage'} — ${entry.grade ? `grade ${entry.grade}` : 'pool entry'}.`,
+    accentColor,
+    element: entry.element,
+    rarity,
+    archetypeType: kindLabel,    // shown as the gold "Fighter/Spellcaster"-style chip
+    perks: perks.slice(0, 6),
+  }
+}
+
+// Convenience: resolves the right card kind from a SpinCategory + label.
 export function buildIdentityCard(
   category: string | undefined,
   label: string,
 ): IdentityCard | null {
   if (category === 'race') return buildRaceIdentityCard(label)
   if (category === 'archetype') return buildArchetypeIdentityCard(label)
+  if (category === 'raceSubType' || category === 'raceClass' || category === 'raceTransformation') {
+    return buildPoolEntryIdentityCard(category, label)
+  }
   return null
 }

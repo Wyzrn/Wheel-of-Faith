@@ -2583,9 +2583,13 @@
                 : (last.category === 'raceSubType' || last.category === 'raceClass' || last.category === 'raceTransformation') ? _racePoolLookup.get(last.resultLabel ?? '')
                 : (last.category === 'racialAbility' || last.category === 'archetypeAbility') ? _abilityLookup.get(last.resultLabel ?? '')
                 : undefined}
-              {@const identityCard = (last.category === 'race' || last.category === 'archetype')
-                ? buildIdentityCard(last.category, last.resultLabel ?? '')
-                : null}
+              {@const identityCard = (
+                last.category === 'race' ||
+                last.category === 'archetype' ||
+                last.category === 'raceSubType' ||
+                last.category === 'raceClass' ||
+                last.category === 'raceTransformation'
+              ) ? buildIdentityCard(last.category, last.resultLabel ?? '') : null}
               {@const resolvedMeta = {
                 ...(itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}),
                 ...(identityCard ? { identityCard } : {}),
@@ -2594,7 +2598,7 @@
                 result={last}
                 meta={resolvedMeta}
                 tierColor={tc}
-                announcement={showAnnouncement}
+                announcement={null}
                 onContinue={handleNextSpin}
                 layout="overlay"
               />
