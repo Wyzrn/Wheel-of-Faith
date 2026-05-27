@@ -53,8 +53,17 @@
   // the card's accent color for its border/glow and hides the tier badge
   // (which is meaningless for race/archetype).
   let idCard = $derived(meta.identityCard ?? null)
-  // Panel accent: identity card color when present, else tier color, else gold.
-  let panelAccent = $derived(idCard?.accentColor ?? tierColor ?? '#f0c040')
+  // Panel accent priority: identity card → element color (for item spins
+  // — powers/weapons/armors/abilities/enchantments) → grade color (items
+  // with no element) → tier color (stat spins) → default gold. So every
+  // spin reveal gets a themed border + glow matched to the result.
+  let panelAccent = $derived(
+    idCard?.accentColor
+    ?? (meta.element ? ELEMENT_COLORS[meta.element] : null)
+    ?? gradeInfo?.color
+    ?? tierColor
+    ?? '#f0c040',
+  )
 
   // Auto-continue: when settings.autoContinueMs > 0, fire onContinue after that
   // delay so users who've seen the cards can plow through fast. Cancellable
@@ -121,7 +130,7 @@
 
 {#if layout === 'modal'}
   <div
-    class="fixed inset-0 z-40 flex items-center justify-center px-4"
+    class="fixed inset-0 z-50 flex items-center justify-center px-4"
     style="background: rgba(7,7,13,0.88); backdrop-filter: blur(12px); animation: srrFadeIn 0.18s ease-out forwards;"
   >
     <div
@@ -250,11 +259,15 @@
     </div>
   </div>
 {:else}
-  <!-- Overlay layout: fills parent's relatively-positioned wheel container -->
+  <!-- Overlay layout: positioned over the wheel area (top-aligned, square
+       aspect-ratio matching the wheel SVG) so the reveal text sits in the
+       middle of the wheel rather than below it. Container above this
+       includes the spin button + outcomes text underneath the wheel; if we
+       used inset-0 the reveal would center on the whole column instead. -->
   <div
-    class="absolute inset-0 flex flex-col items-center justify-center rounded-2xl z-10"
+    class="absolute left-0 right-0 top-0 mx-auto flex flex-col items-center justify-center rounded-2xl z-50"
     class:srr-id-card={!!idCard}
-    style="background: rgba(0,0,0,0.78); backdrop-filter: blur(4px); animation: srrFadeIn 0.18s ease-out forwards; {idCard ? `box-shadow: inset 0 0 60px ${idCard.accentColor}33, inset 0 0 0 1px ${idCard.accentColor}66;` : ''}"
+    style="aspect-ratio: 1/1; width: 100%; max-width: 100%; background: rgba(0,0,0,0.78); backdrop-filter: blur(4px); animation: srrFadeIn 0.18s ease-out forwards; box-shadow: inset 0 0 60px {panelAccent}33, inset 0 0 0 1px {panelAccent}66;"
   >
     <div class="flex flex-col items-center gap-3 px-6 text-center max-h-full overflow-y-auto py-6"
       style="animation: srrPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">

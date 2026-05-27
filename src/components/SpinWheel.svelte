@@ -595,17 +595,17 @@
         lastResult = { index: resultIndex, label: segments[resultIndex].label }
         spinStatus = 'LANDED'
         onSpinComplete(resultIndex, segments[resultIndex].label)
-        // Hold the reveal panel until the celebration VFX is finishing its
-        // fade. Lines up with LandingCelebration's effectiveDur ladder, with
-        // a 250ms lead so the panel arrives as the VFX is dying down rather
-        // than after a black hole of silence.
+        // Hold the reveal panel until the celebration VFX has FULLY ended,
+        // not partway through. Adds 100ms grace so the panel pops into a
+        // clean frame rather than racing the last fading particle. Matches
+        // (or slightly exceeds) LandingCelebration's effectiveDur ladder.
         const isTranscendent = !!landedTier && /Celestial|Godly|Primordial|Absolute/i.test(landedTier)
         const revealDelay =
-          isTranscendent          ? 3150 :  // transcendent (VFX 3400)
-          finalIntensity >= 0.70  ? 2150 :  // mythic        (VFX 2400)
-          finalIntensity >= 0.50  ? 1450 :  // great         (VFX 1700)
-          finalIntensity >= 0.30  ? 1000 :  // good          (VFX 1200)
-                                     650    // basic / silent (VFX 800)
+          isTranscendent          ? 3500 :  // transcendent (VFX 3400 + 100)
+          finalIntensity >= 0.70  ? 2500 :  // mythic        (VFX 2400 + 100)
+          finalIntensity >= 0.50  ? 1800 :  // great         (VFX 1700 + 100)
+          finalIntensity >= 0.30  ? 1300 :  // good          (VFX 1200 + 100)
+                                     900    // basic / silent (VFX 800 + 100)
         setTimeout(() => { spinStatus = 'REVEALED' }, revealDelay)
       }
     })
