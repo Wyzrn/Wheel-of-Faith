@@ -132,6 +132,17 @@ export function buildRaceIdentityCard(label: string): IdentityCard | null {
 
   const perks: IdentityPerk[] = []
 
+  // Hybrid is a special "twist race" — it doesn't have its own extras;
+  // the wheel splices two more race spins for the parents. Lead with that
+  // perk so the player understands what's about to happen.
+  if (label === 'Hybrid') {
+    perks.push({
+      icon: 'merge_type',
+      label: 'Two-Race Bloodline',
+      detail: 'The wheel spins twice more — both parents grant their full extras (abilities, classes, transformations, weapons, weaknesses).',
+    })
+  }
+
   // Gimmicks first — these are the race's signature COMBAT mechanic, not
   // just stat tilt. Lead with them so the player sees Saiyan's Last Stand
   // before they see "+2 weapon spins."

@@ -2286,12 +2286,12 @@ export const races: Race[] = [
   // Hybrid — Dual heritage, draws on two bloodlines simultaneously
   {
     label: 'Hybrid',
-    weight: 6,
-    abilitySpinCount: 3,
-    extraPowerSpins: 2,
-    weaknessProbabilityModifier: 1.1,
+    weight: 3,
+    abilitySpinCount: 0,
+    extraPowerSpins: 0,
+    weaknessProbabilityModifier: 1.0,
     minStatTier: 'D-',
-    description: 'Born of two worlds. Gets the best of both. Also the worst. Mostly the best though.',
+    description: 'Born of two worlds. The wheel spins twice more — your bloodline is whatever fate decides.',
     statModifiers: { potential: 1.8, agility: 1.4, powerMastery: 1.3 },
     subTypePool: [
       { label: 'Half-Elf / Half-Human',       weight: 5, element: 'Nature', grade: 'C', statBonusGrants: { agility: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Elven Grace', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Human Adaptability', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'Dual Heritage Affinity', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Cross-Blood Insight', weight: 1, element: 'Nature', grade: 'B' }] },

@@ -447,11 +447,20 @@
     const def = currentDef
     if (!def) return getSegmentsForCategory('race')
 
+    // Hybrid parent race spins — same race wheel, but with Hybrid itself
+    // filtered out so we don't recurse (Hybrid → Hybrid → Hybrid → ...).
+    if (def.category === 'race' && def.isHybridParent) {
+      return getSegmentsForCategory('race').filter(s => s.label !== 'Hybrid')
+    }
+
     // Use race-specific ability pool — prefer class or subType abilities when available.
     // If raceOverride is set (Mythological Creature upgrade), use the overridden race's pool.
     if (def.category === 'racialAbility') {
+      // Prefer def.forRace (set on slots spliced by a specific race land —
+      // critical for Hybrid where two parents each splice their own ability
+      // slots and we need each lookup to hit the right parent's pool).
       const raceResult = results.find(r => r.category === 'race')
-      const effectiveLabel = raceOverride ?? raceResult?.resultLabel
+      const effectiveLabel = def.forRace ?? raceOverride ?? raceResult?.resultLabel
       const race = getRace(effectiveLabel)
       const classResult = results.find(r => r.category === 'raceClass')
       const classItem = race?.classPool?.find(c => c.label === classResult?.resultLabel)
@@ -466,14 +475,14 @@
     // Use race sub-type pool (always from the original race, not the override)
     if (def.category === 'raceSubType') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = getRace(raceResult?.resultLabel)
+      const race = getRace(def.forRace ?? raceResult?.resultLabel)
       return race?.subTypePool ?? getSegmentsForCategory('raceSubType')
     }
 
     // Use race class pool
     if (def.category === 'raceClass') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = getRace(raceResult?.resultLabel)
+      const race = getRace(def.forRace ?? raceResult?.resultLabel)
       return race?.classPool ?? getSegmentsForCategory('raceClass')
     }
 
@@ -487,7 +496,7 @@
     // Use effective race transformation pool (respects Mythological Creature upgrade)
     if (def.category === 'raceTransformation') {
       const raceResult = results.find(r => r.category === 'race')
-      const effectiveLabel = raceOverride ?? raceResult?.resultLabel
+      const effectiveLabel = def.forRace ?? raceOverride ?? raceResult?.resultLabel
       const race = getRace(effectiveLabel)
       return race?.transformationPool ?? getSegmentsForCategory('raceTransformation')
     }
@@ -851,46 +860,64 @@
 
     // Step 1: SPLICE queue (must happen before saveSession)
     if (def.category === 'race') {
+      // ── Hybrid race twist ────────────────────────────────────────────
+      // When the player rolls Hybrid (and this isn't already a hybrid-parent
+      // re-spin), skip the standard race extras and splice TWO additional
+      // race spins for the two parent bloodlines. Each parent then resolves
+      // through this same branch with isHybridParent=true, applying its
+      // own extras — so a Hybrid character ends up with the union of both
+      // parents' abilities, classes, transformations, weapons, weaknesses.
+      if (resultLabel === 'Hybrid' && !def.isHybridParent) {
+        spinQueue.splice(currentSpinIndex + 1, 0,
+          { category: 'race' as const, displayName: 'Hybrid: First Parent',  isHybridParent: true },
+          { category: 'race' as const, displayName: 'Hybrid: Second Parent', isHybridParent: true },
+        )
+        // skip the rest of the race-extras splice; the parents will provide it.
+      } else {
       const race = getRace(resultLabel)
       const count = race?.abilitySpinCount ?? 1
       const extraPowers = race?.extraPowerSpins ?? 0
       const extraWeapons = (race as any)?.extraWeaponSpins ?? 0
       const weaknessCount = race?.weaknessCount ?? deriveWeaknessCount(race?.weaknessProbabilityModifier ?? 1.0)
       const insertSlots: SpinDefinition[] = []
+      // forRace is set so downstream sub-spins (subType/class/transformation/
+      // racialAbility) know WHICH race spawned them — needed for Hybrid where
+      // two parent races each splice their own extras into the same queue.
+      const forRace = resultLabel
 
       // Sub-type spin (e.g., Dragon color, Bender element, Titan type)
       if (race?.subTypePool && race.subTypePool.length > 0) {
-        insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Type` })
+        insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Type`, forRace })
       }
 
       // Class/rank spin (e.g., Saiyan class, Mutant power level, Viltrumite rank)
       if (race?.classPool && race.classPool.length > 0) {
-        insertSlots.push({ category: 'raceClass' as const, displayName: `${resultLabel} Class` })
+        insertSlots.push({ category: 'raceClass' as const, displayName: `${resultLabel} Class`, forRace })
       }
 
       // Transformation spin (e.g., Saiyan max form, Vampire age, Kryptonian solar level)
       if (race?.transformationPool && race.transformationPool.length > 0) {
-        insertSlots.push({ category: 'raceTransformation' as const, displayName: `${resultLabel} Power Level` })
+        insertSlots.push({ category: 'raceTransformation' as const, displayName: `${resultLabel} Power Level`, forRace })
       }
 
       // Racial ability slots
       for (let i = 0; i < count; i++) {
-        insertSlots.push({ category: 'racialAbility' as const, displayName: `Racial Ability ${count > 1 ? i + 1 : ''}`.trim() })
+        insertSlots.push({ category: 'racialAbility' as const, displayName: `Racial Ability ${count > 1 ? i + 1 : ''}`.trim(), forRace })
       }
 
       // Bonus power slots — racial, use class-specific power pool if set
       for (let i = 0; i < extraPowers; i++) {
-        insertSlots.push({ category: 'power' as const, displayName: `Bonus Power ${extraPowers > 1 ? i + 1 : ''}`.trim(), useRacialPowerPool: true })
+        insertSlots.push({ category: 'power' as const, displayName: `Bonus Power ${extraPowers > 1 ? i + 1 : ''}`.trim(), useRacialPowerPool: true, forRace })
       }
 
       // Bonus weapon slots — races that have signature weapon types
       for (let i = 0; i < extraWeapons; i++) {
-        insertSlots.push({ category: 'weapon' as const, displayName: extraWeapons > 1 ? `Racial Weapon ${i + 1}` : 'Racial Weapon' })
+        insertSlots.push({ category: 'weapon' as const, displayName: extraWeapons > 1 ? `Racial Weapon ${i + 1}` : 'Racial Weapon', forRace })
       }
 
       // Weakness slots immediately after abilities
       for (let i = 0; i < weaknessCount; i++) {
-        insertSlots.push({ category: 'weakness' as const, displayName: weaknessCount > 1 ? `Weakness ${i + 1}` : 'Weakness' })
+        insertSlots.push({ category: 'weakness' as const, displayName: weaknessCount > 1 ? `Weakness ${i + 1}` : 'Weakness', forRace })
       }
 
       spinQueue.splice(currentSpinIndex + 1, 0, ...insertSlots)
@@ -907,9 +934,10 @@
       if (extraWeapons > 0) parts.push(`${extraWeapons} racial weapon${extraWeapons > 1 ? 's' : ''}`)
       if (weaknessCount > 0) parts.push(`${weaknessCount} weakness${weaknessCount > 1 ? 'es' : ''}`)
       showAnnouncement = `${resultLabel}: spin for ${parts.join(', ')}!`
+      }   // end Hybrid-vs-normal branch
     } else if (def.category === 'raceSubType') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = getRace(raceResult?.resultLabel)
+      const race = getRace(def.forRace ?? raceResult?.resultLabel)
       const subTypeItem = race?.subTypePool?.find(s => s.label === resultLabel)
       if (subTypeItem?.statBonusGrants) {
         for (const [stat, bonusType] of Object.entries(subTypeItem.statBonusGrants)) {
@@ -931,7 +959,7 @@
       }
     } else if (def.category === 'raceClass') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = getRace(raceResult?.resultLabel)
+      const race = getRace(def.forRace ?? raceResult?.resultLabel)
       const classItem = race?.classPool?.find(c => c.label === resultLabel)
       if (classItem?.statBonusGrants) {
         for (const [stat, bonusType] of Object.entries(classItem.statBonusGrants)) {
@@ -961,7 +989,7 @@
       }
     } else if (def.category === 'raceTransformation') {
       const raceResult = results.find(r => r.category === 'race')
-      const race = getRace(raceResult?.resultLabel)
+      const race = getRace(def.forRace ?? raceResult?.resultLabel)
       const transItem = race?.transformationPool?.find(t => t.label === resultLabel)
       if (transItem?.statBonusGrants) {
         for (const [stat, bonusType] of Object.entries(transItem.statBonusGrants)) {

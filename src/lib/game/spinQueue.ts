@@ -149,6 +149,18 @@ export interface SpinDefinition {
   targetStat?: string  // for statBonus/statPenalty spins: which stat category this bonus modifies
   useRacialPowerPool?: boolean  // if true, power spin draws from activePowerPool instead of global pool
   isReroll?: boolean   // if true, this spin replaces an existing result of the same category
+  // Hybrid race twist: when the player rolls "Hybrid", we splice two extra
+  // race spins (the two parents). These slots set this flag so the wheel
+  // filters Hybrid itself out of the parent pool (no infinite recursion) and
+  // the result handler applies the second race's extras to the character.
+  isHybridParent?: boolean
+  // For race-derived sub-spins (raceSubType / raceClass / raceTransformation /
+  // racialAbility / racial weapon / racial weakness), the race label that
+  // spawned this spin. When unset, downstream resolvers fall back to the
+  // most-recent 'race' result. Set this whenever a parent race spawns extras
+  // (Hybrid threads it through to two different parents) so each lookup goes
+  // to the right race pool.
+  forRace?: string
 }
 
 // Returns the initial queue of 22 fixed spin definitions.
