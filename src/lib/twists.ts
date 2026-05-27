@@ -483,6 +483,39 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
     },
   },
 
+  // ── Chaos Factor — end-of-run modifier slot (small chance) ─────────────
+  // Bends one rule. Fires only ~20% of the time at the end of the run as
+  // a post-redemption surprise. Each outcome modifies the character in
+  // a unique, story-worthy way.
+  chaosFactor: {
+    title: 'Chaos Factor',
+    hue: 330,
+    accentColor: '#ec4899',
+    prompt: 'Fate isn\'t done with you.',
+    segments: [
+      { label: 'Reality Anchor (no chaos)',         weight: 4 },
+      { label: 'Fourth Wall Breaker',               weight: 1 },
+      { label: 'Forgotten Past (mystery backstory)',weight: 2 },
+      { label: 'Cursed by Fortune',                 weight: 2 },
+      { label: 'Blessed by Fortune',                weight: 2 },
+      { label: 'Time-Locked Form',                  weight: 1 },
+      { label: 'Prophecy of Ruin',                  weight: 1 },
+      { label: 'Plot Armor (Once Per Battle)',      weight: 2 },
+      { label: 'The Wheel Likes You',               weight: 1 },
+    ],
+    effects: {
+      'Reality Anchor (no chaos)':         { flavor: 'The wheel passes you over. No twist.' },
+      'Fourth Wall Breaker':               { statBonusGrants: { iq: 'statBonus', charisma: 'statBonus' }, flavor: 'You know this is a game. The game knows you know.' },
+      'Forgotten Past (mystery backstory)': { statBonusGrants: { potential: 'statBonus' }, flavor: 'Your backstory is missing. Probably for a reason.' },
+      'Cursed by Fortune':                 { statBonusGrants: { charisma: 'statBonus', durability: 'statPenalty' }, flavor: 'Everyone loves you. Everyone you love dies.' },
+      'Blessed by Fortune':                { statBonusGrants: { potential: 'statBonus', energyLevel: 'statBonus' }, flavor: 'Coincidences favor you. Suspiciously often.' },
+      'Time-Locked Form':                  { lockElement: 'Time', statBonusGrants: { agility: 'statBonus' }, flavor: 'You haven\'t aged in seven hundred years.' },
+      'Prophecy of Ruin':                  { statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', charisma: 'statPenalty' }, flavor: 'Foretold to undo something important. Probably you.' },
+      'Plot Armor (Once Per Battle)':      { statBonusGrants: { durability: 'statBonus' }, flavor: 'Death rolled a critical miss against you.' },
+      'The Wheel Likes You':               { statBonusGrants: { potential: 'statBonus', iq: 'statBonus', strength: 'statBonus' }, flavor: 'The Wheel of Fate ranks you among its favorites.' },
+    },
+  },
+
   // ── Necromancer — undead command (army-scale stat tilt) ────────────────
   undeadCommand: {
     title: 'Undead Command',

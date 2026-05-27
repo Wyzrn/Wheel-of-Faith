@@ -8,6 +8,7 @@
   import FirstTimeTooltip from '../components/FirstTimeTooltip.svelte'
   import StreakBanner from '../components/StreakBanner.svelte'
   import { detectStreak, newlyFormedStreak, type Streak } from '$lib/streaks'
+  import { saveToHallOfFame } from '$lib/hallOfFame'
   import TierBadge from '../components/TierBadge.svelte'
   import CharacterCard from '../components/CharacterCard.svelte'
   import SettingsPanel from '../components/SettingsPanel.svelte'
@@ -922,6 +923,23 @@
     // Granted powers collected during category handling; pushed to results after spinResult
     let pendingGrantedPowers: string[] = []
     let pendingGrantedWeapons: string[] = []
+
+    // ── Chaos Factor splice — at the very end of the run, 25% chance of
+    // adding one final chaos twist that bends a rule (free stat boost,
+    // Plot Armor, Cursed by Fortune, etc.). Triggered when the upcoming
+    // spin is the title (last spin). One-shot: tracked via a session
+    // flag so it can't fire twice.
+    if (def.category === 'redemptionSpin' || def.category === 'redemptionOutcome') {
+      const nextDef = spinQueue[currentSpinIndex + 1]
+      const alreadyHasChaos = spinQueue.some(s => s.category === 'twistSpin' && s.twistKind === 'chaosFactor')
+      if (nextDef?.category === 'title' && !alreadyHasChaos && Math.random() < 0.25) {
+        spinQueue.splice(currentSpinIndex + 1, 0, {
+          category: 'twistSpin' as const,
+          displayName: 'Chaos Factor',
+          twistKind: 'chaosFactor',
+        })
+      }
+    }
 
     // Step 1: SPLICE queue (must happen before saveSession)
     if (def.category === 'race') {
@@ -2117,6 +2135,21 @@
         lastCharName = characterName
         lastCharStartedAt = currentSession.startedAt
       } catch { /* ignore */ }
+      // Save to Hall of Fame so future Demi-god / Reincarnation rolls can
+      // reference this character as a lineage parent. Local-only stub.
+      try {
+        const race = snapshot.find(r => r.category === 'race')?.resultLabel ?? 'Unknown'
+        const archetype = snapshot.find(r => r.category === 'archetype')?.resultLabel ?? 'Unknown'
+        const sigPower = snapshot.find(r => r.category === 'power')?.resultLabel
+        saveToHallOfFame({
+          name: characterName || 'Unnamed',
+          race,
+          archetype,
+          overallGrade: undefined,  // overall score is computed in CharacterCard; saving label is enough
+          savedAt: new Date().toISOString(),
+          signaturePower: sigPower,
+        })
+      } catch { /* private mode / hostile env */ }
       clearSession()
       showNameScreen = false
       showCard = true

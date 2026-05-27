@@ -7,6 +7,7 @@
   import FirstTimeTooltip from '../FirstTimeTooltip.svelte'
   import StreakBanner from '../StreakBanner.svelte'
   import { detectStreak, type Streak } from '$lib/streaks'
+  import { saveToHallOfFame } from '$lib/hallOfFame'
   import type { ResolvedMeta } from '$lib/spinResultMeta'
   import {
     createStorySession,
@@ -942,6 +943,20 @@
         queue.splice(currentIndex + 1, 0, { category: 'redemptionOutcome' as const, displayName: 'Redemption Outcome' })
       }
 
+      // ── Chaos Factor splice — 25% chance at the end of the run. Same
+      // logic + same one-shot guard as main game so both modes feel parallel.
+      if (currentDef.category === 'redemptionSpin' || currentDef.category === 'redemptionOutcome') {
+        const nextDef = queue[currentIndex + 1]
+        const alreadyHasChaos = queue.some(s => s.category === 'twistSpin' && s.twistKind === 'chaosFactor')
+        if (nextDef?.category === 'title' && !alreadyHasChaos && Math.random() < 0.25) {
+          queue.splice(currentIndex + 1, 0, {
+            category: 'twistSpin' as const,
+            displayName: 'Chaos Factor',
+            twistKind: 'chaosFactor',
+          })
+        }
+      }
+
       // ── redemptionOutcome: apply effect ───────────────────────────────────
       if (currentDef.category === 'redemptionOutcome') {
         const STAT_CATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','potential','energyLevel','powerMastery','weaponMastery']
@@ -1159,6 +1174,19 @@
   function handleNamingSubmit() {
     if (!doneEntry) return
     const finalName = namingInput.trim() || doneEntry.name
+    // Save to Hall of Fame so future lineage-aware rolls can reference
+    // this character (Demi-god divine parent, future Reincarnation, etc.).
+    try {
+      const sigPower = (doneEntry.spins ?? []).find(r => r.category === 'power')?.resultLabel
+      saveToHallOfFame({
+        name: finalName,
+        race: doneEntry.race ?? 'Unknown',
+        archetype: doneEntry.archetype ?? 'Unknown',
+        overallGrade: doneEntry.overallTier,
+        savedAt: new Date().toISOString(),
+        signaturePower: sigPower,
+      })
+    } catch { /* private mode / hostile env */ }
     onSessionComplete({ ...doneEntry, name: finalName })
   }
 </script>

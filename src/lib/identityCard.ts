@@ -12,6 +12,7 @@ import { GIMMICKS, RACE_GIMMICKS, ARCHETYPE_GIMMICKS } from '$lib/gimmicks'
 import { backstories } from '$lib/content/backstories'
 import { titles } from '$lib/content/titles'
 import { RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS, twistByKey } from '$lib/twists'
+import { pickLineageParent } from '$lib/hallOfFame'
 
 export interface IdentityPerk {
   // Material Symbols icon name
@@ -146,6 +147,21 @@ export function buildRaceIdentityCard(label: string): IdentityCard | null {
       label: 'Two-Race Bloodline',
       detail: 'The wheel spins twice more — both parents grant their full extras (abilities, classes, transformations, weapons, weaknesses).',
     })
+  }
+
+  // Lineage stub — if this is a Demi-god / Reincarnation-style race AND
+  // the Hall of Fame has prior characters, surface one as the lineage
+  // parent ("Born of GoldFist, your Saiyan ancestor"). Adds emergent
+  // continuity across saved characters with no extra spin cost.
+  if (label === 'Demi-god' || label === 'Hybrid') {
+    const parent = pickLineageParent()
+    if (parent) {
+      perks.push({
+        icon: 'family_tree',
+        label: 'Lineage',
+        detail: `Born of ${parent.name}, your ${parent.race} ancestor.`,
+      })
+    }
   }
 
   // Twist trigger — surface that this race spawns a unique sub-wheel.
