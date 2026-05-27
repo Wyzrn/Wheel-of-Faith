@@ -51,14 +51,23 @@ export function getArchetypesForStage(stage: number): Archetype[] {
 
 /**
  * Converts a race array to weighted segments compatible with SpinWheel.
+ * Sorted by weight DESCENDING so the wheel reads as a rarity gradient
+ * (commons cluster on one side, rares cluster on the other) instead of
+ * a chaotic mix. Stable tie-breaker on label keeps the order
+ * deterministic when two races share a weight.
  */
 export function racesToSegments(raceList: Race[]): { label: string; weight: number }[] {
-  return raceList.map(r => ({ label: r.label, weight: r.weight }))
+  return [...raceList]
+    .sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label))
+    .map(r => ({ label: r.label, weight: r.weight }))
 }
 
 /**
  * Converts an archetype array to weighted segments compatible with SpinWheel.
+ * Same sort as races — high weight first → low weight last, deterministic.
  */
 export function archetypesToSegments(archetypeList: Archetype[]): { label: string; weight: number }[] {
-  return archetypeList.map(a => ({ label: a.label, weight: a.weight }))
+  return [...archetypeList]
+    .sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label))
+    .map(a => ({ label: a.label, weight: a.weight }))
 }
