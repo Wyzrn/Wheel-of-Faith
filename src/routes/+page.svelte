@@ -16,6 +16,9 @@
   import { loadSession, saveSession, clearSession, flushSession, createSession } from '$lib/session/store'
   import type { SessionState, SpinResult } from '$lib/session/types'
   import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_LEVEL_POOL, LIMIT_BREAK_SHIFT } from '$lib/game/spinQueue'
+  import { getRaceWheelSegments } from '$lib/game/raceWheelRegistry'
+  import { resolveMutatedSegments, getMutation } from '$lib/game/archetypeMutations'
+  import { rollSecretEvent, getEventDef, applyEventToResults, type SecretEventId } from '$lib/game/secretEvents'
   import type { SpinDefinition, SpinCategory } from '$lib/game/spinQueue'
   import { computeOverallScore, scoreTier, gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import type { TierGrade } from '$lib/game/scoreTier'
@@ -38,6 +41,7 @@
   import { appendSpinHistory } from '$lib/spinHistory'
   import { loadCharHistory, pushCharHistory, migrateLegacyLastChar, markCharSaved, type CharHistoryEntry } from '$lib/charHistory'
   import SpinResultReveal from '../components/SpinResultReveal.svelte'
+  import SecretEventOverlay from '../components/SecretEventOverlay.svelte'
   import type { ResolvedMeta } from '$lib/spinResultMeta'
   import { randomCharacterName } from '$lib/story/naming'
   import { generateCharacterSummary } from '$lib/characterSummary'
@@ -75,6 +79,11 @@
   let showResumePrompt = $state(false)
   let spinQueue = $state<SpinDefinition[]>(buildInitialQueue())
   let currentSpinIndex = $state(0)
+  // Secret-event state — when non-null, the cinematic overlay mounts and
+  // pauses the spin loop until the player dismisses it. firedSecretEvents
+  // is the per-session list so each event fires at most once.
+  let activeSecretEvent = $state<SecretEventId | null>(null)
+  let firedSecretEvents = $state<Set<SecretEventId>>(new Set())
   let results = $state<SpinResult[]>([])
   let showAnnouncement = $state<string | null>(null)
   let showCard = $state(false)
@@ -579,6 +588,19 @@
       return limitBreakSegmentsFor(race?.limitBreakOdds) ?? getSegmentsForCategory('limitBreak')
     }
 
+    // Race-injected wheel (Human Destiny, Saiyan Rage Threshold, Creator
+    // Reality Law, etc.). Segments come from raceWheelRegistry keyed by
+    // (race, wheelId); archetype mutations override the pool if a rule
+    // applies to the active race+archetype pair.
+    if (def.category === 'raceWheel' && def.raceWheelId) {
+      const raceResult = results.find(r => r.category === 'race')
+      const raceLabel = def.forRace ?? raceResult?.resultLabel ?? ''
+      const baseSegments = getRaceWheelSegments(raceLabel, def.raceWheelId)
+      const archResult = results.find(r => r.category === 'archetype')
+      const mutated = resolveMutatedSegments(baseSegments, raceLabel, archResult?.resultLabel, def.raceWheelId)
+      return mutated ?? [{ label: '—', weight: 1 }]
+    }
+
     // Devil Fruit name pool — keyed by the raceClass result label
     if (def.category === 'devilFruitName') {
       const classResult = results.find(r => r.category === 'raceClass')
@@ -1019,6 +1041,24 @@
       // Sub-type spin (e.g., Dragon color, Bender element, Titan type)
       if (race?.subTypePool && race.subTypePool.length > 0) {
         insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Type`, forRace })
+      }
+
+      // Race-injected wheels (FateManipulator / Evolution / RuleBreaker
+      // races inject named sub-wheels that the SpinIdentity system uses
+      // to make every race feel mechanically different). Each entry from
+      // race.injectedWheels becomes its own raceWheel slot, ordered by
+      // the wheel's `order` field. Splices BEFORE the Limit Break check
+      // so the player's narrative wheels resolve first.
+      if (race?.injectedWheels?.length) {
+        const ordered = [...race.injectedWheels].sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+        for (const w of ordered) {
+          insertSlots.push({
+            category: 'raceWheel' as const,
+            displayName: `${resultLabel} ${w.displayName}`,
+            forRace,
+            raceWheelId: w.id,
+          })
+        }
       }
 
       // Limit Break check — spliced BEFORE the class spin for races with
@@ -1920,7 +1960,38 @@
     currentSpinIndex++
     if (currentSpinIndex >= spinQueue.length) {
       showNameScreen = true
+      return
     }
+    // Secret-event roll — fires at most a few times per run. Gates on race
+    // spin-identity tags so events that require a specific identity only
+    // hit on eligible races, and stacks race.secretEventBias with the
+    // archetype mutation's secretEventBias.
+    maybeRollSecretEvent()
+  }
+
+  /** Rolls for a secret event. Mounts the cinematic overlay if one fires. */
+  function maybeRollSecretEvent() {
+    if (activeSecretEvent) return  // already mid-event
+    const raceResult = results.find(r => r.category === 'race')
+    const race = getRace(raceResult?.resultLabel)
+    if (!race) return
+    const archResult = results.find(r => r.category === 'archetype')
+    const mut = archResult ? getMutation(race.label, archResult.resultLabel) : undefined
+    const bias = (race.secretEventBias ?? 1) * (mut?.secretEventBias ?? 1)
+    const identities = race.spinIdentity ?? []
+    const id = rollSecretEvent(bias, identities)
+    if (id && !firedSecretEvents.has(id)) {
+      firedSecretEvents.add(id)
+      activeSecretEvent = id
+      // Apply the one-shot mechanical effect (e.g. Divine Intervention's
+      // worst-stat shift). Effects keyed to FUTURE spins are handled by
+      // flags rather than result rewrites.
+      results = applyEventToResults(id, results)
+    }
+  }
+
+  function dismissSecretEvent() {
+    activeSecretEvent = null
   }
 
   // ── handleWildcardContinue: apply wildcard outcome and resume the spin ─────
@@ -2976,6 +3047,12 @@
       </div><!-- end right column -->
 
     </div><!-- end two-column layout -->
+  {/if}
+
+  <!-- Secret event cinematic interrupt — mounted when maybeRollSecretEvent
+       hits. Portals to body and pauses input while the banner plays. -->
+  {#if activeSecretEvent}
+    <SecretEventOverlay eventId={activeSecretEvent} onDismiss={dismissSecretEvent} />
   {/if}
 
 </main>

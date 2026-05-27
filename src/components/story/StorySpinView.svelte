@@ -18,6 +18,10 @@
     type StorySessionState,
   } from '$lib/story/storySession'
   import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_SHIFT, type SpinCategory } from '$lib/game/spinQueue'
+  import { getRaceWheelSegments } from '$lib/game/raceWheelRegistry'
+  import { resolveMutatedSegments, getMutation } from '$lib/game/archetypeMutations'
+  import { rollSecretEvent, applyEventToResults, type SecretEventId } from '$lib/game/secretEvents'
+  import SecretEventOverlay from '../SecretEventOverlay.svelte'
   import type { SpinDefinition } from '$lib/game/spinQueue'
   import type { SpinResult, WeightedSegment } from '$lib/session/types'
   import type { StoryRosterEntry } from '$lib/story/types'
@@ -417,6 +421,17 @@
       return (limitBreakSegmentsFor(race?.limitBreakOdds) ?? getSegmentsForCategory('limitBreak')) as WeightedSegment[]
     }
 
+    // Race-injected wheel — same lookup the main-game route uses. Segments
+    // come from the registry; archetype mutations may override the pool.
+    if (currentDef.category === 'raceWheel' && currentDef.raceWheelId) {
+      const raceResult = results.find(r => r.category === 'race')
+      const raceLabel = currentDef.forRace ?? raceResult?.resultLabel ?? ''
+      const baseSegments = getRaceWheelSegments(raceLabel, currentDef.raceWheelId) as WeightedSegment[] | null
+      const archResult = results.find(r => r.category === 'archetype')
+      const mutated = resolveMutatedSegments(baseSegments, raceLabel, archResult?.resultLabel, currentDef.raceWheelId)
+      return (mutated ?? [{ label: '—', weight: 1 }]) as WeightedSegment[]
+    }
+
     // Weapon wheel: filter pool by previously-spun weapon type
     if (currentDef.category === 'weapon') {
       const typeResult = results.find(r => r.category === 'weaponType')
@@ -697,6 +712,22 @@
             }
             if (race.subTypePool?.length) {
               insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Sub-Type`, forRace })
+            }
+            // Race-injected wheels (Phase 1B: Human Destiny + Talent, Saiyan
+            // Rage Threshold, Creator Reality Law + Creation Domain). Each
+            // injectedWheel entry on the race becomes its own raceWheel slot
+            // — segments come from raceWheelRegistry, optionally mutated by
+            // archetype overlay.
+            if (race.injectedWheels?.length) {
+              const ordered = [...race.injectedWheels].sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+              for (const w of ordered) {
+                insertSlots.push({
+                  category: 'raceWheel' as const,
+                  displayName: `${resultLabel} ${w.displayName}`,
+                  forRace,
+                  raceWheelId: w.id,
+                })
+              }
             }
             // Limit Break check — same pre-class slot as main game.
             if (race.limitBreakOdds && race.limitBreakOdds >= 2) {
@@ -1212,7 +1243,29 @@
       return
     }
     currentIndex = currentIndex + 1
+    maybeRollSecretEvent()
   }
+
+  // Per-session secret-event state. Each event fires at most once per run.
+  let activeSecretEvent = $state<SecretEventId | null>(null)
+  let firedSecretEvents = $state<Set<SecretEventId>>(new Set())
+  function maybeRollSecretEvent() {
+    if (activeSecretEvent) return
+    const raceResult = results.find(r => r.category === 'race')
+    const race = getRace(raceResult?.resultLabel)
+    if (!race) return
+    const archResult = results.find(r => r.category === 'archetype')
+    const mut = archResult ? getMutation(race.label, archResult.resultLabel) : undefined
+    const bias = (race.secretEventBias ?? 1) * (mut?.secretEventBias ?? 1)
+    const identities = race.spinIdentity ?? []
+    const id = rollSecretEvent(bias, identities)
+    if (id && !firedSecretEvents.has(id)) {
+      firedSecretEvents.add(id)
+      activeSecretEvent = id
+      results = applyEventToResults(id, results)
+    }
+  }
+  function dismissSecretEvent() { activeSecretEvent = null }
 
   function handleNamingSubmit() {
     if (!doneEntry) return
@@ -1306,6 +1359,12 @@
         />
       </div>
     </div>
+  {/if}
+
+  <!-- Secret-event cinematic interrupt — mounted between spins. Same overlay
+       as the main game so the feel carries across both modes. -->
+  {#if activeSecretEvent}
+    <SecretEventOverlay eventId={activeSecretEvent} onDismiss={dismissSecretEvent} />
   {/if}
 </div>
 

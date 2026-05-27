@@ -1,4 +1,5 @@
 import type { Race } from './types'
+import { bulkRegisterRaceWheels } from '$lib/game/raceWheelRegistry'
 
 export const races: Race[] = [
   // ── Common (weight 30–40, abilitySpinCount 1) ──
@@ -10,6 +11,29 @@ export const races: Race[] = [
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 1.0,
     description: 'Resilient, adaptable, and infuriatingly average.',
+    // FateManipulator identity: two injected wheels that paint the run's
+    // narrative direction. Destiny is the dominant arc (Chosen One vs
+    // Underdog vs Survivor). Talent is a smaller secondary that buffs a
+    // matching stat at character build time.
+    injectedWheels: [
+      { id: 'destiny', displayName: 'Destiny', order: 1, segments: [
+        { label: 'Ordinary Soul',  weight: 6, description: 'No special destiny. Just a person.' },
+        { label: 'Chosen One',     weight: 1, statBonusGrants: { potential: 'statBonus', charisma: 'statBonus' }, description: 'A prophecy applies.' },
+        { label: 'Survivor',       weight: 2, statBonusGrants: { durability: 'statBonus' }, description: 'Cannot be killed easily.' },
+        { label: 'Underdog',       weight: 2, statBonusGrants: { potential: 'statBonus' }, description: 'Stronger when behind.' },
+        { label: 'Genius',         weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, description: 'A mind ahead of its time.' },
+        { label: 'Fatebreaker',    weight: 1, statBonusGrants: { potential: 'statBonus', fightingSkill: 'statBonus' }, description: 'Rewrites whatever fate offers.' },
+        { label: 'Heroic Soul',    weight: 1, statBonusGrants: { fightingSkill: 'statBonus', charisma: 'statBonus' }, description: 'Bound for legend.' },
+      ]},
+      { id: 'talent', displayName: 'Talent', order: 2, segments: [
+        { label: 'Unfocused',          weight: 6, description: 'Jack of all trades.' },
+        { label: 'Combat Prodigy',     weight: 2, statBonusGrants: { fightingSkill: 'statBonus' } },
+        { label: 'Inventor\'s Mind',   weight: 2, statBonusGrants: { iq: 'statBonus' } },
+        { label: 'Iron Will',          weight: 2, statBonusGrants: { durability: 'statBonus', potential: 'statBonus' } },
+        { label: 'Silver Tongue',      weight: 2, statBonusGrants: { charisma: 'statBonus' } },
+        { label: 'Lucky Star',         weight: 1, statBonusGrants: { potential: 'statBonus' }, description: 'Wildcards favour you.' },
+      ]},
+    ],
     // Humans use all weapon and armor types — no bias (balanced baseline)
     classPool: [
       { label: 'Knight',    weight: 4, element: 'Light', grade: 'D', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Shield Wall', weight: 2, element: 'Light', grade: 'C' }, { label: 'Tactical Formation', weight: 2, element: 'Light', grade: 'D' }, { label: 'Mounted Prowess', weight: 2, element: 'Light', grade: 'D' }, { label: 'Iron Resolve', weight: 2, element: 'Light', grade: 'D' }, { label: 'Honor Guard', weight: 2, element: 'Light', grade: 'D' }, { label: 'Battle Banner', weight: 1, element: 'Light', grade: 'C' }], powerPool: [{ label: 'Divine Smite', weight: 3 }, { label: 'Holy Strike', weight: 3 }, { label: 'Shield Slam', weight: 2 }, { label: 'Aura of Retribution', weight: 2 }, { label: 'Lay on Hands', weight: 2 }, { label: 'Consecrated Ground', weight: 1 }, { label: 'Counter-Strike Reflex', weight: 2 }] },
@@ -1235,6 +1259,19 @@ export const races: Race[] = [
     minStatTier: 'C',
     description: 'Elite warrior race from Planet Vegeta. Gets dramatically stronger every time they nearly die.',
     statModifiers: { strength: 1.9, speed: 1.7, fightingSkill: 1.9, durability: 1.5, armorStrength: 1.2 },
+    // Evolution + Scaling identity: a Rage Threshold wheel that determines
+    // how easily the character escalates mid-fight (lower threshold = more
+    // transformations triggered). Stacks on top of the existing
+    // transformationPool (Super Saiyan ladder) for double-axis growth.
+    injectedWheels: [
+      { id: 'rageThreshold', displayName: 'Rage Threshold', order: 2, segments: [
+        { label: 'Stoic',             weight: 5, statBonusGrants: { iq: 'statBonus' },           description: 'Hard to provoke — slower transformation triggers.' },
+        { label: 'Tempered',          weight: 6, statBonusGrants: { fightingSkill: 'statBonus' }, description: 'Standard Saiyan baseline.' },
+        { label: 'Volatile',          weight: 4, statBonusGrants: { strength: 'statBonus', charisma: 'statPenalty' }, description: 'Powers up quickly — but loses control.' },
+        { label: 'Berserker Heart',   weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', iq: 'statPenalty' }, description: 'Always one bad day from Oozaru.' },
+        { label: 'Battle-Lust',       weight: 1, statBonusGrants: { strength: 'statBonus', potential: 'statBonus' }, description: 'Lives for the next fight. Each near-death pushes the curve.' },
+      ]},
+    ],
     classPool: [
       { label: 'Low-Class Warrior',  weight: 5, element: 'Fire', grade: 'D', statBonusGrants: { fightingSkill: 'statPenalty' }, abilities: [{ label: 'Battle Instinct', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Ki Control Foundation', weight: 2, element: 'Fire', grade: 'D' }, { label: 'Combat Grit', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Underdog Push', weight: 2, element: 'Fire', grade: 'D' }, { label: 'Hardened by Loss', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Street-Level Combat', weight: 1, element: 'Fire', grade: 'C' }], powerPool: [{ label: 'Ki Blast', weight: 3 }, { label: 'Flight (Saiyan)', weight: 3 }, { label: 'Zenkai Surge', weight: 2 }, { label: 'Combat Flow State', weight: 2 }, { label: 'Battle Precognition', weight: 1 }] },
       { label: 'Mid-Class Warrior',  weight: 3, element: 'Fire', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Tactical Combat', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Efficient Ki Use', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Squad Coordination', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Combat Speed Increase', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Veteran Endurance', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Mid-Tier Surge', weight: 1, element: 'Fire', grade: 'C' }], powerPool: [{ label: 'Ki Blast', weight: 3 }, { label: 'Flight (Saiyan)', weight: 3 }, { label: 'Zenkai Surge', weight: 2 }, { label: 'Warrior Trance', weight: 2 }, { label: 'Super Strength', weight: 1 }] },
@@ -2023,8 +2060,32 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.05,
     weaknessCount: 0,
     minStatTier: 'A+',
+    secretEventBias: 2.5,
     description: 'The one who made everything. Still occasionally surprised by the results.',
     statModifiers: { strength: 3.0, durability: 3.0, iq: 3.0, potential: 3.0, charisma: 3.0, powerMastery: 3.0, energyLevel: 3.0, armorStrength: 2.5 },
+    // RuleBreaker identity at full strength: two injected wheels that
+    // actually mutate the run. Reality Law sets a meta-rule on the spin
+    // engine itself (filtered out weaknesses, doubled stat picks, etc.).
+    // Creation Domain is the Creator's signature theme — which kind of
+    // making they perform — and biases power/weapon pools heavily.
+    injectedWheels: [
+      { id: 'realityLaw', displayName: 'Reality Law', order: 1, segments: [
+        { label: 'Original Pattern',    weight: 3, description: 'The rules apply as written. Standard run.' },
+        { label: 'No Weaknesses',       weight: 1, statBonusGrants: { durability: 'statBonus', potential: 'statBonus' }, description: 'The character has no rolled weaknesses.' },
+        { label: 'Doubled Powers',      weight: 1, statBonusGrants: { powerMastery: 'statBonus' }, description: 'Both power spins land for one slot.' },
+        { label: 'Override Caps',       weight: 1, statBonusGrants: { potential: 'statBonus', iq: 'statBonus' }, description: 'Stat caps for this character disabled.' },
+        { label: 'Merged Stats',        weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Two stat scores fuse into one (the higher).' },
+        { label: 'Inverted Spin',       weight: 1, statBonusGrants: { charisma: 'statBonus' }, description: 'Lowest-weight segments are most likely. Chaos rewarded.' },
+      ]},
+      { id: 'creationDomain', displayName: 'Creation Domain', order: 2, segments: [
+        { label: 'Cosmos',     weight: 3, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus' }, description: 'They made the stars.' },
+        { label: 'Life',       weight: 3, statBonusGrants: { potential: 'statBonus', charisma: 'statBonus' }, description: 'They made the breath.' },
+        { label: 'Order',      weight: 2, statBonusGrants: { iq: 'statBonus', durability: 'statBonus' }, description: 'They made the laws.' },
+        { label: 'Chaos',      weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'They made the storm.' },
+        { label: 'Time',       weight: 2, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, description: 'They made the river.' },
+        { label: 'Concept',    weight: 1, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', potential: 'statBonus' }, description: 'They made the idea itself.' },
+      ]},
+    ],
     transformationPool: [
       { label: 'Observer Mode',       weight: 4, element: 'Cosmic', grade: 'A', statBonusGrants: { strength: 'statPenalty', powerMastery: 'statPenalty', energyLevel: 'statPenalty' }, statBonus: 1.0 },
       { label: 'Active Participant',  weight: 3, element: 'Cosmic', grade: 'SS', statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', iq: 'statBonus' }, statBonus: 2.0 },
@@ -2569,3 +2630,11 @@ export const abilityLookup: Map<string, _PoolEntry> = (() => {
   return m
 })()
 
+
+// Register every race's injected wheels with the central registry at module
+// load. Consumers (race-extras splice in +page.svelte / StorySpinView) look
+// up segments by (raceLabel, wheelId) and may have them mutated by the
+// archetype overlay before rendering.
+for (const r of races) {
+  bulkRegisterRaceWheels(r.label, r.injectedWheels)
+}
