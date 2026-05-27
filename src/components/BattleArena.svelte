@@ -165,18 +165,21 @@
     grade?: string; origin?: { x: number; y: number }; attackType?: string
   } | null>(null)
   let animKey = 0
-  let dodgeDir = $state<'ltr' | 'rtl' | null>(null)
+  // Name of the character currently playing the panel-dodge phase
+  // animation — scoped so only their card phases, not the whole team.
+  let dodgingName = $state<string | null>(null)
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
 
   function showAnim(
     type: string, color: string, direction: AnimDir,
     grade: string | undefined, origin: { x: number; y: number } | undefined,
     attackType: string | undefined,
+    dodgeMember?: string,
   ) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
     activeAnim = { type, color, key: ++animKey, direction, grade, origin, attackType }
-    dodgeDir = type === 'dodge' ? (direction === 'ltr' ? 'ltr' : direction === 'rtl' ? 'rtl' : null) : null
-    animTimeoutId = setTimeout(() => { activeAnim = null; dodgeDir = null }, 950)
+    dodgingName = type === 'dodge' ? (dodgeMember ?? null) : null
+    animTimeoutId = setTimeout(() => { activeAnim = null; dodgingName = null }, 950)
   }
 
   // ── Damage indicators ──────────────────────────────────────────────────────
@@ -221,6 +224,57 @@
   }
   let projectiles = $state<Projectile[]>([])
   let projIdCounter = 0
+
+  // ── Beam registry ─────────────────────────────────────────────────────────
+  // A beam is a straight line of light from the attacker anchor to the
+  // target anchor — drawn in via a stroke-dashoffset animation, with the
+  // impact burst firing at the target at the moment the line lands.
+  // Beam-type elements (holy / arcane / cosmic / energy / void / sound)
+  // use beams INSTEAD of the comet projectile so the effect reads as a
+  // sustained channel rather than a thrown projectile.
+  interface Beam {
+    id: number
+    startX: number; startY: number
+    endX: number; endY: number
+    color: string
+    gradeIdx: number
+    onImpact: () => void
+  }
+  let beams = $state<Beam[]>([])
+  let beamIdCounter = 0
+  const BEAM_DURATION_MS = 380
+  const BEAM_FADE_DURATION_MS = 220
+
+  function spawnBeam(
+    startX: number, startY: number,
+    endX: number, endY: number,
+    color: string, grade: string | undefined,
+    onImpact: () => void,
+  ) {
+    const gradeIdx = GRADE_IDX[grade ?? 'C'] ?? 3
+    const b: Beam = {
+      id: ++beamIdCounter,
+      startX, startY, endX, endY,
+      color, gradeIdx,
+      onImpact,
+    }
+    beams = [...beams, b]
+    // Impact fires when the beam reaches the target.
+    setTimeout(() => onImpact(), BEAM_DURATION_MS)
+    // Remove the beam after the fade completes.
+    setTimeout(() => {
+      beams = beams.filter(x => x.id !== b.id)
+    }, BEAM_DURATION_MS + BEAM_FADE_DURATION_MS)
+  }
+
+  // FX types that should render as a beam line attacker→target instead of
+  // a projectile. Each of these has a beam-style SVG too (holy beam mode,
+  // or an equivalent impact burst at the target end).
+  const BEAM_TYPES = new Set(['holy', 'arcane', 'cosmic', 'energy', 'void', 'sound'])
+  // FX types that anchor in-place on the TARGET (no projectile, no beam).
+  // Slash is short-range; fire engulfs; lightning strikes from above;
+  // water sweeps in via its own internal direction.
+  const IN_PLACE_TYPES = new Set(['slash', 'fire', 'lightning', 'water'])
 
   const GRADE_IDX: Record<string, number> = {
     F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, SS: 7, SSS: 8, God: 9, Godly: 9,
@@ -385,12 +439,73 @@
         }
         const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
 
-        // ── Projectile path: damage attacks with attacker/target anchors ───
-        // We need a fxEvent to know who's hitting whom. Without it, we fall
-        // back to the legacy in-place burst.
-        const canProjectile = isDamage && fx && type !== 'crit' && type !== 'dodge' && type !== 'shield' && type !== 'berserker'
+        // ── Dispatch by FX category ────────────────────────────────────────
+        // Three rendering paths now:
+        //   1. IN_PLACE_TYPES (slash / fire / lightning / water) — burst at
+        //      the target's card. No projectile, no beam — the effect
+        //      visualizes "happening to" the target (engulf / strike from
+        //      above / wave crashing in / multi-direction slashes).
+        //   2. BEAM_TYPES (holy / arcane / cosmic / energy / void / sound) —
+        //      a beam line from the attacker's anchor to the target's
+        //      anchor, then an impact burst at the target end. Reads as a
+        //      sustained channel rather than a thrown object.
+        //   3. PROJECTILE (everything else) — a comet flies from attacker
+        //      to target; impact burst at the target on arrival.
+        const isInPlace = IN_PLACE_TYPES.has(type)
+        const isBeam    = BEAM_TYPES.has(type)
 
-        if (canProjectile) {
+        const canProjectile = isDamage && fx && !isInPlace && !isBeam &&
+                              type !== 'crit' && type !== 'dodge' &&
+                              type !== 'shield' && type !== 'berserker'
+
+        // Resolve attacker + targets once for the next several branches.
+        const resolveAttackerOrigin = (): { x: number; y: number } | undefined => {
+          if (!fx) return undefined
+          const att = memberFromFxIndex(fx.attackerSide, fx.attackerIdx)
+          return att ? memberOriginById(att.id) : undefined
+        }
+        const resolveTargetOrigin = (): { x: number; y: number } | undefined => {
+          if (!fx) return undefined
+          const enemySide = oppositeSide(fx.attackerSide)
+          const tgt = (fx.targetIdxs ?? [0])
+            .map(i => memberFromFxIndex(enemySide, i))
+            .filter((m): m is ArenaMember => !!m)[0]
+          return tgt ? memberOriginById(tgt.id) : undefined
+        }
+
+        if (isInPlace && fx) {
+          // In-place at the target's card. The SVG itself handles whatever
+          // directionality the effect needs (e.g. lightning extends UP from
+          // the strike point; water uses isRtl to flip the wave).
+          const targetOrigin = resolveTargetOrigin() ?? wrapperOrigin(direction)
+          // For water we want the wave to sweep from the attacker's side —
+          // direction tells AttackFX which way is `isRtl`.
+          showAnim(type, color, direction, grade, targetOrigin, fxAttackType)
+          const hit = damageHitFromLine(head, allNames)
+          if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
+          deferDamageEmit = true
+        } else if (isBeam && fx) {
+          // Beam path — line from attacker anchor to target anchor.
+          const startOrigin = resolveAttackerOrigin()
+          const targetOrigin = resolveTargetOrigin()
+          if (startOrigin && targetOrigin) {
+            const hit = damageHitFromLine(head, allNames)
+            spawnBeam(
+              startOrigin.x, startOrigin.y, targetOrigin.x, targetOrigin.y,
+              color, grade,
+              () => {
+                // Impact burst at the target end of the beam.
+                showAnim(type, color, direction, grade, targetOrigin, fxAttackType)
+                if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
+              },
+            )
+            deferDamageEmit = true
+          } else {
+            // Fallback to in-place burst at target.
+            const fallbackOrigin = targetOrigin ?? wrapperOrigin(direction)
+            showAnim(type, color, direction, grade, fallbackOrigin, fxAttackType)
+          }
+        } else if (canProjectile) {
           const attacker = memberFromFxIndex(fx.attackerSide, fx.attackerIdx)
           const enemySide = oppositeSide(fx.attackerSide)
           const targets: ArenaMember[] = (fx.targetIdxs ?? [0])
@@ -443,12 +558,16 @@
           // heals, buffs, summons, debuffs. Anchored to the actor's card.
           const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
           const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
-          const attackerName = inferAttackerName(head)
+          // For dodges the log line is "DefenderName narrowly dodges
+          // AttackerName's StrikeName!" so the line starts with the
+          // DEFENDER's name — that's whose card should phase, not the
+          // whole team column.
+          const lineLeader = inferAttackerName(head)
           let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
-            ? memberOrigin(attackerName)
+            ? memberOrigin(lineLeader)
             : undefined
           if (!origin) origin = wrapperOrigin(originDir)
-          showAnim(type, color, direction, grade, origin, fxAttackType)
+          showAnim(type, color, direction, grade, origin, fxAttackType, lineLeader ?? undefined)
         }
       }
     }
@@ -794,7 +913,7 @@
                                  m.side !== currentActorMember.side}
           <div use:trackCharEl={{ name: m.name }}
             class="bv-char-card {team.side === 'team1' ? 'bv-team-1' : 'bv-team-2'}
-                   {dodgeDir === (team.side === 'team1' ? 'ltr' : 'rtl') ? 'panel-dodging' : ''}"
+                   {dodgingName === m.name ? 'panel-dodging' : ''}"
             class:bv-victor={won}
             class:ba-targetable={isTargetable}
             role={isTargetable ? 'button' : undefined}
@@ -873,6 +992,32 @@
         color={p.color} gradeIdx={p.gradeIdx}
         durationMs={p.durationMs}
         onImpact={p.onImpact}/>
+    {/each}
+  {/if}
+
+  <!-- Beam layer: a static line from attacker anchor to target anchor that
+       draws in (stroke-dashoffset), holds, and fades. Used by beam-type
+       elements (holy / arcane / cosmic / energy / void / sound). -->
+  {#if phase === 'battle' && effectsEnabled && beams.length > 0}
+    {#each beams as b (b.id)}
+      {@const dx = b.endX - b.startX}
+      {@const dy = b.endY - b.startY}
+      {@const dist = Math.max(8, Math.sqrt(dx * dx + dy * dy))}
+      {@const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI}
+      {@const intensity = 1 + Math.max(0, b.gradeIdx - 3) * 0.18}
+      {@const glowW = (10 + b.gradeIdx * 1.2) * intensity}
+      {@const mainW = (4  + b.gradeIdx * 0.5) * intensity}
+      {@const coreW = (1.6 + b.gradeIdx * 0.2) * intensity}
+      <div class="ba-beam-anchor"
+           style="position: absolute; left: {b.startX}px; top: {b.startY}px;
+                  --beam-len: {dist}px; --beam-rot: {angleDeg}deg;
+                  --beam-color: {b.color};
+                  --beam-w-glow: {glowW}px; --beam-w-main: {mainW}px; --beam-w-core: {coreW}px;
+                  z-index: 27; pointer-events: none;">
+        <div class="ba-beam ba-beam-glow"></div>
+        <div class="ba-beam ba-beam-main"></div>
+        <div class="ba-beam ba-beam-core"></div>
+      </div>
     {/each}
   {/if}
 
@@ -1014,6 +1159,64 @@
   :global(.panel-dodging) {
     animation: panel-dodge 0.80s ease-out forwards;
     will-change: transform, opacity, filter;
+  }
+
+  /* ── Beam attack rendering ──────────────────────────────────────────
+     Three layered horizontal divs (glow / main / hot core) rotated to
+     face the target. Each one scales from width 0 → full distance to
+     visualize the beam drawing from attacker to target. */
+  .ba-beam-anchor {
+    width: 0;
+    height: 0;
+    transform-origin: 0 0;
+  }
+  .ba-beam {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 0;
+    border-radius: 999px;
+    background: var(--beam-color);
+    transform-origin: 0 50%;
+    transform: rotate(var(--beam-rot)) scaleX(0);
+    box-shadow: 0 0 12px var(--beam-color);
+    animation: ba-beam-fire 0.6s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+  }
+  .ba-beam-glow {
+    height: var(--beam-w-glow);
+    margin-top: calc(var(--beam-w-glow) / -2);
+    width: var(--beam-len);
+    opacity: 0;
+    filter: blur(6px);
+    animation: ba-beam-fire-glow 0.6s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+  }
+  .ba-beam-main {
+    height: var(--beam-w-main);
+    margin-top: calc(var(--beam-w-main) / -2);
+    width: var(--beam-len);
+    opacity: 0;
+    animation: ba-beam-fire 0.5s 0.04s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+  }
+  .ba-beam-core {
+    height: var(--beam-w-core);
+    margin-top: calc(var(--beam-w-core) / -2);
+    width: var(--beam-len);
+    background: white;
+    box-shadow: 0 0 8px var(--beam-color);
+    opacity: 0;
+    animation: ba-beam-fire 0.45s 0.06s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+  }
+  @keyframes ba-beam-fire {
+    0%   { transform: rotate(var(--beam-rot)) scaleX(0);    opacity: 0; }
+    18%  { transform: rotate(var(--beam-rot)) scaleX(0.4);  opacity: 1; filter: brightness(3); }
+    55%  { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 1; filter: brightness(2); }
+    80%  { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0.7; }
+    100% { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0; }
+  }
+  @keyframes ba-beam-fire-glow {
+    0%   { transform: rotate(var(--beam-rot)) scaleX(0);    opacity: 0; }
+    25%  { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0.5; }
+    100% { transform: rotate(var(--beam-rot)) scaleX(1);    opacity: 0; }
   }
 
   /* Auto / Manual visible switch */

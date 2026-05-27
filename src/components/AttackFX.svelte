@@ -46,28 +46,35 @@
   const _SLASH_COUNTS = [1, 1, 2, 3, 3, 4, 5, 6, 7, 8]
   let slashCount = $derived(_SLASH_COUNTS[gradeIdx] ?? 3)
 
-  // Procedurally-laid slash lines. Each entry is one diagonal cut across
-  // the 100×100 viewBox with a small angle jitter so the bundle reads as a
-  // multi-strike combo rather than a perfect fan.
+  // Procedurally-laid slash lines. Each line is a full chord across the
+  // 100×100 viewBox at a DIFFERENT angle — the bundle reads as a flurry
+  // of cuts coming from many directions converging on the target rather
+  // than a single fan. Lengths and widths taper with index so the first
+  // strike is the heaviest. Angles are deterministic per grade so the
+  // same character's slashes don't shuffle on every render.
   interface SlashLine { x1: number; y1: number; x2: number; y2: number; w: number; delay: number }
   let slashLines = $derived.by<SlashLine[]>(() => {
     const lines: SlashLine[] = []
     const n = slashCount
-    // Spread the bundle across an arc — first slash at the canonical
-    // top-right→bottom-left diagonal, others fanned around it.
+    // Deterministic angle seed so the bundle looks consistent for a given
+    // grade but varies between grades.
+    const baseDeg = 22 + gradeIdx * 11
+    const stepDeg = n > 0 ? 360 / n : 0
     for (let i = 0; i < n; i++) {
-      const t = n === 1 ? 0 : (i - (n - 1) / 2) / Math.max(1, n - 1)  // -0.5 … +0.5
-      const xOff = t * 18    // shifts the line left/right
-      const yOff = t * 14    // shifts vertically
-      const widthShift = t * 6
-      const x1 = 72 + xOff + widthShift
-      const y1 = 18 + yOff - widthShift
-      const x2 = 28 + xOff - widthShift
-      const y2 = 62 + yOff + widthShift
+      // Small deterministic jitter so equal-step angles don't look mechanical.
+      const jitter = ((i * 37) % 23) - 11
+      const angleDeg = baseDeg + stepDeg * i + jitter
+      const angle = (angleDeg * Math.PI) / 180
+      const len = 38 + (i % 3) * 2          // slight length variation per index
+      const cos = Math.cos(angle), sin = Math.sin(angle)
       // Top-most line is the thickest, trailing ones taper down.
-      const w = Math.max(1.6, 4.2 - i * 0.4)
-      const delay = i * 0.045
-      lines.push({ x1, y1, x2, y2, w, delay })
+      const w = Math.max(1.6, 4.2 - i * 0.32)
+      const delay = i * 0.04
+      lines.push({
+        x1: 50 - cos * len, y1: 50 - sin * len,
+        x2: 50 + cos * len, y2: 50 + sin * len,
+        w, delay,
+      })
     }
     return lines
   })
@@ -495,35 +502,101 @@
     </svg>
 
   {:else if type === 'fire'}
+    <!-- Fire — ENGULFS the target. Three flame tongues stacked across the
+         target's card (left, center, right), each rising tall above the
+         card to consume them. Scorch pool spreads at the ground, embers
+         rise from the whole burning area. Drawn TALLER than the viewBox
+         so it visibly wraps the target. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <ellipse cx="50" cy="60" rx="32" ry="30" fill="var(--c)" opacity="0.20" style="filter:blur(14px)"/>
-      <g class="fire-echo fe1">
-        <path d="M50 88 C38 72 32 60 40 44 C36 57 46 50 44 32 C50 45 60 37 54 24 C66 38 70 58 64 70 C70 58 72 48 64 44 C72 56 68 74 50 88Z" fill="var(--c)" opacity="0.28"/>
+      <!-- Wrapping bloom — covers a wider area than the cards (it's
+           engulfing them, not exploding next to them) -->
+      <ellipse cx="50" cy="55" rx="62" ry="48" fill="var(--c)" opacity="0.34"
+               class="fi-bloom" style="filter:blur(22px)"/>
+      <ellipse cx="50" cy="60" rx="48" ry="42" fill="var(--c)" opacity="0.24"
+               style="filter:blur(12px)"/>
+      <!-- Scorch pool spreading at the ground (extends past target width) -->
+      <ellipse class="fi-scorch" cx="50" cy="92" rx="38" ry="9" fill="var(--c)" opacity="0.65"/>
+      <!-- LEFT flame tongue — wraps the left side of the target -->
+      <g class="fi-tongue-l">
+        <path d="M22 96 C14 70 10 50 22 24 C18 42 30 36 30 14 C34 30 42 24 36 4 C48 22 50 50 42 70 C46 58 44 50 36 50 C44 64 34 86 22 96Z"
+              fill="var(--c)" opacity="0.85"/>
       </g>
-      <g class="fire-echo fe2">
-        <path d="M50 88 C38 72 32 60 40 44 C36 57 46 50 44 32 C50 45 60 37 54 24 C66 38 70 58 64 70 C70 58 72 48 64 44 C72 56 68 74 50 88Z" fill="var(--c)" opacity="0.52"/>
+      <!-- RIGHT flame tongue -->
+      <g class="fi-tongue-r">
+        <path d="M78 96 C86 70 90 50 78 24 C82 42 70 36 70 14 C66 30 58 24 64 4 C52 22 50 50 58 70 C54 58 56 50 64 50 C56 64 66 86 78 96Z"
+              fill="var(--c)" opacity="0.85"/>
       </g>
-      <g class="fire-g">
-        <path d="M50 88 C38 72 32 60 40 44 C36 57 46 50 44 32 C50 45 60 37 54 24 C66 38 70 58 64 70 C70 58 72 48 64 44 C72 56 68 74 50 88Z" fill="var(--c)"/>
-        <ellipse cx="50" cy="88" rx="14" ry="5" fill="var(--c)" opacity="0.45"/>
+      <!-- CENTER flame body — tallest, most prominent -->
+      <g class="fi-main">
+        <path d="M50 96 C36 70 28 50 40 22 C36 42 50 36 46 6 C50 22 58 16 52 -8 C66 14 76 50 66 74 C72 60 76 50 66 46 C76 62 70 86 50 96Z"
+              fill="var(--c)"/>
+        <!-- Hot core inside the central flame -->
+        <ellipse cx="50" cy="70" rx="7" ry="18" fill="white" opacity="0.55"/>
+        <ellipse cx="50" cy="78" rx="3.5" ry="8" fill="white" opacity="0.9"/>
       </g>
-      <circle class="emb emb1" cx="42" cy="58" r="2.5" fill="var(--c)"/>
-      <circle class="emb emb2" cx="61" cy="50" r="2"   fill="var(--c)"/>
-      <circle class="emb emb3" cx="50" cy="36" r="1.8" fill="var(--c)"/>
-      <circle class="emb emb4" cx="44" cy="70" r="2"   fill="var(--c)" opacity="0.8"/>
-      <circle class="emb emb5" cx="58" cy="40" r="1.5" fill="var(--c)" opacity="0.7"/>
-      <circle class="emb emb6" cx="37" cy="74" r="1.5" fill="var(--c)" opacity="0.55"/>
+      <!-- Crackling licks reaching outward + upward -->
+      <path class="fi-lick fl1" d="M22 50 Q12 36 6 18"  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
+      <path class="fi-lick fl2" d="M78 50 Q88 36 94 18" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
+      <path class="fi-lick fl3" d="M40 18 Q34 6 28 -8"  stroke="var(--c)" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <path class="fi-lick fl4" d="M60 18 Q66 6 72 -8"  stroke="var(--c)" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <!-- Rising embers — spread across the whole burning area -->
+      <circle class="fi-emb fe1" cx="34" cy="62" r="2.4" fill="var(--c)"/>
+      <circle class="fi-emb fe2" cx="50" cy="50" r="2.2" fill="var(--c)"/>
+      <circle class="fi-emb fe3" cx="66" cy="58" r="2.4" fill="var(--c)"/>
+      <circle class="fi-emb fe4" cx="42" cy="36" r="1.9" fill="var(--c)" opacity="0.9"/>
+      <circle class="fi-emb fe5" cx="58" cy="32" r="1.9" fill="var(--c)" opacity="0.9"/>
+      <circle class="fi-emb fe6" cx="38" cy="22" r="1.6" fill="var(--c)" opacity="0.8"/>
+      <circle class="fi-emb fe7" cx="62" cy="20" r="1.6" fill="var(--c)" opacity="0.8"/>
+      <circle class="fi-emb fe8" cx="50" cy="12" r="1.5" fill="var(--c)" opacity="0.7"/>
+      <circle class="fi-emb fe9" cx="26" cy="78" r="1.8" fill="var(--c)" opacity="0.8"/>
+      <circle class="fi-emb fe10" cx="74" cy="78" r="1.8" fill="var(--c)" opacity="0.8"/>
     </svg>
 
   {:else if type === 'lightning'}
+    <!-- Lightning — strikes from the SKY. The bolt zigzags down from way
+         above the viewBox to slam into the target's ground level (y=70).
+         Sky bloom at the bolt's origin, ground shock ring at impact,
+         scorch sparks around the strike. Drawn with three layered widths
+         (glow / main / hot core) like the holy beam. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <ellipse cx="50" cy="50" rx="24" ry="46" fill="var(--c)" opacity="0.14" style="filter:blur(12px)"/>
-      <polyline class="bolt-glow" pathLength="100" points="62,8 46,44 56,44 38,92" stroke="var(--c)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.16"/>
-      <polyline class="branch br1" points="52,34 65,52 54,52" stroke="var(--c)" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.55"/>
-      <polyline class="branch br2" points="47,58 35,74 45,74" stroke="var(--c)" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.45"/>
-      <polyline class="branch br3" points="55,22 70,30" stroke="var(--c)" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.35"/>
-      <polyline class="bolt" pathLength="100" points="62,8 46,44 56,44 38,92" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      <circle class="bolt-spark bsp" cx="38" cy="92" r="4" fill="var(--c)"/>
+      <!-- Sky bloom — the cloud/halo at the bolt's origin -->
+      <ellipse cx="50" cy="-180" rx="48" ry="22" fill="var(--c)" opacity="0.55"
+               class="lit-sky" style="filter:blur(20px)"/>
+      <!-- Ground impact bloom -->
+      <ellipse cx="50" cy="72" rx="38" ry="14" fill="var(--c)" opacity="0.45"
+               class="lit-ground-bloom" style="filter:blur(12px)"/>
+      <!-- Three layered zigzag bolts (glow → main → hot core).
+           The bolt extends from y=-200 (high above viewBox) to y=70
+           (slightly below center, the ground level of the target). -->
+      <polyline class="lit-bolt lit-bolt-glow"
+        points="48,-200 56,-160 42,-110 60,-70 38,-30 56,0 44,30 56,55 50,72"
+        stroke="var(--c)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.30"/>
+      <polyline class="lit-bolt lit-bolt-main"
+        points="48,-200 56,-160 42,-110 60,-70 38,-30 56,0 44,30 56,55 50,72"
+        stroke="var(--c)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <polyline class="lit-bolt lit-bolt-core"
+        points="48,-200 56,-160 42,-110 60,-70 38,-30 56,0 44,30 56,55 50,72"
+        stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9"/>
+      <!-- Branch forks splitting off the main bolt -->
+      <polyline class="lit-branch lb1" points="42,-110 26,-90 32,-72"
+        stroke="var(--c)" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.65"/>
+      <polyline class="lit-branch lb2" points="60,-70 76,-58 68,-38"
+        stroke="var(--c)" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+      <polyline class="lit-branch lb3" points="56,0 70,6 64,22"
+        stroke="var(--c)" stroke-width="1.3" fill="none" stroke-linecap="round" opacity="0.55"/>
+      <polyline class="lit-branch lb4" points="44,30 32,40 38,52"
+        stroke="var(--c)" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <!-- Ground shock rings spreading outward from the strike -->
+      <ellipse class="lit-shock lit-s1" cx="50" cy="72" rx="22" ry="6"
+               stroke="var(--c)" stroke-width="3" fill="none"/>
+      <ellipse class="lit-shock lit-s2" cx="50" cy="72" rx="32" ry="9"
+               stroke="var(--c)" stroke-width="2" fill="none" opacity="0.65"/>
+      <!-- Scorch sparks at impact -->
+      <circle class="lit-spark ls1" cx="34" cy="74" r="2.5" fill="var(--c)"/>
+      <circle class="lit-spark ls2" cx="66" cy="74" r="2.5" fill="var(--c)"/>
+      <circle class="lit-spark ls3" cx="42" cy="64" r="2"   fill="var(--c)"/>
+      <circle class="lit-spark ls4" cx="58" cy="64" r="2"   fill="var(--c)"/>
+      <circle class="lit-spark ls5" cx="50" cy="58" r="2.2" fill="var(--c)"/>
     </svg>
 
   {:else if type === 'ice'}
@@ -1129,29 +1202,50 @@
     </svg>
 
   {:else if type === 'water'}
+    <!-- Water — TIDAL WAVE crashing in. A wide curved wave swells from the
+         attacker's side and breaks across the target's card with foam crest
+         and splash. No more single droplet. Direction (isRtl) flips the
+         wave so it always sweeps in from the attacker. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <!-- Glow aura -->
-      <ellipse cx="50" cy="60" rx="30" ry="34" fill="var(--c)" opacity="0.22" class="water-glow" style="filter:blur(14px)"/>
-      <!-- Trail ghost droplets — offset in the wake direction -->
-      <g class="water-trail wtr3" transform="translate({isRtl ? 36 : -36}, 0)">
-        <ellipse cx="50" cy="59" rx="8"  ry="12" fill="var(--c)" opacity="0.22"/>
+      <!-- Approach bloom — the rising water mass before it crashes -->
+      <ellipse cx={isRtl ? 78 : 22} cy="60" rx="58" ry="32"
+               fill="var(--c)" opacity="0.32" class="wt-bloom" style="filter:blur(16px)"/>
+      <!-- Main wave body — a wide curved swell crashing across the target.
+           Path drawn to face the attacker's side; isRtl mirrors it. -->
+      <g class="wt-wave" style="transform-origin: {isRtl ? '100% 60%' : '0 60%'};">
+        {#if isRtl}
+          <path d="M120 96 L120 60 C110 40 95 28 80 30 C70 32 65 38 60 52 C55 64 48 70 40 70 C32 70 25 64 18 56 C12 50 6 50 -8 56 L-8 96 Z"
+                fill="var(--c)"/>
+          <!-- Foam crest along the top edge -->
+          <path d="M-8 56 C6 48 14 52 22 58 C30 64 38 66 46 64 C56 60 62 54 70 38 C78 24 92 32 110 50"
+                stroke="white" stroke-width="2.5" fill="none" opacity="0.85"/>
+          <!-- Inner highlight -->
+          <ellipse cx="40" cy="78" rx="46" ry="9" fill="white" opacity="0.22"/>
+        {:else}
+          <path d="M-20 96 L-20 60 C-10 40 5 28 20 30 C30 32 35 38 40 52 C45 64 52 70 60 70 C68 70 75 64 82 56 C88 50 94 50 108 56 L108 96 Z"
+                fill="var(--c)"/>
+          <path d="M108 56 C94 48 86 52 78 58 C70 64 62 66 54 64 C44 60 38 54 30 38 C22 24 8 32 -10 50"
+                stroke="white" stroke-width="2.5" fill="none" opacity="0.85"/>
+          <ellipse cx="60" cy="78" rx="46" ry="9" fill="white" opacity="0.22"/>
+        {/if}
       </g>
-      <g class="water-trail wtr2" transform="translate({isRtl ? 22 : -22}, 0)">
-        <ellipse cx="50" cy="58" rx="10" ry="15" fill="var(--c)" opacity="0.38"/>
-      </g>
-      <g class="water-trail wtr1" transform="translate({isRtl ? 11 : -11}, 0)">
-        <ellipse cx="50" cy="57" rx="12" ry="18" fill="var(--c)" opacity="0.55"/>
-      </g>
-      <!-- Main water droplet -->
-      <g class="water-main">
-        <path d="M50 20 C34 36 26 52 26 64 C26 77 37 85 50 85 C63 85 74 77 74 64 C74 52 66 36 50 20Z" fill="var(--c)"/>
-        <ellipse cx="42" cy="55" rx="7" ry="11" fill="white" opacity="0.20" transform="rotate(-18 42 55)"/>
-        <circle cx="50" cy="25" r="4.5" fill="white" opacity="0.58"/>
-        <ellipse cx="38" cy="45" rx="5" ry="8" fill="white" opacity="0.12"/>
-      </g>
-      <!-- Splash rings (appear near end of arc travel) -->
-      <ellipse class="water-ripple wr1" cx="50" cy="80" rx="13" ry="5" stroke="var(--c)" stroke-width="2" fill="none"/>
-      <ellipse class="water-ripple wr2" cx="50" cy="80" rx="24" ry="10" stroke="var(--c)" stroke-width="1.5" fill="none"/>
+      <!-- Splash droplets flying upward as the wave crashes -->
+      <ellipse class="wt-drop wd1" cx="44" cy="44" rx="3.5" ry="6" fill="var(--c)" opacity="0.85"/>
+      <ellipse class="wt-drop wd2" cx="56" cy="38" rx="3"   ry="5" fill="var(--c)" opacity="0.85"/>
+      <ellipse class="wt-drop wd3" cx="62" cy="30" rx="2.5" ry="4" fill="var(--c)" opacity="0.8"/>
+      <ellipse class="wt-drop wd4" cx="36" cy="34" rx="2.5" ry="4" fill="var(--c)" opacity="0.8"/>
+      <ellipse class="wt-drop wd5" cx="50" cy="22" rx="3"   ry="5" fill="var(--c)" opacity="0.75"/>
+      <!-- Foam spray dots -->
+      <circle class="wt-foam" cx="40" cy="50" r="1.5" fill="white" opacity="0.85"/>
+      <circle class="wt-foam" cx="62" cy="48" r="1.5" fill="white" opacity="0.85"/>
+      <circle class="wt-foam" cx="50" cy="42" r="1.2" fill="white" opacity="0.85"/>
+      <circle class="wt-foam" cx="32" cy="60" r="1.5" fill="white" opacity="0.8"/>
+      <circle class="wt-foam" cx="68" cy="60" r="1.5" fill="white" opacity="0.8"/>
+      <!-- Final crash ripples on the target's ground -->
+      <ellipse class="wt-rip wr1" cx="50" cy="86" rx="20" ry="6"
+               stroke="var(--c)" stroke-width="2.5" fill="none"/>
+      <ellipse class="wt-rip wr2" cx="50" cy="86" rx="32" ry="9"
+               stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.7"/>
     </svg>
 
   {:else if type === 'arcane'}
@@ -1190,39 +1284,53 @@
     </svg>
 
   {:else if type === 'nature'}
-    <!-- Nature — spiraling vines, blooming flowers, leaf burst -->
+    <!-- Nature — overgrowing wildgrowth burst. Bloom backdrop, 8 vine arms
+         drawing outward from center, ferns at each vine tip, layered
+         flower bloom in the middle with 6 petals + pollen-bearing
+         stamens, dancing pollen motes, falling leaves drifting away. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <ellipse cx="50" cy="55" rx="38" ry="34" fill="var(--c)" opacity="0.16" style="filter:blur(12px)"/>
-      <!-- Spiral vines from center outward -->
-      <g class="nat-vines">
-        <path d="M50 50 Q40 35 32 22 Q26 14 20 10" stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.85"/>
-        <path d="M50 50 Q60 35 68 22 Q74 14 82 10" stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.85"/>
-        <path d="M50 50 Q40 65 32 78 Q26 86 18 90" stroke="var(--c)" stroke-width="2"   fill="none" stroke-linecap="round" opacity="0.75"/>
-        <path d="M50 50 Q60 65 68 78 Q74 86 84 90" stroke="var(--c)" stroke-width="2"   fill="none" stroke-linecap="round" opacity="0.75"/>
-        <path d="M50 50 Q30 50 14 48" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
-        <path d="M50 50 Q70 50 88 52" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.28" class="nt-bloom" style="filter:blur(16px)"/>
+      <!-- 8 vine arms drawing outward (4 cardinal + 4 diagonal, two thicknesses) -->
+      <g class="nt-vines">
+        <path class="nt-vn nv1" d="M50 50 Q40 32 28 18"  stroke="var(--c)" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        <path class="nt-vn nv2" d="M50 50 Q60 32 72 18"  stroke="var(--c)" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        <path class="nt-vn nv3" d="M50 50 Q40 68 28 82"  stroke="var(--c)" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+        <path class="nt-vn nv4" d="M50 50 Q60 68 72 82"  stroke="var(--c)" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+        <path class="nt-vn nv5" d="M50 50 Q32 48 14 44"  stroke="var(--c)" stroke-width="2.3" fill="none" stroke-linecap="round"/>
+        <path class="nt-vn nv6" d="M50 50 Q68 48 86 44"  stroke="var(--c)" stroke-width="2.3" fill="none" stroke-linecap="round"/>
+        <path class="nt-vn nv7" d="M50 50 Q50 32 50 12"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path class="nt-vn nv8" d="M50 50 Q50 68 50 88"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
       </g>
-      <!-- Leaves along vines -->
-      <g class="nat-leaves">
-        <ellipse class="leaf l1" cx="28" cy="20" rx="4" ry="2.5" fill="var(--c)" transform="rotate(-30 28 20)"/>
-        <ellipse class="leaf l2" cx="72" cy="20" rx="4" ry="2.5" fill="var(--c)" transform="rotate(30 72 20)"/>
-        <ellipse class="leaf l3" cx="26" cy="82" rx="4" ry="2.5" fill="var(--c)" opacity="0.85" transform="rotate(40 26 82)"/>
-        <ellipse class="leaf l4" cx="74" cy="82" rx="4" ry="2.5" fill="var(--c)" opacity="0.85" transform="rotate(-40 74 82)"/>
+      <!-- Fern fronds at vine tips -->
+      <g class="nt-ferns">
+        <ellipse class="leaf nt-l nl1" cx="28" cy="18" rx="5" ry="3" fill="var(--c)" transform="rotate(-40 28 18)"/>
+        <ellipse class="leaf nt-l nl2" cx="72" cy="18" rx="5" ry="3" fill="var(--c)" transform="rotate(40 72 18)"/>
+        <ellipse class="leaf nt-l nl3" cx="28" cy="82" rx="5" ry="3" fill="var(--c)" opacity="0.92" transform="rotate(40 28 82)"/>
+        <ellipse class="leaf nt-l nl4" cx="72" cy="82" rx="5" ry="3" fill="var(--c)" opacity="0.92" transform="rotate(-40 72 82)"/>
+        <ellipse class="leaf nt-l nl5" cx="14" cy="44" rx="5" ry="2.5" fill="var(--c)" opacity="0.85"/>
+        <ellipse class="leaf nt-l nl6" cx="86" cy="44" rx="5" ry="2.5" fill="var(--c)" opacity="0.85"/>
+        <ellipse class="leaf nt-l nl7" cx="50" cy="12" rx="3" ry="5" fill="var(--c)" opacity="0.9"/>
+        <ellipse class="leaf nt-l nl8" cx="50" cy="88" rx="3" ry="5" fill="var(--c)" opacity="0.9"/>
       </g>
-      <!-- Bloom center -->
-      <g class="nat-bloom">
-        <circle cx="50" cy="50" r="10" fill="var(--c)"/>
-        <ellipse cx="50" cy="42" rx="4" ry="6"   fill="var(--c)" opacity="0.95"/>
-        <ellipse cx="58" cy="50" rx="6" ry="4"   fill="var(--c)" opacity="0.9"/>
-        <ellipse cx="50" cy="58" rx="4" ry="6"   fill="var(--c)" opacity="0.9"/>
-        <ellipse cx="42" cy="50" rx="6" ry="4"   fill="var(--c)" opacity="0.95"/>
-        <circle cx="50" cy="50" r="3" fill="white" opacity="0.85"/>
+      <!-- 6-petal flower bloom in the center -->
+      <g class="nt-bloom-flower">
+        <ellipse cx="50" cy="36" rx="6" ry="11" fill="var(--c)" opacity="0.92"/>
+        <ellipse cx="62" cy="43" rx="6" ry="11" fill="var(--c)" opacity="0.92" transform="rotate(60 62 43)"/>
+        <ellipse cx="62" cy="57" rx="6" ry="11" fill="var(--c)" opacity="0.92" transform="rotate(120 62 57)"/>
+        <ellipse cx="50" cy="64" rx="6" ry="11" fill="var(--c)" opacity="0.92" transform="rotate(180 50 64)"/>
+        <ellipse cx="38" cy="57" rx="6" ry="11" fill="var(--c)" opacity="0.92" transform="rotate(-120 38 57)"/>
+        <ellipse cx="38" cy="43" rx="6" ry="11" fill="var(--c)" opacity="0.92" transform="rotate(-60 38 43)"/>
+        <!-- Stamens (yellow center dots) -->
+        <circle cx="50" cy="50" r="7" fill="var(--c)"/>
+        <circle cx="50" cy="50" r="3.5" fill="white" opacity="0.95"/>
       </g>
       <!-- Pollen motes -->
-      <circle class="pollen p1" cx="34" cy="40" r="1.4" fill="var(--c)" opacity="0.7"/>
-      <circle class="pollen p2" cx="66" cy="40" r="1.4" fill="var(--c)" opacity="0.7"/>
-      <circle class="pollen p3" cx="34" cy="60" r="1.2" fill="var(--c)" opacity="0.6"/>
-      <circle class="pollen p4" cx="66" cy="60" r="1.2" fill="var(--c)" opacity="0.6"/>
+      <circle class="nt-pol p1" cx="32" cy="38" r="1.6" fill="var(--c)"/>
+      <circle class="nt-pol p2" cx="68" cy="38" r="1.6" fill="var(--c)"/>
+      <circle class="nt-pol p3" cx="32" cy="62" r="1.4" fill="var(--c)" opacity="0.85"/>
+      <circle class="nt-pol p4" cx="68" cy="62" r="1.4" fill="var(--c)" opacity="0.85"/>
+      <circle class="nt-pol p5" cx="50" cy="28" r="1.3" fill="var(--c)" opacity="0.8"/>
+      <circle class="nt-pol p6" cx="50" cy="72" r="1.3" fill="var(--c)" opacity="0.8"/>
     </svg>
 
   {:else if type === 'cosmic'}
@@ -2533,4 +2641,130 @@
 @keyframes ct-rebound{ 0% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes ct-ray    { 0% { stroke-dashoffset: 80; opacity: 0; } 35% { stroke-dashoffset: 0; opacity: 1; filter: brightness(3); } 100% { stroke-dashoffset: 0; opacity: 0; } }
 @keyframes ct-flash  { 0% { transform: scale(0); opacity: 0; } 25% { transform: scale(1.5); opacity: 1; filter: brightness(5) drop-shadow(0 0 24px var(--c)); } 60% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(0.7); opacity: 0; } }
+
+/* ─── FIRE (revamp) ──────────────────────────────────────────────── */
+.fi-bloom    { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.fi-scorch   { transform-origin: 50% 88%; animation: fi-scorch 0.85s ease-out forwards; }
+.fi-echo-bg  { transform-origin: 50% 90%; animation: fi-flame 0.95s ease-out forwards; opacity: 0; }
+.fi-echo-mid { transform-origin: 50% 90%; animation: fi-flame 0.85s 0.06s ease-out forwards; opacity: 0; }
+.fi-main     { transform-origin: 50% 90%; animation: fi-flame-main 0.85s 0.10s ease-out forwards; }
+.fi-tongue   { stroke-dasharray: 50; stroke-dashoffset: 50; animation: fi-tongue 0.55s ease-out forwards; }
+.ft1 { animation-delay: 0.20s; }
+.ft2 { animation-delay: 0.22s; }
+.ft3 { animation-delay: 0.28s; }
+.ft4 { animation-delay: 0.30s; }
+.fi-emb      { transform-origin: center; transform-box: fill-box; animation: fi-ember-rise 0.85s ease-out forwards; opacity: 0; }
+.fi-emb.fe1 { animation-delay: 0.15s; }
+.fi-emb.fe2 { animation-delay: 0.18s; }
+.fi-emb.fe3 { animation-delay: 0.22s; }
+.fi-emb.fe4 { animation-delay: 0.26s; }
+.fi-emb.fe5 { animation-delay: 0.30s; }
+.fi-emb.fe6 { animation-delay: 0.34s; }
+.fi-emb.fe7 { animation-delay: 0.38s; }
+.fi-emb.fe8 { animation-delay: 0.42s; }
+@keyframes fi-scorch   { 0% { transform: scale(0); opacity: 0; } 30% { transform: scale(1.1); opacity: 0.85; } 100% { transform: scale(1.2); opacity: 0; } }
+@keyframes fi-flame    { 0% { transform: scaleY(0.2)  scaleX(0.6) translateY(20px); opacity: 0; } 35% { transform: scaleY(1.1) scaleX(1.05) translateY(0); opacity: 0.85; filter: brightness(1.6); } 100% { transform: scaleY(0.9) scaleX(0.85) translateY(-12px); opacity: 0; } }
+@keyframes fi-flame-main{ 0% { transform: scaleY(0.2)  scaleX(0.6); opacity: 0; filter: brightness(3); } 25% { transform: scaleY(1.2) scaleX(1.05); opacity: 1; filter: brightness(2.2) drop-shadow(0 0 16px var(--c)); } 65% { transform: scaleY(1.05) scaleX(1); opacity: 1; filter: brightness(1.5); } 100% { transform: scaleY(0.85) scaleX(0.85) translateY(-14px); opacity: 0; } }
+@keyframes fi-tongue   { 0% { stroke-dashoffset: 50; opacity: 0; } 40% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes fi-ember-rise{ 0% { transform: translateY(0) scale(0); opacity: 0; } 30% { transform: translateY(-6px) scale(1.3); opacity: 1; filter: brightness(2.5); } 100% { transform: translateY(-32px) scale(0.4); opacity: 0; } }
+
+/* ─── NATURE (revamp) ────────────────────────────────────────────── */
+.nt-bloom         { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.nt-vines .nt-vn  { stroke-dasharray: 60; stroke-dashoffset: 60; animation: nt-vine 0.5s ease-out forwards; }
+.nt-vines .nv1 { animation-delay: 0.05s; }
+.nt-vines .nv2 { animation-delay: 0.08s; }
+.nt-vines .nv3 { animation-delay: 0.11s; }
+.nt-vines .nv4 { animation-delay: 0.14s; }
+.nt-vines .nv5 { animation-delay: 0.17s; }
+.nt-vines .nv6 { animation-delay: 0.20s; }
+.nt-vines .nv7 { animation-delay: 0.23s; }
+.nt-vines .nv8 { animation-delay: 0.26s; }
+.nt-ferns .nt-l { transform-origin: center; transform-box: fill-box; animation: nt-fern 0.55s ease-out forwards; opacity: 0; }
+.nt-ferns .nl1 { animation-delay: 0.32s; }
+.nt-ferns .nl2 { animation-delay: 0.34s; }
+.nt-ferns .nl3 { animation-delay: 0.36s; }
+.nt-ferns .nl4 { animation-delay: 0.38s; }
+.nt-ferns .nl5 { animation-delay: 0.40s; }
+.nt-ferns .nl6 { animation-delay: 0.42s; }
+.nt-ferns .nl7 { animation-delay: 0.44s; }
+.nt-ferns .nl8 { animation-delay: 0.46s; }
+.nt-bloom-flower  { transform-origin: 50% 50%; animation: nt-flower 0.85s 0.15s ease-out forwards; }
+.nt-pol           { transform-origin: center; transform-box: fill-box; animation: nt-pol 0.7s 0.45s ease-out forwards; opacity: 0; }
+.nt-pol.p2 { animation-delay: 0.48s; }
+.nt-pol.p3 { animation-delay: 0.50s; }
+.nt-pol.p4 { animation-delay: 0.52s; }
+.nt-pol.p5 { animation-delay: 0.54s; }
+.nt-pol.p6 { animation-delay: 0.56s; }
+@keyframes nt-vine    { 0% { stroke-dashoffset: 60; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(1.6); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes nt-fern    { 0% { transform: scale(0) rotate(0); opacity: 0; } 50% { transform: scale(1.4) rotate(10deg); opacity: 1; filter: brightness(1.5); } 100% { transform: scale(1) rotate(20deg); opacity: 0; } }
+@keyframes nt-flower  { 0% { transform: scale(0) rotate(-30deg); opacity: 0; filter: brightness(3); } 35% { transform: scale(1.3) rotate(6deg); opacity: 1; filter: brightness(2) drop-shadow(0 0 16px var(--c)); } 75% { transform: scale(1) rotate(0); opacity: 0.95; } 100% { transform: scale(0.9) rotate(8deg); opacity: 0; } }
+@keyframes nt-pol     { 0% { transform: translateY(0) scale(0); opacity: 0; } 40% { transform: translateY(-6px) scale(1.5); opacity: 1; } 100% { transform: translateY(-18px) scale(0.5); opacity: 0; } }
+
+/* ─── LIGHTNING (revamp — strikes from above) ────────────────────── */
+.lit-sky          { transform-origin: 50% -180%; animation: lit-sky-flash 0.65s ease-out forwards; opacity: 0; }
+.lit-ground-bloom { transform-origin: 50% 72%; animation: lit-ground-flash 0.7s 0.18s ease-out forwards; opacity: 0; }
+.lit-bolt         { stroke-dasharray: 480; stroke-dashoffset: 480; }
+.lit-bolt-glow    { animation: lit-strike 0.45s ease-out forwards; opacity: 0; filter: blur(2px); }
+.lit-bolt-main    { animation: lit-strike 0.40s 0.02s ease-out forwards; opacity: 0; }
+.lit-bolt-core    { animation: lit-strike 0.36s 0.04s ease-out forwards; opacity: 0; }
+.lit-branch       { stroke-dasharray: 50; stroke-dashoffset: 50; animation: lit-branch 0.4s 0.15s ease-out forwards; }
+.lb2 { animation-delay: 0.18s; }
+.lb3 { animation-delay: 0.22s; }
+.lb4 { animation-delay: 0.26s; }
+.lit-shock        { transform-origin: 50% 72%; }
+.lit-s1 { animation: lit-shock 0.65s 0.18s ease-out forwards; }
+.lit-s2 { animation: lit-shock 0.75s 0.22s ease-out forwards; opacity: 0; }
+.lit-spark        { transform-origin: center; transform-box: fill-box; animation: spark-pop 0.55s 0.22s ease-out forwards; opacity: 0; }
+.ls2 { animation-delay: 0.24s; }
+.ls3 { animation-delay: 0.26s; }
+.ls4 { animation-delay: 0.28s; }
+.ls5 { animation-delay: 0.30s; }
+@keyframes lit-sky-flash   { 0% { opacity: 0; transform: scale(0.5); } 20% { opacity: 0.95; transform: scale(1.3); filter: brightness(3); } 100% { opacity: 0; transform: scale(1.6); } }
+@keyframes lit-ground-flash{ 0% { opacity: 0; transform: scale(0.3); } 20% { opacity: 0.95; transform: scale(1.5); filter: brightness(3); } 100% { opacity: 0; transform: scale(1.8); } }
+@keyframes lit-strike      { 0% { stroke-dashoffset: 480; opacity: 0; } 10% { opacity: 1; filter: brightness(4); } 35% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2.5); } 60% { stroke-dashoffset: 0; opacity: 0.9; filter: brightness(1.5); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes lit-branch      { 0% { stroke-dashoffset: 50; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 0.85; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes lit-shock       { 0% { transform: scale(0.1); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
+
+/* ─── FIRE (engulf revamp) ───────────────────────────────────────── */
+.fi-bloom    { transform-origin: 50% 50%; animation: sh-bloom 0.95s ease-out forwards; opacity: 0; }
+.fi-scorch   { transform-origin: 50% 92%; animation: fi-scorch 0.95s ease-out forwards; }
+.fi-tongue-l { transform-origin: 22% 92%; animation: fi-tongue-side 0.95s 0.04s ease-out forwards; opacity: 0; }
+.fi-tongue-r { transform-origin: 78% 92%; animation: fi-tongue-side 0.95s 0.04s ease-out forwards; opacity: 0; }
+.fi-main     { transform-origin: 50% 92%; animation: fi-flame-main 0.95s 0.08s ease-out forwards; }
+.fi-lick     { stroke-dasharray: 60; stroke-dashoffset: 60; animation: fi-lick 0.6s ease-out forwards; }
+.fl1 { animation-delay: 0.22s; }
+.fl2 { animation-delay: 0.24s; }
+.fl3 { animation-delay: 0.30s; }
+.fl4 { animation-delay: 0.32s; }
+.fi-emb      { transform-origin: center; transform-box: fill-box; animation: fi-ember-rise 0.95s ease-out forwards; opacity: 0; }
+.fi-emb.fe1  { animation-delay: 0.14s; }
+.fi-emb.fe2  { animation-delay: 0.18s; }
+.fi-emb.fe3  { animation-delay: 0.22s; }
+.fi-emb.fe4  { animation-delay: 0.26s; }
+.fi-emb.fe5  { animation-delay: 0.30s; }
+.fi-emb.fe6  { animation-delay: 0.34s; }
+.fi-emb.fe7  { animation-delay: 0.38s; }
+.fi-emb.fe8  { animation-delay: 0.42s; }
+.fi-emb.fe9  { animation-delay: 0.16s; }
+.fi-emb.fe10 { animation-delay: 0.20s; }
+@keyframes fi-tongue-side { 0% { transform: scaleY(0.2) scaleX(0.6); opacity: 0; } 30% { transform: scaleY(1.1) scaleX(1.05); opacity: 0.95; filter: brightness(1.7); } 70% { transform: scaleY(1) scaleX(1); opacity: 0.85; } 100% { transform: scaleY(0.85) scaleX(0.85) translateY(-10px); opacity: 0; } }
+@keyframes fi-lick        { 0% { stroke-dashoffset: 60; opacity: 0; } 45% { stroke-dashoffset: 0; opacity: 0.95; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+
+/* ─── WATER (wave revamp) ────────────────────────────────────────── */
+.wt-bloom { transform-origin: 50% 60%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.wt-wave  { animation: wt-wave 0.85s ease-out forwards; opacity: 0; }
+.wt-drop  { transform-origin: center; transform-box: fill-box; animation: wt-drop 0.6s ease-out forwards; opacity: 0; }
+.wd1 { animation-delay: 0.30s; }
+.wd2 { animation-delay: 0.32s; }
+.wd3 { animation-delay: 0.34s; }
+.wd4 { animation-delay: 0.36s; }
+.wd5 { animation-delay: 0.38s; }
+.wt-foam { transform-origin: center; transform-box: fill-box; animation: wt-foam 0.5s 0.28s ease-out forwards; opacity: 0; }
+.wt-rip   { transform-origin: 50% 86%; }
+.wt-rip.wr1 { animation: wt-rip 0.7s 0.32s ease-out forwards; }
+.wt-rip.wr2 { animation: wt-rip 0.8s 0.36s ease-out forwards; opacity: 0; }
+@keyframes wt-wave { 0% { transform: scaleX(0.3) scaleY(0.4); opacity: 0; } 30% { transform: scaleX(1.05) scaleY(1); opacity: 1; filter: brightness(1.4); } 75% { transform: scaleX(1) scaleY(1); opacity: 0.95; } 100% { transform: scaleX(1.1) scaleY(0.8); opacity: 0; } }
+@keyframes wt-drop { 0% { transform: translateY(8px) scale(0); opacity: 0; } 40% { transform: translateY(0) scale(1.4); opacity: 1; } 100% { transform: translateY(-18px) scale(0.5); opacity: 0; } }
+@keyframes wt-foam { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(2); opacity: 1; } 100% { transform: scale(0.4); opacity: 0; } }
+@keyframes wt-rip  { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
 </style>
