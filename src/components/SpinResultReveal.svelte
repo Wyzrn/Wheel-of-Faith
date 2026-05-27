@@ -20,6 +20,7 @@
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import type { ResolvedMeta } from '$lib/spinResultMeta'
   import { settings } from '$lib/settings.svelte'
+  import TierGlossary from './TierGlossary.svelte'
 
   let {
     result,
@@ -72,6 +73,10 @@
     ?? tierColor
     ?? '#f0c040',
   )
+  // Tier glossary popup — opens when the user clicks the tier badge on
+  // the reveal so new players can see where their roll sits on the
+  // 28-grade ladder. Reuses the shared TierGlossary component.
+  let glossaryOpen = $state(false)
 
   // Auto-continue: when settings.autoContinueMs > 0, fire onContinue after that
   // delay so users who've seen the cards can plow through fast. Cancellable
@@ -159,9 +164,9 @@
           <p class="font-mono text-[10px] tracking-[0.22em] uppercase" style="color: #9a907b;">{categoryDisplayName}</p>
         {/if}
         {#if displayTier && tierColor && !idCard}
-          <div class="px-4 py-1.5 rounded-lg" style="background: {tierColor}18; border: 1px solid {tierColor}55; box-shadow: 0 0 20px {tierColor}35;">
+          <button type="button" onclick={(e) => { e.stopPropagation(); glossaryOpen = true }} class="px-4 py-1.5 rounded-lg cursor-pointer transition-transform active:scale-95 hover:brightness-110" style="background: {tierColor}18; border: 1px solid {tierColor}55; box-shadow: 0 0 20px {tierColor}35;" title="View tier ladder">
             <span class="font-black" style="font-family: 'Cinzel', serif; font-size: 2rem; color: {tierColor}; filter: drop-shadow(0 0 8px {tierColor}66);">{displayTier}</span>
-          </div>
+          </button>
         {/if}
         {#if hasBadgeRow && !idCard}
           <div class="flex items-center gap-2 flex-wrap justify-center">
@@ -284,9 +289,9 @@
         <p class="font-mono text-[10px] tracking-[0.22em] uppercase" style="color: #9a907b;">{categoryDisplayName}</p>
       {/if}
       {#if displayTier && tierColor && !idCard}
-        <div class="px-4 py-1.5 rounded-lg" style="background: {tierColor}18; border: 1px solid {tierColor}55; box-shadow: 0 0 20px {tierColor}35;">
+        <button type="button" onclick={(e) => { e.stopPropagation(); glossaryOpen = true }} class="px-4 py-1.5 rounded-lg cursor-pointer transition-transform active:scale-95 hover:brightness-110" style="background: {tierColor}18; border: 1px solid {tierColor}55; box-shadow: 0 0 20px {tierColor}35;" title="View tier ladder">
           <span class="font-black" style="font-family: 'Cinzel', serif; font-size: 2rem; color: {tierColor}; filter: drop-shadow(0 0 8px {tierColor}66);">{displayTier}</span>
-        </div>
+        </button>
       {/if}
       {#if hasBadgeRow && !idCard}
         <div class="flex items-center gap-2 flex-wrap justify-center">
@@ -380,6 +385,9 @@
     </div>
   </div>
 {/if}
+
+<!-- Shared tier glossary popup — opens when the user clicks the tier badge -->
+<TierGlossary bind:open={glossaryOpen} />
 
 <style>
   @keyframes srrFadeIn {

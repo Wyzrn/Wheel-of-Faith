@@ -4,6 +4,8 @@
   import { getRivalsWs, clearRivalsWs, patchRivalsWs } from '$lib/stores/rivalsWs'
   import { isOfflineRivalsActive, setOfflineRivalsResult } from '$lib/stores/offlineRivals'
   import SpinWheel from '../components/SpinWheel.svelte'
+  import SpinProgressDots from '../components/SpinProgressDots.svelte'
+  import FirstTimeTooltip from '../components/FirstTimeTooltip.svelte'
   import TierBadge from '../components/TierBadge.svelte'
   import CharacterCard from '../components/CharacterCard.svelte'
   import SettingsPanel from '../components/SettingsPanel.svelte'
@@ -2759,6 +2761,18 @@
         <!-- Wheel container (relative so overlay can sit on top) -->
         <div class="relative w-full max-w-[340px] md:max-w-lg">
 
+          <!-- First-time hint that fires on the very first race spin. Only
+               shows once per device (localStorage flag). Anchored above the
+               wheel so it points at what's about to happen. -->
+          {#if currentSpinIndex === 0 && currentDef?.category === 'race' && !isRevealed}
+            <FirstTimeTooltip
+              storageKey="wof_seen_race_hint"
+              title="Spin for Race"
+              body="Race shapes everything: stat tendencies, abilities, weaknesses, and which sub-wheels appear next. Each one plays differently."
+              placement="top"
+            />
+          {/if}
+
           <!-- Wheel (remounts each spin to reset IDLE state) -->
           {#key currentSpinIndex}
             <SpinWheel
@@ -2777,6 +2791,19 @@
               }}
             />
           {/key}
+
+          <!-- Progress dots — small row under the wheel showing where in the
+               run you are. Filled dots = done, ringed = current, dim = upcoming.
+               Tier-tinted on completed spins so a streak of high rolls visually
+               pops. Matches Story Mode placement. -->
+          <div class="flex justify-center mt-2">
+            <SpinProgressDots
+              currentIndex={currentSpinIndex}
+              total={spinQueue.length}
+              results={results}
+              tierColors={TIER_COLORS}
+            />
+          </div>
 
           <!-- Result reveal overlay — shared SpinResultReveal component so the
                main game and Story Mode render the post-spin panel identically. -->

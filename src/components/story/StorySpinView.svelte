@@ -3,6 +3,8 @@
   import SpinWheel from '../SpinWheel.svelte'
   import TierBadge from '../TierBadge.svelte'
   import SpinResultReveal from '../SpinResultReveal.svelte'
+  import SpinProgressDots from '../SpinProgressDots.svelte'
+  import FirstTimeTooltip from '../FirstTimeTooltip.svelte'
   import type { ResolvedMeta } from '$lib/spinResultMeta'
   import {
     createStorySession,
@@ -1188,6 +1190,14 @@
   <!-- Spin wheel (remounts on each new spin via {#key}) -->
   {#if currentDef && !showResumePrompt}
     <div class="relative z-[2] flex flex-col items-center gap-4">
+      {#if currentIndex === 0 && currentDef?.category === 'race' && !pendingResult}
+        <FirstTimeTooltip
+          storageKey="wof_seen_race_hint"
+          title="Spin for Race"
+          body="Race shapes everything: stat tendencies, abilities, weaknesses, and which sub-wheels appear next. Each one plays differently."
+          placement="top"
+        />
+      {/if}
       {#key currentIndex}
         <SpinWheel
           segments={currentSegments}
@@ -1209,9 +1219,11 @@
         <p style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: 15px; color: var(--color-on-surface); font-weight: 600;">
           {currentDef.displayName}
         </p>
-        <p style="font-family: monospace; font-size: 12px; color: var(--color-outline); letter-spacing: 0.05em;">
-          Spin {currentIndex + 1} of {queue.length}
-        </p>
+        <SpinProgressDots
+          currentIndex={currentIndex}
+          total={queue.length}
+          results={results}
+        />
       </div>
     </div>
   {/if}

@@ -49,6 +49,17 @@
   let originX = $derived(centerX != null ? `${centerX}px` : '50vw')
   let originY = $derived(centerY != null ? `${centerY}px` : '50vh')
 
+  // Portal action — moves the celebration root to document.body so it
+  // escapes any parent stacking context. Story Mode wraps the wheel in a
+  // z-[2] container which trapped the celebration below the z-50 reveal
+  // modal. Portaling guarantees the z-60 root sits above ALL siblings
+  // regardless of where the component is rendered in the tree.
+  function portal(node: HTMLElement) {
+    if (typeof document === 'undefined') return  // SSR no-op
+    document.body.appendChild(node)
+    return { destroy() { try { node.remove() } catch { /* already removed */ } } }
+  }
+
   // Primary accent — element color when available (so a Fire roll bursts red,
   // not generic gold), tier color otherwise.
   let accent = $derived(elementColor ?? tierColor)
@@ -284,6 +295,7 @@
   <!-- Fullscreen overlay; pointer-events:none so the reveal modal underneath
        still receives clicks. -->
   <div
+    use:portal
     class="lc-root"
     style="--accent: {accent}; --accent2: {accent2}; --tier-color: {tierColor}; --origin-x: {originX}; --origin-y: {originY};"
     aria-hidden="true"
