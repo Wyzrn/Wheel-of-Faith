@@ -1362,9 +1362,11 @@
     </svg>
 
   {:else if type === 'arcane'}
-    <!-- Arcane — counter-rotating sigil rings, runic glyphs, mystic core -->
+    <!-- Arcane — counter-rotating sigil rings, runic glyphs, mystic core.
+         Massive mana bloom backdrop pulses behind the channel. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.16" style="filter:blur(14px)"/>
+      <circle cx="50" cy="50" r="48" fill="var(--c)" opacity="0.30" class="arc-bloom" style="filter:blur(20px)"/>
+      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.20" style="filter:blur(14px)"/>
       <!-- Outer rotating ring with runic marks -->
       <g class="arc-ring-out">
         <circle cx="50" cy="50" r="40" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.55"
@@ -1497,9 +1499,12 @@
     </svg>
 
   {:else if type === 'metal'}
-    <!-- Metal — razor-shard storm with hard impact crack -->
+    <!-- Metal — razor-shard storm with hard impact crack. Bloom backdrop
+         pulses, 8 starburst crack lines fracture outward, 8 razor blades
+         fan in all directions, diamond core glints white-hot. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <ellipse cx="50" cy="50" rx="38" ry="30" fill="var(--c)" opacity="0.14" style="filter:blur(10px)"/>
+      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.32" class="met-bloom" style="filter:blur(18px)"/>
+      <ellipse cx="50" cy="50" rx="38" ry="30" fill="var(--c)" opacity="0.18" style="filter:blur(10px)"/>
       <!-- Impact starburst crack lines (geometric, sharp) -->
       <g class="met-crack">
         <line x1="50" y1="50" x2="12" y2="20" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
@@ -1530,9 +1535,12 @@
     </svg>
 
   {:else if type === 'soul'}
-    <!-- Soul — wispy ghost form, skull silhouette, ethereal threads -->
+    <!-- Soul — wispy ghost form, skull silhouette, ethereal threads.
+         Big ethereal bloom backdrop, ghost emerges + skull face peers
+         through, three wisp threads trail upward with glowing motes. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <ellipse cx="50" cy="48" rx="32" ry="38" fill="var(--c)" opacity="0.20" style="filter:blur(14px)"/>
+      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.30" class="soul-bloom" style="filter:blur(20px)"/>
+      <ellipse cx="50" cy="48" rx="34" ry="40" fill="var(--c)" opacity="0.22" style="filter:blur(12px)"/>
       <!-- Ghost form -->
       <g class="soul-ghost">
         <path d="M50 14 C32 14 22 28 22 46 C22 58 24 68 22 82 L30 76 L36 84 L42 76 L50 84 L58 76 L64 84 L70 76 L78 82 C76 68 78 58 78 46 C78 28 68 14 50 14 Z"
@@ -1564,9 +1572,11 @@
     </svg>
 
   {:else if type === 'sound'}
-    <!-- Sound — concentric sonic ripples expanding outward + cone -->
+    <!-- Sound — concentric sonic ripples expanding outward + speaker
+         cones on both sides + pulsing core. Big audio-bloom backdrop. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.10" style="filter:blur(10px)"/>
+      <circle cx="50" cy="50" r="48" fill="var(--c)" opacity="0.28" class="snd-bloom" style="filter:blur(18px)"/>
+      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.14" style="filter:blur(10px)"/>
       <!-- Three expanding rings — staggered to create a pulsing sonic feel -->
       <circle class="sonic-ring snr1" cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="3"   fill="none"/>
       <circle class="sonic-ring snr2" cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="2.5" fill="none"/>
@@ -1585,9 +1595,11 @@
     </svg>
 
   {:else if type === 'chaos'}
-    <!-- Chaos — fractured reality glitch, jagged shards, color-shift -->
+    <!-- Chaos — fractured reality glitch, jagged shards, color-shift +
+         permanent jitter wobble. Big reality-warp bloom backdrop. -->
     <svg viewBox="0 0 100 100" class="fx-svg chaos-glitch" overflow="visible">
-      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.16" style="filter:blur(12px)"/>
+      <circle cx="50" cy="50" r="48" fill="var(--c)" opacity="0.32" class="chaos-bloom" style="filter:blur(20px)"/>
+      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.20" style="filter:blur(12px)"/>
       <!-- Reality fracture lines — irregular, branching -->
       <g class="chaos-frac">
         <polyline points="20,18 32,30 28,42 42,46 38,60 54,58" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.85"/>
@@ -3074,4 +3086,16 @@
 @keyframes cs-comet   { 0% { stroke-dashoffset: 70; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
 @keyframes cs-core    { 0% { transform: scale(0); opacity: 0; filter: brightness(1); } 30% { transform: scale(1.6); opacity: 1; filter: brightness(5) drop-shadow(0 0 28px var(--c)); } 70% { transform: scale(1.2); opacity: 0.95; } 100% { transform: scale(0.8); opacity: 0; } }
 @keyframes cs-twinkle { 0% { transform: scale(0) rotate(0); opacity: 0; } 50% { transform: scale(1.5) rotate(45deg); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(0.6) rotate(90deg); opacity: 0; } }
+
+/* ─── Bloom backdrops for the 5 remaining new types ──────────────── */
+/* All reuse the shared sh-bloom keyframe defined in the shadow block. */
+.met-bloom,
+.soul-bloom,
+.snd-bloom,
+.chaos-bloom,
+.arc-bloom {
+  transform-origin: 50% 50%;
+  animation: sh-bloom 0.85s ease-out forwards;
+  opacity: 0;
+}
 </style>
