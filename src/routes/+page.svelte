@@ -2445,8 +2445,6 @@
         </div>
       </div>
 
-      <!-- Bottom flavour -->
-      <p class="mt-6 text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">23 spins. One fate. No take-backs.</p>
     </div>
   {/if}
 
