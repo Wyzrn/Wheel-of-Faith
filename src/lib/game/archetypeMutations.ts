@@ -158,6 +158,196 @@ registerMutation('Creator', 'Bard', {
   },
   synergyFlavor: 'Artist Creator — reality-paint outcomes unlocked.',
 })
+// ── HALFLING × archetype ──────────────────────────────────────────────────
+registerMutation('Halfling', 'Rogue', {
+  wheelOverrides: {
+    fortune: [
+      { label: 'Lucky Day',    weight: 6, statBonusGrants: { potential: 'statBonus' } },
+      { label: 'Streak',       weight: 4, statBonusGrants: { speed: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Coin Flip',    weight: 2 },
+      { label: 'Lottery Soul', weight: 3, statBonusGrants: { potential: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Cursed Coin',  weight: 1, statBonusGrants: { charisma: 'statPenalty' } },
+    ],
+  },
+  synergyFlavor: 'Rogue Halfling — fortune favours the swift.',
+})
+registerMutation('Halfling', 'Bard', {
+  wheelOverrides: {
+    fortune: [
+      { label: 'Coin Flip',    weight: 6, description: 'Audience tension.' },
+      { label: 'Lucky Day',    weight: 4, statBonusGrants: { potential: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Lottery Soul', weight: 3, statBonusGrants: { charisma: 'statBonus', potential: 'statBonus' } },
+      { label: 'Streak',       weight: 2, statBonusGrants: { speed: 'statBonus' } },
+    ],
+  },
+})
+
+// ── GOBLIN × archetype ────────────────────────────────────────────────────
+registerMutation('Goblin', 'Artificer', {
+  // "Goblin Engineering" — Scrap pile reshuffles to favour combined items.
+  wheelOverrides: {
+    scrap: [
+      { label: 'Goblin Engine',  weight: 6, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' } },
+      { label: 'Live Grenade',   weight: 4, statBonusGrants: { strength: 'statBonus' } },
+      { label: 'Sparking Wire',  weight: 3, statBonusGrants: { powerMastery: 'statBonus' } },
+      { label: 'Sharpened Junk', weight: 2, statBonusGrants: { fightingSkill: 'statBonus' } },
+    ],
+  },
+  synergyFlavor: 'Goblin Engineering — two weak items combine into one insane item.',
+})
+registerMutation('Goblin', 'Berserker', {
+  // Raider goblin — Loot wheel skews stolen-weapon.
+  wheelOverrides: {
+    loot: [
+      { label: 'Half a Weapon',  weight: 5, statBonusGrants: { fightingSkill: 'statBonus', weaponMastery: 'statBonus' } },
+      { label: 'Stolen Trinket', weight: 4, statBonusGrants: { charisma: 'statBonus' } },
+      { label: 'Cursed Idol',    weight: 3, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statPenalty' } },
+      { label: 'Bag of Coins',   weight: 1 },
+    ],
+  },
+})
+
+// ── DWARF × archetype ────────────────────────────────────────────────────
+registerMutation('Dwarf', 'Warrior', {
+  // Forge biased toward higher-grade pieces; rune toward Sharpness/Power.
+  wheelOverrides: {
+    forge: [
+      { label: 'Guild Quality',   weight: 6, statBonusGrants: { weaponMastery: 'statBonus', armorStrength: 'statBonus' } },
+      { label: 'Heirloom Weapon', weight: 5, statBonusGrants: { weaponMastery: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Mastercraft',     weight: 3, statBonusGrants: { weaponMastery: 'statBonus', armorStrength: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Legendary Forge', weight: 1, statBonusGrants: { armorStrength: 'statBonus', weaponMastery: 'statBonus', strength: 'statBonus' } },
+    ],
+    rune: [
+      { label: 'Rune of Sharpness', weight: 5, statBonusGrants: { fightingSkill: 'statBonus' } },
+      { label: 'Rune of Power',     weight: 4, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Rune of Doom',      weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'No Rune',           weight: 1 },
+    ],
+  },
+  synergyFlavor: 'Warrior Dwarf — fights what they forged.',
+})
+
+// ── ROBOT × archetype ────────────────────────────────────────────────────
+registerMutation('Robot', 'Rogue', {
+  wheelOverrides: {
+    core: [
+      { label: 'Stealth Core', weight: 6, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' } },
+      { label: 'Logic Core',   weight: 3, statBonusGrants: { iq: 'statBonus' } },
+      { label: 'Combat Core',  weight: 2, statBonusGrants: { fightingSkill: 'statBonus' } },
+    ],
+  },
+})
+
+// ── ELF × archetype ──────────────────────────────────────────────────────
+registerMutation('Elf', 'Mage', {
+  wheelAdditions: {
+    blessing: [
+      { label: 'Arcane Inheritance', weight: 3, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus' }, description: 'Family of mages. Magic in the blood.' },
+    ],
+  },
+})
+
+// ── TIEFLING × archetype ─────────────────────────────────────────────────
+registerMutation('Tiefling', 'Warlock', {
+  // Contract biased toward higher pacts; sin biased toward Wrath/Pride.
+  wheelOverrides: {
+    contract: [
+      { label: 'Blood Pact',    weight: 5, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', potential: 'statPenalty' } },
+      { label: 'Eternal Flame', weight: 3, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus', iq: 'statPenalty' } },
+      { label: 'Soul Power',    weight: 4, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus', durability: 'statPenalty' } },
+      { label: 'Minor Pact',    weight: 1 },
+    ],
+  },
+  secretEventBias: 1.3,
+})
+
+// ── DRAGONBORN × archetype ───────────────────────────────────────────────
+registerMutation('Dragonborn', 'Mage', {
+  // Mage dragonborn favour rare elements (Solar / Void) + dual breath.
+  wheelOverrides: {
+    dragonAspect: [
+      { label: 'Solar',    weight: 4, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Void',     weight: 4, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus' } },
+      { label: 'Storm',    weight: 3, statBonusGrants: { speed: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Frost',    weight: 3, statBonusGrants: { durability: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Infernal', weight: 2, statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus' } },
+    ],
+    breathEvolution: [
+      { label: 'Dual Breath',    weight: 5, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Catastrophe',    weight: 2, statBonusGrants: { powerMastery: 'statBonus', strength: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Refined Breath', weight: 3, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Single Breath',  weight: 1 },
+    ],
+  },
+})
+
+// ── AASIMAR × archetype ──────────────────────────────────────────────────
+registerMutation('Aasimar', 'Cleric', {
+  // Halo brighter, blessings stronger.
+  wheelOverrides: {
+    halo: [
+      { label: 'Radiant',      weight: 6, statBonusGrants: { charisma: 'statBonus', potential: 'statBonus' } },
+      { label: 'Burning Halo', weight: 4, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Divine Mercy', weight: 3, statBonusGrants: { potential: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Subtle Glow',  weight: 1 },
+    ],
+  },
+  synergyFlavor: 'Cleric Aasimar — light pierces.',
+})
+
+// ── TABAXI × archetype ───────────────────────────────────────────────────
+registerMutation('Tabaxi', 'Rogue', {
+  wheelOverrides: {
+    hunt: [
+      { label: 'Stalker',     weight: 6, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' } },
+      { label: 'Apex Hunter', weight: 3, statBonusGrants: { speed: 'statBonus', agility: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Night Cat',   weight: 3, statBonusGrants: { agility: 'statBonus', speed: 'statBonus', iq: 'statBonus' } },
+      { label: 'Pouncer',     weight: 2 },
+    ],
+  },
+})
+
+// ── GENASI (Fire) × archetype ────────────────────────────────────────────
+registerMutation('Genasi (Fire)', 'Berserker', {
+  wheelOverrides: {
+    inferno: [
+      { label: 'Living Flame', weight: 5, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Pyroclasm',    weight: 4, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Solar Heart',  weight: 3, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+      { label: 'Burning Aura', weight: 2, statBonusGrants: { powerMastery: 'statBonus' } },
+      { label: 'Ember',        weight: 1 },
+    ],
+  },
+})
+
+// ── BENDER × archetype ───────────────────────────────────────────────────
+registerMutation('Bender', 'Monk', {
+  wheelOverrides: {
+    masteryLevel: [
+      { label: 'Grandmaster',  weight: 5, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus', potential: 'statBonus' } },
+      { label: 'Master',       weight: 4, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Avatar Spark', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Adept',        weight: 1 },
+    ],
+  },
+  synergyFlavor: 'Monk Bender — the form is the bender.',
+})
+
+// ── GHOUL × archetype ────────────────────────────────────────────────────
+registerMutation('Ghoul', 'Anti-Hero', {
+  // Hunger wheel pushes the character toward Devouring/Endless Maw — visible
+  // moral conflict the archetype is built around.
+  wheelOverrides: {
+    hunger: [
+      { label: 'Aching',     weight: 5, statBonusGrants: { speed: 'statBonus', charisma: 'statPenalty' } },
+      { label: 'Devouring',  weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Endless Maw',weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', charisma: 'statPenalty' } },
+      { label: 'Starving',   weight: 2 },
+    ],
+  },
+  secretEventBias: 1.2,
+})
+
 registerMutation('Creator', 'Mage', {
   // Strategist Creator goes Order-heavy + biases towards Override Caps.
   wheelOverrides: {

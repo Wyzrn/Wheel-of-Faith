@@ -71,6 +71,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 1.2,
     minStatTier: 'D-',
     description: 'Built for war and strongly opposed to subtlety.',
+    injectedWheels: [
+      { id: 'rage', displayName: 'Rage', order: 1, segments: [
+        { label: 'Sullen', weight: 5, description: 'Slow to anger. Slower to forgive.' },
+        { label: 'Hot-Blooded', weight: 5, statBonusGrants: { strength: 'statBonus' }, description: 'Quick to anger. Quicker to act.' },
+        { label: 'War-Hardened', weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Anger has a rhythm now. A discipline.' },
+        { label: 'Blood Frenzy', weight: 2, statBonusGrants: { strength: 'statBonus', speed: 'statBonus', iq: 'statPenalty' }, description: 'Loses words. Finds the spine.' },
+        { label: 'Pure Wrath', weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', charisma: 'statPenalty' }, description: 'The orc has become the rage.' },
+      ]},
+      { id: 'warpaint', displayName: 'Warpaint', order: 2, segments: [
+        { label: 'Clan Marks', weight: 5, statBonusGrants: { charisma: 'statBonus' }, description: 'Lineage written across the face.' },
+        { label: 'Wolf Stripe', weight: 4, statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, description: "Hunter's pattern. Wear and chase." },
+        { label: 'Bone Mask', weight: 3, statBonusGrants: { fightingSkill: 'statBonus', charisma: 'statBonus' }, description: 'Carved from an enemy. Worn proudly.' },
+        { label: 'Death Sigil', weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Promises this orc is the last thing you see.' },
+        { label: 'Spirit Paint', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Ancestors visible behind the eyes.' },
+      ]},
+    ],
     statModifiers: { strength: 1.6, durability: 1.3, armorStrength: 1.25, iq: 0.7, charisma: 0.7 },
     weaponTypeBias: { 'Melee': 3.0, 'Ancient': 2.0, 'Exotic': 1.5, 'Ranged': 0.3, 'Magical': 0.3, 'None': 0.1 },
     armorTypeBias:  { 'Full-Suit': 2.5, 'Half-Suit': 1.5, 'Ancient': 2.0, 'Helmet Only': 0.5, 'Exotic': 0.7, 'None': 0.1 },
@@ -107,6 +123,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.9,
     // Tier 1 — no stat lock
     description: 'Small in stature, enormous in luck and appetite.',
+    injectedWheels: [
+      { id: 'fortune', displayName: 'Fortune', order: 1, segments: [
+        { label: 'Lucky Day', weight: 5, statBonusGrants: { potential: 'statBonus' }, description: 'Wildcards favour you.' },
+        { label: 'Coin Flip', weight: 4, description: 'Even odds. May the spin decide.' },
+        { label: 'Streak', weight: 3, statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, description: 'Crit streaks compound.' },
+        { label: 'Lottery Soul', weight: 2, statBonusGrants: { potential: 'statBonus', charisma: 'statBonus' }, description: 'One wheel will jackpot.' },
+        { label: 'Cursed Coin', weight: 1, statBonusGrants: { charisma: 'statPenalty' }, description: 'Bad luck twin. Avoid mirrors.' },
+      ]},
+      { id: 'trinket', displayName: 'Trinket', order: 2, segments: [
+        { label: 'Empty Pocket', weight: 6, description: 'Just lint, mostly.' },
+        { label: 'Lucky Stone', weight: 4, statBonusGrants: { durability: 'statBonus' }, description: 'Smooth river stone. Warm in your pocket.' },
+        { label: 'Crit Charm', weight: 3, statBonusGrants: { fightingSkill: 'statBonus' }, description: 'Improves precision in tense moments.' },
+        { label: 'Coinpurse', weight: 2, description: 'Always rattles. Always full.' },
+        { label: 'Forgotten Map', weight: 1, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, description: "Leads somewhere it shouldn't." },
+      ]},
+    ],
     statModifiers: { charisma: 1.3, speed: 1.2, agility: 1.2, strength: 0.7 },
     weaponTypeBias: { 'Ranged': 2.5, 'Melee': 1.0, 'None': 1.5, 'Magical': 0.9, 'Exotic': 0.8, 'Cursed': 0.5, 'Ancient': 0.5 },
     armorTypeBias:  { 'None': 1.8, 'Helmet Only': 1.5, 'Half-Suit': 1.2, 'Full-Suit': 0.3, 'Exotic': 0.7, 'Cursed': 0.5, 'Ancient': 0.4 },
@@ -142,6 +174,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.8,
     minStatTier: 'D-',
     description: 'Stubborn as stone, twice as dense.',
+    injectedWheels: [
+      { id: 'forge', displayName: 'Forge', order: 1, segments: [
+        { label: 'Apprentice Work', weight: 5, statBonusGrants: { weaponMastery: 'statBonus' }, description: 'Solid for a beginner. Heavy for the carrier.' },
+        { label: 'Guild Quality', weight: 5, statBonusGrants: { weaponMastery: 'statBonus', armorStrength: 'statBonus' }, description: 'Standard dwarvish craftsmanship. Excellent everywhere.' },
+        { label: 'Heirloom Weapon', weight: 3, statBonusGrants: { weaponMastery: 'statBonus', fightingSkill: 'statBonus' }, description: 'Passed down through generations.' },
+        { label: 'Mastercraft', weight: 2, statBonusGrants: { weaponMastery: 'statBonus', armorStrength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Once-in-a-lifetime piece.' },
+        { label: 'Legendary Forge', weight: 1, statBonusGrants: { armorStrength: 'statBonus', weaponMastery: 'statBonus', strength: 'statBonus' }, description: 'Forged in fire that no longer exists.' },
+      ]},
+      { id: 'rune', displayName: 'Rune', order: 2, segments: [
+        { label: 'No Rune', weight: 5, description: 'The weapon stands on its own.' },
+        { label: 'Rune of Sharpness', weight: 4, statBonusGrants: { fightingSkill: 'statBonus' }, description: 'Cuts deeper. The edge sings.' },
+        { label: 'Rune of Warding', weight: 4, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Light beneath the skin.' },
+        { label: 'Rune of Power', weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, description: 'Glowing veins along the metal.' },
+        { label: 'Rune of Doom', weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', charisma: 'statPenalty' }, description: 'Carved in a tongue no one remembers.' },
+      ]},
+    ],
     statModifiers: { durability: 1.6, strength: 1.4, armorStrength: 1.5, speed: 0.6, agility: 0.7 },
     weaponTypeBias: { 'Melee': 2.5, 'Ancient': 2.5, 'None': 0.1, 'Ranged': 0.4, 'Magical': 0.4, 'Cursed': 0.5 },
     armorTypeBias:  { 'Full-Suit': 3.0, 'Half-Suit': 1.5, 'Ancient': 3.0, 'None': 0.1, 'Cursed': 0.3, 'Helmet Only': 0.5 },
@@ -177,6 +225,22 @@ export const races: Race[] = [
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 1.3,
     description: 'Chaos given a small, green body.',
+    injectedWheels: [
+      { id: 'scrap', displayName: 'Scrap Pile', order: 1, segments: [
+        { label: 'Sharpened Junk', weight: 6, statBonusGrants: { fightingSkill: 'statBonus' }, description: 'Cobbled-together blade. Probably tetanus.' },
+        { label: 'Sparking Wire', weight: 4, statBonusGrants: { powerMastery: 'statBonus', iq: 'statPenalty' }, description: 'It shocks. Yes. Constantly.' },
+        { label: 'Salvage Cache', weight: 3, description: 'A box of parts. Many useful, none safe.' },
+        { label: 'Live Grenade', weight: 2, statBonusGrants: { strength: 'statBonus', iq: 'statPenalty' }, description: "Pin's still in. Probably." },
+        { label: 'Goblin Engine', weight: 1, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, description: 'An impossible machine. It works. Sometimes.' },
+      ]},
+      { id: 'loot', displayName: 'Loot', order: 2, segments: [
+        { label: 'Bag of Coins', weight: 5, description: 'Stolen earlier today.' },
+        { label: 'Stolen Trinket', weight: 4, statBonusGrants: { charisma: 'statBonus' }, description: 'Belonged to someone important.' },
+        { label: 'Half a Weapon', weight: 3, statBonusGrants: { fightingSkill: 'statBonus', weaponMastery: 'statBonus' }, description: 'Just the sharp end.' },
+        { label: 'Rare Component', weight: 2, statBonusGrants: { iq: 'statBonus' }, description: 'Worth more than the goblin who stole it.' },
+        { label: 'Cursed Idol', weight: 1, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statPenalty' }, description: 'Voices in the head. Just whispers, really.' },
+      ]},
+    ],
     statModifiers: { agility: 1.4, speed: 1.3, charisma: 0.7, durability: 0.7 },
     weaponTypeBias: { 'Melee': 1.5, 'Ranged': 1.3, 'Exotic': 2.0, 'Cursed': 2.5, 'None': 1.5, 'Magical': 0.7, 'Ancient': 0.3 },
     armorTypeBias:  { 'None': 2.5, 'Helmet Only': 1.5, 'Cursed': 2.0, 'Exotic': 1.2, 'Half-Suit': 0.7, 'Full-Suit': 0.2, 'Ancient': 0.3 },
@@ -280,6 +344,22 @@ export const races: Race[] = [
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 1.0,
     description: 'Tiny. Ingenious. Almost certainly up to something.',
+    injectedWheels: [
+      { id: 'gadget', displayName: 'Gadget', order: 1, segments: [
+        { label: 'Spring-Loaded', weight: 5, statBonusGrants: { agility: 'statBonus' }, description: 'Snaps open. Maybe useful, maybe a face full of spring.' },
+        { label: 'Clockwork Aid', weight: 4, statBonusGrants: { iq: 'statBonus' }, description: 'Reliable in calm moments.' },
+        { label: "Tinker's Goggles", weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, description: "See what others can't focus on." },
+        { label: 'Pocket Engine', weight: 2, statBonusGrants: { powerMastery: 'statBonus' }, description: "A miniature reactor. Don't drop it." },
+        { label: 'Prototype Failure', weight: 1, statBonusGrants: { potential: 'statBonus', iq: 'statPenalty' }, description: 'It exploded. They still build.' },
+      ]},
+      { id: 'experiment', displayName: 'Experiment', order: 2, segments: [
+        { label: 'Stable Compound', weight: 6, statBonusGrants: { durability: 'statBonus' }, description: 'Passed three rounds of testing.' },
+        { label: 'Reactive Compound', weight: 4, statBonusGrants: { powerMastery: 'statBonus' }, description: 'Still bubbling. Still smoking.' },
+        { label: 'Mind Solvent', weight: 3, statBonusGrants: { iq: 'statBonus', charisma: 'statPenalty' }, description: 'Sharper, lonelier.' },
+        { label: 'Gnomish Catalyst', weight: 2, statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus' }, description: 'Multiplies whatever it touches.' },
+        { label: 'Lab Accident', weight: 1, statBonusGrants: { strength: 'statBonus', iq: 'statPenalty' }, description: 'Forever altered. Possibly improved.' },
+      ]},
+    ],
     statModifiers: { iq: 1.6, potential: 1.4, strength: 0.6 },
     weaponTypeBias: { 'Magical': 2.5, 'Exotic': 2.0, 'Ranged': 1.2, 'None': 1.2, 'Melee': 0.4, 'Cursed': 0.5, 'Ancient': 0.5 },
     armorTypeBias:  { 'Exotic': 2.0, 'None': 1.5, 'Half-Suit': 1.0, 'Helmet Only': 0.8, 'Full-Suit': 0.3, 'Ancient': 0.5 },
@@ -316,6 +396,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 1.5,
     weaknessCount: 2,
     description: 'A mechanical construct operating in a biological world. Entirely unimpressed by your organic limitations.',
+    injectedWheels: [
+      { id: 'core', displayName: 'Core', order: 1, segments: [
+        { label: 'Combat Core', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Built for war. Optimised for kill chains.' },
+        { label: 'Defense Core', weight: 4, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Mobile fortress configuration.' },
+        { label: 'Logic Core', weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, description: 'Strategy engine. Computes ten steps ahead.' },
+        { label: 'Stealth Core', weight: 3, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' }, description: 'Silent runners. Cold operation.' },
+        { label: 'Experimental Core', weight: 1, statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus', durability: 'statPenalty' }, description: 'Field test. Untested. Glowing.' },
+      ]},
+      { id: 'module', displayName: 'Module', order: 2, segments: [
+        { label: 'Standard Loadout', weight: 5, description: 'Factory default. Reliable, unremarkable.' },
+        { label: 'Plasma Arm', weight: 4, statBonusGrants: { powerMastery: 'statBonus' }, description: 'Vents heat between shots.' },
+        { label: 'Reinforced Plating', weight: 4, statBonusGrants: { armorStrength: 'statBonus' }, description: 'Extra weight, extra survival.' },
+        { label: 'Sensor Array', weight: 3, statBonusGrants: { iq: 'statBonus', agility: 'statBonus' }, description: 'Sees the battlefield as data.' },
+        { label: 'Glitched Module', weight: 1, statBonusGrants: { powerMastery: 'statBonus', iq: 'statPenalty' }, description: 'Behaviour inconsistent. Output high.' },
+      ]},
+    ],
     statModifiers: { durability: 1.3, iq: 1.2, charisma: 0.4, agility: 0.7 },
     subTypePool: [
       { label: 'Utility Unit', weight: 3, element: 'Metal', grade: 'D', abilities: [{ label: 'Precision Tools', weight: 2, element: 'Metal', grade: 'D' }, { label: 'Task Efficiency', weight: 2, element: 'Metal', grade: 'D' }, { label: 'Mechanical Endurance', weight: 2, element: 'Metal', grade: 'C' }, { label: 'Data Storage', weight: 2, element: 'Time', grade: 'D' }, { label: 'Error Logging', weight: 1, element: 'Metal', grade: 'D' }] },
@@ -369,6 +465,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.8,
     minStatTier: 'E-',
     description: 'Ancient, graceful, and quietly judgemental.',
+    injectedWheels: [
+      { id: 'blessing', displayName: 'Blessing', order: 1, segments: [
+        { label: "Forest's Favour", weight: 5, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' }, description: 'Trees know them. Move with.' },
+        { label: 'Moonlit Path', weight: 4, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Walks where moonlight can find them.' },
+        { label: 'Wild Hunt Mark', weight: 3, statBonusGrants: { fightingSkill: 'statBonus', speed: 'statBonus' }, description: 'Marked for the hunt. Always returning.' },
+        { label: 'Star Blessed', weight: 2, statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'One stat reaches cosmic minimum.' },
+        { label: 'Ancient Bargain', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', durability: 'statPenalty' }, description: 'Older than the trees. Older than them.' },
+      ]},
+      { id: 'moonPhase', displayName: 'Moon Phase', order: 2, segments: [
+        { label: 'New Moon', weight: 3, statBonusGrants: { agility: 'statBonus' }, description: 'Unseen. Movements quieter.' },
+        { label: 'Waxing', weight: 3, statBonusGrants: { potential: 'statBonus' }, description: 'Growing into something.' },
+        { label: 'Half Moon', weight: 4, description: 'Balanced. Even.' },
+        { label: 'Waning', weight: 3, statBonusGrants: { iq: 'statBonus' }, description: 'Letting go of something.' },
+        { label: 'Full Moon', weight: 2, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Power floods. The elf glows.' },
+      ]},
+    ],
     statModifiers: { speed: 1.4, agility: 1.4, charisma: 1.2, durability: 0.8 },
     subTypePool: [
       { label: 'High Elf',  weight: 4, element: 'Arcane', grade: 'B', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Arcane Affinity', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Ancient Spellcraft', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Trance Memory', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Mana Attunement', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Elven Spell Precision', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Ley Sense', weight: 1, element: 'Arcane', grade: 'B' }], powerPool: [{ label: 'Arcane Mastery', weight: 3 }, { label: 'Arcane Barrage', weight: 3 }, { label: 'Counterspell', weight: 2 }, { label: 'Elven Star Shot', weight: 2 }, { label: 'Moonwell Draw', weight: 1 }] },
@@ -404,6 +516,24 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 1.4,
     minStatTier: 'D-',
     description: 'Infernal heritage — great for intimidation, rough for job applications.',
+    injectedWheels: [
+      { id: 'contract', displayName: 'Infernal Contract', order: 1, segments: [
+        { label: 'No Pact', weight: 5, description: 'The blood is enough.' },
+        { label: 'Minor Pact', weight: 4, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statPenalty' }, description: 'A small price. Small power.' },
+        { label: 'Soul Power', weight: 3, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus', durability: 'statPenalty' }, description: 'Trades vitality for power.' },
+        { label: 'Blood Pact', weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', potential: 'statPenalty' }, description: 'Sealed in red. Burns slowly.' },
+        { label: 'Eternal Flame', weight: 1, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus', iq: 'statPenalty' }, description: 'Cannot be extinguished. Cannot be paid back.' },
+      ]},
+      { id: 'sin', displayName: 'Sin', order: 2, segments: [
+        { label: 'Wrath', weight: 3, statBonusGrants: { strength: 'statBonus', charisma: 'statPenalty' }, description: 'Burns from inside.' },
+        { label: 'Pride', weight: 3, statBonusGrants: { charisma: 'statBonus', fightingSkill: 'statBonus' }, description: 'Posture and presence.' },
+        { label: 'Greed', weight: 3, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, description: 'Hoards advantages.' },
+        { label: 'Envy', weight: 2, statBonusGrants: { agility: 'statBonus', speed: 'statBonus', charisma: 'statPenalty' }, description: 'Takes what others have.' },
+        { label: 'Lust', weight: 2, statBonusGrants: { charisma: 'statBonus', speed: 'statBonus' }, description: 'Pulls without asking.' },
+        { label: 'Sloth', weight: 2, statBonusGrants: { durability: 'statBonus', potential: 'statBonus', speed: 'statPenalty' }, description: 'Patient. The longest game.' },
+        { label: 'Gluttony', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', agility: 'statPenalty' }, description: 'Always hungry.' },
+      ]},
+    ],
     statModifiers: { charisma: 1.4, iq: 1.2 },
     subTypePool: [
       { label: 'Asmodeus Bloodline',      weight: 4, element: 'Fire', grade: 'B', abilities: [{ label: 'Hellfire Affinity', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Contract Sense', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Infernal Sight', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Devilish Charm', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Soul Read', weight: 2, element: 'Soul', grade: 'B' }, { label: 'Dark Pact', weight: 1, element: 'Shadow', grade: 'B' }], powerPool: [{ label: 'Hellfire Burst', weight: 3 }, { label: 'Infernal Contract', weight: 3 }, { label: 'Devil Sight', weight: 2 }, { label: 'Infernal Armor', weight: 2 }, { label: 'Darkness Veil', weight: 1 }] },
@@ -445,6 +575,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.9,
     minStatTier: 'D-',
     description: 'Draconic bloodline, breath weapon included, no refunds.',
+    injectedWheels: [
+      { id: 'dragonAspect', displayName: 'Dragon Aspect', order: 1, segments: [
+        { label: 'Common Blood', weight: 5, description: 'Dragon ancestor. Distant.' },
+        { label: 'Infernal', weight: 3, statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus' }, description: 'Fire ancestor. Forged in heat.' },
+        { label: 'Frost', weight: 3, statBonusGrants: { durability: 'statBonus', powerMastery: 'statBonus' }, description: 'Ice ancestor. Patient ruin.' },
+        { label: 'Storm', weight: 3, statBonusGrants: { speed: 'statBonus', energyLevel: 'statBonus' }, description: 'Storm ancestor. Lightning blood.' },
+        { label: 'Void', weight: 2, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus' }, description: 'Void ancestor. Older than night.' },
+        { label: 'Solar', weight: 1, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus', charisma: 'statBonus' }, description: 'Sun ancestor. Walking dawn.' },
+      ]},
+      { id: 'breathEvolution', displayName: 'Breath Evolution', order: 2, segments: [
+        { label: 'Single Breath', weight: 6, statBonusGrants: { powerMastery: 'statBonus' }, description: 'One element. Pure.' },
+        { label: 'Refined Breath', weight: 4, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus' }, description: 'Aimed. Precise.' },
+        { label: 'Dual Breath', weight: 3, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Two flavours. Twice the trouble.' },
+        { label: 'Catastrophe', weight: 1, statBonusGrants: { powerMastery: 'statBonus', strength: 'statBonus', energyLevel: 'statBonus' }, description: 'Last-resort breath. Scorches a city.' },
+      ]},
+    ],
     statModifiers: { strength: 1.4, charisma: 1.3, durability: 1.2 },
     subTypePool: [
       { label: 'Red Dragonborn (Fire)',         weight: 3, element: 'Fire', grade: 'D', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Fire Resistance', weight: 2, element: 'Fire', grade: 'D' }, { label: 'Thermal Vision', weight: 2, element: 'Fire', grade: 'D' }, { label: 'Flame Affinity', weight: 2, element: 'Fire', grade: 'D' }, { label: 'Smoke Immunity', weight: 2, element: 'Shadow', grade: 'D' }, { label: 'Char Touch', weight: 2, element: 'Fire', grade: 'D' }, { label: 'Heat Sense', weight: 1, element: 'Fire', grade: 'D' }], grantedPowers: ['Fire Breath'] },
@@ -482,6 +628,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.6,
     minStatTier: 'D-',
     description: 'Touched by the divine. Painfully aware of it.',
+    injectedWheels: [
+      { id: 'halo', displayName: 'Halo', order: 1, segments: [
+        { label: 'Hidden', weight: 5, description: 'Mortals do not see the light.' },
+        { label: 'Subtle Glow', weight: 4, statBonusGrants: { charisma: 'statBonus' }, description: 'A warmth. A familiarity.' },
+        { label: 'Radiant', weight: 3, statBonusGrants: { charisma: 'statBonus', potential: 'statBonus' }, description: 'Light visible at distance. Pursued by faith.' },
+        { label: 'Burning Halo', weight: 2, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus' }, description: 'Holy flame. Marks them.' },
+        { label: 'Divine Mercy', weight: 1, statBonusGrants: { potential: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus' }, description: 'One terrible roll is rerolled automatically.' },
+      ]},
+      { id: 'blessing', displayName: 'Blessing', order: 2, segments: [
+        { label: 'Healing Hands', weight: 4, statBonusGrants: { potential: 'statBonus', durability: 'statBonus' }, description: 'Wounds close. Slowly.' },
+        { label: 'Guardian Word', weight: 4, statBonusGrants: { charisma: 'statBonus', durability: 'statBonus' }, description: 'Allies feel safer near you.' },
+        { label: 'Lawbringer', weight: 3, statBonusGrants: { fightingSkill: 'statBonus', iq: 'statBonus' }, description: 'Wrongs against you correct themselves.' },
+        { label: 'Light-bearer', weight: 2, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Bring light into dark places. Visibly.' },
+        { label: 'Sacred Vow', weight: 1, statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Vows you cannot break, but you do not want to.' },
+      ]},
+    ],
     statModifiers: { charisma: 1.5, potential: 1.3, fightingSkill: 1.2 },
     subTypePool: [
       { label: 'Protector Aasimar', weight: 4, element: 'Light', grade: 'D', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Radiant Healing Touch', weight: 2, element: 'Light', grade: 'D' }, { label: 'Guardian Wings (Minor)', weight: 2, element: 'Light', grade: 'D' }, { label: 'Holy Barrier', weight: 2, element: 'Light', grade: 'D' }, { label: 'Light of Dawn', weight: 2, element: 'Light', grade: 'D' }, { label: 'Empathic Healing', weight: 2, element: 'Light', grade: 'D' }, { label: 'Celestial Shield', weight: 1, element: 'Light', grade: 'C' }], powerPool: [{ label: 'Radiant Soul', weight: 3 }, { label: 'Angelic Wings', weight: 3 }, { label: 'Sacred Heal', weight: 2 }, { label: 'Courage Aura', weight: 2 }, { label: 'Aura of Retribution', weight: 1 }] },
@@ -520,6 +682,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 1.0,
     minStatTier: 'E-',
     description: 'Cold-blooded in every sense of the phrase.',
+    injectedWheels: [
+      { id: 'instinct', displayName: 'Instinct', order: 1, segments: [
+        { label: 'Watchful', weight: 5, statBonusGrants: { iq: 'statBonus', agility: 'statBonus' }, description: 'Reads the room before anyone speaks.' },
+        { label: 'Patient', weight: 4, statBonusGrants: { durability: 'statBonus', potential: 'statBonus' }, description: 'Waits. The water comes back.' },
+        { label: 'Hunter', weight: 4, statBonusGrants: { fightingSkill: 'statBonus', speed: 'statBonus' }, description: 'Tracks. Pounces.' },
+        { label: 'Cold', weight: 3, statBonusGrants: { durability: 'statBonus', charisma: 'statPenalty' }, description: 'Reads emotion only as data.' },
+        { label: 'Apex', weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', potential: 'statBonus' }, description: 'Top of the food chain.' },
+      ]},
+      { id: 'evolution', displayName: 'Evolution', order: 2, segments: [
+        { label: 'Scaled', weight: 5, statBonusGrants: { armorStrength: 'statBonus' }, description: 'Natural plate. Heavy.' },
+        { label: 'Venom Glands', weight: 3, statBonusGrants: { powerMastery: 'statBonus' }, description: 'A bite is now a problem.' },
+        { label: 'Regeneration', weight: 3, statBonusGrants: { durability: 'statBonus', potential: 'statBonus' }, description: 'Limbs return. Slowly.' },
+        { label: 'Camouflage', weight: 2, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' }, description: 'Always somewhere else.' },
+        { label: 'Apex Mutation', weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus' }, description: 'Something the species has never been.' },
+      ]},
+    ],
     statModifiers: { durability: 1.4, strength: 1.2 },
     subTypePool: [
       { label: 'Komodo Lizardfolk', weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus' } },
@@ -556,6 +734,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 1.0,
     minStatTier: 'E-',
     description: 'Cat person. Speedrunner. Easily distracted by shiny objects.',
+    injectedWheels: [
+      { id: 'hunt', displayName: 'Hunt', order: 1, segments: [
+        { label: 'Stalker', weight: 5, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' }, description: 'Approaches without sound.' },
+        { label: 'Pouncer', weight: 4, statBonusGrants: { speed: 'statBonus', fightingSkill: 'statBonus' }, description: 'All energy at the strike.' },
+        { label: 'Acrobat', weight: 3, statBonusGrants: { agility: 'statBonus', potential: 'statBonus' }, description: 'Three storeys, no harm.' },
+        { label: 'Night Cat', weight: 2, statBonusGrants: { agility: 'statBonus', speed: 'statBonus', iq: 'statBonus' }, description: 'Sees in the dark you fear.' },
+        { label: 'Apex Hunter', weight: 1, statBonusGrants: { speed: 'statBonus', agility: 'statBonus', fightingSkill: 'statBonus' }, description: 'No prey escapes twice.' },
+      ]},
+      { id: 'reflex', displayName: 'Reflex', order: 2, segments: [
+        { label: 'Quick', weight: 5, statBonusGrants: { speed: 'statBonus' }, description: 'First to react.' },
+        { label: 'Counter-Sense', weight: 4, statBonusGrants: { fightingSkill: 'statBonus', agility: 'statBonus' }, description: 'Reads strikes before they land.' },
+        { label: 'Combo Chain', weight: 3, statBonusGrants: { fightingSkill: 'statBonus', speed: 'statBonus' }, description: 'Three hits where most see one.' },
+        { label: 'Dodge Master', weight: 2, statBonusGrants: { agility: 'statBonus', potential: 'statBonus' }, description: 'Cannot be cornered.' },
+        { label: 'Time Slip', weight: 1, statBonusGrants: { agility: 'statBonus', speed: 'statBonus', potential: 'statBonus' }, description: 'Moves through the moment, not past it.' },
+      ]},
+    ],
     statModifiers: { speed: 1.6, agility: 1.5, strength: 0.8 },
     classPool: [
       { label: 'Hunter',         weight: 4, element: 'Nature', grade: 'D', statBonusGrants: { speed: 'statBonus' }, abilities: [{ label: 'Track by Scent', weight: 2, element: 'Nature', grade: 'D' }, { label: 'Kill Zone Awareness', weight: 2, element: 'Nature', grade: 'D' }, { label: 'Ambush Trigger', weight: 2, element: 'Nature', grade: 'D' }, { label: 'Prey Memory', weight: 2, element: 'Nature', grade: 'D' }, { label: 'Sprint Burst Activation', weight: 2, element: 'Nature', grade: 'D' }, { label: 'Pounce Calculation', weight: 1, element: 'Nature', grade: 'D' }], powerPool: [{ label: 'Pounce Strike', weight: 3 }, { label: "Hunter's Mark", weight: 3 }, { label: 'Predator Stance', weight: 2 }, { label: 'Beast Bond', weight: 2 }, { label: 'Terrain Mastery', weight: 1 }] },
@@ -590,6 +784,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.8,
     minStatTier: 'D',
     description: 'Literal mountain people. The mountain says no.',
+    injectedWheels: [
+      { id: 'colossus', displayName: 'Colossus', order: 1, segments: [
+        { label: 'Tall', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Above most rooms.' },
+        { label: 'Mountain', weight: 4, statBonusGrants: { strength: 'statBonus', armorStrength: 'statBonus' }, description: 'Stands like terrain.' },
+        { label: 'Earthshaker', weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Each step is a tremor.' },
+        { label: 'Titan-Born', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Lineage of the old giants.' },
+        { label: 'Living Peak', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', potential: 'statBonus' }, description: 'There is no taller mountain than this one.' },
+      ]},
+      { id: 'endurance', displayName: 'Endurance', order: 2, segments: [
+        { label: 'Hardy', weight: 5, statBonusGrants: { durability: 'statBonus' }, description: 'Long days.' },
+        { label: 'Stoneskin', weight: 4, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Wounds slow.' },
+        { label: 'Marathon', weight: 3, statBonusGrants: { durability: 'statBonus', energyLevel: 'statBonus' }, description: 'Never tires.' },
+        { label: 'Pain-Tolerant', weight: 2, statBonusGrants: { durability: 'statBonus', fightingSkill: 'statBonus' }, description: 'Smiles through it.' },
+        { label: 'Immovable', weight: 1, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus', strength: 'statBonus' }, description: 'The wind goes around them.' },
+      ]},
+    ],
     statModifiers: { strength: 1.6, durability: 1.5, armorStrength: 1.35, speed: 0.7, agility: 0.7 },
     classPool: [
       { label: 'Stone Guardian',    weight: 4, element: 'Earth', grade: 'C', abilities: [{ label: 'Boulder Stance', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Fortified Position', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Immovable Defense', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Ground Bind', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Shielding Aura', weight: 2, element: 'Earth', grade: 'C' }, { label: "Mountain's Will", weight: 1 }], powerPool: [{ label: 'Stone Endurance', weight: 3 }, { label: 'Crystal Armor', weight: 3 }, { label: 'Mountain Crash', weight: 2 }, { label: 'Stone Call', weight: 2 }, { label: 'Tremor Sense', weight: 1 }] },
@@ -623,6 +833,15 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 1.1,
     minStatTier: 'D-',
     description: 'Born of elemental fire. Perpetually warm to the touch.',
+    injectedWheels: [
+      { id: 'inferno', displayName: 'Inferno', order: 1, segments: [
+        { label: 'Ember', weight: 5, statBonusGrants: { energyLevel: 'statBonus' }, description: 'Always slightly warm. Steam in cold air.' },
+        { label: 'Burning Aura', weight: 4, statBonusGrants: { powerMastery: 'statBonus' }, description: 'Things near them get hotter.' },
+        { label: 'Pyroclasm', weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, description: 'Explosive output.' },
+        { label: 'Solar Heart', weight: 2, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'A sun in the chest.' },
+        { label: 'Living Flame', weight: 1, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus', fightingSkill: 'statBonus' }, description: 'Touches return as ash.' },
+      ]},
+    ],
     statModifiers: { energyLevel: 1.6, powerMastery: 1.3 },
     classPool: [
       { label: 'Flamecaller',  weight: 4, element: 'Fire', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Ignition Control', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Fire Shape', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Heat Sense', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Smoke Immunity', weight: 2, element: 'Shadow', grade: 'C' }, { label: 'Ash Form', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Wildfire Instinct', weight: 1, element: 'Fire', grade: 'C' }], powerPool: [{ label: 'Pyrokinesis', weight: 3 }, { label: 'Fire Breath', weight: 3 }, { label: 'Cinder Surge', weight: 2 }, { label: 'Lava Control', weight: 2 }, { label: 'Lava Shield', weight: 1 }] },
@@ -654,6 +873,15 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.9,
     minStatTier: 'D-',
     description: 'Born of elemental water. Great swimmer. Bad hair day, always.',
+    injectedWheels: [
+      { id: 'tide', displayName: 'Tide', order: 1, segments: [
+        { label: 'Calm Pool', weight: 5, statBonusGrants: { potential: 'statBonus', durability: 'statBonus' }, description: 'Patient. Deep.' },
+        { label: 'River-Bent', weight: 4, statBonusGrants: { agility: 'statBonus', potential: 'statBonus' }, description: 'Flows around obstacles.' },
+        { label: 'Healing Tide', weight: 3, statBonusGrants: { potential: 'statBonus', charisma: 'statBonus' }, description: 'Where they walk, wounds close.' },
+        { label: 'Riptide', weight: 2, statBonusGrants: { strength: 'statBonus', potential: 'statBonus' }, description: 'Pulls everything down.' },
+        { label: 'Ocean Heart', weight: 1, statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus', durability: 'statBonus' }, description: 'The deep listens to them.' },
+      ]},
+    ],
     statModifiers: { potential: 1.3, agility: 1.2 },
     classPool: [
       { label: 'Tidecaller',  weight: 4, element: 'Water', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Current Read', weight: 2, element: 'Water', grade: 'C' }, { label: 'Water Shaping', weight: 2, element: 'Water', grade: 'C' }, { label: 'Tide Sense', weight: 2, element: 'Water', grade: 'C' }, { label: 'Flow Control', weight: 2, element: 'Water', grade: 'C' }, { label: 'Aqua Whip', weight: 2, element: 'Water', grade: 'C' }, { label: 'Wave Mastery', weight: 1, element: 'Water', grade: 'C' }], powerPool: [{ label: 'Hydrokinesis', weight: 3 }, { label: 'Tidal Burst', weight: 3 }, { label: 'Aqua Form', weight: 2 }, { label: 'Cryokinesis', weight: 2 }, { label: 'Moonwell Draw', weight: 1 }] },
@@ -686,6 +914,15 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.9,
     minStatTier: 'D-',
     description: 'Born of elemental air. Technically never has a bad smell.',
+    injectedWheels: [
+      { id: 'tempest', displayName: 'Tempest', order: 1, segments: [
+        { label: 'Breeze', weight: 5, statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, description: 'Always cooler than they should be.' },
+        { label: 'Gale', weight: 4, statBonusGrants: { speed: 'statBonus', energyLevel: 'statBonus' }, description: 'Hard to stand against.' },
+        { label: 'Updraft', weight: 3, statBonusGrants: { agility: 'statBonus', potential: 'statBonus' }, description: 'Falls become flights.' },
+        { label: 'Storm Caller', weight: 2, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Weather pays attention.' },
+        { label: 'Living Tempest', weight: 1, statBonusGrants: { speed: 'statBonus', agility: 'statBonus', powerMastery: 'statBonus' }, description: 'Is the storm.' },
+      ]},
+    ],
     statModifiers: { speed: 1.7, agility: 1.5, durability: 0.7 },
     classPool: [
       { label: 'Stormcaller', weight: 4, element: 'Wind', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Storm Sense', weight: 2, element: 'Lightning', grade: 'C' }, { label: 'Thunder Anticipation', weight: 2, element: 'Lightning', grade: 'C' }, { label: 'Gale Force', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Electrical Attunement', weight: 2, element: 'Lightning', grade: 'C' }, { label: 'Cyclone Formation', weight: 2, element: 'Wind', grade: 'D' }, { label: 'Tempest Roar', weight: 1, element: 'Wind', grade: 'C' }], powerPool: [{ label: 'Storm Surge', weight: 3 }, { label: 'Lightning Generation', weight: 3 }, { label: 'Thunder Clap', weight: 2 }, { label: 'Storm Circle', weight: 2 }, { label: 'Aerokinesis', weight: 1 }] },
@@ -717,6 +954,15 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.8,
     minStatTier: 'D-',
     description: 'Born of elemental earth. Grounded. Literally.',
+    injectedWheels: [
+      { id: 'stoneheart', displayName: 'Stoneheart', order: 1, segments: [
+        { label: 'Soil-Born', weight: 5, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Slow to react. Slow to fall.' },
+        { label: 'Bedrock', weight: 4, statBonusGrants: { durability: 'statBonus', strength: 'statBonus' }, description: 'Cannot be moved.' },
+        { label: 'Stone Sense', weight: 3, statBonusGrants: { iq: 'statBonus', durability: 'statBonus' }, description: 'Hears the bones of the world.' },
+        { label: 'Mountain Lord', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Earth answers to them.' },
+        { label: 'Living Stone', weight: 1, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus', strength: 'statBonus', speed: 'statPenalty' }, description: 'Flesh is suggestion.' },
+      ]},
+    ],
     statModifiers: { durability: 1.7, strength: 1.5, speed: 0.5, agility: 0.5 },
     classPool: [
       { label: 'Stonebinder',   weight: 4, element: 'Earth', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Mineral Sense', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Binding Earth', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Stone Call (Passive)', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Deep Vibration', weight: 2, element: 'Sound', grade: 'C' }, { label: 'Rock Formation', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Petrify Touch', weight: 1, element: 'Earth', grade: 'C' }], powerPool: [{ label: 'Geokinesis', weight: 3 }, { label: 'Tremor Sense', weight: 3 }, { label: 'Stone Call', weight: 2 }, { label: 'Crystal Armor', weight: 2 }, { label: 'Terrakinesis', weight: 1 }] },
@@ -748,6 +994,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.7,
     minStatTier: 'D',
     description: 'Constructed for war, now grappling with purpose and carpal tunnel.',
+    injectedWheels: [
+      { id: 'upgradeTree', displayName: 'Upgrade Tree', order: 1, segments: [
+        { label: 'Field-Ready', weight: 5, description: 'Standard build. Reliable.' },
+        { label: 'Reinforced', weight: 4, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Plates upgraded.' },
+        { label: 'Optimised', weight: 3, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' }, description: 'Lighter actuators.' },
+        { label: 'Battle-Calibrated', weight: 3, statBonusGrants: { fightingSkill: 'statBonus', strength: 'statBonus' }, description: 'Tuned for combat.' },
+        { label: 'Prototype Frame', weight: 1, statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus' }, description: 'Untested. Promising.' },
+      ]},
+      { id: 'protocol', displayName: 'Combat Protocol', order: 2, segments: [
+        { label: 'Defender', weight: 4, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Hold the line.' },
+        { label: 'Vanguard', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Be the line.' },
+        { label: 'Skirmisher', weight: 3, statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, description: 'Move with the line.' },
+        { label: 'Sniper', weight: 2, statBonusGrants: { fightingSkill: 'statBonus', iq: 'statBonus' }, description: 'Make the line moot.' },
+        { label: 'Override', weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'All protocols. Simultaneously.' },
+      ]},
+    ],
     statModifiers: { durability: 1.5, strength: 1.3, armorStrength: 1.6, charisma: 0.6 },
     subTypePool: [
       { label: 'Battle Chassis',              weight: 3, element: 'Metal', grade: 'D', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
@@ -791,6 +1053,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.8,
     minStatTier: 'D-',
     description: 'Part flesh, part machine. Neither side is happy about it.',
+    injectedWheels: [
+      { id: 'implant', displayName: 'Implant', order: 1, segments: [
+        { label: 'Stock', weight: 5, description: 'Factory parts.' },
+        { label: 'Combat Limb', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Replacement arm. Stronger than the original.' },
+        { label: 'Optic Array', weight: 3, statBonusGrants: { iq: 'statBonus', fightingSkill: 'statBonus' }, description: 'Sees the air move.' },
+        { label: 'Spinal Reactor', weight: 2, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus' }, description: 'Power core in the back.' },
+        { label: 'Black Market', weight: 1, statBonusGrants: { strength: 'statBonus', speed: 'statBonus', durability: 'statPenalty' }, description: 'Off-the-books surgery. Untraceable. Unstable.' },
+      ]},
+      { id: 'corruptedTech', displayName: 'System Status', order: 2, segments: [
+        { label: 'Stable', weight: 5, description: 'All systems nominal.' },
+        { label: 'Overclocked', weight: 3, statBonusGrants: { strength: 'statBonus', speed: 'statBonus', durability: 'statPenalty' }, description: 'Past spec. Performs. Glows.' },
+        { label: 'Hijacked', weight: 2, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statPenalty' }, description: 'Someone else is at the keyboard.' },
+        { label: 'Glitched', weight: 2, statBonusGrants: { powerMastery: 'statBonus', iq: 'statPenalty' }, description: 'Reality stutters around them.' },
+        { label: 'System Failure', weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', iq: 'statPenalty' }, description: 'Total breakdown. Surprisingly effective.' },
+      ]},
+    ],
     statModifiers: { durability: 1.6, strength: 1.4, iq: 1.3, agility: 0.8 },
     subTypePool: [
       { label: 'Combat Cyborg',                   weight: 4, element: 'Metal', grade: 'B', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Weapon Integration', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Targeting Assist', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Combat Overclock', weight: 2, element: 'Metal', grade: 'C' }, { label: 'Damage Absorption', weight: 2, element: 'Time', grade: 'B' }, { label: 'Tactical HUD', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Lethal Protocol', weight: 1, element: 'Metal', grade: 'B' }], powerPool: [{ label: 'Super Strength', weight: 3 }, { label: 'Invulnerability', weight: 3 }, { label: 'Combat Flow State', weight: 2 }, { label: 'Electrokinesis', weight: 2 }, { label: 'Warrior Trance', weight: 1 }] },
@@ -826,6 +1104,15 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.9,
     minStatTier: 'C-',
     description: 'Manipulates one of the four elements through spiritual discipline and martial arts.',
+    injectedWheels: [
+      { id: 'masteryLevel', displayName: 'Mastery Level', order: 1, segments: [
+        { label: 'Initiate', weight: 5, description: 'Just the basics.' },
+        { label: 'Adept', weight: 4, statBonusGrants: { powerMastery: 'statBonus' }, description: 'Forms hold. Mostly.' },
+        { label: 'Master', weight: 3, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus' }, description: 'Sub-style developed. Style respected.' },
+        { label: 'Grandmaster', weight: 2, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus', potential: 'statBonus' }, description: 'Style emulated.' },
+        { label: 'Avatar Spark', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' }, description: 'Tiny chance to dual-element. Very few alive can.' },
+      ]},
+    ],
     statModifiers: { energyLevel: 1.5, fightingSkill: 1.4, potential: 1.3 },
     subTypePool: [
       { label: 'Waterbender',        weight: 4, element: 'Water', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Healing Water', weight: 2, element: 'Water', grade: 'C' }, { label: 'Blood Sense (Passive)', weight: 2, element: 'Blood', grade: 'C' }, { label: 'Current Riding', weight: 2, element: 'Water', grade: 'C' }, { label: 'Ice Formation (Quick)', weight: 2, element: 'Ice', grade: 'D' }, { label: 'Tidal Push', weight: 2, element: 'Water', grade: 'C' }, { label: 'Moon Empowerment', weight: 1, element: 'Water', grade: 'C' }], grantedPowers: ['Hydrokinesis'] },
@@ -2323,6 +2610,22 @@ export const races: Race[] = [
     weaknessCount: 1,
     minStatTier: 'D-',
     description: 'Looks human. Isn\'t. Has strong opinions about the menu.',
+    injectedWheels: [
+      { id: 'hunger', displayName: 'Hunger', order: 1, segments: [
+        { label: 'Sated', weight: 5, description: 'Recently fed. Calm-ish.' },
+        { label: 'Aching', weight: 4, statBonusGrants: { speed: 'statBonus', charisma: 'statPenalty' }, description: 'Hours since the last bite.' },
+        { label: 'Starving', weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', iq: 'statPenalty' }, description: 'Lights out. Hunt mode on.' },
+        { label: 'Devouring', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' }, description: 'The fight feeds. Heals on hit.' },
+        { label: 'Endless Maw', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', charisma: 'statPenalty' }, description: 'Whatever falls in does not come out.' },
+      ]},
+      { id: 'mutation', displayName: 'Mutation', order: 2, segments: [
+        { label: 'Pale Skin', weight: 5, statBonusGrants: { agility: 'statBonus' }, description: 'Sun is hard. Shadows are home.' },
+        { label: 'Sharp Teeth', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Each bite tears.' },
+        { label: 'Long Claws', weight: 3, statBonusGrants: { fightingSkill: 'statBonus', speed: 'statBonus' }, description: 'Reach extended.' },
+        { label: 'Toughened', weight: 2, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Surgery has been performed. Repeatedly.' },
+        { label: 'Hollowed', weight: 1, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', durability: 'statBonus', charisma: 'statPenalty' }, description: 'More appetite than person.' },
+      ]},
+    ],
     statModifiers: { strength: 1.6, speed: 1.5, agility: 1.5, durability: 1.4 },
     subTypePool: [
       { label: 'Rinkaku (Tentacle Kagune)', weight: 4, element: 'Blood', grade: 'C', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Tentacle Extension', weight: 2, element: 'Blood', grade: 'C' }, { label: 'Rapid Regeneration', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Kagune Crush', weight: 2, element: 'Blood', grade: 'C' }, { label: 'Unstable Power (High Reward)', weight: 1, element: 'Chaos', grade: 'B' }] },
