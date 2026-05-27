@@ -22,6 +22,7 @@
   import { armorsByCategory } from '$lib/content/armors'
   import { getRacesForStage, racesToSegments, getArchetypesForStage, archetypesToSegments } from '$lib/story/raceTiers'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
+  import { resolveLandingForCategory } from '$lib/landingColors'
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   import { settings } from '$lib/settings.svelte'
@@ -963,6 +964,7 @@
           soundEnabled={settings.soundEnabled}
           effectsEnabled={settings.effectsEnabled}
           spinSpeedMultiplier={settings.spinSpeed}
+          resolveLandingColors={(_i, label) => resolveLandingForCategory(currentDef?.category, label)}
         />
       {/key}
 

@@ -36,6 +36,7 @@
   import type { ResolvedMeta } from '$lib/spinResultMeta'
   import { randomCharacterName } from '$lib/story/naming'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
+  import { resolveLandingForCategory } from '$lib/landingColors'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   const _powerLookup      = new Map(powersPool.map(p => [p.label, p]))
   const _weaponLookup     = new Map(weaponsPool.map(w => [w.label, w]))
@@ -420,6 +421,15 @@
 
   let currentCategoryHue = $derived(CATEGORY_HUES[currentDef?.category ?? ''])
   let reversedResults = $derived([...results].reverse())
+
+  // ── Landing celebration color/intensity resolver ─────────────────────────
+  // Shared helper in $lib so Story Mode and the main game resolve celebration
+  // colors identically. Maps the landed label + category → element color +
+  // grade-based intensity for item spins; stat spins fall through to the
+  // wheel's tier-based intensity ladder.
+  function resolveLandingColors(_idx: number, label: string) {
+    return resolveLandingForCategory(currentDef?.category, label)
+  }
 
   // ── Segment resolver: handles race/archetype ability pools + modifiers ────
   let currentSegments = $derived.by(() => {
@@ -2555,6 +2565,7 @@
               spinSpeedMultiplier={settings.spinSpeed}
               cursedTheme={auth.user?.gamepasses?.includes('cursed_wheel') ?? false}
               spinTrigger={spinTriggerKey}
+              resolveLandingColors={resolveLandingColors}
             />
           {/key}
 

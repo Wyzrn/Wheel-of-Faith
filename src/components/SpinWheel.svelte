@@ -5,6 +5,7 @@
   import { weightedRandom } from '$lib/game/random'
   import type { WeightedSegment, SpinStatus } from '$lib/session/types'
   import { effectsMultiplier, effectiveDpr, getPerfTier } from '$lib/perf'
+  import LandingCelebration from './LandingCelebration.svelte'
 
   const SVG_SIZE = 500
   const CENTER = SVG_SIZE / 2          // 250
@@ -21,7 +22,7 @@
 
   const COLORS = ['#E63946','#457B9D','#2A9D8F','#E9C46A','#F4A261','#264653','#6A0572','#0077B6']
 
-  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false, spinTrigger = 0 }: {
+  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false, spinTrigger = 0, resolveLandingColors }: {
     segments: WeightedSegment[]
     onSpinComplete: (resultIndex: number, resultLabel: string) => void
     categoryHue?: number
@@ -30,7 +31,34 @@
     spinSpeedMultiplier?: number
     cursedTheme?: boolean
     spinTrigger?: number
+    // Optional. Lets the host (main game / story) resolve the celebration's
+    // element color + tier color + intensity for the landed segment. Without
+    // it, we fall back to tier intensity guessed from segment.tier. Returns
+    // null to suppress the celebration overlay (used by tutorial flows that
+    // drive their own pacing).
+    //
+    // intensityOverride: 0..1; when provided overrides the tier-based scalar.
+    // Use it for item spins so a God-tier weapon triggers mythic celebration
+    // even though the segment carries no TierGrade.
+    resolveLandingColors?: (resultIndex: number, label: string) => {
+      tier?: string | null
+      tierColor?: string | null
+      elementColor?: string | null
+      intensityOverride?: number
+    } | null
   } = $props()
+
+  // ── Landing celebration overlay state ──────────────────────────────────────
+  // Set in the spin's onComplete; LandingCelebration is mounted as a fixed
+  // overlay until it self-completes and clears this.
+  let celebration = $state<{
+    key: number
+    intensity: number
+    tierColor: string
+    elementColor: string | null
+    tier: string | null
+  } | null>(null)
+  let celebrationKey = 0
 
   let spinStatus = $state<SpinStatus>('IDLE')
   let currentRotation = $state(Math.random() * 360)
@@ -517,6 +545,26 @@
             { filter: 'brightness(1) drop-shadow(0 0 0 transparent)', duration: 0.9, ease: 'power3.out' })
         }
 
+        // ── Tier-scaled landing celebration overlay ──────────────────────
+        // The host resolver can override intensity (grade-based for item
+        // spins, custom for races/archetypes). Skip below 0.25 (mundane).
+        if (effectsEnabled) {
+          const resolved = resolveLandingColors?.(resultIndex, landed.label)
+          // Host can return null to suppress the overlay (e.g. tutorial pacing).
+          if (resolved !== null) {
+            const finalIntensity = resolved?.intensityOverride ?? intensity
+            if (finalIntensity >= 0.25) {
+              celebration = {
+                key: ++celebrationKey,
+                intensity: finalIntensity,
+                tierColor: resolved?.tierColor ?? '#f0c040',
+                elementColor: resolved?.elementColor ?? null,
+                tier: resolved?.tier ?? landedTier ?? null,
+              }
+            }
+          }
+        }
+
         currentRotation = targetAngle
         lastResult = { index: resultIndex, label: segments[resultIndex].label }
         spinStatus = 'LANDED'
@@ -784,6 +832,18 @@
   {/if}
 
 </div>
+
+{#if celebration}
+  {#key celebration.key}
+    <LandingCelebration
+      intensity={celebration.intensity}
+      tierColor={celebration.tierColor}
+      elementColor={celebration.elementColor}
+      tier={celebration.tier}
+      onComplete={() => { celebration = null }}
+    />
+  {/key}
+{/if}
 
 <style>
   @keyframes runeRingPulse {
