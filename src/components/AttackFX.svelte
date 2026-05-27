@@ -873,31 +873,36 @@
     </svg>
 
   {:else if type === 'combo'}
+    <!-- Combo — flurry of rapid strikes converging on the target. Six
+         sequential slash arcs draw inward with stagger, plus a finishing
+         crosscut at the end and an impact burst at the center. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <ellipse cx="50" cy="50" rx="44" ry="40" fill="var(--c)" opacity="0.10" style="filter:blur(10px)"/>
-      <g class="cmb cmb1">
-        <line x1="22" y1="22" x2="30" y2="30" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
-        <line x1="30" y1="22" x2="22" y2="30" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="26" cy="26" r="3" fill="var(--c)" opacity="0.4"/>
+      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.26" class="cb-bloom" style="filter:blur(16px)"/>
+      <!-- 6 sequential strikes — each is a short arc swiping in from a
+           different perimeter direction, staggered so it reads as a combo. -->
+      <g class="cb-strikes">
+        <path class="cb-s s1" d="M10 26 L34 36" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+        <path class="cb-s s2" d="M90 30 L66 38" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+        <path class="cb-s s3" d="M12 74 L36 64" stroke="var(--c)" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <path class="cb-s s4" d="M88 70 L64 62" stroke="var(--c)" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <path class="cb-s s5" d="M50 8  L50 36" stroke="var(--c)" stroke-width="3"   stroke-linecap="round" fill="none"/>
+        <path class="cb-s s6" d="M50 92 L50 64" stroke="var(--c)" stroke-width="3"   stroke-linecap="round" fill="none"/>
       </g>
-      <g class="cmb cmb2">
-        <line x1="40" y1="36" x2="48" y2="44" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
-        <line x1="48" y1="36" x2="40" y2="44" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="44" cy="40" r="3" fill="var(--c)" opacity="0.4"/>
+      <!-- Finishing cross-cut at the end -->
+      <line class="cb-finish cb-f1" x1="14" y1="14" x2="86" y2="86" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
+      <line class="cb-finish cb-f2" x1="86" y1="14" x2="14" y2="86" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
+      <!-- Impact burst at the center -->
+      <g class="cb-impact">
+        <circle cx="50" cy="50" r="11" fill="var(--c)"/>
+        <circle cx="50" cy="50" r="6"  fill="white" opacity="0.95"/>
       </g>
-      <g class="cmb cmb3">
-        <line x1="56" y1="50" x2="64" y2="58" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
-        <line x1="64" y1="50" x2="56" y2="58" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="60" cy="54" r="3" fill="var(--c)" opacity="0.4"/>
-      </g>
-      <g class="cmb cmb4">
-        <line x1="66" y1="26" x2="74" y2="34" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-        <line x1="74" y1="26" x2="66" y2="34" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-      </g>
-      <g class="cmb cmb5">
-        <line x1="46" y1="64" x2="54" y2="72" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-        <line x1="54" y1="64" x2="46" y2="72" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-      </g>
+      <!-- Tip sparks at the strike endpoints -->
+      <circle class="cb-spark sp1" cx="34" cy="36" r="2.2" fill="var(--c)"/>
+      <circle class="cb-spark sp2" cx="66" cy="38" r="2.2" fill="var(--c)"/>
+      <circle class="cb-spark sp3" cx="36" cy="64" r="2"   fill="var(--c)"/>
+      <circle class="cb-spark sp4" cx="64" cy="62" r="2"   fill="var(--c)"/>
+      <circle class="cb-spark sp5" cx="50" cy="36" r="2"   fill="var(--c)"/>
+      <circle class="cb-spark sp6" cx="50" cy="64" r="2"   fill="var(--c)"/>
     </svg>
 
   {:else if type === 'crit'}
@@ -992,20 +997,49 @@
     </svg>
 
   {:else if type === 'earth'}
+    <!-- Earth — seismic upheaval. Stone spikes thrust from below, ground
+         cracks fracture outward, dust cloud rises, boulders fly. Heavy
+         silhouette to read as crushing weight. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <ellipse cx="50" cy="88" rx="44" ry="12" fill="var(--c)" opacity="0.16" style="filter:blur(8px)"/>
-      <g class="erth-g">
-        <polygon class="es es2" points="50,88 43,44 57,44" fill="var(--c)"/>
-        <polygon class="es es1" points="30,88 24,60 36,60" fill="var(--c)"/>
-        <polygon class="es es3" points="70,88 64,60 76,60" fill="var(--c)"/>
-        <polygon class="es es4" points="18,88 14,72 22,72" fill="var(--c)" opacity="0.7"/>
-        <polygon class="es es5" points="82,88 78,70 86,70" fill="var(--c)" opacity="0.7"/>
-        <line x1="8" y1="88" x2="92" y2="88" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+      <ellipse cx="50" cy="86" rx="50" ry="18" fill="var(--c)" opacity="0.28" class="er-bloom" style="filter:blur(14px)"/>
+      <!-- Ground line + cracks fracturing outward -->
+      <line x1="2"  y1="88" x2="98" y2="88" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+      <g class="er-cracks">
+        <polyline class="er-cr cc1" points="50,88 38,82 42,72 28,62 32,50"
+                  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
+        <polyline class="er-cr cc2" points="50,88 62,82 58,72 72,62 68,50"
+                  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
+        <polyline class="er-cr cc3" points="50,88 44,80 32,82 18,86"
+                  stroke="var(--c)" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.65"/>
+        <polyline class="er-cr cc4" points="50,88 56,80 68,82 82,86"
+                  stroke="var(--c)" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.65"/>
       </g>
-      <circle class="rock-chip rc1" cx="35" cy="42" r="2"   fill="var(--c)" opacity="0.6"/>
-      <circle class="rock-chip rc2" cx="65" cy="38" r="1.8" fill="var(--c)" opacity="0.55"/>
-      <circle class="rock-chip rc3" cx="50" cy="36" r="1.5" fill="var(--c)" opacity="0.5"/>
-      <circle class="rock-chip rc4" cx="22" cy="58" r="1.5" fill="var(--c)" opacity="0.45"/>
+      <!-- Stone spikes thrusting up from the ground -->
+      <g class="er-spikes">
+        <polygon class="er-sp ep1" points="50,88 42,38 58,38" fill="var(--c)"/>
+        <polygon class="er-sp ep2" points="28,88 22,56 34,56" fill="var(--c)" opacity="0.92"/>
+        <polygon class="er-sp ep3" points="72,88 66,56 78,56" fill="var(--c)" opacity="0.92"/>
+        <polygon class="er-sp ep4" points="14,88 10,68 20,68" fill="var(--c)" opacity="0.85"/>
+        <polygon class="er-sp ep5" points="86,88 80,68 90,68" fill="var(--c)" opacity="0.85"/>
+        <!-- Spike highlights -->
+        <polygon points="50,88 47,46 53,46" fill="white" opacity="0.18"/>
+        <polygon points="28,88 26,60 30,60" fill="white" opacity="0.18"/>
+        <polygon points="72,88 70,60 74,60" fill="white" opacity="0.18"/>
+      </g>
+      <!-- Flying boulders + rock chips -->
+      <g class="er-chips">
+        <polygon class="er-rk rk1" points="32,32 38,30 40,36 36,38" fill="var(--c)"/>
+        <polygon class="er-rk rk2" points="62,28 70,32 68,38 60,34" fill="var(--c)"/>
+        <polygon class="er-rk rk3" points="20,40 28,38 30,46 22,46" fill="var(--c)" opacity="0.85"/>
+        <polygon class="er-rk rk4" points="74,40 82,42 80,50 72,46" fill="var(--c)" opacity="0.85"/>
+        <polygon class="er-rk rk5" points="48,18 56,20 54,28 46,24" fill="var(--c)" opacity="0.9"/>
+      </g>
+      <!-- Dust motes rising from impact -->
+      <circle class="er-dust ed1" cx="38" cy="78" r="1.8" fill="var(--c)" opacity="0.65"/>
+      <circle class="er-dust ed2" cx="62" cy="78" r="1.8" fill="var(--c)" opacity="0.65"/>
+      <circle class="er-dust ed3" cx="50" cy="74" r="1.5" fill="var(--c)" opacity="0.55"/>
+      <circle class="er-dust ed4" cx="26" cy="76" r="1.5" fill="var(--c)" opacity="0.55"/>
+      <circle class="er-dust ed5" cx="74" cy="76" r="1.5" fill="var(--c)" opacity="0.55"/>
     </svg>
 
   {:else if type === 'blood'}
@@ -2767,4 +2801,56 @@
 @keyframes wt-drop { 0% { transform: translateY(8px) scale(0); opacity: 0; } 40% { transform: translateY(0) scale(1.4); opacity: 1; } 100% { transform: translateY(-18px) scale(0.5); opacity: 0; } }
 @keyframes wt-foam { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(2); opacity: 1; } 100% { transform: scale(0.4); opacity: 0; } }
 @keyframes wt-rip  { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+
+/* ─── COMBO (revamp) ─────────────────────────────────────────────── */
+.cb-bloom    { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.cb-s        { stroke-dasharray: 50; stroke-dashoffset: 50; animation: cb-strike 0.32s ease-out forwards; }
+.cb-strikes .s1 { animation-delay: 0.00s; }
+.cb-strikes .s2 { animation-delay: 0.06s; }
+.cb-strikes .s3 { animation-delay: 0.12s; }
+.cb-strikes .s4 { animation-delay: 0.18s; }
+.cb-strikes .s5 { animation-delay: 0.24s; }
+.cb-strikes .s6 { animation-delay: 0.30s; }
+.cb-finish   { stroke-dasharray: 110; stroke-dashoffset: 110; animation: cb-finish 0.4s ease-out forwards; }
+.cb-f1 { animation-delay: 0.40s; }
+.cb-f2 { animation-delay: 0.44s; }
+.cb-impact   { transform-origin: 50% 50%; animation: cb-impact 0.5s 0.42s ease-out forwards; }
+.cb-spark    { transform-origin: center; transform-box: fill-box; animation: spark-pop 0.4s ease-out forwards; opacity: 0; }
+.cb-spark.sp1 { animation-delay: 0.08s; }
+.cb-spark.sp2 { animation-delay: 0.14s; }
+.cb-spark.sp3 { animation-delay: 0.20s; }
+.cb-spark.sp4 { animation-delay: 0.26s; }
+.cb-spark.sp5 { animation-delay: 0.32s; }
+.cb-spark.sp6 { animation-delay: 0.38s; }
+@keyframes cb-strike { 0% { stroke-dashoffset: 50; opacity: 0; } 40% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes cb-finish { 0% { stroke-dashoffset: 110; opacity: 0; } 30% { stroke-dashoffset: 0; opacity: 1; filter: brightness(3); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes cb-impact { 0% { transform: scale(0); opacity: 0; } 30% { transform: scale(1.6); opacity: 1; filter: brightness(4) drop-shadow(0 0 20px var(--c)); } 100% { transform: scale(0.8); opacity: 0; } }
+
+/* ─── EARTH (revamp) ─────────────────────────────────────────────── */
+.er-bloom { transform-origin: 50% 86%; animation: sh-bloom 0.9s ease-out forwards; opacity: 0; }
+.er-cr    { stroke-dasharray: 90; stroke-dashoffset: 90; animation: er-crack 0.5s 0.06s ease-out forwards; }
+.er-cracks polyline:nth-child(1) { animation-delay: 0.04s; }
+.er-cracks polyline:nth-child(2) { animation-delay: 0.08s; }
+.er-cracks polyline:nth-child(3) { animation-delay: 0.12s; }
+.er-cracks polyline:nth-child(4) { animation-delay: 0.16s; }
+.er-sp    { transform-origin: 50% 88%; animation: er-spike 0.55s ease-out forwards; opacity: 0; }
+.er-spikes .ep1 { animation-delay: 0.18s; }
+.er-spikes .ep2 { animation-delay: 0.22s; }
+.er-spikes .ep3 { animation-delay: 0.24s; }
+.er-spikes .ep4 { animation-delay: 0.28s; }
+.er-spikes .ep5 { animation-delay: 0.30s; }
+.er-rk    { transform-origin: center; transform-box: fill-box; animation: er-rock 0.6s 0.22s ease-out forwards; opacity: 0; }
+.rk2 { animation-delay: 0.26s; }
+.rk3 { animation-delay: 0.30s; }
+.rk4 { animation-delay: 0.34s; }
+.rk5 { animation-delay: 0.20s; }
+.er-dust  { transform-origin: center; transform-box: fill-box; animation: er-dust 0.7s 0.30s ease-out forwards; opacity: 0; }
+.ed2 { animation-delay: 0.32s; }
+.ed3 { animation-delay: 0.36s; }
+.ed4 { animation-delay: 0.34s; }
+.ed5 { animation-delay: 0.38s; }
+@keyframes er-crack { 0% { stroke-dashoffset: 90; opacity: 0; } 30% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes er-spike { 0% { transform: translateY(20px) scaleY(0.2); opacity: 0; } 35% { transform: translateY(0) scaleY(1.1); opacity: 1; filter: brightness(1.6); } 70% { transform: translateY(0) scaleY(1); opacity: 0.95; } 100% { transform: translateY(0) scaleY(0.9); opacity: 0; } }
+@keyframes er-rock  { 0% { transform: translateY(20px) scale(0); opacity: 0; } 40% { transform: translateY(0) scale(1.3); opacity: 1; } 100% { transform: translateY(-12px) scale(0.6); opacity: 0; } }
+@keyframes er-dust  { 0% { transform: translateY(6px) scale(0); opacity: 0; } 40% { transform: translateY(-4px) scale(1.4); opacity: 0.8; } 100% { transform: translateY(-20px) scale(0.5); opacity: 0; } }
 </style>
