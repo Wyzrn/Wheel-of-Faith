@@ -3,13 +3,16 @@
   import { getGemValue } from '$lib/story/shards'
   import TierBadge from '../TierBadge.svelte'
 
-  let { entry, onConfirm, onCancel }: {
+  let { entry, sellBonus = false, onConfirm, onCancel }: {
     entry: StoryRosterEntry
+    sellBonus?: boolean  // sell_bonus gamepass owned — bumps value by 25%
     onConfirm: () => void
     onCancel: () => void
   } = $props()
 
-  let value = $derived(getGemValue(entry.overallTier))
+  let baseValue = $derived(getGemValue(entry.overallTier))
+  // Mirror the calculation in routes/story/+page.svelte confirmSell()
+  let value = $derived(sellBonus ? Math.ceil(baseValue * 1.25) : baseValue)
 
   // Focus trap between the two buttons
   let keepBtn = $state<HTMLButtonElement | null>(null)
@@ -89,6 +92,12 @@
     <p class="text-base text-center" style="color: var(--color-on-surface-variant);">
       You will receive <span style="color: #34d399; font-weight: 700;">{value.toLocaleString()}</span> gems
     </p>
+    {#if sellBonus}
+      <div class="mx-auto flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono"
+        style="background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.35); color: #38bdf8; letter-spacing: 0.08em;">
+        ⚡ SELL BONUS · +25% applied (was {baseValue.toLocaleString()})
+      </div>
+    {/if}
 
     <!-- Warning line -->
     <p

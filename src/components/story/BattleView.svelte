@@ -622,6 +622,41 @@
           <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900;
                     color: #ef4444; letter-spacing: 0.12em;">Enemy Forces WIN!</p>
           <p class="mt-1 text-sm" style="color: #9a907b;">{selectedTeam?.name ?? 'Your team'} was defeated. Try again.</p>
+          {#if gamepasses.includes('revenge_protocol') && accDrops.gems > 0}
+            <div class="mt-4 mx-auto inline-flex items-center gap-2 px-3 py-2 rounded-lg"
+              style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4); animation: fadeIn 0.3s ease-out forwards;">
+              <span class="material-symbols-outlined" style="font-size: 16px; color: #f87171; font-variation-settings: 'FILL' 1;">shield</span>
+              <span class="font-mono text-xs font-bold" style="color: #f87171; letter-spacing: 0.08em;">
+                REVENGE PROTOCOL · +{Math.floor(accDrops.gems / 2).toLocaleString()} gems salvaged
+              </span>
+            </div>
+          {/if}
+        {/if}
+
+        {#if playerWon && lastDrops}
+          <!-- Visible badges for passive game passes that affected this win.
+               Players were owning these and getting no feedback; this row
+               telegraphs each one's contribution to the drop. -->
+          <div class="mt-2 flex flex-wrap gap-1.5 justify-center">
+            {#if gamepasses.includes('double_shard_drop') && lastDrops.chanceDrops.some(d => d === 'fateShard')}
+              <span class="font-mono text-[10px] px-2 py-0.5 rounded"
+                style="background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.35); color: #38bdf8; letter-spacing: 0.08em;">
+                ⚡ 2× SHARD DROP
+              </span>
+            {/if}
+            {#if gamepasses.includes('double_luck')}
+              <span class="font-mono text-[10px] px-2 py-0.5 rounded"
+                style="background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.35); color: #a78bfa; letter-spacing: 0.08em;">
+                ⚡ 2× LUCK
+              </span>
+            {/if}
+            {#if gamepasses.includes('crit_surge')}
+              <span class="font-mono text-[10px] px-2 py-0.5 rounded"
+                style="background: rgba(244,63,94,0.12); border: 1px solid rgba(244,63,94,0.35); color: #f87171; letter-spacing: 0.08em;">
+                ⚡ CRIT SURGE
+              </span>
+            {/if}
+          </div>
         {/if}
 
         {#if playerWon}

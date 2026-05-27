@@ -918,7 +918,18 @@ export function doAction(
     }
   }
 
-  const energyMult = move.type === 'power' && attacker.energyRank >= 30 ? 1.25 : 1.0
+  // Stat scaling for damage on top of the tier-based baseDmg. Power moves
+  // get a smooth bonus from energyRank (every 6 ranks past 20 adds ~6%, capped
+  // at ~+45% near rank 50) so high-stat power users meaningfully outdamage
+  // mid-rank ones even at the same item grade. Physical moves get an
+  // analogous fightingSkillRank scaling. The old "step at rank 30" energyMult
+  // is replaced by this continuous curve.
+  const energyMult = move.type === 'power'
+    ? Math.min(1.45, 1.0 + Math.max(0, attacker.energyRank - 20) * 0.012)
+    : 1.0
+  const fightingMult = move.type !== 'power'
+    ? Math.min(1.45, 1.0 + Math.max(0, attacker.fightingSkillRank - 20) * 0.012)
+    : 1.0
 
   // IQ precision pierce
   let fullPierce = false
@@ -989,7 +1000,7 @@ export function doAction(
   const variance = 0.85 + Math.random() * 0.30
   const gradeMult = moveGradeMult(move.grade)
   let damage = Math.max(1, Math.round(
-    baseDmg * moveMult * gradeMult * weaponBonus * energyMult * critMult * berserkerMult * aoeMult * selfBuffMult * weaknessMult * conceptMult * predatorMult * underdogMult * takenMult * (1 - effectiveArmor) * variance
+    baseDmg * moveMult * gradeMult * weaponBonus * energyMult * fightingMult * critMult * berserkerMult * aoeMult * selfBuffMult * weaknessMult * conceptMult * predatorMult * underdogMult * takenMult * (1 - effectiveArmor) * variance
   ))
 
   // Divine armor absorb

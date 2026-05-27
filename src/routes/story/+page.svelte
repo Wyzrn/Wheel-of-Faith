@@ -2637,6 +2637,7 @@
 {#if sellTarget !== null}
   <SellConfirmModal
     entry={sellTarget}
+    sellBonus={auth.user?.gamepasses.includes('sell_bonus') ?? false}
     onConfirm={confirmSell}
     onCancel={() => sellTarget = null}
   />
