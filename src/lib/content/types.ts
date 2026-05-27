@@ -37,6 +37,11 @@ export interface Race {
   extraPowerSpins?: number                // additional power category spins spliced after race lands
   extraWeaponSpins?: number               // additional weapon spins spliced after race lands (some races get unique weapons)
   minStatTier?: TierGrade                 // lowest stat tier grade that can be rolled; tiers below this are excluded
+  // Limit Break odds — denominator N for the 1/N chance of a Limit Break spin
+  // resolving as "Limit Break" instead of "No Limit Break". Lower N = higher
+  // chance (Human ≈ 20, Viltrumite ≈ 70). Omit / 0 = race cannot Limit Break.
+  // The Limit Break spin fires before the class spin for eligible races.
+  limitBreakOdds?: number
   customHeightPool?: { label: string; weight: number }[]
   customGenderPool?: { label: string; weight: number }[]  // overrides default height labels for this race
   // Multipliers applied to base weaponType/armorType segment weights for this race.

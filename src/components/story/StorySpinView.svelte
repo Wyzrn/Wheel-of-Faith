@@ -17,7 +17,7 @@
     buildRosterEntryFromResults,
     type StorySessionState,
   } from '$lib/story/storySession'
-  import { buildInitialQueue, getSegmentsForCategory, type SpinCategory } from '$lib/game/spinQueue'
+  import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_SHIFT, type SpinCategory } from '$lib/game/spinQueue'
   import type { SpinDefinition } from '$lib/game/spinQueue'
   import type { SpinResult, WeightedSegment } from '$lib/session/types'
   import type { StoryRosterEntry } from '$lib/story/types'
@@ -405,6 +405,15 @@
       return (race?.classPool as WeightedSegment[] | undefined) ?? getSegmentsForCategory('raceClass')
     }
 
+    // Limit Break wheel — per-race odds (race.limitBreakOdds) determine 1/N
+    // chance of "Limit Break" landing. Story mode reuses the main-game pool
+    // generator so weights stay in sync.
+    if (currentDef.category === 'limitBreak') {
+      const raceResult = results.find(r => r.category === 'race')
+      const race = getRace(currentDef.forRace ?? raceResult?.resultLabel)
+      return (limitBreakSegmentsFor(race?.limitBreakOdds) ?? getSegmentsForCategory('limitBreak')) as WeightedSegment[]
+    }
+
     // Weapon wheel: filter pool by previously-spun weapon type
     if (currentDef.category === 'weapon') {
       const typeResult = results.find(r => r.category === 'weaponType')
@@ -419,18 +428,33 @@
       return (pool ?? getSegmentsForCategory('armor')) as WeightedSegment[]
     }
 
-    // Stat wheels: apply racial minimum tier floor + stage max cap
+    // Stat wheels: apply racial minimum tier floor + Limit Break shift + Absolute+
+    // cap when not broken + stage max cap.
     if (STAT_CATEGORIES.has(currentDef.category)) {
       const raceResult = results.find(r => r.category === 'race')
       const race = getRace(raceResult?.resultLabel)
-      const minTierIdx = race?.minStatTier != null ? TIER_ORDER.indexOf(race.minStatTier as import('$lib/game/scoreTier').TierGrade) : -1
+      const lbResult = results.find(r => r.category === 'limitBreakLevel')
+      const lbShift = lbResult ? (LIMIT_BREAK_SHIFT[lbResult.resultLabel] ?? 0) : 0
+      const isLimitBroken = lbShift > 0
+      const baseMin = race?.minStatTier != null ? TIER_ORDER.indexOf(race.minStatTier as import('$lib/game/scoreTier').TierGrade) : -1
+      const minTierIdx = baseMin < 0
+        ? (isLimitBroken ? Math.max(0, lbShift) : -1)
+        : Math.min(TIER_ORDER.length - 1, baseMin + lbShift)
+      // Without Limit Break, story-mode stat wheels also cap at Absolute+.
+      const absoluteCapIdx = TIER_ORDER.indexOf('Absolute+' as import('$lib/game/scoreTier').TierGrade)
+      const maxTierIdx = isLimitBroken
+        ? TIER_ORDER.length - 1
+        : (absoluteCapIdx >= 0 ? absoluteCapIdx : TIER_ORDER.length - 1)
 
       const segs = getSegmentsForCategory(currentDef.category as SpinCategory) as (WeightedSegment & { score?: number; tier?: string })[]
       return segs
         .filter(seg => {
-          if (minTierIdx < 0 || !seg.tier) return true
+          if (!seg.tier) return true
           const tIdx = TIER_ORDER.indexOf(seg.tier as import('$lib/game/scoreTier').TierGrade)
-          return tIdx < 0 || tIdx >= minTierIdx
+          if (tIdx < 0) return true
+          if (minTierIdx >= 0 && tIdx < minTierIdx) return false
+          if (tIdx > maxTierIdx) return false
+          return true
         })
         .map(seg =>
           (seg.score !== undefined && seg.score > stageMaxStatScore)
@@ -671,6 +695,10 @@
             if (race.subTypePool?.length) {
               insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Sub-Type`, forRace })
             }
+            // Limit Break check — same pre-class slot as main game.
+            if (race.limitBreakOdds && race.limitBreakOdds >= 2) {
+              insertSlots.push({ category: 'limitBreak' as const, displayName: `${resultLabel} Limit Break`, forRace })
+            }
             if (race.classPool?.length) {
               insertSlots.push({ category: 'raceClass' as const, displayName: `${resultLabel} Class`, forRace })
             }
@@ -692,6 +720,18 @@
             }
           }
           if (insertSlots.length > 0) queue.splice(currentIndex + 1, 0, ...insertSlots)
+        }
+      }
+
+      if (currentDef.category === 'limitBreak') {
+        // Story-mode mirror of the main-game splice: "Limit Break" outcome
+        // splices a How-Broken wheel right after; "No Limit Break" is a no-op.
+        if (resultLabel === 'Limit Break') {
+          queue.splice(currentIndex + 1, 0, {
+            category: 'limitBreakLevel' as const,
+            displayName: 'How Broken?',
+            forRace: currentDef.forRace,
+          })
         }
       }
 

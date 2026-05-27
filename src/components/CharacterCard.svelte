@@ -128,6 +128,11 @@
   let height            = $derived(get('height'))
   let gender            = $derived(get('gender'))
   let title             = $derived(get('title'))
+  // Limit Break — only present when the character rolled "Limit Break" on
+  // their race's check wheel. The level (Weak/Mild/Strong/Limitless) maps to
+  // a +N stat-floor shift and unlocks Transcendent/Infinite tiers + crystal
+  // boosts past Absolute+.
+  let limitBreakLevel   = $derived(results.find(r => r.category === 'limitBreakLevel')?.resultLabel)
   let racialAbilities   = $derived(getAll('racialAbility'))
   let archetypeAbilities = $derived(getAll('archetypeAbility'))
   let powers            = $derived(getAll('power'))
@@ -413,6 +418,12 @@
         </p>
         {#if raceClass !== '—'}
           <p class="text-xs mt-0.5 font-semibold" style="color: #fb923c;">{raceClass}</p>
+        {/if}
+        {#if limitBreakLevel}
+          <p class="text-xs mt-1 font-bold inline-flex items-center gap-1 px-2 py-0.5 rounded"
+            style="background: var(--tier-infinite-grad); color: #ffffff; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 0 12px rgba(160, 82, 255, 0.45);">
+            ⚡ Limit Broken — {limitBreakLevel}
+          </p>
         {/if}
         {#if devilFruitName !== '—'}
           <p class="text-xs mt-0.5" style="color: #7dd3fc; font-family: 'JetBrains Mono', monospace;">{devilFruitName}</p>

@@ -1029,6 +1029,11 @@ function recomputeOverall(spins: SpinResult[]): { overallScore: number; overallT
 // Max stat score per player level (index = playerLevel). Mirrors StorySpinView STAGE_MAX_STAT_SCORES.
 const STAT_LEVEL_MAX_SCORES = [54, 92, 99, 103, 115, Infinity] as const
 
+// Score cap when the character isn't Limit Broken. Anchored to Absolute+ band
+// (TIER_THRESHOLDS row 53 in scoreTier.ts) so non-broken crystal stacking can
+// at most reach Absolute+, never Transcendent or Infinite.
+const NON_BROKEN_STAT_CAP_SCORE = 153
+
 /** Uses a stat crystal on a character: consumes it, boosts the spin result directly, updates overall grade. */
 export function useStatCrystal(
   slot: StorySaveSlot,
@@ -1039,7 +1044,12 @@ export function useStatCrystal(
   if (slot.inventory.statCrystals[type] <= 0) return 'no_crystal'
   const char = slot.roster.find(r => r.id === characterId)
   if (!char) return 'char_not_found'
-  const maxScore = STAT_LEVEL_MAX_SCORES[Math.min(5, slot.playerLevel)]
+  const stageCap = STAT_LEVEL_MAX_SCORES[Math.min(5, slot.playerLevel)]
+  // Apply the non-broken Absolute+ cap unless the character has rolled
+  // Limit Break — broken characters can stack crystals into Transcendent/
+  // Infinite, everyone else stops at Absolute+ regardless of player level.
+  const isLimitBroken = char.spins.some(r => r.category === 'limitBreakLevel')
+  const maxScore = isLimitBroken ? stageCap : Math.min(stageCap, NON_BROKEN_STAT_CAP_SCORE)
   const statSpin = char.spins.find(r => r.category === stat)
   if (statSpin?.score !== undefined && statSpin.score >= maxScore) return 'at_cap'
   const boost = STAT_CRYSTAL_BOOST[type]

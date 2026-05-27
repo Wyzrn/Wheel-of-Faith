@@ -15,7 +15,7 @@
   import QuickBattleView from '../components/QuickBattleView.svelte'
   import { loadSession, saveSession, clearSession, flushSession, createSession } from '$lib/session/store'
   import type { SessionState, SpinResult } from '$lib/session/types'
-  import { buildInitialQueue, getSegmentsForCategory } from '$lib/game/spinQueue'
+  import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_LEVEL_POOL, LIMIT_BREAK_SHIFT } from '$lib/game/spinQueue'
   import type { SpinDefinition, SpinCategory } from '$lib/game/spinQueue'
   import { computeOverallScore, scoreTier, gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import type { TierGrade } from '$lib/game/scoreTier'
@@ -411,24 +411,35 @@
     'Full Possession (100%)':       { abilities: 3, classSpin: true,  transformation: true  },
   }
 
-  // ── Tier → color map (used by result overlay and sidebar badges) ──────────
+  // ── Tier → color map (used by result overlay, sidebar badges, and the
+  // destiny log on the right of the spin screen). Solid colors match the
+  // canonical app.css palette; Cosmic and above use the mid-stop of their
+  // gradient as a fallback solid so any old call-site that uses these as a
+  // flat color (e.g. drop-shadow tinting) still gets the right hue. UI that
+  // wants the actual gradient pulls from --tier-*-grad via tierBadgeBg/etc.
   const TIER_COLORS: Record<string, string> = {
-    'F-':'#555','F':'#666','F+':'#777',
-    'E-':'#6b7280','E':'#9ca3af','E+':'#d1d5db',
-    'D-':'#92400e','D':'#b45309','D+':'#d97706',
-    'C-':'#1d4ed8','C':'#2563eb','C+':'#3b82f6',
-    'B-':'#065f46','B':'#059669','B+':'#34d399',
-    'A-':'#7c3aed','A':'#8b5cf6','A+':'#a78bfa',
-    'S-':'#b91c1c','S':'#dc2626','S+':'#ef4444',
-    'SS-':'#ea580c','SS':'#f97316','SS+':'#fb923c',
-    'SSS-':'#ca8a04','SSS':'#eab308','SSS+':'#fde047',
-    'Z-':'#0e7490','Z':'#0891b2','Z+':'#06b6d4',
-    'ZZ-':'#3730a3','ZZ':'#4f46e5','ZZ+':'#818cf8',
-    'ZZZ-':'#9d174d','ZZZ':'#be185d','ZZZ+':'#ec4899',
-    'Celestial-':'#075985','Celestial':'#0284c7','Celestial+':'#38bdf8',
-    'Godly-':'#c026d3','Godly':'#e879f9',
-    'Primordial':'#ffffff',
-    'Primordial+':'#ccffff','Absolute-':'#99ffff','Absolute':'#00ffff','Absolute+':'#00ddff',
+    'F-':'#2c2c2c','F':'#404040','F+':'#525252',
+    'E-':'#4b5563','E':'#64748b','E+':'#94a3b8',
+    'D-':'#14532d','D':'#166534','D+':'#22c55e',
+    'C-':'#047857','C':'#059669','C+':'#10b981',
+    'B-':'#115e59','B':'#0d9488','B+':'#14b8a6',
+    'A-':'#155e75','A':'#0e7490','A+':'#06b6d4',
+    'S-':'#0c4a6e','S':'#0369a1','S+':'#0ea5e9',
+    'SS-':'#1e3a8a','SS':'#2563eb','SS+':'#3b82f6',
+    'SSS-':'#4338ca','SSS':'#4f46e5','SSS+':'#6366f1',
+    'Z-':'#5b21b6','Z':'#7c3aed','Z+':'#8b5cf6',
+    'ZZ-':'#86198f','ZZ':'#a21caf','ZZ+':'#c026d3',
+    'ZZZ-':'#be185d','ZZZ':'#db2777','ZZZ+':'#ec4899',
+    // Cosmic and above — solid reps (gradient mid-stops). Anything that wants
+    // the gradient renders --tier-<name>-grad directly.
+    'Cosmic-':'#0e6b8a','Cosmic':'#0891b2','Cosmic+':'#06b6d4',
+    'Immortal-':'#d946ef','Immortal':'#ec4899','Immortal+':'#f472b6',
+    'Celestial-':'#831843','Celestial':'#9d174d','Celestial+':'#be185d',
+    'Godly-':'#f9a8d4','Godly':'#f472b6','Godly+':'#ec4899',
+    'Primordial-':'#d4d4d8','Primordial':'#e4e4e7','Primordial+':'#fafafa',
+    'Absolute-':'#7dd3fc','Absolute':'#38bdf8','Absolute+':'#0ea5e9',
+    'Transcendent-':'#84cc16','Transcendent':'#65a30d','Transcendent+':'#4d7c0f',
+    'Infinite-':'#525252','Infinite':'#262626','Infinite+':'#000000',
   }
 
   // ── Category hue map — drives HSL gradient coloring in SpinWheel ─────────
@@ -483,6 +494,23 @@
       : CATEGORY_HUES[currentDef?.category ?? ''],
   )
   let reversedResults = $derived([...results].reverse())
+
+  // Helpers for the Destiny Log and result cards to render legacy-correct
+  // tier displays. effectiveTier prefers score-derived (so old stored grades
+  // re-grade onto the new ladder); gradientFor returns the matching --tier-*-grad
+  // CSS variable when the tier is Cosmic-or-above, null otherwise.
+  function effectiveTier(r: { score?: number; tier?: string }): string | undefined {
+    if (r.score !== undefined) return scoreTier(r.score)
+    return r.tier
+  }
+  function gradientFor(tier: string | undefined): string | null {
+    if (!tier) return null
+    const base = tier.replace(/[-+]$/, '').toLowerCase()
+    if (['cosmic','immortal','celestial','godly','primordial','absolute','transcendent','infinite'].includes(base)) {
+      return `var(--tier-${base}-grad)`
+    }
+    return null
+  }
 
   // ── Landing celebration color/intensity resolver ─────────────────────────
   // Shared helper in $lib so Story Mode and the main game resolve celebration
@@ -541,6 +569,14 @@
       const raceResult = results.find(r => r.category === 'race')
       const race = getRace(def.forRace ?? raceResult?.resultLabel)
       return race?.classPool ?? getSegmentsForCategory('raceClass')
+    }
+
+    // Per-race Limit Break wheel — odds derived from race.limitBreakOdds. Falls
+    // back to the static (1/100) wheel if the race binding is missing.
+    if (def.category === 'limitBreak') {
+      const raceResult = results.find(r => r.category === 'race')
+      const race = getRace(def.forRace ?? raceResult?.resultLabel)
+      return limitBreakSegmentsFor(race?.limitBreakOdds) ?? getSegmentsForCategory('limitBreak')
     }
 
     // Devil Fruit name pool — keyed by the raceClass result label
@@ -704,16 +740,28 @@
       // Cap the total modifier including transformation bonus to prevent Absolute from being trivial
       const modifier = Math.min(3.5, baseModifier * transformationBonus)
 
-      // Filter out stat tiers locked by racial tier (minStatTier)
-      const minTierIdx = race?.minStatTier != null ? TIER_ORDER.indexOf(race.minStatTier) : -1
+      // Filter out stat tiers locked by racial tier (minStatTier). Limit Break
+      // shifts the floor UP by 1–4 tier positions (Weak..Limitless) so broken
+      // characters can never roll near-mortal stats again.
+      const lbResult = results.find(r => r.category === 'limitBreakLevel')
+      const lbShift = lbResult ? (LIMIT_BREAK_SHIFT[lbResult.resultLabel] ?? 0) : 0
+      const isLimitBroken = lbShift > 0
+      const baseMin = race?.minStatTier != null ? TIER_ORDER.indexOf(race.minStatTier) : -1
+      const minTierIdx = baseMin < 0 ? (isLimitBroken ? Math.max(0, lbShift) : -1) : Math.min(TIER_ORDER.length - 1, baseMin + lbShift)
+      // Without Limit Break, stat wheels cap at Absolute+. Transcendent and
+      // Infinite tiers are locked off until the character is broken.
+      const absoluteCapIdx = TIER_ORDER.indexOf('Absolute+' as TierGrade)
+      const maxTierIdx = isLimitBroken ? TIER_ORDER.length - 1 : (absoluteCapIdx >= 0 ? absoluteCapIdx : TIER_ORDER.length - 1)
 
       return baseSegments
         .filter(seg => {
-          if (minTierIdx < 0) return true
           const fl = seg as { tier?: string }
           if (!fl.tier) return true
           const tIdx = TIER_ORDER.indexOf(fl.tier as TierGrade)
-          return tIdx < 0 || tIdx >= minTierIdx
+          if (tIdx < 0) return true
+          if (minTierIdx >= 0 && tIdx < minTierIdx) return false
+          if (tIdx > maxTierIdx) return false
+          return true
         })
         .map(seg => {
           const fl = seg as { label: string; weight: number; score?: number }
@@ -973,6 +1021,14 @@
         insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Type`, forRace })
       }
 
+      // Limit Break check — spliced BEFORE the class spin for races with
+      // limitBreakOdds. Most rolls land on "No Limit Break"; the rare "Limit
+      // Break" result splices a How-Broken wheel right after this slot (see
+      // handleSpinComplete for 'limitBreak' below).
+      if (race?.limitBreakOdds && race.limitBreakOdds >= 2) {
+        insertSlots.push({ category: 'limitBreak' as const, displayName: `${resultLabel} Limit Break`, forRace })
+      }
+
       // Class/rank spin (e.g., Saiyan class, Mutant power level, Viltrumite rank)
       if (race?.classPool && race.classPool.length > 0) {
         insertSlots.push({ category: 'raceClass' as const, displayName: `${resultLabel} Class`, forRace })
@@ -1056,6 +1112,25 @@
         const msg = 'Race upgraded to Mythological Creature!'
         showAnnouncement = showAnnouncement ? showAnnouncement + ' ' + msg : msg
       }
+    } else if (def.category === 'limitBreak') {
+      // If the Limit Break check landed on "Limit Break", splice the
+      // How-Broken wheel immediately after this slot so it resolves before
+      // the class spin. "No Limit Break" passes through as a no-op so the
+      // character's limit-break state stays absent.
+      if (resultLabel === 'Limit Break') {
+        spinQueue.splice(currentSpinIndex + 1, 0, {
+          category: 'limitBreakLevel' as const,
+          displayName: 'How Broken?',
+          forRace: def.forRace,
+        })
+        showAnnouncement = 'LIMIT BREAK! How broken are they?'
+      }
+    } else if (def.category === 'limitBreakLevel') {
+      // The +N stat-tier shift this result grants — read downstream by the
+      // stat-wheel filter. Stored on the result itself so the character card
+      // and battle code can read it without a separate lookup table.
+      const shift = LIMIT_BREAK_SHIFT[resultLabel] ?? 0
+      showAnnouncement = `Limit broken — ${resultLabel} (+${shift} stat floor)`
     } else if (def.category === 'raceClass') {
       const raceResult = results.find(r => r.category === 'race')
       const race = getRace(def.forRace ?? raceResult?.resultLabel)
@@ -2737,9 +2812,11 @@
             </p>
           {/if}
           {#each reversedResults as result}
-            {@const tc = TIER_COLORS[result.tier ?? ''] ?? null}
+            {@const tier = effectiveTier(result)}
+            {@const tc = TIER_COLORS[tier ?? ''] ?? null}
+            {@const grad = gradientFor(tier)}
             <div class="flex items-start gap-2.5 px-3 py-2.5"
-              style="border-bottom: 1px solid rgba(255,255,255,0.04); {tc ? `border-left: 2px solid ${tc}44;` : 'border-left: 2px solid transparent;'}">
+              style="border-bottom: 1px solid rgba(255,255,255,0.04); {tc ? `border-left: 2px solid ${tc}66;` : 'border-left: 2px solid transparent;'}">
               <span class="material-symbols-outlined shrink-0 mt-0.5"
                 style="font-size: 13px; color: {tc ?? '#4e4635'}; font-variation-settings: 'FILL' 1;">check_circle</span>
               <div class="flex-1 min-w-0">
@@ -2747,10 +2824,10 @@
                   style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 10px;">{result.category}</p>
                 <p class="text-xs truncate" style="color: #e4e1ee; line-height: 1.3;">{result.resultLabel}{result.category === 'archetype' && archetypeTypeFor(result.resultLabel) ? ` · ${archetypeTypeFor(result.resultLabel)}` : ''}</p>
               </div>
-              {#if result.tier}
+              {#if tier}
                 <span class="text-xs font-bold shrink-0 self-center px-1.5 py-0.5 rounded"
-                  style="font-size: 10px; color: {tc ?? '#9a907b'}; background: {tc ?? '#374151'}18; border: 1px solid {tc ?? '#4e4635'}55;">
-                  {normalizeLegacyDisplayLabel(result.displayLabel) ?? result.tier}
+                  style="font-size: 10px; color: {grad ? (/Primordial|Godly/.test(tier) ? '#0a0612' : '#ffffff') : (tc ?? '#9a907b')}; background: {grad ?? `${tc ?? '#374151'}22`}; border: 1px solid {tc ?? '#4e4635'}88;">
+                  {normalizeLegacyDisplayLabel(result.displayLabel) ?? tier}
                 </span>
               {/if}
             </div>
@@ -2774,11 +2851,16 @@
           <div class="md:hidden w-full mb-3" style="max-width: 340px;">
             <div class="flex gap-2 overflow-x-auto pb-1" style="scrollbar-width: none;">
               {#each reversedResults.slice(0, 8) as result}
-                {@const tc = TIER_COLORS[result.tier ?? ''] ?? null}
+                {@const tier = effectiveTier(result)}
+                {@const tc = TIER_COLORS[tier ?? ''] ?? null}
+                {@const grad = gradientFor(tier)}
                 <div class="shrink-0 flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg"
-                  style="background: rgba(255,255,255,0.04); border: 1px solid {tc ? tc + '44' : 'rgba(255,255,255,0.08)'}; min-width: 60px; max-width: 80px;">
-                  {#if result.tier && tc}
-                    <span class="text-[9px] font-black" style="color: {tc}; font-family: 'JetBrains Mono', monospace;">{normalizeLegacyDisplayLabel(result.displayLabel) ?? result.tier}</span>
+                  style="background: rgba(255,255,255,0.04); border: 1px solid {tc ? tc + '66' : 'rgba(255,255,255,0.08)'}; min-width: 60px; max-width: 80px;">
+                  {#if tier}
+                    <span class="text-[9px] font-black px-1 py-0.5 rounded"
+                      style="font-family: 'JetBrains Mono', monospace;
+                             color: {grad ? (/Primordial|Godly/.test(tier) ? '#0a0612' : '#ffffff') : (tc ?? '#9a907b')};
+                             background: {grad ?? 'transparent'};">{normalizeLegacyDisplayLabel(result.displayLabel) ?? tier}</span>
                   {/if}
                   <span class="text-[9px] leading-tight text-center" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; word-break: break-word;">{result.category}</span>
                 </div>
@@ -2852,7 +2934,8 @@
           {#if isRevealed}
             {@const last = (primarySpinResultIndex != null && results[primarySpinResultIndex]) || results.at(-1)}
             {#if last}
-              {@const tc = TIER_COLORS[last.tier ?? ''] ?? null}
+              {@const lastTier = last ? effectiveTier(last) : undefined}
+              {@const tc = TIER_COLORS[lastTier ?? ''] ?? null}
               {@const itemMeta = last.category === 'power' ? _powerLookup.get(last.resultLabel ?? '')
                 : last.category === 'weapon' ? _weaponLookup.get(last.resultLabel ?? '')
                 : last.category === 'armor' ? _armorLookup.get(last.resultLabel ?? '')

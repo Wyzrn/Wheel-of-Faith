@@ -101,6 +101,33 @@ const GENERAL_ABILITY_POOL: WeightedSegment[] = [
   { label: 'Molecular Control',        weight: 1, element: 'Arcane', grade: 'A' },
 ]
 
+// ── Limit Break ────────────────────────────────────────────────────────────
+// Steep-rarity How-Broken wheel: most break rolls land on Weak, Limitless is
+// the jackpot-on-a-jackpot. Each label encodes the +N stat-tier shift in the
+// LIMIT_BREAK_SHIFT map below.
+export const LIMIT_BREAK_LEVEL_POOL: WeightedSegment[] = [
+  { label: 'Weak',      weight: 10, tier: 'Cosmic',       color: 'var(--tier-cosmic)' },
+  { label: 'Mild',      weight: 5,  tier: 'Immortal',     color: 'var(--tier-immortal)' },
+  { label: 'Strong',    weight: 2,  tier: 'Celestial',    color: 'var(--tier-celestial)' },
+  { label: 'Limitless', weight: 1,  tier: 'Infinite',     color: 'var(--tier-infinite)' },
+]
+// Maps a How-Broken result label to the number of tier-index positions the
+// character's minimum stat tier shifts up by. Used by the stat-wheel filter.
+export const LIMIT_BREAK_SHIFT: Record<string, number> = {
+  'Weak': 1, 'Mild': 2, 'Strong': 3, 'Limitless': 4,
+}
+// Builds the per-race Limit Break wheel. Weighting is "Limit Break" 1 vs
+// "No Limit Break" (N-1) so the natural 1/N chance is preserved. Returns
+// null when the race is ineligible (omit / 0 limitBreakOdds) so callers can
+// skip the splice entirely.
+export function limitBreakSegmentsFor(odds: number | undefined | null): WeightedSegment[] | null {
+  if (!odds || odds < 2) return null
+  return [
+    { label: 'No Limit Break', weight: Math.max(1, odds - 1) },
+    { label: 'Limit Break',    weight: 1, tier: 'Infinite', color: 'var(--tier-infinite)' },
+  ]
+}
+
 export type SpinCategory =
   | 'race'
   | 'raceSubType'
@@ -142,6 +169,14 @@ export type SpinCategory =
   | 'gender'
   | 'corruptionReveal'
   | 'twistSpin'
+  // Pre-class wheel that resolves to "No Limit Break" (common) or "Limit Break"
+  // (rare, 1/N where N = race.limitBreakOdds). Only spliced for races with a
+  // limitBreakOdds value.
+  | 'limitBreak'
+  // How-Broken wheel — fires after limitBreak lands on "Limit Break". Resolves
+  // to Weak / Mild / Strong / Limitless (steep rarity). The +N stat-tier shift
+  // is encoded in the resultLabel and applied to stat-wheel filters downstream.
+  | 'limitBreakLevel'
 
 export interface SpinDefinition {
   category: SpinCategory
@@ -392,6 +427,20 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
 
     case 'corruptionReveal':
       return CORRUPTION_REVEAL_OUTCOMES
+
+    case 'limitBreak':
+      // Fallback only — the real Limit Break wheel is built per-race from
+      // race.limitBreakOdds (see limitBreakSegmentsFor()). This default is
+      // returned when limitBreak somehow fires with no race context.
+      return [
+        { label: 'No Limit Break', weight: 99 },
+        { label: 'Limit Break',    weight: 1, tier: 'Infinite' },
+      ]
+
+    case 'limitBreakLevel':
+      // How-Broken wheel — only spun when limitBreak landed on "Limit Break".
+      // Steep rarity: Limitless is jackpot-on-a-jackpot.
+      return LIMIT_BREAK_LEVEL_POOL
 
     default:
       // Unknown category — return empty array, no throw
