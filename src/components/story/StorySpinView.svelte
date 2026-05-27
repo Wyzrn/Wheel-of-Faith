@@ -132,7 +132,7 @@
   // ── Props ─────────────────────────────────────────────────────────────────────
   const { stage = 1, spinClass, onSessionComplete, onCancel }: {
     stage?: number
-    spinClass?: 'hero' | 'legend'
+    spinClass?: 'hero' | 'legend' | 'paragon'
     onSessionComplete: (entry: StoryRosterEntry) => void
     onCancel: () => void
   } = $props()

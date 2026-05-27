@@ -27,6 +27,10 @@ export interface ArenaMember {
   maxHp: number
   stats?: Array<{ label: string; value: string | number }>
   accent?: string                    // optional per-member tint
+  /** Premium spin class — drives in-battle card border (gold for hero,
+   *  purple for legend, crimson for paragon) so the player can read team
+   *  composition at a glance. */
+  spinClass?: 'hero' | 'legend' | 'paragon'
 }
 
 export interface ArenaTeam {
@@ -220,6 +224,7 @@ export function normalizeRoundTeam(
 
 export function memberFromChar(
   char: BattleCharacter, id: string, side: ArenaSide, formatHp: (n: number) => string,
+  spinClass?: 'hero' | 'legend' | 'paragon',
 ): ArenaMember {
   return {
     id, side,
@@ -233,6 +238,7 @@ export function memberFromChar(
       { label: 'DEF',  value: Math.round(char.armorReduction * 100) + '%' },
       { label: 'INIT', value: Math.round(char.initiative) },
     ],
+    spinClass,
   }
 }
 

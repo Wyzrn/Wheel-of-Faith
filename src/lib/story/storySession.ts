@@ -85,7 +85,7 @@ export function clearStorySession(): void {
 export function buildRosterEntryFromResults(args: {
   results: SpinResult[]
   sessionStartedAt: string
-  spinClass?: 'hero' | 'legend'
+  spinClass?: 'hero' | 'legend' | 'paragon'
 }): StoryRosterEntry {
   const { results, sessionStartedAt, spinClass } = args
 

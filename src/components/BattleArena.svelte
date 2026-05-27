@@ -962,7 +962,8 @@
                                  m.side !== currentActorMember.side}
           <div use:trackCharEl={{ name: m.name }}
             class="bv-char-card {team.side === 'team1' ? 'bv-team-1' : 'bv-team-2'}
-                   {dodgingName === m.name ? 'panel-dodging' : ''}"
+                   {dodgingName === m.name ? 'panel-dodging' : ''}
+                   {m.spinClass === 'paragon' ? 'bv-paragon' : m.spinClass === 'legend' ? 'bv-legend' : m.spinClass === 'hero' ? 'bv-hero' : ''}"
             class:bv-victor={won}
             class:ba-targetable={isTargetable}
             role={isTargetable ? 'button' : undefined}

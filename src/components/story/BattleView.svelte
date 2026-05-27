@@ -202,7 +202,7 @@
     const dead = carryOverDeadIds
     carryOverDeadIds = new Set()
     t1Chars = teamMembers.map(m => {
-      const spinMult  = m.spinClass === 'legend' ? 4 : m.spinClass === 'hero' ? 2 : 1
+      const spinMult  = m.spinClass === 'paragon' ? 8 : m.spinClass === 'legend' ? 4 : m.spinClass === 'hero' ? 2 : 1
       const levelMult = 1 + Math.max(0, (m.level ?? 1) - 1) * 0.01
       const bc = buildBattleCharacter(m.spins, m.name, {
         weapons: m.equippedWeapons ?? [],
@@ -229,7 +229,7 @@
     arenaTeams = [
       {
         side: 'team1', label: selectedTeam?.name ?? 'Your Team', accent: '#f0c040',
-        members: t1Chars.map((c, i) => memberFromChar(c, t1Ids[i], 'team1', formatHp)),
+        members: t1Chars.map((c, i) => memberFromChar(c, t1Ids[i], 'team1', formatHp, teamMembers[i]?.spinClass)),
       },
       {
         side: 'team2',

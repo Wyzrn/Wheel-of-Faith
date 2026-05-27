@@ -249,6 +249,9 @@ export interface StorySaveSlot {
   heroSpins: number
   /** Legend Spins (4× luck + 4× battle stats). Unlocked at player level 4. */
   legendSpins: number
+  /** Paragon Spins (8× luck + 8× battle stats). Unlocked at player level 6.
+   *  ~3× rarer than Legend spins on drop tables; cost 2500 shards. */
+  paragonSpins: number
   /** ISO timestamp of last spin refresh check. Used to award spins every 3 hours. */
   spinsLastRefreshedAt: string
   /** Endless Mode keys — each key grants one Endless Mode run. Unlocked at player level 3. */
@@ -328,6 +331,7 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
     bonusSpins: 0,
     heroSpins: 0,
     legendSpins: 0,
+    paragonSpins: 0,
     spinsLastRefreshedAt: new Date().toISOString(),
     endlessKeys: 0,
     absolutePlusCompleted: 0,
@@ -371,6 +375,7 @@ function migrateSlot(raw: Partial<StorySaveSlot> & { id: SlotId }): StorySaveSlo
     bonusSpins: raw.bonusSpins ?? 0,
     heroSpins: raw.heroSpins ?? 0,
     legendSpins: raw.legendSpins ?? 0,
+    paragonSpins: raw.paragonSpins ?? 0,
     spinsLastRefreshedAt: raw.spinsLastRefreshedAt ?? new Date().toISOString(),
     inventory: migrateInventory(raw.inventory ?? {}),
     dailyCrystalPurchases: raw.dailyCrystalPurchases ?? freshDailyPurchases(),
@@ -659,6 +664,7 @@ export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops, gamepa
 
   let heroSpins = slot.heroSpins ?? 0
   let legendSpins = slot.legendSpins ?? 0
+  let paragonSpins = slot.paragonSpins ?? 0
 
   for (const drop of drops.chanceDrops) {
     if (drop === 'fateShard') {
@@ -671,6 +677,8 @@ export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops, gamepa
       heroSpins++
     } else if (drop === 'legendSpin') {
       legendSpins++
+    } else if (drop === 'paragonSpin') {
+      paragonSpins++
     } else if (drop.startsWith('statCrystal:')) {
       const rarity = drop.slice('statCrystal:'.length) as StatCrystalType
       if (rarity in inventory.statCrystals) {
@@ -688,7 +696,7 @@ export function applyBattleDrops(slot: StorySaveSlot, drops: BattleDrops, gamepa
     }
   }
 
-  return { ...slot, gems: slot.gems + drops.gems, shards, endlessKeys, bonusSpins, heroSpins, legendSpins, inventory }
+  return { ...slot, gems: slot.gems + drops.gems, shards, endlessKeys, bonusSpins, heroSpins, legendSpins, paragonSpins, inventory }
 }
 
 /**
@@ -889,6 +897,10 @@ export const HERO_SPIN_SHARD_COST = 100
 /** Fate Shard cost for one Legend Spin (unlocked at player level 4). 4× luck boost + 4× stat multiplier in battle. */
 export const LEGEND_SPIN_SHARD_COST = 500
 
+/** Fate Shard cost for one Paragon Spin (unlocked at player level 6). 8× luck boost + 8× stat multiplier in battle.
+ *  ~3× rarer than Legend on drop tables — the jackpot tier of premium spins. */
+export const PARAGON_SPIN_SHARD_COST = 2500
+
 /** Purchases one Endless Key. Returns updated slot or 'insufficient_gems'. */
 export function buyEndlessKey(slot: StorySaveSlot): StorySaveSlot | 'insufficient_gems' {
   if (slot.gems < ENDLESS_KEY_GEM_COST) return 'insufficient_gems'
@@ -919,6 +931,19 @@ export function consumeHeroSpin(slot: StorySaveSlot): StorySaveSlot | null {
 export function consumeLegendSpin(slot: StorySaveSlot): StorySaveSlot | null {
   if ((slot.legendSpins ?? 0) <= 0) return null
   return { ...slot, legendSpins: (slot.legendSpins ?? 0) - 1 }
+}
+
+/** Purchases one Paragon Spin. Returns updated slot or 'insufficient_shards' / 'locked'. */
+export function buyParagonSpin(slot: StorySaveSlot): StorySaveSlot | 'insufficient_shards' | 'locked' {
+  if (slot.playerLevel < 6) return 'locked'
+  if ((slot.shards ?? 0) < PARAGON_SPIN_SHARD_COST) return 'insufficient_shards'
+  return { ...slot, shards: (slot.shards ?? 0) - PARAGON_SPIN_SHARD_COST, paragonSpins: (slot.paragonSpins ?? 0) + 1 }
+}
+
+/** Consumes one Paragon Spin. Returns updated slot or null if none remaining. */
+export function consumeParagonSpin(slot: StorySaveSlot): StorySaveSlot | null {
+  if ((slot.paragonSpins ?? 0) <= 0) return null
+  return { ...slot, paragonSpins: (slot.paragonSpins ?? 0) - 1 }
 }
 
 /**

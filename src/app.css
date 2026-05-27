@@ -687,6 +687,22 @@
     inset 0 1px 0 rgba(255,225,140,0.12);
 }
 
+/* Premium spin-class borders mirror RosterCard so a Hero/Legend/Paragon
+   character reads the same in roster and in battle. Paragon (crimson) is
+   the loudest border. */
+.bv-char-card.bv-hero {
+  border-color: rgba(251,191,36,0.55);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.55), 0 0 16px rgba(251,191,36,0.35), inset 0 1px 0 rgba(255,225,140,0.06);
+}
+.bv-char-card.bv-legend {
+  border-color: rgba(168,85,247,0.55);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.55), 0 0 16px rgba(168,85,247,0.4), inset 0 1px 0 rgba(255,225,140,0.06);
+}
+.bv-char-card.bv-paragon {
+  border-color: rgba(244,63,94,0.65);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.55), 0 0 20px rgba(244,63,94,0.5), inset 0 1px 0 rgba(255,225,140,0.06);
+}
+
 /* HP track — the slim bar inside each char card */
 .bv-hp-track {
   position: relative;

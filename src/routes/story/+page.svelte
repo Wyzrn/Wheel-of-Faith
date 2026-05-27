@@ -7,7 +7,7 @@
     buyStatCrystal, buyStatCrystalWithShards, getDailyBought, applySpinRefresh, msUntilNextRefresh,
     upgradeRosterCapacity, rosterUpgradeCost, buyCrystalWithGems, buyCrystalWithShards,
     sellCrystal, sellStatCrystal, buyEndlessKey, consumeEndlessKey,
-    buyHeroSpin, buyLegendSpin, consumeHeroSpin, consumeLegendSpin,
+    buyHeroSpin, buyLegendSpin, buyParagonSpin, consumeHeroSpin, consumeLegendSpin, consumeParagonSpin,
     recordWorldReplayStart, worldReplayCooldownMs, WORLD_REPLAY_COOLDOWN_MS,
     createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
     openCrystal, equipOpenedItem, useStatCrystal,
@@ -15,7 +15,7 @@
     STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, STAT_CRYSTAL_SHARD_COSTS,
     CRYSTAL_BUY_PRICES_GEMS, CRYSTAL_BUY_PRICES_SHARDS, CRYSTAL_SELL_PRICES, CRYSTAL_GRADE_LIST,
     STAT_CRYSTAL_SELL_PRICES, ENDLESS_KEY_GEM_COST,
-    HERO_SPIN_SHARD_COST, LEGEND_SPIN_SHARD_COST, BONUS_SPIN_SELL_PRICE,
+    HERO_SPIN_SHARD_COST, LEGEND_SPIN_SHARD_COST, PARAGON_SPIN_SHARD_COST, BONUS_SPIN_SELL_PRICE,
     BOOSTABLE_STATS, BOOSTABLE_STAT_LABELS, STAT_CRYSTAL_BOOST,
     type StorySaveSlot, type SlotId, type StatCrystalType, type CrystalGrade, type BoostableStat,
     type OpenedItem,
@@ -113,9 +113,11 @@
   let bonusSpins     = $derived(currentSlot?.bonusSpins ?? 0)
   let heroSpins      = $derived(currentSlot?.heroSpins ?? 0)
   let legendSpins    = $derived(currentSlot?.legendSpins ?? 0)
-  let hasHeroSpins   = $derived(playerLevel >= 2 && heroSpins > 0)
-  let hasLegendSpins = $derived(playerLevel >= 4 && legendSpins > 0)
-  let hasAnySpin     = $derived(spinsRemaining > 0 || bonusSpins > 0 || hasHeroSpins || hasLegendSpins)
+  let paragonSpins   = $derived(currentSlot?.paragonSpins ?? 0)
+  let hasHeroSpins    = $derived(playerLevel >= 2 && heroSpins > 0)
+  let hasLegendSpins  = $derived(playerLevel >= 4 && legendSpins > 0)
+  let hasParagonSpins = $derived(playerLevel >= 6 && paragonSpins > 0)
+  let hasAnySpin     = $derived(spinsRemaining > 0 || bonusSpins > 0 || hasHeroSpins || hasLegendSpins || hasParagonSpins)
   let rosterCapacity = $derived(
     currentSlot ? getEffectiveRosterCapacity(currentSlot, auth.user?.gamepasses ?? []) : 5
   )
@@ -316,22 +318,17 @@
   }
 
   // ── Hub actions ────────────────────────────────────────────────────────────
-  type SpinType = 'refresh' | 'bonus' | 'hero' | 'legend'
+  type SpinType = 'refresh' | 'bonus' | 'hero' | 'legend' | 'paragon'
   let spinTypeModal = $state(false)
   let lastSpinType = $state<SpinType>('refresh')
 
   function handleWheelClick() {
     if (!currentSlot || !hasAnySpin) return
-    const available: SpinType[] = []
-    if (spinsRemaining > 0) available.push('refresh')
-    if (bonusSpins > 0) available.push('bonus')
-    if (hasHeroSpins) available.push('hero')
-    if (hasLegendSpins) available.push('legend')
-    if (available.length === 1) {
-      startSpin(available[0])
-    } else {
-      spinTypeModal = true
-    }
+    // Always open the modal so the player can see Hero / Legend / Paragon
+    // entries (locked or unlocked) and learn the progression. The old "skip
+    // modal when only one option" shortcut is intentionally retired — the
+    // locked rows are part of the discovery UX per the design spec.
+    spinTypeModal = true
   }
 
   function startSpin(type: SpinType) {
@@ -342,6 +339,7 @@
     if (type === 'bonus') updated = consumeBonusSpin(snapshot)
     else if (type === 'hero') updated = consumeHeroSpin(snapshot)
     else if (type === 'legend') updated = consumeLegendSpin(snapshot)
+    else if (type === 'paragon') updated = consumeParagonSpin(snapshot)
     else updated = consumeSpin(snapshot)
     if (!updated) return
     lastSpinType = type
@@ -452,6 +450,8 @@
       currentSlot = { ...snap, heroSpins: (snap.heroSpins ?? 0) + 1 }
     } else if (lastSpinType === 'legend') {
       currentSlot = { ...snap, legendSpins: (snap.legendSpins ?? 0) + 1 }
+    } else if (lastSpinType === 'paragon') {
+      currentSlot = { ...snap, paragonSpins: (snap.paragonSpins ?? 0) + 1 }
     } else {
       currentSlot = { ...snap, spinsRemaining: snap.spinsRemaining + 1 }
     }
@@ -617,6 +617,7 @@
 
   let heroSpinBuyError = $state<string | null>(null)
   let legendSpinBuyError = $state<string | null>(null)
+  let paragonSpinBuyError = $state<string | null>(null)
 
   function handleBuyHeroSpin() {
     if (!currentSlot) return
@@ -652,6 +653,28 @@
     if (result === 'insufficient_shards') {
       legendSpinBuyError = `Need ${LEGEND_SPIN_SHARD_COST} fate shards.`
       setTimeout(() => { legendSpinBuyError = null }, 2500)
+      return
+    }
+    if (auth.loggedIn) {
+      adjustShards((result as StorySaveSlot).shards - slot.shards)
+      currentSlot = { ...(result as StorySaveSlot), shards: 0 }
+    } else {
+      currentSlot = result as StorySaveSlot
+    }
+  }
+
+  function handleBuyParagonSpin() {
+    if (!currentSlot) return
+    const slot = withAcctShards($state.snapshot(currentSlot) as StorySaveSlot)
+    const result = buyParagonSpin(slot)
+    if (result === 'locked') {
+      paragonSpinBuyError = 'Reach Level 6 to unlock Paragon Spins.'
+      setTimeout(() => { paragonSpinBuyError = null }, 2500)
+      return
+    }
+    if (result === 'insufficient_shards') {
+      paragonSpinBuyError = `Need ${PARAGON_SPIN_SHARD_COST} fate shards.`
+      setTimeout(() => { paragonSpinBuyError = null }, 2500)
       return
     }
     if (auth.loggedIn) {
@@ -1336,6 +1359,14 @@
             <p class="font-mono text-[10px]" style="color: var(--color-outline);">4× power</p>
           </div>
         {/if}
+        {#if playerLevel >= 6}
+          <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.06);"></div>
+          <div class="text-center">
+            <p class="font-mono text-xs" style="color: #f87171;">Paragon</p>
+            <p class="font-bold text-2xl" style="font-family: var(--font-cinzel); color: #f87171;">{paragonSpins}</p>
+            <p class="font-mono text-[10px]" style="color: var(--color-outline);">8× power</p>
+          </div>
+        {/if}
       </div>
     </div>
 
@@ -1422,6 +1453,39 @@
           style="{playerLevel < 4 || shards < LEGEND_SPIN_SHARD_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : ''}"
           onclick={handleBuyLegendSpin}
           disabled={playerLevel < 4 || shards < LEGEND_SPIN_SHARD_COST}
+        >
+          Buy
+        </button>
+      </div>
+    </div>
+
+    {#if paragonSpinBuyError}
+      <div class="w-full rounded-lg px-4 py-2 text-center font-mono text-sm"
+        style="background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #ef4444;">
+        {paragonSpinBuyError}
+      </div>
+    {/if}
+
+    <!-- Paragon Spin — unlocks at Level 6, 2500 shards, 8× luck + 8× battle stats. -->
+    <div class="obsidian-slab w-full rounded-xl px-5 py-5"
+      style="border: 1px solid {playerLevel >= 6 ? 'rgba(244,63,94,0.4)' : 'rgba(255,255,255,0.06)'}; opacity: {playerLevel >= 6 ? 1 : 0.4}; box-shadow: {playerLevel >= 6 ? '0 0 18px rgba(244,63,94,0.15)' : 'none'};">
+      <div class="flex items-center gap-4">
+        <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+          style="background: rgba(244,63,94,0.15); border: 1px solid rgba(244,63,94,0.4);">
+          <span class="material-symbols-outlined" style="font-size: 20px; color: #f87171; font-variation-settings: 'FILL' 1;">bolt</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #f87171;">Paragon Spin</p>
+          <p class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">8× luck boost · 8× battle stats · {paragonSpins} owned</p>
+          <p class="font-mono text-xs mt-0.5" style="color: var(--gold-bright);">{PARAGON_SPIN_SHARD_COST} fate shards
+            {#if playerLevel < 6}<span style="color: #f87171;"> · Unlocks at Level 6</span>{/if}
+          </p>
+        </div>
+        <button
+          class="{playerLevel >= 6 && shards >= PARAGON_SPIN_SHARD_COST ? 'metal-stamp-crimson' : 'obsidian-slab'} rounded-lg px-4 py-2 font-bold font-mono text-sm flex-shrink-0"
+          style="{playerLevel < 6 || shards < PARAGON_SPIN_SHARD_COST ? 'color: var(--color-outline); border: 1px solid rgba(255,255,255,0.07); opacity: 0.5; cursor: not-allowed;' : 'color: #ffe5e5;'}"
+          onclick={handleBuyParagonSpin}
+          disabled={playerLevel < 6 || shards < PARAGON_SPIN_SHARD_COST}
         >
           Buy
         </button>
@@ -1579,7 +1643,7 @@
 {#if view === 'spin' && currentSlot}
   <StorySpinView
     stage={stage}
-    spinClass={lastSpinType === 'hero' ? 'hero' : lastSpinType === 'legend' ? 'legend' : undefined}
+    spinClass={lastSpinType === 'hero' ? 'hero' : lastSpinType === 'legend' ? 'legend' : lastSpinType === 'paragon' ? 'paragon' : undefined}
     onSessionComplete={handleStoryComplete}
     onCancel={handleSpinCancel}
   />
@@ -2315,28 +2379,48 @@
               </div>
             </button>
           {/if}
-          {#if hasHeroSpins}
-            <button onclick={() => startSpin('hero')}
-              class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left"
-              style="background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.3); cursor: pointer;">
-              <span class="material-symbols-outlined" style="font-size: 20px; color: #f97316; font-variation-settings: 'FILL' 1;">military_tech</span>
-              <div class="flex-1">
-                <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #f97316;">Hero Spin</p>
-                <p class="font-mono text-xs" style="color: var(--color-outline);">{heroSpins} remaining · 2× luck + 2× battle stats</p>
-              </div>
-            </button>
-          {/if}
-          {#if hasLegendSpins}
-            <button onclick={() => startSpin('legend')}
-              class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left"
-              style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); cursor: pointer;">
-              <span class="material-symbols-outlined" style="font-size: 20px; color: #fbbf24; font-variation-settings: 'FILL' 1;">star</span>
-              <div class="flex-1">
-                <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #fbbf24;">Legend Spin</p>
-                <p class="font-mono text-xs" style="color: var(--color-outline);">{legendSpins} remaining · 4× luck + 4× battle stats</p>
-              </div>
-            </button>
-          {/if}
+          <!-- Hero / Legend / Paragon — always rendered. Locked rows are
+               disabled with a "Reach Level N" hint so the player can see
+               what's coming without leaving the screen. heroLocked /
+               legendLocked / paragonLocked are inlined into each button
+               because Svelte 5 forbids {@const} at arbitrary positions in
+               the markup. -->
+          <button onclick={() => (playerLevel < 2 || heroSpins <= 0) ? null : startSpin('hero')} disabled={playerLevel < 2 || heroSpins <= 0}
+            class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left"
+            style="background: rgba(249,115,22,{(playerLevel < 2 || heroSpins <= 0) ? '0.04' : '0.1'}); border: 1px solid rgba(249,115,22,{(playerLevel < 2 || heroSpins <= 0) ? '0.15' : '0.3'}); cursor: {(playerLevel < 2 || heroSpins <= 0) ? 'not-allowed' : 'pointer'}; opacity: {(playerLevel < 2 || heroSpins <= 0) ? 0.55 : 1};">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: #f97316; font-variation-settings: 'FILL' 1;">{(playerLevel < 2 || heroSpins <= 0) ? 'lock' : 'military_tech'}</span>
+            <div class="flex-1">
+              <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #f97316;">Hero Spin</p>
+              <p class="font-mono text-xs" style="color: var(--color-outline);">
+                {#if playerLevel < 2}Reach Level 2 to unlock · 2× luck + 2× battle stats
+                {:else}{heroSpins} remaining · 2× luck + 2× battle stats{/if}
+              </p>
+            </div>
+          </button>
+          <button onclick={() => (playerLevel < 4 || legendSpins <= 0) ? null : startSpin('legend')} disabled={playerLevel < 4 || legendSpins <= 0}
+            class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left"
+            style="background: rgba(251,191,36,{(playerLevel < 4 || legendSpins <= 0) ? '0.04' : '0.1'}); border: 1px solid rgba(251,191,36,{(playerLevel < 4 || legendSpins <= 0) ? '0.15' : '0.3'}); cursor: {(playerLevel < 4 || legendSpins <= 0) ? 'not-allowed' : 'pointer'}; opacity: {(playerLevel < 4 || legendSpins <= 0) ? 0.55 : 1};">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: #fbbf24; font-variation-settings: 'FILL' 1;">{(playerLevel < 4 || legendSpins <= 0) ? 'lock' : 'star'}</span>
+            <div class="flex-1">
+              <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #fbbf24;">Legend Spin</p>
+              <p class="font-mono text-xs" style="color: var(--color-outline);">
+                {#if playerLevel < 4}Reach Level 4 to unlock · 4× luck + 4× battle stats
+                {:else}{legendSpins} remaining · 4× luck + 4× battle stats{/if}
+              </p>
+            </div>
+          </button>
+          <button onclick={() => (playerLevel < 6 || paragonSpins <= 0) ? null : startSpin('paragon')} disabled={playerLevel < 6 || paragonSpins <= 0}
+            class="flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left"
+            style="background: rgba(244,63,94,{(playerLevel < 6 || paragonSpins <= 0) ? '0.04' : '0.12'}); border: 1px solid rgba(244,63,94,{(playerLevel < 6 || paragonSpins <= 0) ? '0.18' : '0.4'}); cursor: {(playerLevel < 6 || paragonSpins <= 0) ? 'not-allowed' : 'pointer'}; opacity: {(playerLevel < 6 || paragonSpins <= 0) ? 0.55 : 1};">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: #f87171; font-variation-settings: 'FILL' 1;">{(playerLevel < 6 || paragonSpins <= 0) ? 'lock' : 'bolt'}</span>
+            <div class="flex-1">
+              <p class="font-bold text-sm" style="font-family: var(--font-cinzel); color: #f87171;">Paragon Spin</p>
+              <p class="font-mono text-xs" style="color: var(--color-outline);">
+                {#if playerLevel < 6}Reach Level 6 to unlock · 8× luck + 8× battle stats
+                {:else}{paragonSpins} remaining · 8× luck + 8× battle stats{/if}
+              </p>
+            </div>
+          </button>
         </div>
         <button onclick={() => spinTypeModal = false}
           class="mt-4 w-full py-2.5 rounded-xl font-bold font-mono text-sm"

@@ -11,22 +11,32 @@
     goldFrame?: boolean
   } = $props()
 
-  const isHero   = entry.spinClass === 'hero'
-  const isLegend = entry.spinClass === 'legend'
+  const isHero    = entry.spinClass === 'hero'
+  const isLegend  = entry.spinClass === 'legend'
+  const isParagon = entry.spinClass === 'paragon'
 
-  // gold_roster_frame upgrades border to full gold; hero/legend keep their special glow on top
-  const borderIdle  = goldFrame    ? 'rgba(240,192,64,0.6)'
-                    : isLegend ? 'rgba(168,85,247,0.5)'  : isHero ? 'rgba(251,191,36,0.5)'  : 'rgba(255,223,150,0.08)'
-  const borderHover = goldFrame    ? 'rgba(240,192,64,1.0)'
-                    : isLegend ? 'rgba(168,85,247,0.9)'  : isHero ? 'rgba(251,191,36,0.9)'  : 'rgba(240,192,64,0.25)'
-  const shadowIdle  = goldFrame    ? '0 0 10px rgba(240,192,64,0.3), 0 2px 8px rgba(0,0,0,0.5)'
-                    : isLegend ? '0 0 14px rgba(168,85,247,0.35), 0 2px 8px rgba(0,0,0,0.5)'
-                    : isHero   ? '0 0 14px rgba(251,191,36,0.3),  0 2px 8px rgba(0,0,0,0.5)'
-                    :            '0 2px 8px rgba(0,0,0,0.4)'
-  const shadowHover = goldFrame    ? '0 0 20px rgba(240,192,64,0.5), 0 4px 16px rgba(0,0,0,0.6)'
-                    : isLegend ? '0 0 22px rgba(168,85,247,0.55), 0 4px 16px rgba(0,0,0,0.6)'
-                    : isHero   ? '0 0 22px rgba(251,191,36,0.45), 0 4px 16px rgba(0,0,0,0.6)'
-                    :            '0 4px 16px rgba(0,0,0,0.6)'
+  // Paragon overrides everything else (crimson glow); then legend (purple),
+  // then hero (gold), then the optional gold_roster_frame upgrade.
+  const borderIdle  = isParagon  ? 'rgba(244,63,94,0.55)'
+                    : goldFrame  ? 'rgba(240,192,64,0.6)'
+                    : isLegend   ? 'rgba(168,85,247,0.5)'
+                    : isHero     ? 'rgba(251,191,36,0.5)'
+                    :              'rgba(255,223,150,0.08)'
+  const borderHover = isParagon  ? 'rgba(244,63,94,1.0)'
+                    : goldFrame  ? 'rgba(240,192,64,1.0)'
+                    : isLegend   ? 'rgba(168,85,247,0.9)'
+                    : isHero     ? 'rgba(251,191,36,0.9)'
+                    :              'rgba(240,192,64,0.25)'
+  const shadowIdle  = isParagon  ? '0 0 16px rgba(244,63,94,0.5), 0 2px 8px rgba(0,0,0,0.5)'
+                    : goldFrame  ? '0 0 10px rgba(240,192,64,0.3), 0 2px 8px rgba(0,0,0,0.5)'
+                    : isLegend   ? '0 0 14px rgba(168,85,247,0.35), 0 2px 8px rgba(0,0,0,0.5)'
+                    : isHero     ? '0 0 14px rgba(251,191,36,0.3),  0 2px 8px rgba(0,0,0,0.5)'
+                    :              '0 2px 8px rgba(0,0,0,0.4)'
+  const shadowHover = isParagon  ? '0 0 28px rgba(244,63,94,0.7), 0 4px 18px rgba(0,0,0,0.6)'
+                    : goldFrame  ? '0 0 20px rgba(240,192,64,0.5), 0 4px 16px rgba(0,0,0,0.6)'
+                    : isLegend   ? '0 0 22px rgba(168,85,247,0.55), 0 4px 16px rgba(0,0,0,0.6)'
+                    : isHero     ? '0 0 22px rgba(251,191,36,0.45), 0 4px 16px rgba(0,0,0,0.6)'
+                    :              '0 4px 16px rgba(0,0,0,0.6)'
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -65,7 +75,12 @@
   }}
 >
   <!-- Spin class badge (top-left) -->
-  {#if isLegend}
+  {#if isParagon}
+    <span class="absolute top-2 left-2 font-mono font-bold"
+      style="font-size: 8px; letter-spacing: 0.12em; color: #f87171; text-shadow: 0 0 10px rgba(244,63,94,0.8);">
+      PARAGON
+    </span>
+  {:else if isLegend}
     <span class="absolute top-2 left-2 font-mono font-bold"
       style="font-size: 8px; letter-spacing: 0.12em; color: #c084fc; text-shadow: 0 0 8px rgba(168,85,247,0.7);">
       LEGEND

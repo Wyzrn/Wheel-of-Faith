@@ -185,8 +185,9 @@ export const CHANCE_DROP_RATES = {
   weaponCrystal: 0.07,
   armorCrystal:  0.07,
   spin:          0.01,   // 1% — rare bonus spin drop
-  heroSpin:      0.003,  // 0.3% — hero spin drop (unlocked at level 2)
-  legendSpin:    0.0005, // 0.05% — legend spin drop (unlocked at level 4)
+  heroSpin:      0.003,    // 0.3% — hero spin drop (unlocked at level 2)
+  legendSpin:    0.0005,   // 0.05% — legend spin drop (unlocked at level 4)
+  paragonSpin:   0.00017,  // ~0.017% — paragon spin drop (unlocked at level 6, ~3× rarer than legend)
 } as const
 
 /** Endless Key drop rate — only applies at player level 3+ (caller must check). */
@@ -198,7 +199,7 @@ export const ENDLESS_KEY_DROP_RATE = 0.08
  * Simple drops have no suffix: 'fateShard', 'spin', 'endlessKey', 'heroSpin', 'legendSpin'.
  */
 export type ChanceDrop =
-  | 'fateShard' | 'spin' | 'endlessKey' | 'heroSpin' | 'legendSpin'
+  | 'fateShard' | 'spin' | 'endlessKey' | 'heroSpin' | 'legendSpin' | 'paragonSpin'
   | `statCrystal:${StatCrystalRarity}`
   | `powerCrystal:${CrystalDropGrade}`
   | `weaponCrystal:${CrystalDropGrade}`
@@ -258,6 +259,7 @@ export function rollDrops(enemy: Enemy): { gems: number; xp: number; chanceDrops
   if (Math.random() < CHANCE_DROP_RATES.spin)          chanceDrops.push('spin')
   if (Math.random() < CHANCE_DROP_RATES.heroSpin)      chanceDrops.push('heroSpin')
   if (Math.random() < CHANCE_DROP_RATES.legendSpin)    chanceDrops.push('legendSpin')
+  if (Math.random() < CHANCE_DROP_RATES.paragonSpin)   chanceDrops.push('paragonSpin')
 
   return { gems: roll(table.gems), xp: roll(table.xp), chanceDrops }
 }

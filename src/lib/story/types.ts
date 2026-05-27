@@ -44,7 +44,7 @@ export interface StoryRosterEntry {
   /** ISO timestamp captured when the story spin session began; passed as the `startedAt` prop to CharacterCard. */
   sessionStartedAt: string
   /** Spin class used to create this character — affects battle stat multiplier and luck boost. */
-  spinClass?: 'hero' | 'legend'
+  spinClass?: 'hero' | 'legend' | 'paragon'
 }
 
 /** Top-level Story Mode state shape. */
