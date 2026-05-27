@@ -277,6 +277,15 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.95,
     minStatTier: 'E-',
     description: 'Caught between two worlds and uncomfortable in both.',
+    injectedWheels: [
+      { id: 'heritage', displayName: 'Heritage Pull', order: 1, segments: [
+        { label: 'Human-Side', weight: 5, statBonusGrants: { potential: 'statBonus', charisma: 'statBonus' }, description: 'Lives among humans. Mortal pace.' },
+        { label: 'Elf-Side', weight: 4, statBonusGrants: { agility: 'statBonus', speed: 'statBonus', potential: 'statBonus' }, description: 'Lives among elves. Slower pace, longer view.' },
+        { label: 'Wanderer', weight: 3, statBonusGrants: { iq: 'statBonus', charisma: 'statBonus', agility: 'statBonus' }, description: 'Neither, fully. Both, partly.' },
+        { label: 'Bridge-Walker', weight: 2, statBonusGrants: { charisma: 'statBonus', iq: 'statBonus', potential: 'statBonus', powerMastery: 'statBonus' }, description: 'Diplomat between worlds. Both sides trust.' },
+        { label: 'Awakened Blood', weight: 1, statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus', iq: 'statBonus' }, description: 'Both heritages compounding. Rare phenotype.' },
+      ]},
+    ],
     statModifiers: { charisma: 1.3, agility: 1.2 },
     weaponTypeBias: { 'Ranged': 1.8, 'Magical': 1.5, 'Exotic': 1.2, 'Melee': 0.9, 'None': 1.0 },
     armorTypeBias:  { 'Half-Suit': 1.5, 'Helmet Only': 1.2, 'Exotic': 1.2, 'Full-Suit': 0.6, 'None': 1.0 },
@@ -311,6 +320,15 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 1.1,
     minStatTier: 'E-',
     description: 'The best parts of two species. Probably.',
+    injectedWheels: [
+      { id: 'temperament', displayName: 'Temperament', order: 1, segments: [
+        { label: 'Calm', weight: 4, statBonusGrants: { iq: 'statBonus', charisma: 'statBonus' }, description: 'Holds back. Civilised face on.' },
+        { label: 'Driven', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Half-orc strength channelled. Disciplined.' },
+        { label: 'Ferocious', weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus' }, description: 'The orc half is the louder voice.' },
+        { label: 'Berserker Blood', weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', iq: 'statPenalty' }, description: 'Rage runs deeper than the human half can hold.' },
+        { label: 'Mongrel Apex', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', potential: 'statBonus' }, description: 'Best of both. Cousins on both sides claim the lineage.' },
+      ]},
+    ],
     statModifiers: { strength: 1.3, durability: 1.2 },
     weaponTypeBias: { 'Melee': 2.2, 'Ancient': 1.3, 'Ranged': 0.6, 'Magical': 0.6, 'None': 0.4 },
     armorTypeBias:  { 'Full-Suit': 1.8, 'Half-Suit': 2.0, 'Ancient': 1.3, 'None': 0.3, 'Exotic': 0.8 },
@@ -1736,6 +1754,13 @@ export const races: Race[] = [
         { label: 'Berserker Heart',   weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', iq: 'statPenalty' }, description: 'Always one bad day from Oozaru.' },
         { label: 'Battle-Lust',       weight: 1, statBonusGrants: { strength: 'statBonus', potential: 'statBonus' }, description: 'Lives for the next fight. Each near-death pushes the curve.' },
       ]},
+      { id: 'powerLevel', displayName: 'Power Level', order: 3, segments: [
+        { label: 'Low Reading',    weight: 5, statBonusGrants: { fightingSkill: 'statBonus' }, description: 'Scouters dismiss them. A mistake.' },
+        { label: 'Mid-Tier Class', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Read by scouters as solid. Saiyan-pride.' },
+        { label: 'Elite Tier',     weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'Top of the standard scouter range. Scouters break.' },
+        { label: 'Off the Charts', weight: 2, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', potential: 'statBonus' }, description: 'Reading is impossible. Scouters explode trying.' },
+        { label: 'Legendary',      weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Legendary Super Saiyan — born once every thousand years.' },
+      ]},
     ],
     classPool: [
       { label: 'Low-Class Warrior',  weight: 5, element: 'Fire', grade: 'D', statBonusGrants: { fightingSkill: 'statPenalty' }, abilities: [{ label: 'Battle Instinct', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Ki Control Foundation', weight: 2, element: 'Fire', grade: 'D' }, { label: 'Combat Grit', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Underdog Push', weight: 2, element: 'Fire', grade: 'D' }, { label: 'Hardened by Loss', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Street-Level Combat', weight: 1, element: 'Fire', grade: 'C' }], powerPool: [{ label: 'Ki Blast', weight: 3 }, { label: 'Flight (Saiyan)', weight: 3 }, { label: 'Zenkai Surge', weight: 2 }, { label: 'Combat Flow State', weight: 2 }, { label: 'Battle Precognition', weight: 1 }] },
@@ -2361,6 +2386,28 @@ export const races: Race[] = [
     minStatTier: 'B',
     weaknessCount: 0,
     description: 'Biologically perfect alien conquerors. No weaknesses on record. Technically a few. They don\'t discuss them.',
+    injectedWheels: [
+      { id: 'conquest', displayName: 'Conquest Standing', order: 1, segments: [
+        { label: 'Outpost Guard', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Holds a forgotten edge of the empire.' },
+        { label: 'Field Officer', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus' }, description: 'Commands sectors. Reports up the chain.' },
+        { label: 'Conquest Lord', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus' }, description: 'Owns a planet. Several, depending.' },
+        { label: 'Imperial Champion', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Personal blade of the emperor.' },
+        { label: 'Renegade', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Walked away from the empire. Did not lose.' },
+      ]},
+      { id: 'bloodlinePurity', displayName: 'Bloodline Purity', order: 2, segments: [
+        { label: 'Mixed', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Half-Viltrumite. Hides among colonised species.' },
+        { label: 'Pure', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus' }, description: 'Standard Viltrumite blood.' },
+        { label: 'Royal', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus' }, description: 'Descended from a Conquest Lord.' },
+        { label: 'Founding Line', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: "Traces back to the species' first generation. Each near-death sharpens them." },
+      ]},
+      { id: 'survival', displayName: 'Survival Index', order: 3, segments: [
+        { label: 'Uninjured', weight: 5, description: 'Has not yet been tested.' },
+        { label: 'Battle-Tested', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Several near-deaths. Recovery learned.' },
+        { label: 'Maimed', weight: 3, statBonusGrants: { durability: 'statBonus', fightingSkill: 'statBonus' }, description: 'Lost something. Came back twice as ready.' },
+        { label: "Death's Edge", weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'Has been killed. Did not stay killed.' },
+        { label: 'Awakened', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Viltrumite Awakening — the entire build escalates. Inevitable.' },
+      ]},
+    ],
     statModifiers: { strength: 2.8, durability: 2.6, speed: 2.5, fightingSkill: 2.8, potential: 1.8 },
     classPool: [
       { label: 'Viltrum Soldier',   weight: 4, element: 'Neutral', grade: 'A', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Viltrum Combat Doctrine', weight: 2, element: 'Neutral', grade: 'A' }, { label: 'Conqueror Mentality', weight: 2, element: 'Neutral', grade: 'A' }, { label: 'Endurance Beyond Limit', weight: 2, element: 'Neutral', grade: 'A' }, { label: 'Atmospheric Combat Mastery', weight: 2, element: 'Wind', grade: 'A' }, { label: 'Physical Perfection Drive', weight: 2, element: 'Neutral', grade: 'SS' }, { label: 'Immortal Body', weight: 1, element: 'Neutral', grade: 'SSS' }], powerPool: [{ label: 'Super Strength', weight: 3 }, { label: 'Flight', weight: 3 }, { label: 'Invulnerability', weight: 2 }, { label: 'Regeneration (Total)', weight: 2 }, { label: 'Combat Flow State', weight: 1 }] },
@@ -2401,6 +2448,24 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.4,
     minStatTier: 'B-',
     description: 'Realm-hopper from the Nine Realms. Significantly more durable than they let on.',
+    injectedWheels: [
+      { id: 'realm', displayName: 'Realm', order: 1, segments: [
+        { label: 'Asgard', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', charisma: 'statBonus' }, description: 'Home court. Throne city.' },
+        { label: 'Vanaheim', weight: 3, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Magic-bent. Older arts.' },
+        { label: 'Alfheim', weight: 3, statBonusGrants: { charisma: 'statBonus', agility: 'statBonus' }, description: 'Light-elf court. Beautiful. Lethal.' },
+        { label: 'Jotunheim', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Frost realm. Hardy survivors.' },
+        { label: 'Niflheim', weight: 2, statBonusGrants: { durability: 'statBonus', powerMastery: 'statBonus' }, description: 'Cold mist. Old dead. Patient.' },
+        { label: 'Muspelheim', weight: 2, statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus', powerMastery: 'statBonus' }, description: "Fire realm. Surt's domain." },
+        { label: 'Yggdrasil', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'The Tree itself acknowledges you.' },
+      ]},
+      { id: 'worthiness', displayName: 'Worthiness', order: 2, segments: [
+        { label: 'Mortal-Hearted', weight: 4, statBonusGrants: { fightingSkill: 'statBonus', charisma: 'statBonus' }, description: 'Not yet worthy. Working toward it.' },
+        { label: 'Warrior-Proven', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus' }, description: 'Mjolnir would not refuse you.' },
+        { label: 'Wise', weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Wins by knowing more than the enemy.' },
+        { label: 'Worthy', weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus', charisma: 'statBonus', potential: 'statBonus' }, description: 'An enchanted weapon recognises you. Reliably.' },
+        { label: "All-Father's Eye", weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Odin watches with interest.' },
+      ]},
+    ],
     statModifiers: { strength: 1.8, durability: 1.6, charisma: 1.5, potential: 1.4, armorStrength: 1.5 },
     classPool: [
       { label: 'Warrior',       weight: 4, element: 'Earth', grade: 'D', abilities: [{ label: 'Einherjar Training', weight: 2, element: 'Water', grade: 'D' }, { label: 'Weapon Bond', weight: 2, element: 'Metal', grade: 'D' }, { label: 'Battlefield Honor', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Skirmish Mastery', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Courage in Death', weight: 2, element: 'Time', grade: 'D' }, { label: 'Valhalla-Bound', weight: 1, element: 'Earth', grade: 'D' }], powerPool: [{ label: 'Ancestral Weapon', weight: 3 }, { label: 'Berserker Rage', weight: 3 }, { label: 'Einherjar Blessing', weight: 2 }, { label: 'Lightning Hammer', weight: 2 }, { label: 'Warrior Trance', weight: 1 }] },
@@ -2443,6 +2508,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.4,
     minStatTier: 'B',
     description: 'Last of a lost world. Under a yellow sun, becomes the most dangerous being alive.',
+    injectedWheels: [
+      { id: 'sunExposure', displayName: 'Sun Exposure', order: 1, segments: [
+        { label: 'Red Sun', weight: 2, statBonusGrants: { strength: 'statPenalty', durability: 'statPenalty' }, description: 'Powerless. Mortal. Vulnerable.' },
+        { label: 'Distant Yellow', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Limited yellow-sun exposure. Working toward full power.' },
+        { label: 'Yellow Sun', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus' }, description: 'Full powers. Standard kryptonian.' },
+        { label: 'Blue Sun', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Power levels exceed normal. Gravity bends.' },
+        { label: 'Solar-Engorged', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Walking sun-battery. Glows visibly.' },
+      ]},
+      { id: 'geneticPotential', displayName: 'Genetic Potential', order: 2, segments: [
+        { label: 'Standard', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Default kryptonian genome.' },
+        { label: 'Bred-Line', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus' }, description: 'Designed for combat. Generations refined.' },
+        { label: 'Hybrid Genome', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', potential: 'statBonus' }, description: 'Adapted to non-Krypton conditions.' },
+        { label: 'Cloned Champion', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'Synthesized in a vat. Each batch better than the last.' },
+        { label: 'Genesis-Born', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Pre-cataclysm Krypton. Original genome. Untouched.' },
+      ]},
+    ],
     statModifiers: { strength: 2.0, speed: 2.0, durability: 2.0, fightingSkill: 1.5, armorStrength: 1.3 },
     classPool: [
       { label: 'Warrior-Caste',         weight: 3, element: 'Neutral', grade: 'B', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Kryptonian Battle Art', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'Physical Peak Training', weight: 2, element: 'Water', grade: 'D' }, { label: 'Combat Honor', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'War-Form', weight: 2, element: 'Neutral', grade: 'B' }, { label: "Soldier's Bond", weight: 2 }, { label: 'House of Zod Echo', weight: 1, element: 'Sound', grade: 'B' }], powerPool: [{ label: 'Kryptonian Martial Arts', weight: 3 }, { label: 'Super Strength', weight: 3 }, { label: 'Invulnerability', weight: 2 }, { label: 'Flight', weight: 2 }, { label: 'Solar Flare', weight: 1 }] },
@@ -2484,6 +2565,22 @@ export const races: Race[] = [
     minStatTier: 'B-',
     weaknessCount: 1,
     description: 'Building-sized apex predator. Multiple military branches exist specifically because of you.',
+    injectedWheels: [
+      { id: 'kaijuMutation', displayName: 'Kaiju Mutation', order: 1, segments: [
+        { label: 'Standard', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Skyscraper-tall. Walks through cities.' },
+        { label: 'Armored', weight: 4, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus', strength: 'statBonus' }, description: "Plating that artillery doesn't dent." },
+        { label: 'Atomic', weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Breath weapon vaporises city blocks.' },
+        { label: 'Hivemind', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', iq: 'statBonus', potential: 'statBonus' }, description: 'Coordinates with other kaiju. Strategy detected.' },
+        { label: 'Apex Predator', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'King of the Monsters. Alpha kaiju.' },
+      ]},
+      { id: 'disaster', displayName: 'Disaster Footprint', order: 2, segments: [
+        { label: 'Containable', weight: 5, description: 'Military can hold the line. Eventually.' },
+        { label: 'City-Level', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Wipes urban centres.' },
+        { label: 'Coastal', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Tsunamis follow them inland.' },
+        { label: 'Continental', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Tectonic rearrangement. Map redrawn.' },
+        { label: 'Extinction Class', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' }, description: 'Species-ending threat. Plural species.' },
+      ]},
+    ],
     statModifiers: { strength: 2.5, durability: 2.5, speed: 0.4, agility: 0.3 },
     transformationPool: [
       { label: 'Category I',    weight: 5, element: 'Earth', grade: 'C', statBonus: 1.0 },
@@ -2532,6 +2629,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.5,
     minStatTier: 'B-',
     description: 'Ancient beings from Gallifrey who master time itself. Can regenerate into a new body 12 times. Has seen everything. Tired.',
+    injectedWheels: [
+      { id: 'timeline', displayName: 'Timeline Authority', order: 1, segments: [
+        { label: 'Apprentice', weight: 4, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, description: 'Still in the academy. Brilliant but green.' },
+        { label: 'Walker', weight: 4, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Moves between when, freely.' },
+        { label: 'Architect', weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Designs timeline branches.' },
+        { label: 'Guardian', weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' }, description: 'Enforces fixed points. Hunts breakers.' },
+        { label: 'Lord President', weight: 1, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus', energyLevel: 'statBonus' }, description: 'Rules Gallifrey-equivalent. Many incarnations deep.' },
+      ]},
+      { id: 'regeneration', displayName: 'Regeneration', order: 2, segments: [
+        { label: 'First Body', weight: 5, description: 'Original incarnation. New to the burden.' },
+        { label: 'Three Lives', weight: 4, statBonusGrants: { iq: 'statBonus', fightingSkill: 'statBonus', potential: 'statBonus' }, description: 'Has died and remade themselves multiple times.' },
+        { label: 'Many-Faced', weight: 3, statBonusGrants: { iq: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Loses count past seven. Personality variants stacked.' },
+        { label: 'Final Regeneration', weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Cycle ending. Power burning.' },
+        { label: 'Cycle-Broken', weight: 1, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus', durability: 'statBonus' }, description: 'Found a way past the limit. Will outlast Gallifrey.' },
+      ]},
+    ],
     statModifiers: { iq: 2.2, potential: 2.0, charisma: 1.4 },
     classPool: [
       { label: 'Renegade',       weight: 4, element: 'Time', grade: 'B', abilities: [{ label: 'Maverick Initiative', weight: 2, element: 'Time', grade: 'D' }, { label: 'Rule-Break Protocol', weight: 2, element: 'Time', grade: 'B' }, { label: 'Temporal Exploit', weight: 2, element: 'Time', grade: 'B' }, { label: 'Free Agent Status', weight: 2, element: 'Time', grade: 'B' }, { label: 'Renegade Regeneration', weight: 2, element: 'Nature', grade: 'B' }, { label: 'Lone Variable', weight: 1, element: 'Time', grade: 'B' }], powerPool: [{ label: 'TARDIS Pocket Space', weight: 3 }, { label: 'Time Stop', weight: 3 }, { label: 'Trickster Gambit', weight: 2 }, { label: 'Temporal Paradox', weight: 2 }, { label: 'Regeneration Burst', weight: 1 }] },
@@ -2573,6 +2686,23 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.5,
     minStatTier: 'B-',
     description: 'Half mortal, half divine. Fully aware of which half is better.',
+    injectedWheels: [
+      { id: 'divineParent', displayName: 'Divine Parent', order: 1, segments: [
+        { label: 'Minor Deity', weight: 5, statBonusGrants: { powerMastery: 'statBonus' }, description: 'A small god. A local one.' },
+        { label: 'War God', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Ares. Tyr. Sekhmet. Take your pick.' },
+        { label: 'Trickster', weight: 3, statBonusGrants: { iq: 'statBonus', charisma: 'statBonus', agility: 'statBonus' }, description: 'Loki. Hermes. Anansi. Chaos by inheritance.' },
+        { label: 'Storm/Sky', weight: 3, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Zeus. Thor. Indra. Lightning is the heritage.' },
+        { label: 'Death/Underworld', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', durability: 'statBonus' }, description: 'Hades. Hel. Anubis. Walks the dark.' },
+        { label: 'All-Father', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Direct child of the chief god. Inheritance maximal.' },
+      ]},
+      { id: 'blessing', displayName: 'Divine Blessing', order: 2, segments: [
+        { label: 'Quiet', weight: 4, statBonusGrants: { potential: 'statBonus' }, description: 'The god watches. Sometimes.' },
+        { label: 'Direct', weight: 4, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'The god intervenes regularly.' },
+        { label: 'Favoured', weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', potential: 'statBonus' }, description: "Hand-picked. The god's chosen one." },
+        { label: 'Chosen Heir', weight: 2, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Slated to inherit the godhood eventually.' },
+        { label: 'Apotheosis-Bound', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus', energyLevel: 'statBonus' }, description: 'Will become a god in their lifetime.' },
+      ]},
+    ],
     statModifiers: { strength: 1.5, durability: 1.3, charisma: 1.4, potential: 1.3 },
     classPool: [
       { label: 'God of War (Partial)',       weight: 3, element: 'Fire', grade: 'B', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Battle Domain Echo', weight: 2, element: 'Sound', grade: 'C' }, { label: 'War Aura', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Martial Divinity', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Conflict Born', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Half-Blooded Wrath', weight: 2, element: 'Blood', grade: 'B' }, { label: "Demi's War Cry", weight: 1 }], powerPool: [{ label: 'War God Strike', weight: 3 }, { label: 'Berserker Frenzy', weight: 3 }, { label: 'Aura of Retribution', weight: 2 }, { label: 'Divine Smite', weight: 2 }, { label: 'Super Strength', weight: 1 }] },
@@ -2609,6 +2739,25 @@ export const races: Race[] = [
     weaknessCount: 0,
     minStatTier: 'A',
     description: 'An actual god. Not a partial, not a demi. THE god. Or at least A god. The paperwork is non-negotiable.',
+    injectedWheels: [
+      { id: 'divineDomain', displayName: 'Divine Domain', order: 1, segments: [
+        { label: 'War', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus' }, description: 'Battles answer to them.' },
+        { label: 'Death', weight: 4, statBonusGrants: { powerMastery: 'statBonus', durability: 'statBonus', potential: 'statBonus' }, description: 'Endings answer to them.' },
+        { label: 'Light', weight: 3, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus', potential: 'statBonus' }, description: 'Suns answer to them.' },
+        { label: 'Chaos', weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Storms answer to them.' },
+        { label: 'Nature', weight: 3, statBonusGrants: { durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Forests answer to them.' },
+        { label: 'Storm', weight: 3, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', speed: 'statBonus' }, description: 'Thunder answers to them.' },
+        { label: 'Knowledge', weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Libraries answer to them.' },
+        { label: 'Fate', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', charisma: 'statBonus' }, description: 'Outcomes answer to them. Can override weaknesses.' },
+      ]},
+      { id: 'worship', displayName: 'Worship', order: 2, segments: [
+        { label: 'Forgotten', weight: 4, statBonusGrants: { durability: 'statBonus', iq: 'statBonus' }, description: 'Cult disbanded. Power waning but not gone.' },
+        { label: 'Cult', weight: 4, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Small, devoted. Power proportional.' },
+        { label: 'Faith', weight: 3, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Established religion. Power constant.' },
+        { label: 'Pantheon-Held', weight: 2, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Major god. Multiple nations worship.' },
+        { label: 'Universal', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus', energyLevel: 'statBonus' }, description: 'Worshipped across worlds. Power approaches absolute.' },
+      ]},
+    ],
     statModifiers: { strength: 2.0, durability: 2.0, iq: 2.0, potential: 2.0, charisma: 2.0, powerMastery: 2.0, armorStrength: 1.8 },
     classPool: [
       { label: 'God of War',         weight: 3, element: 'Fire', grade: 'S', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'War Domain Absolute', weight: 2, element: 'Fire', grade: 'S' }, { label: 'Battlefield Omniscience', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Divine Martial Form', weight: 2, element: 'Light', grade: 'S' }, { label: 'Conflict Incarnate', weight: 2, element: 'Fire', grade: 'S' }, { label: 'Godly Battle Cry', weight: 2, element: 'Fire', grade: 'SS' }, { label: "War God's Absolute Wrath", weight: 1 }], powerPool: [{ label: 'War God Strike', weight: 3 }, { label: 'Indomitable Rage', weight: 3 }, { label: 'Aura of Retribution', weight: 2 }, { label: 'Divine Smite', weight: 2 }, { label: 'Reality Warping', weight: 1 }] },
@@ -2655,6 +2804,24 @@ export const races: Race[] = [
     weaknessCount: 0,
     minStatTier: 'A',
     description: 'A being older than gods, older than worlds. You predate the concept of "before."',
+    injectedWheels: [
+      { id: 'creationElement', displayName: 'Creation Element', order: 1, segments: [
+        { label: 'Air', weight: 3, statBonusGrants: { speed: 'statBonus', powerMastery: 'statBonus' }, description: 'The first breath.' },
+        { label: 'Fire', weight: 3, statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus' }, description: 'The first warmth.' },
+        { label: 'Water', weight: 3, statBonusGrants: { durability: 'statBonus', potential: 'statBonus' }, description: 'The first tide.' },
+        { label: 'Earth', weight: 3, statBonusGrants: { durability: 'statBonus', strength: 'statBonus', armorStrength: 'statBonus' }, description: 'The first ground.' },
+        { label: 'Light', weight: 2, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus', iq: 'statBonus' }, description: 'The first dawn.' },
+        { label: 'Shadow', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus' }, description: 'The first absence.' },
+        { label: 'Void', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus', iq: 'statBonus' }, description: 'The first emptiness. From which everything came.' },
+      ]},
+      { id: 'primordialCatastrophe', displayName: 'Catastrophe Domain', order: 2, segments: [
+        { label: 'Witness', weight: 5, description: 'Watches the cycle. Does not interfere.' },
+        { label: 'Reshaper', weight: 4, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Bends matter to remembered shapes.' },
+        { label: 'Unmaker', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' }, description: 'Returns things to before they were.' },
+        { label: 'Cycle-Keeper', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', charisma: 'statBonus' }, description: 'Resets civilisations on schedule.' },
+        { label: 'Origin-Force', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus', iq: 'statBonus' }, description: 'Predates causality. Is the source the others draw from.' },
+      ]},
+    ],
     statModifiers: { strength: 2.5, durability: 2.5, iq: 2.0, potential: 2.5, energyLevel: 2.5, powerMastery: 2.5, armorStrength: 2.0 },
     subTypePool: [
       { label: 'Primordial of Chaos',  weight: 3, element: 'Chaos', grade: 'S', statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' }, abilities: [{ label: 'Chaos Incarnate', weight: 2, element: 'Chaos', grade: 'S' }, { label: 'Reality Flux', weight: 2, element: 'Cosmic', grade: 'S' }, { label: 'Entropic Aura', weight: 2, element: 'Chaos', grade: 'C' }, { label: 'Dissolution Touch', weight: 2, element: 'Chaos', grade: 'S' }, { label: 'Probability Void', weight: 2, element: 'Void', grade: 'S' }, { label: 'Unmaking', weight: 1, element: 'Chaos', grade: 'S' }], powerPool: [{ label: 'Causality Violation', weight: 3 }, { label: 'Reality Warping', weight: 3 }, { label: 'Matter Disintegration', weight: 2 }, { label: 'Omnipotence (Weekend Only)', weight: 2 }, { label: 'Entropy Field', weight: 1 }] },
@@ -2829,6 +2996,22 @@ export const races: Race[] = [
     weaknessCount: 1,
     minStatTier: 'B-',
     description: 'Cannot die. Has been alive long enough to have regrets about that.',
+    injectedWheels: [
+      { id: 'eternalAge', displayName: 'Eternal Age', order: 1, segments: [
+        { label: 'Centuries', weight: 5, statBonusGrants: { durability: 'statBonus', iq: 'statBonus' }, description: 'Has seen empires rise and fall. Cannot remember every name.' },
+        { label: 'Millennia', weight: 4, statBonusGrants: { durability: 'statBonus', iq: 'statBonus', potential: 'statBonus' }, description: 'Multiple ages. Multiple personalities, abandoned and adopted.' },
+        { label: 'Pre-History', weight: 3, statBonusGrants: { durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Older than recorded time.' },
+        { label: 'Cosmic Age', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Stars have died and rebirthed during their lifetime.' },
+        { label: 'Eternal Constant', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus' }, description: 'Has always existed. Will always exist. A law, not a being.' },
+      ]},
+      { id: 'deathCounter', displayName: 'Death Counter', order: 2, segments: [
+        { label: 'Never Died', weight: 4, statBonusGrants: { potential: 'statBonus' }, description: 'First life. Inexperienced.' },
+        { label: 'Died Once', weight: 4, statBonusGrants: { durability: 'statBonus', fightingSkill: 'statBonus' }, description: 'Learned the lesson. Permanent now.' },
+        { label: 'Many Deaths', weight: 3, statBonusGrants: { durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Death is a phase. They return each time.' },
+        { label: 'Death-Proof', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Cannot be killed by ordinary means. Each death extends them.' },
+        { label: "Death's Friend", weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: "Knows Death personally. They've had drinks." },
+      ]},
+    ],
     statModifiers: { durability: 2.0, potential: 1.8, powerMastery: 1.5 },
     classPool: [
       { label: 'True Immortal',         weight: 4, element: 'Light', grade: 'A', statBonusGrants: { durability: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Total Regeneration', weight: 2, element: 'Light', grade: 'A' }, { label: 'Undying Will', weight: 2, element: 'Light', grade: 'A' }, { label: 'Time Resistance', weight: 2, element: 'Time', grade: 'A' }, { label: 'Ancient Endurance', weight: 1, element: 'Light', grade: 'S' }], powerPool: [{ label: 'Immortality', weight: 3 }, { label: 'Healing Factor (Absolute)', weight: 3 }, { label: 'Age Immunity', weight: 2 }, { label: 'Death Nullification', weight: 2 }, { label: 'Soul Lock', weight: 1 }] },
@@ -2866,6 +3049,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 1.3,
     minStatTier: 'D-',
     description: 'Evolution gave you a second chance. You are using it to bite everything.',
+    injectedWheels: [
+      { id: 'predator', displayName: 'Predator Type', order: 1, segments: [
+        { label: 'Pack Hunter', weight: 5, statBonusGrants: { speed: 'statBonus', agility: 'statBonus', fightingSkill: 'statBonus' }, description: 'Velociraptor-class. Coordinated.' },
+        { label: 'Apex Solo', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus' }, description: 'T-Rex-class. Top of its food chain.' },
+        { label: 'Armored Tank', weight: 3, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus', strength: 'statBonus' }, description: 'Ankylosaur-class. Walking fortress.' },
+        { label: 'Aerial', weight: 3, statBonusGrants: { speed: 'statBonus', agility: 'statBonus', fightingSkill: 'statBonus' }, description: 'Pterosaur-class. Dives from the sky.' },
+        { label: 'Megafauna', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', armorStrength: 'statBonus', potential: 'statBonus' }, description: 'Diplodocus-or-larger. Geographic threat.' },
+      ]},
+      { id: 'ancientInstinct', displayName: 'Ancient Instinct', order: 2, segments: [
+        { label: 'Hunt', weight: 5, statBonusGrants: { fightingSkill: 'statBonus', speed: 'statBonus' }, description: 'Tracks. Stalks. Kills.' },
+        { label: 'Survive', weight: 4, statBonusGrants: { durability: 'statBonus', potential: 'statBonus' }, description: 'Eats. Avoids. Endures.' },
+        { label: 'Migrate', weight: 3, statBonusGrants: { speed: 'statBonus', durability: 'statBonus', potential: 'statBonus' }, description: 'Reads land. Knows weather. Moves with the season.' },
+        { label: 'Dominate', weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus' }, description: 'Claims territory. Defends it from anything.' },
+        { label: 'Awaken', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', potential: 'statBonus', powerMastery: 'statBonus' }, description: 'Modern world cannot contain them. Will not contain them.' },
+      ]},
+    ],
     statModifiers: { strength: 2.0, durability: 1.8, speed: 1.4, iq: 0.7 },
     subTypePool: [
       { label: 'T-Rex',          weight: 4, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Bite Force (World Record)', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Seismic Footstep', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Terror Roar', weight: 2, element: 'Sound', grade: 'C' }, { label: 'Tunnel Vision Focus', weight: 1, element: 'Neutral', grade: 'D' }] },
@@ -2906,6 +3105,23 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.8,
     minStatTier: 'C-',
     description: 'More than meets the eye. Significantly more. Also considerably heavier.',
+    injectedWheels: [
+      { id: 'altForm', displayName: 'Alt Form', order: 1, segments: [
+        { label: 'Civilian Vehicle', weight: 5, statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, description: 'Truck, car, motorcycle. Blends in.' },
+        { label: 'Military Vehicle', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', armorStrength: 'statBonus' }, description: 'Tank. Jet. Built for combat.' },
+        { label: 'Aerial', weight: 3, statBonusGrants: { speed: 'statBonus', agility: 'statBonus', energyLevel: 'statBonus' }, description: 'Flight-capable. Sky superiority.' },
+        { label: 'Industrial', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Construction equipment. Multi-tool body.' },
+        { label: 'Beast Mode', weight: 2, statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus' }, description: 'Organic-mimicking. Predator. Wild.' },
+        { label: 'Triple-Changer', weight: 1, statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'Three alt forms. Switches mid-fight. Rare bloodline.' },
+      ]},
+      { id: 'energon', displayName: 'Energon Tier', order: 2, segments: [
+        { label: 'Standard', weight: 5, description: 'Standard fuel rations.' },
+        { label: 'Refined', weight: 4, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus' }, description: 'Premium energon. Better burns.' },
+        { label: 'Cybertronium', weight: 3, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus', strength: 'statBonus' }, description: 'Plating reinforced with home-world alloy.' },
+        { label: 'Sparked', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' }, description: 'Spark touched by Primus. Or the AllSpark.' },
+        { label: 'Prime-Class', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Carries the Matrix of Leadership.' },
+      ]},
+    ],
     statModifiers: { strength: 1.8, durability: 1.8, iq: 1.4, speed: 1.3 },
     classPool: [
       { label: 'Autobot (Guardian)',    weight: 4, element: 'Light', grade: 'B', statBonusGrants: { durability: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Shield Matrix', weight: 2, element: 'Light', grade: 'B' }, { label: 'Energon Storage (High)', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Combat Protocol Alpha', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Autobot Honor Code', weight: 1, element: 'Light', grade: 'B' }], powerPool: [{ label: 'Energy Blast', weight: 3 }, { label: 'Invulnerability', weight: 3 }, { label: 'Plasma Cannon', weight: 2 }, { label: 'Repair Field', weight: 2 }, { label: 'Rocket Thrust', weight: 1 }] },
@@ -3057,6 +3273,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.8,
     minStatTier: 'C-',
     description: 'Guardian of souls. Wields a sword that cuts the soul itself.',
+    injectedWheels: [
+      { id: 'zanpakuto', displayName: 'Zanpakutō Spirit', order: 1, segments: [
+        { label: 'Sealed', weight: 5, statBonusGrants: { fightingSkill: 'statBonus', weaponMastery: 'statBonus' }, description: 'Standard wakizashi form. Sword still mute.' },
+        { label: 'Shikai', weight: 4, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus', weaponMastery: 'statBonus' }, description: 'Sword speaks. Personal release form unlocked.' },
+        { label: 'Dual-Spirit', weight: 3, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' }, description: 'Two spirits in one blade. Rare phenomenon.' },
+        { label: 'Bankai', weight: 2, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus', weaponMastery: 'statBonus', strength: 'statBonus', potential: 'statBonus' }, description: 'Second release. Captain-level.' },
+        { label: 'Soul-Bond', weight: 1, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus', weaponMastery: 'statBonus', strength: 'statBonus', potential: 'statBonus', iq: 'statBonus' }, description: 'Spirit and shinigami fused. Cannot tell where one ends.' },
+      ]},
+      { id: 'bankaiPotential', displayName: 'Bankai Potential', order: 2, segments: [
+        { label: 'Latent', weight: 5, description: 'The potential is there. Untrained.' },
+        { label: 'Combat-Coded', weight: 4, statBonusGrants: { fightingSkill: 'statBonus', strength: 'statBonus' }, description: 'Bankai shape leans toward direct combat.' },
+        { label: 'Field-Coded', weight: 3, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' }, description: 'Bankai shape rewrites the battlefield.' },
+        { label: 'Time/Soul', weight: 2, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', potential: 'statBonus' }, description: 'Bankai operates on souls or time directly.' },
+        { label: 'Reality-Tier', weight: 1, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', fightingSkill: 'statBonus' }, description: 'Bankai breaks the rules. Sou-King-class threat.' },
+      ]},
+    ],
     statModifiers: { fightingSkill: 1.8, powerMastery: 1.7, speed: 1.5, potential: 1.4 },
     classPool: [
       { label: 'Academy Graduate',      weight: 5, element: 'Soul', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Shunpo (Basic)', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Zanjutsu Foundation', weight: 2, element: 'Soul', grade: 'C' }, { label: 'Kido Basics', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Reiatsu Control', weight: 1, element: 'Soul', grade: 'C' }], powerPool: [{ label: 'Flash Step', weight: 3 }, { label: 'Soul Slash', weight: 3 }, { label: 'Kido Binding', weight: 2 }, { label: 'Spiritual Pressure', weight: 2 }, { label: 'Zanpakuto Bond', weight: 1 }] },
@@ -3096,6 +3328,22 @@ export const races: Race[] = [
     weaknessCount: 1,
     minStatTier: 'B-',
     description: 'The ocean\'s apex nightmare. Everything in the sea fears you, and rightfully so.',
+    injectedWheels: [
+      { id: 'abyss', displayName: 'Depth Domain', order: 1, segments: [
+        { label: 'Shallows', weight: 4, statBonusGrants: { durability: 'statBonus', strength: 'statBonus' }, description: 'Coastal terror. Beach towns evacuate.' },
+        { label: 'Reef', weight: 4, statBonusGrants: { durability: 'statBonus', fightingSkill: 'statBonus' }, description: 'Coral kingdom. Coordinated hunting.' },
+        { label: 'Open Ocean', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus' }, description: 'Surface fleet level threat.' },
+        { label: 'Trench', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' }, description: 'Crush depth normal. Daylight feared.' },
+        { label: 'Abyss', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' }, description: 'Lives where nothing should. Older than oceans.' },
+      ]},
+      { id: 'leviathan', displayName: 'Leviathan Class', order: 2, segments: [
+        { label: 'Adolescent', weight: 5, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Still growing. Already dangerous.' },
+        { label: 'Mature', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus' }, description: 'Full size. Continental waters claimed.' },
+        { label: 'Ancient', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' }, description: 'Saw the first sailors. Outlasted them.' },
+        { label: 'Mythic', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Cited in scripture. Drowned saints.' },
+        { label: 'Sea-Lord', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Other sea kings bow.' },
+      ]},
+    ],
     statModifiers: { strength: 2.5, durability: 2.2, speed: 1.6, iq: 0.7 },
     subTypePool: [
       { label: 'Leviathan Class',    weight: 4, element: 'Water', grade: 'A', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Pressure Immunity (Absolute)', weight: 2, element: 'Water', grade: 'A' }, { label: 'Crushing Jaw', weight: 2, element: 'Water', grade: 'A' }, { label: 'Tsunami Body', weight: 2, element: 'Water', grade: 'A' }, { label: 'Deep Ocean Call', weight: 1, element: 'Sound', grade: 'S' }] },
@@ -3133,6 +3381,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 0.9,
     minStatTier: 'D-',
     description: 'Heir to the greatest civilization ever sunk. It was fine. Totally intentional.',
+    injectedWheels: [
+      { id: 'tide', displayName: 'Tide Affinity', order: 1, segments: [
+        { label: 'Surface-Walker', weight: 4, statBonusGrants: { agility: 'statBonus', charisma: 'statBonus' }, description: 'Lives mostly above water. City-dweller.' },
+        { label: 'Coastal', weight: 4, statBonusGrants: { durability: 'statBonus', powerMastery: 'statBonus' }, description: 'Bridges both worlds.' },
+        { label: 'Deep-Born', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' }, description: 'Never above water for long. Pressure-adapted.' },
+        { label: 'Court Noble', weight: 2, statBonusGrants: { charisma: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' }, description: 'Born to the throne court. Royal training.' },
+        { label: 'Trident-Bearer', weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus', potential: 'statBonus' }, description: 'Wields a relic of the founding.' },
+      ]},
+      { id: 'seaKingPath', displayName: 'Sea-King Path', order: 2, segments: [
+        { label: 'Civilian', weight: 5, description: 'Ordinary Atlantean. Lives a life.' },
+        { label: 'Warrior', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Royal guard. Trained from youth.' },
+        { label: 'Mage', weight: 3, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', potential: 'statBonus' }, description: 'Sea-magic. Ancient arts. Whirlpools at will.' },
+        { label: 'Heir', weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Crown coming.' },
+        { label: 'Ocean Master', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Bends every sea to their will. Mythic king.' },
+      ]},
+    ],
     statModifiers: { strength: 1.5, durability: 1.5, iq: 1.4, powerMastery: 1.3 },
     classPool: [
       { label: 'Royal Lineage',     weight: 3, element: 'Water', grade: 'B', statBonusGrants: { charisma: 'statBonus', strength: 'statBonus', powerMastery: 'statBonus' }, abilities: [{ label: 'Atlantean Command', weight: 2, element: 'Water', grade: 'B' }, { label: 'Trident Mastery', weight: 2, element: 'Water', grade: 'B' }, { label: 'Sea Life Bond (Advanced)', weight: 2, element: 'Nature', grade: 'B' }, { label: 'Tidal Crown Aura', weight: 1, element: 'Water', grade: 'A' }], powerPool: [{ label: 'Hydrokinesis', weight: 3 }, { label: 'Sea Life Command', weight: 3 }, { label: 'Tidal Wave Generation', weight: 2 }, { label: 'Water Breathing', weight: 2 }, { label: 'Trident Mastery', weight: 1 }] },
@@ -3170,6 +3434,22 @@ export const races: Race[] = [
     weaknessProbabilityModifier: 1.0,
     minStatTier: 'D-',
     description: 'Born of two worlds. The wheel spins twice more — your bloodline is whatever fate decides.',
+    injectedWheels: [
+      { id: 'heritage', displayName: 'Heritage', order: 1, segments: [
+        { label: 'Distant Mix', weight: 5, description: 'Two bloodlines, one barely present.' },
+        { label: 'Balanced', weight: 4, statBonusGrants: { potential: 'statBonus', iq: 'statBonus' }, description: 'Equal parts. Both heritages active.' },
+        { label: 'Dominant Heritage', weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, description: "One parent's gift dominates. The other lingers." },
+        { label: 'Conflicted', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statPenalty' }, description: 'Two natures at war inside. Powerful, unstable.' },
+        { label: 'Synthesis', weight: 1, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', charisma: 'statBonus' }, description: "Both heritages refined into something new. The species hasn't been named yet." },
+      ]},
+      { id: 'conflict', displayName: 'Inner Conflict', order: 2, segments: [
+        { label: 'Resolved', weight: 5, statBonusGrants: { potential: 'statBonus' }, description: 'At peace with both halves.' },
+        { label: 'Suppressed', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'One half locked away. Disciplined.' },
+        { label: 'Cyclical', weight: 3, statBonusGrants: { agility: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' }, description: 'Each half rises and falls in seasons.' },
+        { label: 'Volatile', weight: 2, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', charisma: 'statPenalty' }, description: 'Snap-switches between heritages mid-fight.' },
+        { label: 'Awakened', weight: 1, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus', iq: 'statBonus' }, description: 'Both selves conscious simultaneously. Two-mind combat.' },
+      ]},
+    ],
     statModifiers: { potential: 1.8, agility: 1.4, powerMastery: 1.3 },
     subTypePool: [
       { label: 'Half-Elf / Half-Human',       weight: 5, element: 'Nature', grade: 'C', statBonusGrants: { agility: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Elven Grace', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Human Adaptability', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'Dual Heritage Affinity', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Cross-Blood Insight', weight: 1, element: 'Nature', grade: 'B' }] },
@@ -3209,6 +3489,22 @@ export const races: Race[] = [
     weaknessCount: 1,
     minStatTier: 'C-',
     description: 'Large. Very large. Furniture is a constant problem.',
+    injectedWheels: [
+      { id: 'titanGrowth', displayName: 'Titan Growth', order: 1, segments: [
+        { label: 'Hill Tier', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Big. Strong. Standard giant.' },
+        { label: 'Mountain Tier', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Geographic feature. Casts shadows.' },
+        { label: 'Storm Tier', weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Cloud-class giant. Weather follows.' },
+        { label: 'Fire Tier', weight: 2, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', fightingSkill: 'statBonus' }, description: 'Volcanic. Walks with smoke.' },
+        { label: 'Primal Titan', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', armorStrength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Pre-creation tier. The old giants who shaped continents.' },
+      ]},
+      { id: 'earthshaker', displayName: 'Earthshaker', order: 2, segments: [
+        { label: 'Heavy Step', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Each step a tremor.' },
+        { label: 'Crater Walker', weight: 4, statBonusGrants: { strength: 'statBonus', armorStrength: 'statBonus' }, description: 'Leaves footprints visible from above.' },
+        { label: 'Quake Caller', weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, description: 'Calls earthquakes. Coordinated, deliberate.' },
+        { label: 'Mountain Sundered', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' }, description: 'Sundered a mountain in living memory.' },
+        { label: 'Continental Tread', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', armorStrength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Walks far enough that continents drift apart.' },
+      ]},
+    ],
     statModifiers: { strength: 2.2, durability: 2.0, armorStrength: 1.4, speed: 0.7, agility: 0.6, iq: 0.8 },
     subTypePool: [
       { label: 'Hill Giant',       weight: 5, element: 'Earth', grade: 'D', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Club Mastery', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Stone Throw', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Ground Tremor', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Iron Gut', weight: 1, element: 'Earth', grade: 'D' }] },

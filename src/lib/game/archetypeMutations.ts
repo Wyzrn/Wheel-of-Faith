@@ -511,6 +511,166 @@ registerMutation('Hollow / Arrancar', 'Demon Slayer', {
   },
 })
 
+// ── VILTRUMITE × archetype ───────────────────────────────────────────────
+registerMutation('Viltrumite', 'Anti-Hero', {
+  // Renegade Viltrumite — Conquest standing biased to Renegade.
+  wheelOverrides: {
+    conquest: [
+      { label: 'Renegade',         weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Field Officer',    weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Conquest Lord',    weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus' } },
+    ],
+    survival: [
+      { label: 'Death\'s Edge', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Awakened',      weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+      { label: 'Maimed',        weight: 3, statBonusGrants: { durability: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Battle-Tested', weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
+    ],
+  },
+  secretEventBias: 1.4,
+  synergyFlavor: 'Renegade Viltrumite — the empire chases. The empire fails.',
+})
+
+// ── KRYPTONIAN × archetype ───────────────────────────────────────────────
+registerMutation('Kryptonian', 'Superhero', {
+  wheelOverrides: {
+    sunExposure: [
+      { label: 'Yellow Sun',     weight: 6, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Solar-Engorged', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Blue Sun',       weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+    ],
+  },
+  synergyFlavor: 'Hero Kryptonian — solar capacity at full draw.',
+})
+
+// ── ASGARDIAN × archetype ────────────────────────────────────────────────
+registerMutation('Asgardian', 'Warrior', {
+  wheelOverrides: {
+    worthiness: [
+      { label: 'Warrior-Proven',weight: 5, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus' } },
+      { label: 'Worthy',        weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus', charisma: 'statBonus', potential: 'statBonus' } },
+      { label: 'All-Father\'s Eye',weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' } },
+    ],
+  },
+})
+
+// ── KAIJU × archetype ────────────────────────────────────────────────────
+registerMutation('Kaiju', 'Titan Shifter', {
+  wheelOverrides: {
+    kaijuMutation: [
+      { label: 'Hivemind',     weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', iq: 'statBonus', potential: 'statBonus' } },
+      { label: 'Apex Predator',weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+      { label: 'Armored',      weight: 2, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus', strength: 'statBonus' } },
+    ],
+    disaster: [
+      { label: 'Extinction Class',weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Continental', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Coastal',     weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
+    ],
+  },
+  secretEventBias: 1.6,
+})
+
+// ── TIME LORD × archetype ────────────────────────────────────────────────
+registerMutation('Time Lord', 'Mage', {
+  // Architect Time Lord — heavy timeline-bias, secret events frequent.
+  wheelOverrides: {
+    timeline: [
+      { label: 'Architect',     weight: 5, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Walker',        weight: 4, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+      { label: 'Lord President',weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Guardian',      weight: 1, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' } },
+    ],
+    regeneration: [
+      { label: 'Many-Faced',         weight: 4, statBonusGrants: { iq: 'statBonus', potential: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Cycle-Broken',       weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus', durability: 'statBonus' } },
+      { label: 'Final Regeneration', weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' } },
+    ],
+  },
+  secretEventBias: 1.8,
+})
+
+// ── DEMI-GOD × archetype ─────────────────────────────────────────────────
+registerMutation('Demi-god', 'Paladin', {
+  wheelOverrides: {
+    divineParent: [
+      { label: 'Storm/Sky',     weight: 4, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' } },
+      { label: 'War God',       weight: 5, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'All-Father',    weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' } },
+    ],
+    blessing: [
+      { label: 'Apotheosis-Bound',weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Chosen Heir',    weight: 4, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Favoured',       weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', potential: 'statBonus' } },
+    ],
+  },
+})
+
+// ── GOD × archetype ──────────────────────────────────────────────────────
+registerMutation('God', 'Cleric', {
+  // Worshipped God — Worship biased Pantheon/Universal, Domain biased
+  // Light/Knowledge/Nature (the "good-coded" domains).
+  wheelOverrides: {
+    worship: [
+      { label: 'Pantheon-Held',weight: 5, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Universal',    weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Faith',        weight: 3, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Cult',         weight: 1, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus' } },
+    ],
+    divineDomain: [
+      { label: 'Light',     weight: 5, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus', potential: 'statBonus' } },
+      { label: 'Knowledge', weight: 4, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Nature',    weight: 3, statBonusGrants: { durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+      { label: 'Fate',      weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', charisma: 'statBonus' } },
+    ],
+  },
+  secretEventBias: 1.6,
+})
+registerMutation('God', 'Supervillain', {
+  // Dark God — Worship biased Cult/Forgotten, Domain biased Death/Chaos.
+  wheelOverrides: {
+    worship: [
+      { label: 'Forgotten', weight: 5, statBonusGrants: { durability: 'statBonus', iq: 'statBonus' } },
+      { label: 'Cult',      weight: 4, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Universal', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+    ],
+    divineDomain: [
+      { label: 'Death', weight: 5, statBonusGrants: { powerMastery: 'statBonus', durability: 'statBonus', potential: 'statBonus' } },
+      { label: 'Chaos', weight: 4, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+      { label: 'War',   weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus' } },
+      { label: 'Fate',  weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', charisma: 'statBonus' } },
+    ],
+  },
+  secretEventBias: 2.0,
+})
+
+// ── PRIMORDIAL × archetype ───────────────────────────────────────────────
+registerMutation('Primordial', 'Mage', {
+  wheelOverrides: {
+    primordialCatastrophe: [
+      { label: 'Origin-Force', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus', iq: 'statBonus' } },
+      { label: 'Cycle-Keeper', weight: 3, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Reshaper',     weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+    ],
+  },
+  secretEventBias: 2.0,
+  synergyFlavor: 'Architect-Primordial — reshapes by force of intent.',
+})
+
+// ── SAIYAN extras × Power Level ──────────────────────────────────────────
+registerMutation('Saiyan', 'Superhero', {
+  // Hero Saiyan biases Power Level toward Off the Charts / Legendary.
+  wheelOverrides: {
+    powerLevel: [
+      { label: 'Off the Charts',weight: 5, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', potential: 'statBonus' } },
+      { label: 'Legendary',     weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+      { label: 'Elite Tier',    weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Mid-Tier Class',weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
+    ],
+  },
+  synergyFlavor: 'Hero Saiyan — born for the chart-breaking battles.',
+})
+
 registerMutation('Creator', 'Mage', {
   // Strategist Creator goes Order-heavy + biases towards Override Caps.
   wheelOverrides: {
