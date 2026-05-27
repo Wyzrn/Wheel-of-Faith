@@ -22,6 +22,7 @@ import {
 } from '$lib/game/battle'
 import type { ArenaRound, ArenaSide, ArenaWinner } from './arena'
 import { POWER_COOLDOWN_TURNS, SPELL_COOLDOWN_TURNS, pickAutoMove, type PlayerAction } from './controller'
+import { GIMMICKS, roundStartHealFraction, lastStandCheck } from '$lib/gimmicks'
 
 export interface TeamControllerMember {
   id: string
@@ -80,6 +81,9 @@ export class BattleControllerTeam {
   private actorQueue: TeamControllerMember[] = []
   private cycle = 0
   private _winner: ArenaWinner | null = null
+  // Per-actor set of one-shot gimmicks that have already fired this battle
+  // (Last Stand only triggers once). Mirrors BattleController1v1.
+  private firedGimmicks: Record<string, Set<string>> = {}
 
   constructor(team1: TeamControllerMember[], team2: TeamControllerMember[]) {
     this.team1 = team1
@@ -89,6 +93,13 @@ export class BattleControllerTeam {
       this.statuses[m.id] = {}
       this.defendStance[m.id] = null
       this.powerCooldowns[m.id] = {}
+      this.firedGimmicks[m.id] = new Set()
+      // Leader gimmick — starts the battle with a +20% damage buff (3 rounds).
+      if (m.char.gimmickIds?.includes('leader')) {
+        const params = GIMMICKS.leader.params!
+        m.char.buffMultiplier = (params.dmgMult as number) ?? 1.20
+        m.char.buffRoundsLeft = (params.rounds as number) ?? 3
+      }
     }
   }
 
@@ -198,11 +209,16 @@ export class BattleControllerTeam {
 
     const allMembers = [...this.team1, ...this.team2]
 
-    // Passive regen
+    // Passive regen + Divine Favor gimmick (% maxHp at round start)
     for (const m of allMembers) {
       if (this.hp[m.id] <= 0) continue
       const r = m.char.passiveHealPerRound
       if (r > 0) this.hp[m.id] = Math.min(m.char.maxHp, this.hp[m.id] + r)
+      const favorFrac = roundStartHealFraction(m.char.gimmickIds ?? [])
+      if (favorFrac > 0 && this.hp[m.id] < m.char.maxHp) {
+        const amount = Math.round(m.char.maxHp * favorFrac)
+        this.hp[m.id] = Math.min(m.char.maxHp, this.hp[m.id] + amount)
+      }
     }
 
     // Buff countdown
@@ -316,6 +332,20 @@ export class BattleControllerTeam {
     this.hp[actor.id]  = Math.min(actor.char.maxHp, this.hp[actor.id] + result.heal)
     this.hp[actor.id]  = Math.max(0, this.hp[actor.id] - result.reflected)
     if (result.applyStatus) this.applyStatus(target, result.applyStatus, lines)
+
+    // Last Stand gimmick — once per battle, when HP drops below threshold,
+    // surge back with a fraction of maxHp restored.
+    if (this.hp[target.id] > 0) {
+      const hpFrac = this.hp[target.id] / target.char.maxHp
+      const fired  = this.firedGimmicks[target.id]
+      const ls = lastStandCheck(target.char.gimmickIds ?? [], hpFrac, fired.has('lastStand'))
+      if (ls) {
+        const heal = Math.round(target.char.maxHp * ls.healFraction)
+        this.hp[target.id] = Math.min(target.char.maxHp, this.hp[target.id] + heal)
+        fired.add('lastStand')
+        lines.push(`${target.char.name}'s Last Stand triggers — surges back with ${formatHp(heal)} HP!`)
+      }
+    }
 
     // FX event for the projectile layer. attackerIdx / targetIdxs are
     // indices into team1/team2 in the arena's natural order.

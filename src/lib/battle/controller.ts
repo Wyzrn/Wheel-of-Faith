@@ -19,6 +19,7 @@ import {
 } from '$lib/game/battle'
 import type { ArenaRound, ArenaSide, ArenaWinner } from './arena'
 import type { AttackType } from '$lib/content/types'
+import { GIMMICKS, roundStartHealFraction, lastStandCheck } from '$lib/gimmicks'
 
 // ── PlayerAction shapes ─────────────────────────────────────────────────────
 
@@ -265,6 +266,12 @@ export class BattleController1v1 {
   private defendStance: Record<string, DefendStance | null> = {}
   // Per-actor power cooldowns. `{ actorId: { moveName: turnsRemaining } }`.
   private powerCooldowns: Record<string, Record<string, number>> = {}
+  // Per-actor set of one-shot gimmicks that have already fired (Last Stand
+  // can only trigger once per battle). Keyed by actor id → set of gimmick ids.
+  private firedGimmicks: Record<string, Set<string>> = {}
+  // True after the first attack-style action lands — drives First Strike
+  // (next attack from a holder is guaranteed crit).
+  private hasAnyoneAttacked = false
   private roundNum = 0
   private _winner: ArenaWinner | null = null
   // Whose turn the controller is awaiting input for (null = controller can
@@ -280,6 +287,13 @@ export class BattleController1v1 {
       this.statuses[m.id] = {}
       this.defendStance[m.id] = null
       this.powerCooldowns[m.id] = {}
+      this.firedGimmicks[m.id] = new Set()
+      // Leader gimmick: starts the battle with a +20% damage buff for 3 rounds.
+      if (m.char.gimmickIds?.includes('leader')) {
+        const params = GIMMICKS.leader.params!
+        m.char.buffMultiplier = (params.dmgMult as number) ?? 1.20
+        m.char.buffRoundsLeft = (params.rounds as number) ?? 3
+      }
     }
   }
 
@@ -337,6 +351,13 @@ export class BattleController1v1 {
       if (c.passiveHealPerRound > 0 && this.hp[m.id] > 0) {
         this.hp[m.id] = Math.min(c.maxHp, this.hp[m.id] + c.passiveHealPerRound)
         lines.push(`${c.name} regenerates ${formatHp(c.passiveHealPerRound)} HP!`)
+      }
+      // Divine Favor gimmick — % of maxHp heal at the start of every round.
+      const favorFrac = roundStartHealFraction(c.gimmickIds ?? [])
+      if (favorFrac > 0 && this.hp[m.id] > 0 && this.hp[m.id] < c.maxHp) {
+        const amount = Math.round(c.maxHp * favorFrac)
+        this.hp[m.id] = Math.min(c.maxHp, this.hp[m.id] + amount)
+        lines.push(`${c.name}'s Divine Favor restores ${formatHp(amount)} HP.`)
       }
     }
 
@@ -468,6 +489,21 @@ export class BattleController1v1 {
     this.hp[actor.id]  = Math.max(0, this.hp[actor.id] - result.reflected)
     if (result.applyStatus) this.applyStatus(target, result.applyStatus, lines)
     if (result.stun) this.lastStun = true
+
+    // Last Stand gimmick — once per battle, when HP drops below the
+    // threshold, restore a fraction of maxHp. Fires on the target since
+    // they just took the hit that dropped them low.
+    if (this.hp[target.id] > 0) {
+      const hpFrac = this.hp[target.id] / target.char.maxHp
+      const fired  = this.firedGimmicks[target.id]
+      const ls = lastStandCheck(target.char.gimmickIds ?? [], hpFrac, fired.has('lastStand'))
+      if (ls) {
+        const heal = Math.round(target.char.maxHp * ls.healFraction)
+        this.hp[target.id] = Math.min(target.char.maxHp, this.hp[target.id] + heal)
+        fired.add('lastStand')
+        lines.push(`${target.char.name}'s Last Stand triggers — surges back with ${formatHp(heal)} HP!`)
+      }
+    }
 
     // Emit a fx event for the UI's projectile layer
     const fxMove = forced ?? actor.char.moves.find(m => m.attackType !== 'passive')

@@ -8,6 +8,7 @@ import { getRace, racesByLabel } from '$lib/content/races'
 import { getArchetype } from '$lib/content/archetypes'
 import { ELEMENT_COLORS } from '$lib/content/elements'
 import type { ElementType, ItemGrade, Race } from '$lib/content/types'
+import { GIMMICKS, RACE_GIMMICKS, ARCHETYPE_GIMMICKS } from '$lib/gimmicks'
 
 export interface IdentityPerk {
   // Material Symbols icon name
@@ -131,6 +132,19 @@ export function buildRaceIdentityCard(label: string): IdentityCard | null {
 
   const perks: IdentityPerk[] = []
 
+  // Gimmicks first — these are the race's signature COMBAT mechanic, not
+  // just stat tilt. Lead with them so the player sees Saiyan's Last Stand
+  // before they see "+2 weapon spins."
+  for (const gid of RACE_GIMMICKS[label] ?? []) {
+    const g = GIMMICKS[gid]
+    if (!g) continue
+    perks.push({
+      icon: g.icon,
+      label: g.name,
+      detail: g.description,
+    })
+  }
+
   // Spin extras — most-noticed perk; lead with these.
   if (race.extraPowerSpins && race.extraPowerSpins > 0) {
     perks.push({
@@ -219,7 +233,7 @@ export function buildRaceIdentityCard(label: string): IdentityCard | null {
     element,
     rarity: raceRarity(race.weight),
     archetypeType: undefined,
-    perks: perks.slice(0, 6),
+    perks: perks.slice(0, 8),
   }
 }
 
@@ -234,6 +248,17 @@ export function buildArchetypeIdentityCard(label: string): IdentityCard | null {
   const accentColor = element ? ELEMENT_COLORS[element] : '#f0c040'
 
   const perks: IdentityPerk[] = []
+
+  // Gimmicks first — combat passives are the archetype's signature.
+  for (const gid of ARCHETYPE_GIMMICKS[label] ?? []) {
+    const g = GIMMICKS[gid]
+    if (!g) continue
+    perks.push({
+      icon: g.icon,
+      label: g.name,
+      detail: g.description,
+    })
+  }
 
   // Ability rename (Stand, Breathing Style, Titan Form…) — top of card.
   if (arc.abilitySpinDisplayName) {
@@ -343,7 +368,7 @@ export function buildArchetypeIdentityCard(label: string): IdentityCard | null {
     element,
     rarity: archetypeRarity(arc.weight),
     archetypeType: arc.archetypeType,
-    perks: perks.slice(0, 6),
+    perks: perks.slice(0, 8),
     signatureMove: arc.grantedPowers?.[0],
     abilityRename: arc.abilitySpinDisplayName,
   }
@@ -469,7 +494,7 @@ export function buildPoolEntryIdentityCard(
     element: entry.element,
     rarity,
     archetypeType: kindLabel,    // shown as the gold "Fighter/Spellcaster"-style chip
-    perks: perks.slice(0, 6),
+    perks: perks.slice(0, 8),
   }
 }
 

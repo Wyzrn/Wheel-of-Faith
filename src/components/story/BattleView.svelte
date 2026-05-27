@@ -109,6 +109,7 @@
       elementWeaknesses: [], statusImmunities: [],
       passiveHealPerRound: 0, powerDamageReduction: 0, physicalDamageReduction: 0,
       damageReductionCap: 0.80, summons: [], buffMultiplier: 1.0, buffRoundsLeft: 0,
+      gimmickIds: [],
       moves: [
         { name: `${enemy.grade} Strike`, type: 'physical', effectTag: null, behavior: 'attack', attackType: 'attack' as const },
         { name: enemy.type === 'boss' ? 'Overwhelming Destruction' : `${enemy.grade} Blast`, type: 'power', effectTag: null, behavior: 'attack', attackType: 'attack' as const },

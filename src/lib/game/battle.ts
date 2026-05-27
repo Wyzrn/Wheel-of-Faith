@@ -19,6 +19,8 @@ import { abilityLookup as _abilityLookup } from '$lib/content/races'
 import '$lib/content/archetypes'
 import { ITEM_GRADE_INFO, highestGrade } from '$lib/content/elements'
 import type { AttackType, ElementType } from '$lib/content/types'
+import { gimmickIdsForCharacter, computeBuildEffects } from '$lib/gimmicks'
+import { getRace } from '$lib/content/races'
 
 // Grade lookup maps — built once at module load
 const _powerMap  = new Map(powersPool.map(p => [p.label, p]))
@@ -125,6 +127,17 @@ export interface BattleCharacter {
   summons: SummonedUnit[]            // currently active summoned allies
   buffMultiplier: number             // damage multiplier from active buff (1.0 = none)
   buffRoundsLeft: number             // rounds remaining on buff
+  // Gimmick IDs — race + archetype passives (Last Stand, Lifesteal,
+  // Berserker Rage, Concept Avatar, etc.) sourced from $lib/gimmicks.ts.
+  // Build-time effects (damage / HP / armor multipliers) are already
+  // folded into the stats above; runtime effects (HP threshold, lifesteal,
+  // round-start heal, predator/concept/underdog multipliers) are applied
+  // by the controller + doAction using helpers from $lib/gimmicks.ts.
+  gimmickIds: string[]
+  // Signature element used by Concept Avatar — derived at build time
+  // from the race's strongest class/transformation element. undefined
+  // when no element can be picked.
+  signatureElement?: ElementType
 }
 
 export interface BattleMove {
@@ -635,14 +648,43 @@ export function buildBattleCharacter(
   }
 
   const mult = statMultiplier ?? 1
-  const finalHp  = Math.round(hp * mult)
-  const finalPhysDmg = Math.round(physicalDamage * mult)
-  const finalPwrDmg  = Math.round(powerDamage * mult)
+  // Resolve gimmick IDs from race + archetype labels and fold their
+  // build-time effects (damage / HP / armor multipliers from Berserker
+  // Rage, Glass Cannon, Iron Skin, etc.) into the final stats. Runtime
+  // gimmicks (Last Stand HP threshold, Lifesteal, round-start heal,
+  // Predator / Concept Avatar / Underdog multipliers) fire later in
+  // doAction + the controller.
+  const raceLabel      = rs.find(r => r.category === 'race')?.resultLabel      ?? 'Unknown'
+  const archetypeLabel = rs.find(r => r.category === 'archetype')?.resultLabel ?? 'Unknown'
+  const gimmickIds = gimmickIdsForCharacter(raceLabel, archetypeLabel)
+  const fx = computeBuildEffects(gimmickIds)
+  const finalHp  = Math.max(1, Math.round(hp * mult * fx.hpMultiplier))
+  const finalPhysDmg = Math.round(physicalDamage * mult * fx.damageMultiplier)
+  const finalPwrDmg  = Math.round(powerDamage    * mult * fx.damageMultiplier)
+  const finalPhysReduction = Math.min(0.80, physicalDamageReduction + fx.physReductionAdd)
+
+  // Pick signature element for Concept Avatar — the strongest-grade
+  // element across the race's class/transformation/subtype pools.
+  let signatureElement: ElementType | undefined
+  const race = getRace(raceLabel)
+  if (race) {
+    const pools = [
+      ...(race.classPool ?? []),
+      ...(race.transformationPool ?? []),
+      ...(race.subTypePool ?? []),
+    ]
+    let bestRank = -1
+    for (const e of pools) {
+      if (!e.element || !e.grade) continue
+      const rank = ITEM_GRADE_INFO[e.grade] ? Object.keys(ITEM_GRADE_INFO).indexOf(e.grade) : 0
+      if (rank > bestRank) { bestRank = rank; signatureElement = e.element }
+    }
+  }
 
   return {
-    name: name.trim() || (rs.find(r => r.category === 'race')?.resultLabel ?? 'Unknown'),
-    raceLabel:      rs.find(r => r.category === 'race')?.resultLabel      ?? 'Unknown',
-    archetypeLabel: rs.find(r => r.category === 'archetype')?.resultLabel ?? 'Unknown',
+    name: name.trim() || raceLabel,
+    raceLabel,
+    archetypeLabel,
     hp: finalHp, maxHp: finalHp,
     physicalDamage: finalPhysDmg, powerDamage: finalPwrDmg,
     armorReduction, armorType: armorTypeLabel, weaponType: weaponTypeLabel,
@@ -650,8 +692,9 @@ export function buildBattleCharacter(
     weaponEnchantTags, armorEnchantTags,
     critChance, critMultiplier, dodgeChance, initiative, moves,
     elementWeaknesses, statusImmunities, passiveHealPerRound,
-    powerDamageReduction, physicalDamageReduction, damageReductionCap,
+    powerDamageReduction, physicalDamageReduction: finalPhysReduction, damageReductionCap,
     summons: [], buffMultiplier: 1.0, buffRoundsLeft: 0,
+    gimmickIds, signatureElement,
   }
 }
 
@@ -891,6 +934,41 @@ export function doAction(
   const weaknessMult = (move.element && defender.elementWeaknesses.includes(move.element)) ? 1.25 : 1.0
   if (weaknessMult > 1) lines.push(`${defender.name} is weak to ${move.element}! Damage amplified!`)
 
+  // ── Gimmick damage multipliers (race + archetype passives) ─────────────
+  // Concept Avatar — boost when the move's element matches the attacker's
+  // signature element. Predator — bonus vs prey-listed defender race.
+  // Underdog — bonus when defender has more HP. Berserker Rage etc.
+  // already folded into baseDmg at build time; the "taken" side is
+  // applied to defender below.
+  const attackerGimmicks = attacker.gimmickIds ?? []
+  let conceptMult = 1.0
+  if (attackerGimmicks.includes('conceptAvatar') && move.element && attacker.signatureElement === move.element) {
+    conceptMult = 1.25
+    lines.push(`${attacker.name}'s ${attacker.signatureElement} resonance flares!`)
+  }
+  let predatorMult = 1.0
+  if (attackerGimmicks.includes('predator')) {
+    // PREDATOR_TARGETS lookup duplicated here to avoid a circular import;
+    // keep in sync with gimmicks.ts. Bounty Hunter has no fixed prey.
+    const prey: Record<string, string[]> = {
+      'Demon Slayer': ['Demon', 'Devil Fruit User'],
+      'Exorcist':     ['Demon', 'Undead (Revenant)', 'Possessed', 'Hollow / Arrancar', 'Ghoul'],
+    }
+    if ((prey[attacker.archetypeLabel] ?? []).includes(defender.raceLabel)) {
+      predatorMult = 1.30
+      lines.push(`${attacker.name} hunts ${defender.raceLabel}-kind — strike empowered!`)
+    }
+  }
+  let underdogMult = 1.0
+  if (attackerGimmicks.includes('underdog') && defender.maxHp > attacker.maxHp) {
+    underdogMult = 1.20
+  }
+  // Berserker Rage's "taken multiplier" applies to the defender's incoming
+  // damage. Sum it from the defender's gimmicks (only berserker carries it
+  // today; if more gimmicks add takenMult later this stays correct).
+  let takenMult = 1.0
+  if ((defender.gimmickIds ?? []).includes('berserkerRage')) takenMult *= 1.20
+
   // Final damage. Move-grade multiplier folds in the underlying item tier
   // so lower-grade moves hit softer and signature high-grade moves hit
   // dramatically harder — same scaling that surfaces in the hotbar preview.
@@ -898,7 +976,7 @@ export function doAction(
   const variance = 0.85 + Math.random() * 0.30
   const gradeMult = moveGradeMult(move.grade)
   let damage = Math.max(1, Math.round(
-    baseDmg * moveMult * gradeMult * weaponBonus * energyMult * critMult * berserkerMult * aoeMult * selfBuffMult * weaknessMult * (1 - effectiveArmor) * variance
+    baseDmg * moveMult * gradeMult * weaponBonus * energyMult * critMult * berserkerMult * aoeMult * selfBuffMult * weaknessMult * conceptMult * predatorMult * underdogMult * takenMult * (1 - effectiveArmor) * variance
   ))
 
   // Divine armor absorb
@@ -930,6 +1008,14 @@ export function doAction(
     const eHeal = Math.round(damage * 0.10)
     heal += eHeal
     lines.push(`${attacker.name}'s weapon drains ${formatHp(eHeal)} HP!`)
+  }
+
+  // Gimmick lifesteal — Vampire/Demon/Symbiote-style races + Necromancer/
+  // Warlock/Possessed archetypes drink back % of damage dealt.
+  if (attackerGimmicks.includes('lifesteal')) {
+    const gHeal = Math.round(damage * 0.15)
+    heal += gHeal
+    lines.push(`${attacker.name} drinks ${formatHp(gHeal)} HP from the strike!`)
   }
 
   // Reflected damage
