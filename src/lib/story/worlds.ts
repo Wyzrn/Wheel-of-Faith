@@ -1,11 +1,24 @@
 // Story Mode worlds system.
-// 16 worlds (F → Absolute), 20 battles each. All enemies match world grade; type multipliers handle difficulty.
-// Player level (1–5) is unlocked by beating specific worlds.
+// 20 worlds (F → Infinite), 20 battles each. All enemies match world grade; type multipliers handle difficulty.
+// Player level (1–8) is unlocked by beating specific worlds.
+//
+// Cosmic + Immortal are inserted between ZZZ and Celestial; Transcendent +
+// Infinite extend the ladder past Absolute. Matches the post-mortal tier
+// reshuffle in scoreTier.ts (Segment 1).
 
-export type WorldGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'Z' | 'ZZ' | 'ZZZ' | 'Celestial' | 'Godly' | 'Primordial' | 'Absolute'
+export type WorldGrade =
+  | 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS'
+  | 'Z' | 'ZZ' | 'ZZZ'
+  | 'Cosmic' | 'Immortal'
+  | 'Celestial' | 'Godly' | 'Primordial' | 'Absolute'
+  | 'Transcendent' | 'Infinite'
 
 export const WORLD_GRADES: readonly WorldGrade[] = [
-  'F', 'E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS', 'Z', 'ZZ', 'ZZZ', 'Celestial', 'Godly', 'Primordial', 'Absolute',
+  'F', 'E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS',
+  'Z', 'ZZ', 'ZZZ',
+  'Cosmic', 'Immortal',
+  'Celestial', 'Godly', 'Primordial', 'Absolute',
+  'Transcendent', 'Infinite',
 ] as const
 
 export const BATTLES_PER_WORLD = 20
@@ -71,7 +84,12 @@ export const PLAYER_LEVEL_WORLDS: Record<number, WorldGrade> = {
   3: 'SS',
   4: 'Z',
   5: 'ZZZ',
+  6: 'Immortal',
+  7: 'Godly',
+  8: 'Absolute',
 }
+/** Highest player level the progression allows. */
+export const MAX_PLAYER_LEVEL = 8
 
 /** Gem + XP drop range per base enemy grade (not elite/boss). */
 export interface DropRange { min: number; max: number }
@@ -93,11 +111,15 @@ export const GRADE_DROPS: Record<WorldGrade, GradeDropTable> = {
   SSS:        { gems: { min: 200,       max: 250       }, xp: { min: 200,       max: 250       } },
   Z:          { gems: { min: 400,       max: 600       }, xp: { min: 400,       max: 600       } },
   ZZ:         { gems: { min: 1_000,     max: 2_000     }, xp: { min: 1_000,     max: 2_000     } },
-  ZZZ:        { gems: { min: 5_000,     max: 10_000    }, xp: { min: 5_000,     max: 10_000    } },
-  Celestial:  { gems: { min: 25_000,    max: 50_000    }, xp: { min: 25_000,    max: 50_000    } },
-  Godly:      { gems: { min: 100_000,   max: 150_000   }, xp: { min: 100_000,   max: 150_000   } },
-  Primordial: { gems: { min: 250_000,   max: 500_000   }, xp: { min: 250_000,   max: 500_000   } },
-  Absolute:   { gems: { min: 1_000_000, max: 2_000_000 }, xp: { min: 1_000_000, max: 2_000_000 } },
+  ZZZ:         { gems: { min: 5_000,      max: 10_000     }, xp: { min: 5_000,      max: 10_000     } },
+  Cosmic:      { gems: { min: 12_000,     max: 22_000     }, xp: { min: 12_000,     max: 22_000     } },
+  Immortal:    { gems: { min: 25_000,     max: 50_000     }, xp: { min: 25_000,     max: 50_000     } },
+  Celestial:   { gems: { min: 55_000,     max: 90_000     }, xp: { min: 55_000,     max: 90_000     } },
+  Godly:       { gems: { min: 110_000,    max: 180_000    }, xp: { min: 110_000,    max: 180_000    } },
+  Primordial:  { gems: { min: 250_000,    max: 500_000    }, xp: { min: 250_000,    max: 500_000    } },
+  Absolute:    { gems: { min: 1_000_000,  max: 2_000_000  }, xp: { min: 1_000_000,  max: 2_000_000  } },
+  Transcendent:{ gems: { min: 3_000_000,  max: 6_000_000  }, xp: { min: 3_000_000,  max: 6_000_000  } },
+  Infinite:    { gems: { min: 10_000_000, max: 20_000_000 }, xp: { min: 10_000_000, max: 20_000_000 } },
 }
 
 /** Elite mobs give 3× drops; bosses give 5×. */
@@ -129,11 +151,15 @@ export const WORLD_CRYSTAL_DROP_RANGE: Record<WorldGrade, [CrystalDropGrade, Cry
   SSS:        ['C',  'A'  ],
   Z:          ['B',  'A'  ],
   ZZ:         ['B',  'S'  ],
-  ZZZ:        ['A',  'S'  ],
-  Celestial:  ['A',  'SS' ],
-  Godly:      ['S',  'SS' ],
-  Primordial: ['S',  'SSS'],
-  Absolute:   ['SS', 'God'],
+  ZZZ:         ['A',  'S'  ],
+  Cosmic:      ['A',  'SS' ],
+  Immortal:    ['S',  'SS' ],
+  Celestial:   ['S',  'SSS'],
+  Godly:       ['SS', 'SSS'],
+  Primordial:  ['SS', 'God'],
+  Absolute:    ['SSS','God'],
+  Transcendent:['SSS','God'],
+  Infinite:    ['SSS','God'],
 }
 
 /** Rolls a random crystal grade within a world's drop range. */
@@ -236,9 +262,9 @@ export function rollDrops(enemy: Enemy): { gems: number; xp: number; chanceDrops
   return { gems: roll(table.gems), xp: roll(table.xp), chanceDrops }
 }
 
-/** Returns the player level (1–5) earned from worlds beaten. */
+/** Returns the player level (1–MAX_PLAYER_LEVEL) earned from worlds beaten. */
 export function getPlayerLevelFromWorlds(beaten: Set<WorldGrade>): number {
-  for (let lvl = 5; lvl >= 1; lvl--) {
+  for (let lvl = MAX_PLAYER_LEVEL; lvl >= 1; lvl--) {
     if (beaten.has(PLAYER_LEVEL_WORLDS[lvl])) return lvl
   }
   return 0

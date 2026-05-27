@@ -1026,8 +1026,21 @@ function recomputeOverall(spins: SpinResult[]): { overallScore: number; overallT
   return { overallScore, overallTier: scoreTier(overallScore) as TierGrade }
 }
 
-// Max stat score per player level (index = playerLevel). Mirrors StorySpinView STAGE_MAX_STAT_SCORES.
-const STAT_LEVEL_MAX_SCORES = [54, 92, 99, 103, 115, Infinity] as const
+// Max stat score per player level (index = playerLevel). Mirrors
+// StorySpinView STAGE_MAX_STAT_SCORES. Caps scale through the new post-mortal
+// ladder: L3 = ZZ-, L4 = Cosmic-, L5 = Celestial-, L6 = Primordial-,
+// L7 = Transcendent-, L8 = no cap.
+const STAT_LEVEL_MAX_SCORES = [
+  54,        // L0 — ~F+/E-
+  92,        // L1 — SS-
+  99,        // L2 — SSS+
+  107,       // L3 — ZZ-
+  119,       // L4 — Cosmic-
+  131,       // L5 — Celestial-
+  143,       // L6 — Primordial-
+  155,       // L7 — Transcendent-
+  Infinity,  // L8 — no cap (Infinite+ and overflow open)
+] as const
 
 // Score cap when the character isn't Limit Broken. Anchored to Absolute+ band
 // (TIER_THRESHOLDS row 53 in scoreTier.ts) so non-broken crystal stacking can
@@ -1044,7 +1057,7 @@ export function useStatCrystal(
   if (slot.inventory.statCrystals[type] <= 0) return 'no_crystal'
   const char = slot.roster.find(r => r.id === characterId)
   if (!char) return 'char_not_found'
-  const stageCap = STAT_LEVEL_MAX_SCORES[Math.min(5, slot.playerLevel)]
+  const stageCap = STAT_LEVEL_MAX_SCORES[Math.min(STAT_LEVEL_MAX_SCORES.length - 1, slot.playerLevel)]
   // Apply the non-broken Absolute+ cap unless the character has rolled
   // Limit Break — broken characters can stack crystals into Transcendent/
   // Infinite, everyone else stops at Absolute+ regardless of player level.

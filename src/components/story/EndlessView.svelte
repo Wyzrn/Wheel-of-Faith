@@ -101,13 +101,18 @@
   // ── Stat ranges (same as BattleView) ──────────────────────────────────────
   const WORLD_STAT_RANGE: Record<WorldGrade, [number, number]> = {
     F:[0,12], E:[5,17], D:[9,21], C:[14,26], B:[18,30], A:[23,35],
-    S:[27,40], SS:[32,41], SSS:[36,41], Z:[38,41], ZZ:[39,41],
-    ZZZ:[40,41], Celestial:[41,41], Godly:[41,41], Primordial:[41,41], Absolute:[41,41],
+    S:[27,40], SS:[32,44], SSS:[36,46],
+    Z:[38,48], ZZ:[40,50], ZZZ:[42,52],
+    Cosmic:[44,53], Immortal:[46,54],
+    Celestial:[48,55], Godly:[50,56], Primordial:[52,57], Absolute:[54,58],
+    Transcendent:[56,59], Infinite:[58,59],
   }
   const ENEMY_BASE_HP: Record<string, number> = {
     F: 100, E: 300, D: 650, C: 1250, B: 2500, A: 5000,
     S: 10000, SS: 22000, SSS: 47000, Z: 100000, ZZ: 220000, ZZZ: 470000,
-    Celestial: 1000000, Godly: 2200000, Primordial: 3000000, Absolute: 6800000,
+    Cosmic: 1_000_000, Immortal: 2_200_000,
+    Celestial: 4_900_000, Godly: 10_800_000, Primordial: 23_700_000, Absolute: 52_000_000,
+    Transcendent: 114_000_000, Infinite: 250_000_000,
   }
   function randRank(min: number, max: number): number {
     return Math.round(min + Math.random() * (max - min))
