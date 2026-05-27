@@ -23,6 +23,7 @@
   import { getRacesForStage, racesToSegments, getArchetypesForStage, archetypesToSegments } from '$lib/story/raceTiers'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
+  import { buildIdentityCard } from '$lib/identityCard'
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   import { settings } from '$lib/settings.svelte'
@@ -1029,12 +1030,16 @@
     timestamp: new Date().toISOString(),
     tier: pendingResult.tier as any,
   } as SpinResult)}
+  {@const _identityCard = (lastResult.category === 'race' || lastResult.category === 'archetype')
+    ? buildIdentityCard(lastResult.category, lastResult.resultLabel ?? '')
+    : null}
   {@const resolvedMeta = {
     element: pendingResult.element,
     grade:   pendingResult.grade,
     abilityType:  pendingResult.abilityType,
     description:  pendingResult.description,
     statEffect:   pendingResult.statEffect,
+    ...(_identityCard ? { identityCard: _identityCard } : {}),
   } as ResolvedMeta}
   <SpinResultReveal
     result={lastResult}

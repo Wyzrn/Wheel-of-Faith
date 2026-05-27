@@ -48,6 +48,13 @@
   let gradeInfo  = $derived(meta.grade ? ITEM_GRADE_INFO[meta.grade] : null)
   let displayTier = $derived(normalizeLegacyDisplayLabel(result.displayLabel) ?? result.tier)
   let hasBadgeRow = $derived(!!meta.element || !!gradeInfo)
+  // Identity card payload — race + archetype lands swap the generic
+  // description body for a themed perk list. When present, the panel uses
+  // the card's accent color for its border/glow and hides the tier badge
+  // (which is meaningless for race/archetype).
+  let idCard = $derived(meta.identityCard ?? null)
+  // Panel accent: identity card color when present, else tier color, else gold.
+  let panelAccent = $derived(idCard?.accentColor ?? tierColor ?? '#f0c040')
 
   // Auto-continue: when settings.autoContinueMs > 0, fire onContinue after that
   // delay so users who've seen the cards can plow through fast. Cancellable
@@ -119,25 +126,26 @@
   >
     <div
       class="srr-modal-card obsidian-slab w-full max-w-sm rounded-xl p-6 text-center relative overflow-hidden"
-      style="border: 1px solid {tierColor ?? '#f0c040'}55; box-shadow: 0 0 80px rgba(0,0,0,0.98), 0 0 50px {tierColor ?? '#f0c040'}22, inset 0 1px 0 rgba(255,255,255,0.04);"
+      class:srr-id-card={!!idCard}
+      style="border: 1px solid {panelAccent}55; box-shadow: 0 0 80px rgba(0,0,0,0.98), 0 0 50px {panelAccent}33, inset 0 1px 0 rgba(255,255,255,0.04);"
     >
       <div class="noise-overlay"></div>
-      <div class="absolute top-3 left-3 w-7 h-7" style="border-top: 2px solid {tierColor ?? '#f0c040'}66; border-left: 2px solid {tierColor ?? '#f0c040'}66;"></div>
-      <div class="absolute top-3 right-3 w-7 h-7" style="border-top: 2px solid {tierColor ?? '#f0c040'}66; border-right: 2px solid {tierColor ?? '#f0c040'}66;"></div>
-      <div class="absolute bottom-3 left-3 w-7 h-7" style="border-bottom: 2px solid {tierColor ?? '#f0c040'}66; border-left: 2px solid {tierColor ?? '#f0c040'}66;"></div>
-      <div class="absolute bottom-3 right-3 w-7 h-7" style="border-bottom: 2px solid {tierColor ?? '#f0c040'}66; border-right: 2px solid {tierColor ?? '#f0c040'}66;"></div>
+      <div class="absolute top-3 left-3 w-7 h-7" style="border-top: 2px solid {panelAccent}66; border-left: 2px solid {panelAccent}66;"></div>
+      <div class="absolute top-3 right-3 w-7 h-7" style="border-top: 2px solid {panelAccent}66; border-right: 2px solid {panelAccent}66;"></div>
+      <div class="absolute bottom-3 left-3 w-7 h-7" style="border-bottom: 2px solid {panelAccent}66; border-left: 2px solid {panelAccent}66;"></div>
+      <div class="absolute bottom-3 right-3 w-7 h-7" style="border-bottom: 2px solid {panelAccent}66; border-right: 2px solid {panelAccent}66;"></div>
 
       <div class="relative z-10 flex flex-col items-center gap-3"
         style="animation: srrPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
         {#if categoryDisplayName}
           <p class="font-mono text-[10px] tracking-[0.22em] uppercase" style="color: #9a907b;">{categoryDisplayName}</p>
         {/if}
-        {#if displayTier && tierColor}
+        {#if displayTier && tierColor && !idCard}
           <div class="px-4 py-1.5 rounded-lg" style="background: {tierColor}18; border: 1px solid {tierColor}55; box-shadow: 0 0 20px {tierColor}35;">
             <span class="font-black" style="font-family: 'Cinzel', serif; font-size: 2rem; color: {tierColor}; filter: drop-shadow(0 0 8px {tierColor}66);">{displayTier}</span>
           </div>
         {/if}
-        {#if hasBadgeRow}
+        {#if hasBadgeRow && !idCard}
           <div class="flex items-center gap-2 flex-wrap justify-center">
             {#if meta.element}
               <span class="px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"
@@ -154,7 +162,7 @@
             {/if}
           </div>
         {/if}
-        {#if meta.abilityType}
+        {#if meta.abilityType && !idCard}
           {@const ac = abilityColor(meta.abilityType)}
           <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-xs font-semibold"
             style="background: {ac}1a; border: 1px solid {ac}55; color: {ac};">
@@ -162,19 +170,68 @@
             {meta.abilityType}
           </span>
         {/if}
+
+        <!-- Identity card chips: rarity + archetypeType + element -->
+        {#if idCard}
+          <div class="flex items-center gap-2 flex-wrap justify-center">
+            <span class="srr-id-chip"
+              style="background: {idCard.accentColor}22; border: 1px solid {idCard.accentColor}66; color: {idCard.accentColor};">
+              {idCard.kind === 'race' ? 'RACE' : 'ARCHETYPE'}
+            </span>
+            <span class="srr-id-chip srr-id-chip-rarity"
+              style="background: {idCard.accentColor}18; border: 1px solid {idCard.accentColor}44; color: #ffdf96;">
+              {idCard.rarity}
+            </span>
+            {#if idCard.archetypeType}
+              <span class="srr-id-chip"
+                style="background: rgba(240,192,64,0.10); border: 1px solid rgba(240,192,64,0.30); color: #ffdf96;">
+                {idCard.archetypeType}
+              </span>
+            {/if}
+            {#if idCard.element}
+              <span class="srr-id-chip flex items-center gap-1"
+                style="background: {idCard.accentColor}22; border: 1px solid {idCard.accentColor}55; color: {idCard.accentColor};">
+                <img src={ELEMENT_ICONS[idCard.element]} class="w-3.5 h-3.5 object-contain" alt={idCard.element} style="filter: drop-shadow(0 0 3px {idCard.accentColor});" />
+                {idCard.element}
+              </span>
+            {/if}
+          </div>
+        {/if}
+
         <p class="srr-label font-bold leading-snug"
-          style="font-family: 'Cinzel', serif; font-size: clamp(1rem, 4.5vw, 1.35rem); color: #ffdf96; max-width: 26ch;">
+          style="font-family: 'Cinzel', serif; font-size: clamp(1rem, 4.5vw, 1.35rem); color: {idCard ? idCard.accentColor : '#ffdf96'}; max-width: 26ch; {idCard ? `text-shadow: 0 0 18px ${idCard.accentColor}66, 0 0 4px ${idCard.accentColor};` : ''}">
           {result.resultLabel}
         </p>
-        {#if meta.description}
-          <p class="text-xs leading-relaxed" style="color: #9a907b; max-width: 30ch; font-family: 'JetBrains Mono', monospace;">{meta.description}</p>
-        {/if}
-        {#if meta.statEffect}
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-xs"
-            style="background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.18); color: #9a907b;">
-            <span class="material-symbols-outlined" style="font-size: 11px; color: #f0c040; font-variation-settings: 'FILL' 1;">bolt</span>
-            {meta.statEffect}
-          </div>
+
+        {#if idCard}
+          <p class="srr-id-desc" style="--accent: {idCard.accentColor};">
+            "{idCard.description}"
+          </p>
+
+          {#if idCard.perks.length > 0}
+            <ul class="srr-id-perks" style="--accent: {idCard.accentColor};">
+              {#each idCard.perks as p, i}
+                <li class="srr-id-perk" style="animation-delay: {520 + i * 90}ms;">
+                  <span class="material-symbols-outlined srr-id-perk-icon" style="color: {idCard.accentColor};">{p.icon}</span>
+                  <div class="srr-id-perk-text">
+                    <span class="srr-id-perk-label">{p.label}</span>
+                    {#if p.detail}<span class="srr-id-perk-detail">{p.detail}</span>{/if}
+                  </div>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        {:else}
+          {#if meta.description}
+            <p class="text-xs leading-relaxed" style="color: #9a907b; max-width: 30ch; font-family: 'JetBrains Mono', monospace;">{meta.description}</p>
+          {/if}
+          {#if meta.statEffect}
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-xs"
+              style="background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.18); color: #9a907b;">
+              <span class="material-symbols-outlined" style="font-size: 11px; color: #f0c040; font-variation-settings: 'FILL' 1;">bolt</span>
+              {meta.statEffect}
+            </div>
+          {/if}
         {/if}
         {#if announcement}
           <p class="text-sm" style="color: #a78bfa; max-width: 28ch; line-height: 1.4;">{announcement}</p>
@@ -196,19 +253,20 @@
   <!-- Overlay layout: fills parent's relatively-positioned wheel container -->
   <div
     class="absolute inset-0 flex flex-col items-center justify-center rounded-2xl z-10"
-    style="background: rgba(0,0,0,0.78); backdrop-filter: blur(4px); animation: srrFadeIn 0.18s ease-out forwards;"
+    class:srr-id-card={!!idCard}
+    style="background: rgba(0,0,0,0.78); backdrop-filter: blur(4px); animation: srrFadeIn 0.18s ease-out forwards; {idCard ? `box-shadow: inset 0 0 60px ${idCard.accentColor}33, inset 0 0 0 1px ${idCard.accentColor}66;` : ''}"
   >
-    <div class="flex flex-col items-center gap-3 px-6 text-center"
+    <div class="flex flex-col items-center gap-3 px-6 text-center max-h-full overflow-y-auto py-6"
       style="animation: srrPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
       {#if categoryDisplayName}
         <p class="font-mono text-[10px] tracking-[0.22em] uppercase" style="color: #9a907b;">{categoryDisplayName}</p>
       {/if}
-      {#if displayTier && tierColor}
+      {#if displayTier && tierColor && !idCard}
         <div class="px-4 py-1.5 rounded-lg" style="background: {tierColor}18; border: 1px solid {tierColor}55; box-shadow: 0 0 20px {tierColor}35;">
           <span class="font-black" style="font-family: 'Cinzel', serif; font-size: 2rem; color: {tierColor}; filter: drop-shadow(0 0 8px {tierColor}66);">{displayTier}</span>
         </div>
       {/if}
-      {#if hasBadgeRow}
+      {#if hasBadgeRow && !idCard}
         <div class="flex items-center gap-2 flex-wrap justify-center">
           {#if meta.element}
             <span class="px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"
@@ -225,7 +283,7 @@
           {/if}
         </div>
       {/if}
-      {#if meta.abilityType}
+      {#if meta.abilityType && !idCard}
         {@const ac = abilityColor(meta.abilityType)}
         <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-xs font-semibold"
           style="background: {ac}1a; border: 1px solid {ac}55; color: {ac};">
@@ -233,10 +291,55 @@
           {meta.abilityType}
         </span>
       {/if}
-      <p class="srr-label" style="font-family: 'Cinzel', serif; font-size: clamp(0.95rem, 3.5vw, 1.3rem); font-weight: 700; color: #ffdf96; line-height: 1.35; max-width: 26ch;">
+
+      {#if idCard}
+        <div class="flex items-center gap-2 flex-wrap justify-center">
+          <span class="srr-id-chip"
+            style="background: {idCard.accentColor}22; border: 1px solid {idCard.accentColor}66; color: {idCard.accentColor};">
+            {idCard.kind === 'race' ? 'RACE' : 'ARCHETYPE'}
+          </span>
+          <span class="srr-id-chip srr-id-chip-rarity"
+            style="background: {idCard.accentColor}18; border: 1px solid {idCard.accentColor}44; color: #ffdf96;">
+            {idCard.rarity}
+          </span>
+          {#if idCard.archetypeType}
+            <span class="srr-id-chip"
+              style="background: rgba(240,192,64,0.10); border: 1px solid rgba(240,192,64,0.30); color: #ffdf96;">
+              {idCard.archetypeType}
+            </span>
+          {/if}
+          {#if idCard.element}
+            <span class="srr-id-chip flex items-center gap-1"
+              style="background: {idCard.accentColor}22; border: 1px solid {idCard.accentColor}55; color: {idCard.accentColor};">
+              <img src={ELEMENT_ICONS[idCard.element]} class="w-3.5 h-3.5 object-contain" alt={idCard.element} style="filter: drop-shadow(0 0 3px {idCard.accentColor});" />
+              {idCard.element}
+            </span>
+          {/if}
+        </div>
+      {/if}
+
+      <p class="srr-label" style="font-family: 'Cinzel', serif; font-size: clamp(0.95rem, 3.5vw, 1.3rem); font-weight: 700; color: {idCard ? idCard.accentColor : '#ffdf96'}; line-height: 1.35; max-width: 26ch; {idCard ? `text-shadow: 0 0 18px ${idCard.accentColor}66, 0 0 4px ${idCard.accentColor};` : ''}">
         {result.resultLabel}
       </p>
-      {#if meta.description}
+
+      {#if idCard}
+        <p class="srr-id-desc" style="--accent: {idCard.accentColor};">
+          "{idCard.description}"
+        </p>
+        {#if idCard.perks.length > 0}
+          <ul class="srr-id-perks" style="--accent: {idCard.accentColor};">
+            {#each idCard.perks as p, i}
+              <li class="srr-id-perk" style="animation-delay: {520 + i * 90}ms;">
+                <span class="material-symbols-outlined srr-id-perk-icon" style="color: {idCard.accentColor};">{p.icon}</span>
+                <div class="srr-id-perk-text">
+                  <span class="srr-id-perk-label">{p.label}</span>
+                  {#if p.detail}<span class="srr-id-perk-detail">{p.detail}</span>{/if}
+                </div>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      {:else if meta.description}
         <p class="text-xs leading-relaxed" style="color: #9a907b; max-width: 30ch; font-family: 'JetBrains Mono', monospace;">{meta.description}</p>
       {/if}
       {#if announcement}
@@ -281,7 +384,103 @@
     60%  { opacity: 1; transform: translateY(-2px) scale(1.04); filter: blur(0); }
     100% { opacity: 1; transform: translateY(0)   scale(1);    filter: blur(0); }
   }
+  /* ── Identity card (race + archetype themed reveals) ───────────────────
+     Replaces the standard description + statEffect lines with a perk list
+     surfacing what makes this race/archetype unique. Border/glow use the
+     race or archetype's element color so each one looks visually different.
+  */
+  .srr-id-chip {
+    padding: 0.18rem 0.55rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .srr-id-chip-rarity {
+    letter-spacing: 0.20em;
+  }
+  .srr-id-desc {
+    font-family: 'Cinzel', serif;
+    font-style: italic;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: #d6cba6;
+    max-width: 30ch;
+    padding: 0.45rem 0.9rem;
+    border-left: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+    border-right: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+    opacity: 0;
+    animation: srrIdDesc 0.55s cubic-bezier(0.22, 0.85, 0.3, 1) 0.45s forwards;
+  }
+  @keyframes srrIdDesc {
+    0%   { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .srr-id-perks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 30ch;
+    display: flex;
+    flex-direction: column;
+    gap: 0.32rem;
+  }
+  .srr-id-perk {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    text-align: left;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent) 12%, transparent) 0%,
+      rgba(0, 0, 0, 0.18) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    opacity: 0;
+    transform: translateX(-10px);
+    animation: srrIdPerk 0.5s cubic-bezier(0.22, 0.85, 0.3, 1) forwards;
+    /* Per-item delay is inlined via animation-delay on the element. */
+  }
+  @keyframes srrIdPerk {
+    0%   { opacity: 0; transform: translateX(-10px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+  .srr-id-perk-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    font-variation-settings: 'FILL' 1;
+    filter: drop-shadow(0 0 5px var(--accent));
+  }
+  .srr-id-perk-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+    flex: 1;
+  }
+  .srr-id-perk-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #ffdf96;
+  }
+  .srr-id-perk-detail {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: #9a907b;
+    letter-spacing: 0.03em;
+    margin-top: 0.08rem;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .srr-label { animation-duration: 0.01ms !important; animation-delay: 0ms !important; }
+    .srr-label, .srr-id-desc, .srr-id-perk {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+    }
   }
 </style>

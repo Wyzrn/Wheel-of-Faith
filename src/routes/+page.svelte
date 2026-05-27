@@ -37,6 +37,7 @@
   import { randomCharacterName } from '$lib/story/naming'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
+  import { buildIdentityCard } from '$lib/identityCard'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   const _powerLookup      = new Map(powersPool.map(p => [p.label, p]))
   const _weaponLookup     = new Map(weaponsPool.map(w => [w.label, w]))
@@ -2582,7 +2583,13 @@
                 : (last.category === 'raceSubType' || last.category === 'raceClass' || last.category === 'raceTransformation') ? _racePoolLookup.get(last.resultLabel ?? '')
                 : (last.category === 'racialAbility' || last.category === 'archetypeAbility') ? _abilityLookup.get(last.resultLabel ?? '')
                 : undefined}
-              {@const resolvedMeta = (itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}) as ResolvedMeta}
+              {@const identityCard = (last.category === 'race' || last.category === 'archetype')
+                ? buildIdentityCard(last.category, last.resultLabel ?? '')
+                : null}
+              {@const resolvedMeta = {
+                ...(itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}),
+                ...(identityCard ? { identityCard } : {}),
+              } as ResolvedMeta}
               <SpinResultReveal
                 result={last}
                 meta={resolvedMeta}
