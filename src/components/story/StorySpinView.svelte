@@ -155,6 +155,33 @@
   let wheelCenterX = $state<number | null>(null)
   let wheelCenterY = $state<number | null>(null)
 
+  // ── Possessed archetype handler tables (mirror main game) ──────────────
+  // Stat bonuses applied per possession-strength tier. 5% guarantees at
+  // least 1 stat boost (per spec).
+  const POSSESSION_GRANTS: Record<string, Record<string, 'statBonus' | 'statPenalty'>> = {
+    'Barely a Whisper (5%)':        { charisma: 'statBonus' },
+    'A Flicker of Influence (20%)': { charisma: 'statBonus' },
+    'Shared Consciousness (40%)':   { charisma: 'statBonus', iq: 'statBonus' },
+    'Dominant Presence (60%)':      { strength: 'statBonus', charisma: 'statBonus' },
+    'Consuming Takeover (80%)':     { strength: 'statBonus', speed: 'statBonus', charisma: 'statBonus' },
+    'Full Possession (100%)':       { strength: 'statBonus', speed: 'statBonus', iq: 'statBonus', durability: 'statBonus' },
+  }
+  // Higher % grafts more of the possessing race's identity onto the
+  // character — race-specific traits, an aspect (class), and at full
+  // possession, an awakening (transformation).
+  const POSSESSION_SPLICE: Record<string, { abilities: number; classSpin: boolean; transformation: boolean }> = {
+    'Barely a Whisper (5%)':        { abilities: 0, classSpin: false, transformation: false },
+    'A Flicker of Influence (20%)': { abilities: 1, classSpin: false, transformation: false },
+    'Shared Consciousness (40%)':   { abilities: 1, classSpin: false, transformation: false },
+    'Dominant Presence (60%)':      { abilities: 2, classSpin: true,  transformation: false },
+    'Consuming Takeover (80%)':     { abilities: 2, classSpin: true,  transformation: false },
+    'Full Possession (100%)':       { abilities: 3, classSpin: true,  transformation: true  },
+  }
+  // Tracks the index in results[] of the PRIMARY result for the current
+  // spin reveal — mirrors main game so identityCard lookups don't pick
+  // up a trailing grantedPower entry instead of the actual race/archetype.
+  let primarySpinResultIndex = $state<number | null>(null)
+
   // ── Wildcard state ────────────────────────────────────────────────────────
   let wildcardPhase = $state<'idle' | 'flashing' | 'reveal'>('idle')
   let wildcardOutcomeType = $state('')
@@ -527,6 +554,11 @@
     const resultElement = landedSegment?.element
     const resultGrade = landedSegment?.grade
 
+    // Granted powers/weapons collected during category handling; pushed as
+    // extra results after the primary one resolves. Mirrors main game.
+    let pendingGrantedPowers: string[] = []
+    let pendingGrantedWeapons: string[] = []
+
     const spinResult: SpinResult = {
       step: results.length + 1,
       category: currentDef.category,
@@ -662,6 +694,11 @@
             pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
           }
         }
+        // Granted powers from the subtype entry (Mythical Beast → Dragon
+        // Breath, etc.) — pushed as power results below.
+        if (subTypeItem?.grantedPowers?.length) {
+          pendingGrantedPowers.push(...subTypeItem.grantedPowers)
+        }
       }
 
       if (currentDef.category === 'raceClass') {
@@ -672,6 +709,10 @@
           for (const [stat, bonusType] of Object.entries(classItem.statBonusGrants)) {
             pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
           }
+        }
+        // Granted powers from the class entry — pushed as power results below.
+        if (classItem?.grantedPowers?.length) {
+          pendingGrantedPowers.push(...classItem.grantedPowers)
         }
         // Class-specific power pool or granted powers
         if (classItem?.powerPool?.length) {
@@ -714,6 +755,19 @@
           for (let i = 0; i < extraPowers; i++) {
             abilitySlots.push({ category: 'power' as const, displayName: extraPowers > 1 ? `Bonus Power ${i + 1}` : 'Bonus Power' })
           }
+          // Bonus weapon spins (Dual Wielder gets +1, Artificer gets +1, etc.)
+          const extraWeapons = (archetype as { bonusWeaponSpins?: number }).bonusWeaponSpins ?? 0
+          for (let i = 0; i < extraWeapons; i++) {
+            abilitySlots.push({ category: 'weapon' as const, displayName: extraWeapons > 1 ? `Second Weapon ${i + 1}` : 'Second Weapon' })
+          }
+          // Arbitrary bonus spins (Possessed's possessionRace + possessionStrength,
+          // and any future archetype that adds custom sub-spins).
+          for (const bonusSpin of (archetype.bonusSpins ?? [])) {
+            abilitySlots.push({
+              category: bonusSpin.category as SpinCategory,
+              displayName: bonusSpin.displayName,
+            })
+          }
           if (abilitySlots.length > 0) queue.splice(currentIndex + 1, 0, ...abilitySlots)
 
           // statBonusGrants — deferred to fire right after each relevant stat spin
@@ -722,6 +776,58 @@
               pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType as 'statBonus' | 'statPenalty']
             }
           }
+
+          // Granted powers / weapons (Mage's Arcane Theory, Paladin's
+          // Holy Warhammer, Warrior's Combat Training, etc.) pushed as
+          // separate result entries after the primary archetype result.
+          // Mirrors main game so Story characters get the same freebies.
+          if (archetype.grantedPowers?.length) {
+            pendingGrantedPowers.push(...archetype.grantedPowers)
+          }
+          if (archetype.grantedWeapons?.length) {
+            pendingGrantedWeapons.push(...archetype.grantedWeapons)
+          }
+        }
+      }
+
+      // ── Possessed archetype handlers (mirrors main game) ──────────────
+      // possessionRace just records who's possessing — no extras spliced.
+      // possessionStrength applies the % stat-bonus tier + grafts
+      // racialAbility / class / transformation slots from the possessing
+      // race based on POSSESSION_SPLICE. forRace is set on grafted slots
+      // so the wheel draws from the possessing race's pool.
+      if (currentDef.category === 'possessionStrength') {
+        const grants = POSSESSION_GRANTS[resultLabel] ?? {}
+        for (const [stat, bonusType] of Object.entries(grants)) {
+          pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+        }
+        const possessingRaceLabel = results.find(r => r.category === 'possessionRace')?.resultLabel
+        const splice = POSSESSION_SPLICE[resultLabel] ?? { abilities: 0, classSpin: false, transformation: false }
+        const slots: SpinDefinition[] = []
+        if (possessingRaceLabel) {
+          const possessingRace = getRace(possessingRaceLabel)
+          for (let i = 0; i < splice.abilities; i++) {
+            slots.push({
+              category: 'racialAbility' as const,
+              displayName: splice.abilities > 1 ? `${possessingRaceLabel} Trait ${i + 1}` : `${possessingRaceLabel} Trait`,
+              forRace: possessingRaceLabel,
+            })
+          }
+          if (splice.classSpin && possessingRace?.classPool?.length) {
+            slots.push({
+              category: 'raceClass' as const,
+              displayName: `${possessingRaceLabel} Aspect`,
+              forRace: possessingRaceLabel,
+            })
+          }
+          if (splice.transformation && possessingRace?.transformationPool?.length) {
+            slots.push({
+              category: 'raceTransformation' as const,
+              displayName: `${possessingRaceLabel} Awakening`,
+              forRace: possessingRaceLabel,
+            })
+          }
+          if (slots.length > 0) queue.splice(currentIndex + 1, 0, ...slots)
         }
       }
 
@@ -939,6 +1045,33 @@
       if (currentDef.category === 'archetypeAbility') usedArchetypeAbilities.add(resultLabel)
 
       results.push(spinResult)
+      // Capture index BEFORE the extras (granted powers / weapons) get
+      // pushed so the reveal's identityCard lookup hits the primary
+      // result, not a trailing grantedPower. Mirrors main game.
+      primarySpinResultIndex = results.length - 1
+
+      // Inject race/class/subType/archetype granted powers as separate
+      // power results — no spin required, they're freebies tied to the
+      // identity choice. Story used to silently drop these.
+      for (const powerLabel of pendingGrantedPowers) {
+        results.push({
+          step: results.length + 1,
+          category: 'power',
+          resultLabel: powerLabel,
+          resultIndex: -1,
+          timestamp: new Date().toISOString(),
+        })
+      }
+      // Same for granted weapons (Paladin → Holy Warhammer, etc.).
+      for (const weaponLabel of pendingGrantedWeapons) {
+        results.push({
+          step: results.length + 1,
+          category: 'weapon',
+          resultLabel: weaponLabel,
+          resultIndex: -1,
+          timestamp: new Date().toISOString(),
+        })
+      }
 
       // ── weaponType: None → skip weapon + weaponMastery spins ────────────
       if (currentDef.category === 'weaponType' && resultLabel === 'None') {
@@ -1124,7 +1257,9 @@
      mode so it overlays the Story Mode UI without conflicting with the
      fixed left sidebar (running spin log). ────────────────────────────────── -->
 {#if pendingResult}
-  {@const lastResult = results.at(-1) ?? ({
+  {@const lastResult = (primarySpinResultIndex != null && results[primarySpinResultIndex])
+    || results.at(-1)
+    || ({
     step: results.length + 1,
     category: 'race' as const,
     resultLabel: pendingResult.label,

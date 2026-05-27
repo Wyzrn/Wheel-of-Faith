@@ -2,6 +2,7 @@
   import type { StoryRosterEntry } from '$lib/story/types'
   import TierBadge from '../TierBadge.svelte'
   import { powerRating, formatPower } from '$lib/story/powerRating'
+  import { raceGlyph } from '$lib/raceGlyphs'
 
   let { entry, onExpand, onSell, goldFrame = false }: {
     entry: StoryRosterEntry
@@ -86,9 +87,12 @@
     {entry.name}
   </p>
 
-  <!-- Race -->
-  <p class="text-sm font-mono truncate" style="color: var(--color-on-surface-variant);">
-    {entry.race}
+  <!-- Race + glyph (Material Symbols icon picked per race in raceGlyphs.ts) -->
+  <p class="text-sm font-mono truncate flex items-center gap-1.5" style="color: var(--color-on-surface-variant);">
+    <span class="material-symbols-outlined shrink-0"
+      style="font-size: 16px; color: var(--color-outline); font-variation-settings: 'FILL' 1; opacity: 0.85;"
+      aria-hidden="true">{raceGlyph(entry.race)}</span>
+    <span class="truncate">{entry.race}</span>
   </p>
 
   <!-- Archetype -->
