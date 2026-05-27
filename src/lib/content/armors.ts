@@ -209,7 +209,7 @@ const exotic: SimpleItem[] = [
   { label: 'Lava Stone Shell (Warm)',                     weight: 2, element: 'Fire',    grade: 'C' },
   { label: 'Ice Lattice Plate (Cold)',                    weight: 2, element: 'Ice',     grade: 'C' },
   { label: 'Amber Fossil Armor',                          weight: 2, element: 'Earth',   grade: 'C' },
-  { label: 'Volcanic Rock Carapace',                      weight: 2, element: 'Earth',   grade: 'C' },
+  { label: 'Volcanic Rock Carapace',                      weight: 2, element: 'Fire',   grade: 'C' },
   { label: 'Natural Claws and Thick Hide (No Armor Needed)', weight: 3, element: 'Nature', grade: 'C' },
   { label: 'Spiritual Chain Mail',                        weight: 2, element: 'Soul',    grade: 'C' },
   { label: 'Null-Space Armor',                            weight: 2, element: 'Void',    grade: 'B' },
