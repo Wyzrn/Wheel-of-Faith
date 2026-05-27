@@ -9,6 +9,7 @@
   import { ITEM_GRADE_INFO, ELEMENT_COLORS, ELEMENT_ICONS, GRADE_ORDER, highestGrade } from '$lib/content/elements'
   import type { ItemGrade } from '$lib/content/types'
   import { classifyAbility, generatePowerDescription, generateWeaponDescription, generateArmorDescription, generateAbilityDescription, getAbilityTypeColor, getAbilityTypeIcon, ABILITY_BATTLE_EFFECT } from '$lib/content/descriptions'
+  import { generateCharacterSummary } from '$lib/characterSummary'
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
   import { toast } from '$lib/toast.svelte'
@@ -68,6 +69,11 @@
   }
 
   let displayName       = $derived(name?.trim() || 'The Unnamed')
+  // Auto-generated 2-3 sentence narrative "The Read" — combines race +
+  // archetype + best/worst stat + signature power + gimmick. Persists on
+  // the character card so future visits to a saved character get the same
+  // synthesis they saw at creation time (seeded by name+race+archetype).
+  let characterSummary  = $derived(generateCharacterSummary(results, displayName))
   let race              = $derived(get('race'))
   let raceType          = $derived(get('raceSubType'))
   let raceClass         = $derived(get('raceClass'))
@@ -331,6 +337,21 @@
 
   {#if backstory !== '—'}
     <p class="text-sm italic text-center px-3" style="color: #9a907b;">"{backstory}"</p>
+  {/if}
+
+  <!-- Auto-generated "The Read" — narrative synthesis of the character.
+       Persists on the card so future visits to a saved character get the
+       same line they saw at creation. -->
+  {#if characterSummary && characterSummary.race !== 'Unknown'}
+    <div class="relative w-full px-3 py-3 rounded-lg mx-3"
+      style="background: linear-gradient(180deg, rgba(240,192,64,0.08) 0%, rgba(240,192,64,0.02) 100%); border-left: 2px solid rgba(240,192,64,0.45); border-right: 2px solid rgba(240,192,64,0.45);">
+      <p class="text-[10px] tracking-[0.22em] uppercase mb-1.5"
+        style="font-family: 'JetBrains Mono', monospace; color: #c9a050;">The Read</p>
+      <p class="text-center"
+        style="font-family: 'Cinzel', serif; font-style: italic; font-size: 0.92rem; line-height: 1.5; color: #e8dcb8;">
+        {characterSummary.text}
+      </p>
+    </div>
   {/if}
 
   <!-- Combat Grades -->

@@ -35,6 +35,7 @@
   import SpinResultReveal from '../components/SpinResultReveal.svelte'
   import type { ResolvedMeta } from '$lib/spinResultMeta'
   import { randomCharacterName } from '$lib/story/naming'
+  import { generateCharacterSummary } from '$lib/characterSummary'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
   import { buildIdentityCard } from '$lib/identityCard'
@@ -84,6 +85,15 @@
   let raceOverride = $state<string | null>(null)
   let showNameScreen = $state(false)
   let characterName = $state('')
+  // Auto-generated 2-3 sentence "roast" combining race + archetype + best/
+  // worst stat + signature power + gimmick. Recomputes when the results
+  // list changes; the name is included in the seed so renames re-flavor
+  // the synthesis. Same inputs always produce the same text.
+  let characterSummary = $derived(
+    results.length > 0
+      ? generateCharacterSummary(results, characterName || 'this one')
+      : null,
+  )
   let isRevealed = $state(false)
   let showSettings = $state(false)
 
@@ -2369,6 +2379,19 @@
               {rivalMode ? (rivalPhase === 'p1' ? 'Player 1 is ready. Name your warrior.' : 'Player 2 is ready. Name your challenger.') : 'Give your fate-spun hero a name to be remembered by.'}
             </p>
           </div>
+          {#if characterSummary && !rivalMode}
+            <!-- Auto-generated character summary "roast" — narrative payoff
+                 for the full 23-spin run. Italic pull-quote style so it
+                 reads as commentary, not stats. -->
+            <div class="relative w-full px-3 py-3 rounded-lg"
+              style="background: linear-gradient(180deg, rgba(240,192,64,0.08) 0%, rgba(240,192,64,0.02) 100%); border-left: 2px solid rgba(240,192,64,0.45); border-right: 2px solid rgba(240,192,64,0.45); animation: slideUp 0.55s cubic-bezier(0.22, 0.85, 0.3, 1) 0.18s both;">
+              <p class="text-[10px] tracking-[0.22em] uppercase mb-2"
+                style="font-family: 'JetBrains Mono', monospace; color: #c9a050;">The Read</p>
+              <p style="font-family: 'Cinzel', serif; font-style: italic; font-size: 0.95rem; line-height: 1.5; color: #e8dcb8;">
+                {characterSummary.text}
+              </p>
+            </div>
+          {/if}
           <div class="flex gap-2 items-center">
             <input
               type="text"
