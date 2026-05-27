@@ -555,19 +555,36 @@
     </svg>
 
   {:else if type === 'shadow'}
+    <!-- Shadow — devouring umbral void. Bloom backdrop, churning dark core
+         that pulses, six writhing tendrils reaching outward with stagger,
+         drip droplets falling away, twin glowing eyes peering from the core. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="38" fill="var(--c)" opacity="0.18" style="filter:blur(14px)"/>
-      <g class="shadow-g">
-        <circle cx="50" cy="50" r="16" fill="var(--c)" opacity="0.85"/>
-        <path d="M50 34 Q36 22 28 30 Q38 36 50 50" fill="var(--c)" opacity="0.7"/>
-        <path d="M66 36 Q78 24 72 16 Q64 30 50 50" fill="var(--c)" opacity="0.7"/>
-        <path d="M66 64 Q78 76 70 84 Q60 70 50 50" fill="var(--c)" opacity="0.65"/>
-        <path d="M34 64 Q18 70 16 82 Q28 70 50 50" fill="var(--c)" opacity="0.65"/>
-        <path class="tendril t1" d="M50 50 Q30 35 20 20" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.4" stroke-linecap="round"/>
-        <path class="tendril t2" d="M50 50 Q70 35 82 18" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.4" stroke-linecap="round"/>
-        <path class="tendril t3" d="M50 50 Q68 68 80 82" stroke="var(--c)" stroke-width="1.2" fill="none" opacity="0.35" stroke-linecap="round"/>
-        <path class="tendril t4" d="M50 50 Q32 68 20 80" stroke="var(--c)" stroke-width="1.2" fill="none" opacity="0.35" stroke-linecap="round"/>
+      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.28" class="sh-bloom" style="filter:blur(18px)"/>
+      <!-- Dark inner halo -->
+      <circle cx="50" cy="50" r="34" fill="var(--c)" opacity="0.20" style="filter:blur(8px)"/>
+      <!-- Core void mass -->
+      <g class="sh-core">
+        <circle cx="50" cy="50" r="20" fill="var(--c)" opacity="0.95"/>
+        <circle cx="50" cy="50" r="13" fill="#0d0d16" opacity="0.55"/>
+        <!-- Glowing eyes peering through -->
+        <ellipse cx="44" cy="48" rx="2.5" ry="3.5" fill="var(--c)" class="sh-eye"/>
+        <ellipse cx="56" cy="48" rx="2.5" ry="3.5" fill="var(--c)" class="sh-eye"/>
+        <circle cx="44" cy="48" r="0.9" fill="white" opacity="0.85"/>
+        <circle cx="56" cy="48" r="0.9" fill="white" opacity="0.85"/>
       </g>
+      <!-- Six writhing tendrils — staggered reach outward -->
+      <g class="sh-tendrils">
+        <path class="sh-tnd st1" d="M50 50 Q34 30 18 12" stroke="var(--c)" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path class="sh-tnd st2" d="M50 50 Q66 30 82 12" stroke="var(--c)" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path class="sh-tnd st3" d="M50 50 Q70 60 92 64" stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path class="sh-tnd st4" d="M50 50 Q30 60 8 64"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path class="sh-tnd st5" d="M50 50 Q60 70 70 92" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path class="sh-tnd st6" d="M50 50 Q40 70 30 92" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round"/>
+      </g>
+      <!-- Drip droplets falling from underside -->
+      <ellipse class="sh-drip sd1" cx="38" cy="74" rx="2.5" ry="4" fill="var(--c)"/>
+      <ellipse class="sh-drip sd2" cx="50" cy="80" rx="2"   ry="3.5" fill="var(--c)" opacity="0.85"/>
+      <ellipse class="sh-drip sd3" cx="62" cy="76" rx="2.5" ry="4" fill="var(--c)" opacity="0.9"/>
     </svg>
 
   {:else if type === 'holy'}
@@ -709,38 +726,76 @@
     </svg>
 
   {:else if type === 'poison'}
+    <!-- Poison — toxic miasma cloud + corrosive acid drips. Bloom backdrop,
+         skull silhouette inside the cloud, multiple bubbling toxin orbs,
+         dripping acid droplets falling from the cloud underside, hazard
+         tendrils curling outward. (Replaced the cartoon smiley.) -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="36" fill="var(--c)" opacity="0.13" style="filter:blur(10px)"/>
-      <circle cx="50" cy="44" r="11" fill="var(--c)" class="pb pb1"/>
-      <circle cx="34" cy="52" r="7.5" fill="var(--c)" class="pb pb2" opacity="0.85"/>
-      <circle cx="66" cy="48" r="8.5" fill="var(--c)" class="pb pb3" opacity="0.9"/>
-      <circle cx="44" cy="66" r="6"   fill="var(--c)" class="pb pb4" opacity="0.75"/>
-      <circle cx="62" cy="66" r="5"   fill="var(--c)" class="pb pb5" opacity="0.65"/>
-      <circle cx="50" cy="28" r="6"   fill="var(--c)" class="pb pb6" opacity="0.8"/>
-      <circle cx="46" cy="42" r="2" fill="white" opacity="0.65"/>
-      <circle cx="54" cy="42" r="2" fill="white" opacity="0.65"/>
-      <path d="M46 48 Q50 51 54 48" stroke="white" stroke-width="1.2" fill="none" opacity="0.65"/>
-      <circle class="drip dr1" cx="44" cy="75" r="1.5" fill="var(--c)" opacity="0.7"/>
-      <circle class="drip dr2" cx="56" cy="78" r="1.2" fill="var(--c)" opacity="0.6"/>
+      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.24" class="ps-bloom" style="filter:blur(16px)"/>
+      <!-- Cloud body — irregular blob -->
+      <path class="ps-cloud" d="M30 46 Q22 34 32 28 Q40 22 50 26 Q60 22 68 28 Q78 34 70 46 Q82 50 74 60 Q66 70 50 66 Q34 70 26 60 Q18 50 30 46 Z"
+            fill="var(--c)" opacity="0.85"/>
+      <!-- Skull silhouette — sinister threat inside the cloud -->
+      <g class="ps-skull">
+        <ellipse cx="50" cy="44" rx="10" ry="11" fill="#0d0d16"/>
+        <ellipse cx="45" cy="43" rx="2.2" ry="3" fill="var(--c)"/>
+        <ellipse cx="55" cy="43" rx="2.2" ry="3" fill="var(--c)"/>
+        <rect x="44" y="50" width="12" height="3" fill="#0d0d16"/>
+        <line x1="47" y1="50" x2="47" y2="53" stroke="var(--c)" stroke-width="0.6"/>
+        <line x1="50" y1="50" x2="50" y2="53" stroke="var(--c)" stroke-width="0.6"/>
+        <line x1="53" y1="50" x2="53" y2="53" stroke="var(--c)" stroke-width="0.6"/>
+      </g>
+      <!-- Toxin bubble orbs floating outside the cloud -->
+      <circle class="ps-bub pb1" cx="22" cy="32" r="3.5" fill="var(--c)" opacity="0.85"/>
+      <circle class="ps-bub pb2" cx="78" cy="34" r="3"   fill="var(--c)" opacity="0.85"/>
+      <circle class="ps-bub pb3" cx="80" cy="60" r="3.5" fill="var(--c)" opacity="0.9"/>
+      <circle class="ps-bub pb4" cx="20" cy="62" r="3"   fill="var(--c)" opacity="0.85"/>
+      <!-- Acid drips falling from cloud underside -->
+      <ellipse class="ps-drip pd1" cx="36" cy="74" rx="1.8" ry="3.5" fill="var(--c)" opacity="0.85"/>
+      <ellipse class="ps-drip pd2" cx="46" cy="80" rx="1.5" ry="3"   fill="var(--c)" opacity="0.8"/>
+      <ellipse class="ps-drip pd3" cx="54" cy="82" rx="1.8" ry="3.5" fill="var(--c)" opacity="0.9"/>
+      <ellipse class="ps-drip pd4" cx="64" cy="76" rx="1.5" ry="3"   fill="var(--c)" opacity="0.85"/>
     </svg>
 
   {:else if type === 'gravity'}
+    <!-- Gravity — spacetime imploding into a singularity. Bloom backdrop,
+         warped-space concentric rings collapsing inward, 8 streak lines
+         shooting INTO the core (instead of outward), heavy debris flying
+         in from the perimeter, dense compressed core with white-hot center. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="40" fill="var(--c)" opacity="0.13" style="filter:blur(12px)"/>
-      <g class="grav-g">
-        <line x1="16" y1="50" x2="42" y2="50" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
-        <path d="M42 50 L36 44 M42 50 L36 56" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-        <line x1="84" y1="50" x2="58" y2="50" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
-        <path d="M58 50 L64 44 M58 50 L64 56" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-        <line x1="50" y1="16" x2="50" y2="42" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
-        <path d="M50 42 L44 36 M50 42 L56 36" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-        <line x1="50" y1="84" x2="50" y2="58" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
-        <path d="M50 58 L44 64 M50 58 L56 64" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-        <circle cx="50" cy="50" r="8" fill="var(--c)"/>
-        <circle class="debris db1" cx="20" cy="20" r="2"   fill="var(--c)" opacity="0.6"/>
-        <circle class="debris db2" cx="80" cy="20" r="1.8" fill="var(--c)" opacity="0.55"/>
-        <circle class="debris db3" cx="20" cy="80" r="1.5" fill="var(--c)" opacity="0.5"/>
-        <circle class="debris db4" cx="80" cy="80" r="2"   fill="var(--c)" opacity="0.6"/>
+      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.30" class="gv-bloom" style="filter:blur(20px)"/>
+      <!-- Warped-space concentric rings -->
+      <g class="gv-rings">
+        <ellipse cx="50" cy="50" rx="40" ry="38" stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.5"  class="gv-ring gv-r1"/>
+        <ellipse cx="50" cy="50" rx="30" ry="28" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.7"  class="gv-ring gv-r2"/>
+        <ellipse cx="50" cy="50" rx="20" ry="18" stroke="var(--c)" stroke-width="1.2" fill="none" opacity="0.85" class="gv-ring gv-r3"/>
+      </g>
+      <!-- 8 implosion streak lines pointing INTO center (with arrowheads at the inner end) -->
+      <g class="gv-streaks">
+        <line class="gv-st" x1="14" y1="50" x2="38" y2="50" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M38 50 L33 47 M38 50 L33 53" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <line class="gv-st" x1="86" y1="50" x2="62" y2="50" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M62 50 L67 47 M62 50 L67 53" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <line class="gv-st" x1="50" y1="14" x2="50" y2="38" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M50 38 L47 33 M50 38 L53 33" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <line class="gv-st" x1="50" y1="86" x2="50" y2="62" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M50 62 L47 67 M50 62 L53 67" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <line class="gv-st" x1="18" y1="18" x2="38" y2="38" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+        <line class="gv-st" x1="82" y1="18" x2="62" y2="38" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+        <line class="gv-st" x1="82" y1="82" x2="62" y2="62" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+        <line class="gv-st" x1="18" y1="82" x2="38" y2="62" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+      <!-- Debris being pulled in from the perimeter -->
+      <circle class="gv-debris gd1" cx="14" cy="22" r="2.4" fill="var(--c)"/>
+      <circle class="gv-debris gd2" cx="86" cy="22" r="2.0" fill="var(--c)" opacity="0.85"/>
+      <circle class="gv-debris gd3" cx="14" cy="78" r="2.2" fill="var(--c)" opacity="0.9"/>
+      <circle class="gv-debris gd4" cx="86" cy="78" r="2.0" fill="var(--c)" opacity="0.85"/>
+      <circle class="gv-debris gd5" cx="50" cy="8"  r="1.8" fill="var(--c)" opacity="0.75"/>
+      <circle class="gv-debris gd6" cx="92" cy="50" r="1.8" fill="var(--c)" opacity="0.75"/>
+      <!-- Compressed core -->
+      <g class="gv-core">
+        <circle cx="50" cy="50" r="10" fill="var(--c)"/>
+        <circle cx="50" cy="50" r="5"  fill="white" opacity="0.95"/>
       </g>
     </svg>
 
@@ -836,14 +891,31 @@
     </svg>
 
   {:else if type === 'wind'}
-    <svg viewBox="0 0 100 100" class="fx-svg wind-g" overflow="visible">
-      <ellipse cx="55" cy="50" rx="38" ry="28" fill="var(--c)" opacity="0.10" style="filter:blur(10px)"/>
-      <path class="wl wl1" d="M16 38 Q36 26 56 38 Q76 50 88 38" stroke="var(--c)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-      <path class="wl wl2" d="M10 53 Q32 40 54 53 Q76 66 90 53" stroke="var(--c)" stroke-width="3"   fill="none" stroke-linecap="round" opacity="0.8"/>
-      <path class="wl wl3" d="M18 67 Q40 56 60 67 Q76 76 84 67" stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.6"/>
-      <circle class="wind-mote wm1" cx="88" cy="38" r="2"   fill="var(--c)" opacity="0.6"/>
-      <circle class="wind-mote wm2" cx="90" cy="53" r="1.8" fill="var(--c)" opacity="0.5"/>
-      <circle class="wind-mote wm3" cx="84" cy="67" r="1.5" fill="var(--c)" opacity="0.4"/>
+    <!-- Wind — howling vortex with 5 swept-curve airstreams + spiraling
+         vortex eye + flying debris swept along + leading slipstream lines. -->
+    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
+      <ellipse cx="50" cy="50" rx="46" ry="36" fill="var(--c)" opacity="0.20" class="wn-bloom" style="filter:blur(14px)"/>
+      <!-- 5 staggered horizontal wind streaks -->
+      <g class="wn-streaks">
+        <path class="wn-wl wl1" d="M4 30 Q28 20 56 30 Q80 38 96 30"  stroke="var(--c)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <path class="wn-wl wl2" d="M0 42 Q24 32 52 42 Q80 52 100 42" stroke="var(--c)" stroke-width="3"   fill="none" stroke-linecap="round" opacity="0.85"/>
+        <path class="wn-wl wl3" d="M6 54 Q28 44 56 54 Q82 64 96 54"  stroke="var(--c)" stroke-width="3"   fill="none" stroke-linecap="round" opacity="0.85"/>
+        <path class="wn-wl wl4" d="M4 66 Q26 56 54 66 Q78 76 94 66"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.65"/>
+        <path class="wn-wl wl5" d="M8 78 Q30 68 58 78 Q80 86 90 78"  stroke="var(--c)" stroke-width="2"   fill="none" stroke-linecap="round" opacity="0.55"/>
+      </g>
+      <!-- Spiraling vortex eye -->
+      <g class="wn-vortex">
+        <path d="M50 50 Q56 42 50 32 Q40 26 38 40 Q36 56 56 60 Q72 62 70 48"
+              stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="50" cy="50" r="6" fill="var(--c)" opacity="0.9"/>
+        <circle cx="50" cy="50" r="2" fill="white" opacity="0.85"/>
+      </g>
+      <!-- Wind-borne debris (small motes flying horizontally) -->
+      <circle class="wn-mote wm1" cx="90" cy="32" r="2"   fill="var(--c)"/>
+      <circle class="wn-mote wm2" cx="94" cy="44" r="1.6" fill="var(--c)" opacity="0.85"/>
+      <circle class="wn-mote wm3" cx="88" cy="56" r="2"   fill="var(--c)" opacity="0.9"/>
+      <circle class="wn-mote wm4" cx="92" cy="68" r="1.6" fill="var(--c)" opacity="0.85"/>
+      <circle class="wn-mote wm5" cx="86" cy="80" r="1.4" fill="var(--c)" opacity="0.7"/>
     </svg>
 
   {:else if type === 'earth'}
@@ -864,53 +936,113 @@
     </svg>
 
   {:else if type === 'blood'}
+    <!-- Blood — visceral splatter + arterial spray. Bloom backdrop, core
+         wound pool, 8 spray droplets flying radially with stagger, drip
+         trails forming on the ground, splatter mini-droplets scattered. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="36" fill="var(--c)" opacity="0.18" style="filter:blur(12px)"/>
-      <g class="bld-g">
-        <circle cx="50" cy="50" r="12" fill="var(--c)"/>
-        <ellipse cx="50" cy="27" rx="4.5" ry="7"   fill="var(--c)" class="bd bd1"/>
-        <ellipse cx="68" cy="34" rx="4"   ry="6"   fill="var(--c)" class="bd bd2" transform="rotate(40 68 34)"/>
-        <ellipse cx="78" cy="54" rx="3.5" ry="6"   fill="var(--c)" class="bd bd3" transform="rotate(85 78 54)"/>
-        <ellipse cx="66" cy="72" rx="3.5" ry="5.5" fill="var(--c)" class="bd bd4" transform="rotate(130 66 72)"/>
-        <ellipse cx="34" cy="72" rx="3.5" ry="5.5" fill="var(--c)" class="bd bd5" transform="rotate(-130 34 72)"/>
-        <ellipse cx="22" cy="54" rx="3.5" ry="6"   fill="var(--c)" class="bd bd6" transform="rotate(-85 22 54)"/>
-        <ellipse cx="32" cy="34" rx="4"   ry="6"   fill="var(--c)" class="bd bd7" transform="rotate(-40 32 34)"/>
+      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.26" class="bl-bloom" style="filter:blur(14px)"/>
+      <!-- Splatter background — large irregular blob -->
+      <path class="bl-splat" d="M50 18 Q60 22 70 30 Q86 36 80 50 Q90 60 78 70 Q72 84 56 80 Q44 88 32 80 Q18 72 22 56 Q12 44 22 34 Q30 22 50 18 Z"
+            fill="var(--c)" opacity="0.45"/>
+      <!-- Core wound -->
+      <g class="bl-core">
+        <circle cx="50" cy="50" r="14" fill="var(--c)" opacity="0.95"/>
+        <circle cx="50" cy="50" r="8"  fill="#3a0000" opacity="0.7"/>
       </g>
+      <!-- 8 arterial spray droplets — elongated, flying radially -->
+      <g class="bl-spray">
+        <ellipse class="bl-d bd1" cx="50" cy="20" rx="4"   ry="9"  fill="var(--c)"/>
+        <ellipse class="bl-d bd2" cx="72" cy="28" rx="3.5" ry="8"  fill="var(--c)" transform="rotate(45 72 28)"/>
+        <ellipse class="bl-d bd3" cx="82" cy="50" rx="4"   ry="9"  fill="var(--c)" transform="rotate(90 82 50)"/>
+        <ellipse class="bl-d bd4" cx="72" cy="72" rx="3.5" ry="8"  fill="var(--c)" transform="rotate(135 72 72)"/>
+        <ellipse class="bl-d bd5" cx="50" cy="82" rx="3.5" ry="8"  fill="var(--c)" transform="rotate(180 50 82)"/>
+        <ellipse class="bl-d bd6" cx="28" cy="72" rx="3.5" ry="8"  fill="var(--c)" transform="rotate(-135 28 72)"/>
+        <ellipse class="bl-d bd7" cx="18" cy="50" rx="4"   ry="9"  fill="var(--c)" transform="rotate(-90 18 50)"/>
+        <ellipse class="bl-d bd8" cx="28" cy="28" rx="3.5" ry="8"  fill="var(--c)" transform="rotate(-45 28 28)"/>
+      </g>
+      <!-- Splatter sub-droplets scattered around -->
+      <circle class="bl-dot" cx="36" cy="14" r="1.5" fill="var(--c)"/>
+      <circle class="bl-dot" cx="62" cy="14" r="1.5" fill="var(--c)"/>
+      <circle class="bl-dot" cx="88" cy="36" r="1.3" fill="var(--c)" opacity="0.85"/>
+      <circle class="bl-dot" cx="88" cy="64" r="1.5" fill="var(--c)" opacity="0.85"/>
+      <circle class="bl-dot" cx="62" cy="86" r="1.5" fill="var(--c)" opacity="0.9"/>
+      <circle class="bl-dot" cx="36" cy="86" r="1.5" fill="var(--c)" opacity="0.9"/>
+      <circle class="bl-dot" cx="12" cy="64" r="1.5" fill="var(--c)" opacity="0.85"/>
+      <circle class="bl-dot" cx="12" cy="36" r="1.3" fill="var(--c)" opacity="0.8"/>
     </svg>
 
   {:else if type === 'void'}
+    <!-- Void — annihilating rift. Bloom backdrop, 4 concentric event-horizon
+         rings collapsing inward, jagged tear-cracks fracturing space, twin
+         shadow tentacles emerging from the void mouth, pure-black core
+         devouring light, debris dissolving into nothing. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.16" style="filter:blur(14px)"/>
-      <g class="void-g">
-        <circle cx="50" cy="50" r="38" stroke="var(--c)" stroke-width="2"   fill="none" opacity="0.4" class="vr vr3"/>
-        <circle cx="50" cy="50" r="28" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.65" class="vr vr2"/>
-        <circle cx="50" cy="50" r="17" stroke="var(--c)" stroke-width="3"   fill="none" opacity="0.85" class="vr vr1"/>
-        <circle cx="50" cy="50" r="9"  fill="var(--c)" class="void-core"/>
-        <circle class="void-debris vd1" cx="20" cy="20" r="2"   fill="var(--c)" opacity="0.55"/>
-        <circle class="void-debris vd2" cx="80" cy="18" r="1.8" fill="var(--c)" opacity="0.5"/>
-        <circle class="void-debris vd3" cx="82" cy="80" r="2"   fill="var(--c)" opacity="0.55"/>
-        <circle class="void-debris vd4" cx="18" cy="78" r="1.5" fill="var(--c)" opacity="0.45"/>
-        <circle class="void-debris vd5" cx="50" cy="8"  r="1.8" fill="var(--c)" opacity="0.5"/>
-        <circle class="void-debris vd6" cx="92" cy="50" r="1.5" fill="var(--c)" opacity="0.45"/>
+      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.28" class="vd-bloom" style="filter:blur(20px)"/>
+      <!-- 4 collapsing event horizon rings -->
+      <g class="vd-rings">
+        <circle cx="50" cy="50" r="42" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.35" class="vd-ring vr1"/>
+        <circle cx="50" cy="50" r="32" stroke="var(--c)" stroke-width="2"   fill="none" opacity="0.55" class="vd-ring vr2"/>
+        <circle cx="50" cy="50" r="22" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.75" class="vd-ring vr3"/>
+        <circle cx="50" cy="50" r="13" stroke="var(--c)" stroke-width="3"   fill="none" opacity="0.95" class="vd-ring vr4"/>
       </g>
+      <!-- Jagged reality cracks emanating from rift -->
+      <g class="vd-cracks">
+        <polyline class="vd-cr" points="50,50 38,32 32,28 18,12"  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline class="vd-cr" points="50,50 62,32 68,28 82,12"  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline class="vd-cr" points="50,50 62,68 68,72 82,88"  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline class="vd-cr" points="50,50 38,68 32,72 18,88"  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <!-- Twin tentacles slithering out of the rift -->
+      <path class="vd-tnd vt1" d="M50 50 Q40 38 30 40 Q22 44 14 38"
+            stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.85"/>
+      <path class="vd-tnd vt2" d="M50 50 Q60 38 70 40 Q78 44 86 38"
+            stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.85"/>
+      <!-- Pure-black void mouth -->
+      <g class="vd-core">
+        <circle cx="50" cy="50" r="10" fill="#0a0210" opacity="0.95"/>
+        <circle cx="50" cy="50" r="6"  fill="var(--c)" opacity="0.7"/>
+        <circle cx="50" cy="50" r="3"  fill="white" opacity="0.85"/>
+      </g>
+      <!-- Dissolving debris being pulled toward the rift -->
+      <circle class="vd-deb vd1" cx="18" cy="22" r="1.8" fill="var(--c)" opacity="0.7"/>
+      <circle class="vd-deb vd2" cx="82" cy="22" r="1.5" fill="var(--c)" opacity="0.65"/>
+      <circle class="vd-deb vd3" cx="82" cy="78" r="1.8" fill="var(--c)" opacity="0.7"/>
+      <circle class="vd-deb vd4" cx="18" cy="78" r="1.5" fill="var(--c)" opacity="0.65"/>
     </svg>
 
   {:else if type === 'energy'}
+    <!-- Energy — crackling plasma core with branching forks. Bloom backdrop,
+         pulsing central orb, 6 jagged fork-lightning branches reaching out,
+         double containment ring, plasma sparks at the fork tips. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.16" style="filter:blur(14px)"/>
-      <g class="enrg-g">
-        <line x1="50" y1="50" x2="50" y2="6"  stroke="var(--c)" stroke-width="2" opacity="0.6" class="eb"/>
-        <line x1="50" y1="50" x2="50" y2="94" stroke="var(--c)" stroke-width="2" opacity="0.6" class="eb"/>
-        <line x1="50" y1="50" x2="6"  y2="50" stroke="var(--c)" stroke-width="2" opacity="0.6" class="eb"/>
-        <line x1="50" y1="50" x2="94" y2="50" stroke="var(--c)" stroke-width="2" opacity="0.6" class="eb"/>
-        <circle cx="50" cy="50" r="27" stroke="var(--c)" stroke-width="2"   fill="none" class="er er1" opacity="0.7"/>
-        <circle cx="50" cy="50" r="39" stroke="var(--c)" stroke-width="1.5" fill="none" class="er er2" opacity="0.5"/>
-        <circle cx="50" cy="50" r="13" fill="var(--c)" class="enrg-core" opacity="0.95"/>
-        <circle class="enrg-mote em1" cx="50" cy="6"  r="2.5" fill="var(--c)" opacity="0.7"/>
-        <circle class="enrg-mote em2" cx="94" cy="50" r="2"   fill="var(--c)" opacity="0.6"/>
-        <circle class="enrg-mote em3" cx="50" cy="94" r="2.5" fill="var(--c)" opacity="0.7"/>
-        <circle class="enrg-mote em4" cx="6"  cy="50" r="2"   fill="var(--c)" opacity="0.6"/>
+      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.28" class="en-bloom" style="filter:blur(18px)"/>
+      <!-- Containment rings — counter-rotating -->
+      <circle cx="50" cy="50" r="38" stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.55"
+              stroke-dasharray="6 4" class="en-ring en-rA"/>
+      <circle cx="50" cy="50" r="30" stroke="var(--c)" stroke-width="1.3" fill="none" opacity="0.4"
+              stroke-dasharray="4 2" class="en-ring en-rB"/>
+      <!-- Six branching fork-lightning paths -->
+      <g class="en-forks">
+        <polyline class="en-fork ef1" points="50,50 42,32 48,28 38,10"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline class="en-fork ef2" points="50,50 60,34 54,30 66,12"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline class="en-fork ef3" points="50,50 68,42 72,48 90,40"  stroke="var(--c)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline class="en-fork ef4" points="50,50 62,62 58,68 70,86"  stroke="var(--c)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline class="en-fork ef5" points="50,50 38,62 42,68 30,86"  stroke="var(--c)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline class="en-fork ef6" points="50,50 32,42 28,48 10,40"  stroke="var(--c)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
       </g>
+      <!-- Core orb (pulses) -->
+      <g class="en-core">
+        <circle cx="50" cy="50" r="14" fill="var(--c)"/>
+        <circle cx="50" cy="50" r="9"  fill="white" opacity="0.65"/>
+        <circle cx="50" cy="50" r="4"  fill="white"/>
+      </g>
+      <!-- Plasma sparks at fork tips -->
+      <circle class="en-spark es1" cx="38" cy="10" r="2.2" fill="var(--c)"/>
+      <circle class="en-spark es2" cx="66" cy="12" r="2.2" fill="var(--c)"/>
+      <circle class="en-spark es3" cx="90" cy="40" r="2"   fill="var(--c)" opacity="0.9"/>
+      <circle class="en-spark es4" cx="70" cy="86" r="2"   fill="var(--c)" opacity="0.9"/>
+      <circle class="en-spark es5" cx="30" cy="86" r="2"   fill="var(--c)" opacity="0.85"/>
+      <circle class="en-spark es6" cx="10" cy="40" r="2"   fill="var(--c)" opacity="0.85"/>
     </svg>
 
   {:else if type === 'cursed'}
@@ -931,22 +1063,40 @@
       </g>
     </svg>
 
-  {:else if type === 'counter'}
+    {:else if type === 'counter'}
+    <!-- Counter — mirror flash + rebounding ray. Bloom backdrop, chevron
+         "return to sender" V-shape facing the attacker, mirror reflection
+         disc with sharp edge highlight, 8 rebounding ray-lines with
+         arrowheads showing the redirect outward, bright center flash. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="40" fill="var(--c)" opacity="0.22" style="filter:blur(14px)"/>
-      <g class="counter-g">
-        <circle class="counter-ring cr2" cx="50" cy="50" r="42" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.35"/>
-        <circle class="counter-ring cr1" cx="50" cy="50" r="26" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.65"/>
-        <line class="ct ct1" x1="50" y1="50" x2="14" y2="14" stroke="var(--c)" stroke-width="3"   stroke-linecap="round"/>
-        <line class="ct ct2" x1="50" y1="50" x2="86" y2="14" stroke="var(--c)" stroke-width="3"   stroke-linecap="round"/>
-        <line class="ct ct3" x1="50" y1="50" x2="14" y2="86" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-        <line class="ct ct4" x1="50" y1="50" x2="86" y2="86" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-        <line class="ct ct5" x1="50" y1="50" x2="50" y2="8"  stroke="var(--c)" stroke-width="3"   stroke-linecap="round"/>
-        <line class="ct ct6" x1="50" y1="50" x2="50" y2="92" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-        <line class="ct ct7" x1="50" y1="50" x2="8"  y2="50" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-        <line class="ct ct8" x1="50" y1="50" x2="92" y2="50" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-        <circle cx="50" cy="50" r="10" fill="var(--c)" class="counter-core"/>
-        <circle cx="50" cy="50" r="5"  fill="white"    opacity="0.9" class="counter-inner"/>
+      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.32" class="ct-bloom" style="filter:blur(18px)"/>
+      <!-- Reflective shield disc (mirror) -->
+      <g class="ct-mirror">
+        <circle cx="50" cy="50" r="30" stroke="var(--c)" stroke-width="3.5" fill="var(--c)" fill-opacity="0.18"/>
+        <circle cx="50" cy="50" r="22" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.7"/>
+        <!-- Edge highlight crescent -->
+        <path d="M50 24 A26 26 0 0 1 76 50" stroke="white" stroke-width="2" fill="none" opacity="0.7"/>
+      </g>
+      <!-- 8 rebound rays with outward chevrons (energy bouncing back) -->
+      <g class="ct-rebound">
+        <line class="ct-ray ct1" x1="50" y1="50" x2="14" y2="14" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M14 14 L20 14 M14 14 L14 20" stroke="var(--c)" stroke-width="2" stroke-linecap="round"/>
+        <line class="ct-ray ct2" x1="50" y1="50" x2="86" y2="14" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M86 14 L80 14 M86 14 L86 20" stroke="var(--c)" stroke-width="2" stroke-linecap="round"/>
+        <line class="ct-ray ct3" x1="50" y1="50" x2="14" y2="86" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M14 86 L20 86 M14 86 L14 80" stroke="var(--c)" stroke-width="1.8" stroke-linecap="round"/>
+        <line class="ct-ray ct4" x1="50" y1="50" x2="86" y2="86" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M86 86 L80 86 M86 86 L86 80" stroke="var(--c)" stroke-width="1.8" stroke-linecap="round"/>
+        <line class="ct-ray ct5" x1="50" y1="50" x2="50" y2="6"  stroke="var(--c)" stroke-width="3"   stroke-linecap="round"/>
+        <path d="M50 6 L46 12 M50 6 L54 12" stroke="var(--c)" stroke-width="2" stroke-linecap="round"/>
+        <line class="ct-ray ct6" x1="50" y1="50" x2="50" y2="94" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+        <line class="ct-ray ct7" x1="50" y1="50" x2="6"  y2="50" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+        <line class="ct-ray ct8" x1="50" y1="50" x2="94" y2="50" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+      <!-- Bright center flash -->
+      <g class="ct-flash">
+        <circle cx="50" cy="50" r="11" fill="var(--c)"/>
+        <circle cx="50" cy="50" r="6"  fill="white" opacity="0.95"/>
       </g>
     </svg>
 
@@ -2199,4 +2349,188 @@
 @keyframes chaos-glitch-a  { 0% { transform: scale(0.3) rotate(0); opacity: 0; } 35% { transform: scale(1.2) rotate(15deg); opacity: 1; } 100% { transform: scale(0.6) rotate(40deg); opacity: 0; } }
 @keyframes chaos-glitch-b  { 0% { transform: scale(0.3) translateX(0) rotate(0); opacity: 0; } 35% { transform: scale(1.1) translateX(-2px) rotate(-10deg); opacity: 0.7; } 100% { transform: scale(0.6) translateX(-5px) rotate(-30deg); opacity: 0; } }
 @keyframes chaos-glitch-c  { 0% { transform: scale(0.3) translateX(0) rotate(0); opacity: 0; } 35% { transform: scale(1.1) translateX(2px)  rotate(10deg);  opacity: 0.5; } 100% { transform: scale(0.6) translateX(5px)  rotate(30deg);  opacity: 0; } }
+
+/* ════════════════════════════════════════════════════════════════════
+   REVAMPED CSS for revamped SVGs (shadow, gravity, energy, wind, blood,
+   void, poison, counter). Holy-beam-style cinematic motion: bloom
+   backdrops that flash + dissipate, layered cores that pulse, secondary
+   elements (tendrils, streaks, rays, drips, debris) animating with
+   stagger so the burst reads as a charge → peak → dissipate cycle.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ─── SHADOW (revamp) ────────────────────────────────────────────── */
+.sh-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.sh-core  { transform-origin: 50% 50%; animation: sh-core  0.85s ease-out forwards; }
+.sh-eye   { transform-origin: 50% 50%; transform-box: fill-box; animation: sh-eye 0.85s ease-out forwards; opacity: 0; }
+.sh-tnd   { stroke-dasharray: 70; stroke-dashoffset: 70; animation: sh-tnd 0.55s ease-out forwards; }
+.sh-tendrils .st1 { animation-delay: 0.15s; }
+.sh-tendrils .st2 { animation-delay: 0.18s; }
+.sh-tendrils .st3 { animation-delay: 0.21s; }
+.sh-tendrils .st4 { animation-delay: 0.24s; }
+.sh-tendrils .st5 { animation-delay: 0.27s; }
+.sh-tendrils .st6 { animation-delay: 0.30s; }
+.sh-drip  { transform-origin: center; transform-box: fill-box; animation: sh-drip 0.7s 0.35s ease-in forwards; opacity: 0; }
+.sd2 { animation-delay: 0.42s; }
+.sd3 { animation-delay: 0.48s; }
+@keyframes sh-bloom { 0% { opacity: 0; transform: scale(0.3); } 25% { opacity: 0.6; transform: scale(1.4); } 100% { opacity: 0; transform: scale(2.4); } }
+@keyframes sh-core  { 0% { transform: scale(0); opacity: 0; filter: brightness(3); } 30% { transform: scale(1.2); opacity: 1; filter: brightness(1.6) drop-shadow(0 0 14px var(--c)); } 70% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(0.85); opacity: 0; } }
+@keyframes sh-eye   { 0% { opacity: 0; } 30% { opacity: 1; filter: brightness(2.5) drop-shadow(0 0 5px var(--c)); } 100% { opacity: 0; } }
+@keyframes sh-tnd   { 0% { stroke-dashoffset: 70; opacity: 0; } 40% { stroke-dashoffset: 0; opacity: 0.95; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes sh-drip  { 0% { transform: translateY(0) scale(0); opacity: 0; } 30% { transform: translateY(2px) scale(1.1); opacity: 0.9; } 100% { transform: translateY(16px) scale(0.5); opacity: 0; } }
+
+/* ─── GRAVITY (revamp) ───────────────────────────────────────────── */
+.gv-bloom { transform-origin: 50% 50%; animation: gv-bloom 0.9s ease-out forwards; opacity: 0; }
+.gv-ring  { transform-origin: 50% 50%; }
+.gv-r1    { animation: gv-implode 0.85s        ease-in forwards; }
+.gv-r2    { animation: gv-implode 0.85s 0.08s  ease-in forwards; }
+.gv-r3    { animation: gv-implode 0.85s 0.16s  ease-in forwards; }
+.gv-st    { stroke-dasharray: 60; stroke-dashoffset: 60; animation: gv-streak 0.55s 0.10s ease-in forwards; }
+.gv-streaks line:nth-of-type(2) { animation-delay: 0.14s; }
+.gv-streaks line:nth-of-type(3) { animation-delay: 0.18s; }
+.gv-streaks line:nth-of-type(4) { animation-delay: 0.22s; }
+.gv-streaks line:nth-of-type(5) { animation-delay: 0.26s; }
+.gv-streaks line:nth-of-type(6) { animation-delay: 0.30s; }
+.gv-streaks line:nth-of-type(7) { animation-delay: 0.34s; }
+.gv-streaks line:nth-of-type(8) { animation-delay: 0.38s; }
+.gv-debris { transform-origin: center; transform-box: fill-box; animation: gv-suck 0.85s 0.10s ease-in forwards; }
+.gd2 { animation-delay: 0.14s; }
+.gd3 { animation-delay: 0.18s; }
+.gd4 { animation-delay: 0.22s; }
+.gd5 { animation-delay: 0.26s; }
+.gd6 { animation-delay: 0.30s; }
+.gv-core { transform-origin: 50% 50%; animation: gv-core 0.85s ease-out forwards; }
+@keyframes gv-bloom   { 0% { opacity: 0; transform: scale(0.3); } 20% { opacity: 0.6; transform: scale(1.3); } 100% { opacity: 0; transform: scale(0.4); } }
+@keyframes gv-implode { 0% { transform: scale(1.4); opacity: 0; } 30% { transform: scale(1); opacity: 1; filter: brightness(2); } 100% { transform: scale(0.2); opacity: 0; } }
+@keyframes gv-streak  { 0% { stroke-dashoffset: 60; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+.gd1 { --tx: 36px; --ty: 28px; }
+.gd2 { --tx: -36px; --ty: 28px; }
+.gd3 { --tx: 36px; --ty: -28px; }
+.gd4 { --tx: -36px; --ty: -28px; }
+.gd5 { --tx: 0px;  --ty: 42px; }
+.gd6 { --tx: -42px; --ty: 0px; }
+@keyframes gv-suck    { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--tx, 0), var(--ty, 0)) scale(0); opacity: 0; } }
+@keyframes gv-core    { 0% { transform: scale(0); opacity: 0; filter: brightness(1); } 35% { transform: scale(1.4); opacity: 1; filter: brightness(4) drop-shadow(0 0 20px var(--c)); } 100% { transform: scale(0.7); opacity: 0; } }
+
+/* ─── ENERGY (revamp) ────────────────────────────────────────────── */
+.en-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.en-ring  { transform-origin: 50% 50%; }
+.en-rA    { animation: en-spin-cw  0.95s linear forwards; }
+.en-rB    { animation: en-spin-ccw 0.95s linear forwards; }
+.en-fork  { stroke-dasharray: 80; stroke-dashoffset: 80; animation: en-fork 0.55s ease-out forwards; }
+.ef1 { animation-delay: 0.10s; }
+.ef2 { animation-delay: 0.14s; }
+.ef3 { animation-delay: 0.18s; }
+.ef4 { animation-delay: 0.22s; }
+.ef5 { animation-delay: 0.26s; }
+.ef6 { animation-delay: 0.30s; }
+.en-core  { transform-origin: 50% 50%; animation: en-core-pulse 0.85s ease-out forwards; }
+.en-spark { transform-origin: center; transform-box: fill-box; animation: spark-pop 0.5s 0.40s ease-out forwards; opacity: 0; }
+.es2 { animation-delay: 0.44s; }
+.es3 { animation-delay: 0.48s; }
+.es4 { animation-delay: 0.52s; }
+.es5 { animation-delay: 0.56s; }
+.es6 { animation-delay: 0.60s; }
+@keyframes en-spin-cw   { 0% { transform: rotate(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: rotate(360deg); opacity: 0; } }
+@keyframes en-spin-ccw  { 0% { transform: rotate(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: rotate(-360deg); opacity: 0; } }
+@keyframes en-fork      { 0% { stroke-dashoffset: 80; opacity: 0; } 35% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2.5); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes en-core-pulse{ 0% { transform: scale(0); opacity: 0; } 30% { transform: scale(1.5); opacity: 1; filter: brightness(3) drop-shadow(0 0 20px var(--c)); } 60% { transform: scale(1.1); opacity: 0.9; } 100% { transform: scale(0.7); opacity: 0; } }
+
+/* ─── WIND (revamp) ──────────────────────────────────────────────── */
+.wn-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.wn-wl    { stroke-dasharray: 110; stroke-dashoffset: 110; animation: wn-blow 0.55s ease-out forwards; }
+.wl1 { animation-delay: 0.00s; }
+.wl2 { animation-delay: 0.06s; }
+.wl3 { animation-delay: 0.10s; }
+.wl4 { animation-delay: 0.16s; }
+.wl5 { animation-delay: 0.22s; }
+.wn-vortex { transform-origin: 50% 50%; animation: wn-vortex 0.9s ease-out forwards; }
+.wn-mote   { transform-origin: center; transform-box: fill-box; animation: wn-mote 0.6s 0.18s ease-out forwards; opacity: 0; }
+.wm2 { animation-delay: 0.22s; }
+.wm3 { animation-delay: 0.26s; }
+.wm4 { animation-delay: 0.30s; }
+.wm5 { animation-delay: 0.34s; }
+@keyframes wn-blow   { 0% { stroke-dashoffset: 110; opacity: 0; } 35% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes wn-vortex { 0% { transform: scale(0.3) rotate(0); opacity: 0; } 30% { transform: scale(1.1) rotate(180deg); opacity: 1; } 100% { transform: scale(0.9) rotate(540deg); opacity: 0; } }
+@keyframes wn-mote   { 0% { transform: translateX(-30px) scale(0); opacity: 0; } 40% { transform: translateX(0) scale(1.3); opacity: 1; } 100% { transform: translateX(20px) scale(0.5); opacity: 0; } }
+
+/* ─── BLOOD (revamp) ─────────────────────────────────────────────── */
+.bl-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.bl-splat { transform-origin: 50% 50%; animation: bl-splat 0.85s ease-out forwards; opacity: 0; }
+.bl-core  { transform-origin: 50% 50%; animation: bl-core 0.85s ease-out forwards; }
+.bl-d     { transform-origin: 50% 50%; transform-box: fill-box; animation: bl-spray 0.55s ease-out forwards; opacity: 0; }
+.bd1 { animation-delay: 0.12s; }
+.bd2 { animation-delay: 0.14s; }
+.bd3 { animation-delay: 0.16s; }
+.bd4 { animation-delay: 0.18s; }
+.bd5 { animation-delay: 0.20s; }
+.bd6 { animation-delay: 0.22s; }
+.bd7 { animation-delay: 0.24s; }
+.bd8 { animation-delay: 0.26s; }
+.bl-dot { transform-origin: center; transform-box: fill-box; animation: bl-dot 0.5s 0.32s ease-out forwards; opacity: 0; }
+@keyframes bl-splat { 0% { transform: scale(0.2); opacity: 0; } 30% { transform: scale(1.1); opacity: 0.85; } 100% { transform: scale(1.25); opacity: 0; } }
+@keyframes bl-core  { 0% { transform: scale(0); opacity: 0; } 25% { transform: scale(1.3); opacity: 1; filter: brightness(2) drop-shadow(0 0 14px var(--c)); } 100% { transform: scale(0.9); opacity: 0; } }
+@keyframes bl-spray { 0% { transform: translate(0,0) scale(0); opacity: 0; } 40% { transform: translate(0,0) scale(1.4); opacity: 1; filter: brightness(1.6); } 100% { transform: translate(0,0) scale(1) translateY(8px); opacity: 0; } }
+@keyframes bl-dot   { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.8); opacity: 1; } 100% { transform: scale(0.6); opacity: 0; } }
+
+/* ─── VOID (revamp) ──────────────────────────────────────────────── */
+.vd-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.95s ease-out forwards; opacity: 0; }
+.vd-ring  { transform-origin: 50% 50%; }
+.vr1 { animation: gv-implode 0.95s 0.00s ease-in forwards; }
+.vr2 { animation: gv-implode 0.95s 0.08s ease-in forwards; }
+.vr3 { animation: gv-implode 0.95s 0.16s ease-in forwards; }
+.vr4 { animation: gv-implode 0.95s 0.24s ease-in forwards; }
+.vd-cr    { stroke-dasharray: 110; stroke-dashoffset: 110; animation: vd-crack 0.5s ease-out forwards; }
+.vd-cracks polyline:nth-child(1) { animation-delay: 0.15s; }
+.vd-cracks polyline:nth-child(2) { animation-delay: 0.20s; }
+.vd-cracks polyline:nth-child(3) { animation-delay: 0.25s; }
+.vd-cracks polyline:nth-child(4) { animation-delay: 0.30s; }
+.vd-tnd   { stroke-dasharray: 90; stroke-dashoffset: 90; animation: vd-tnd 0.55s 0.25s ease-out forwards; }
+.vt2 { animation-delay: 0.28s; }
+.vd-core  { transform-origin: 50% 50%; animation: en-core-pulse 0.95s ease-out forwards; }
+.vd-deb   { transform-origin: center; transform-box: fill-box; }
+.vd-deb.vd1 { --tx: 32px;  --ty: 28px; }
+.vd-deb.vd2 { --tx: -32px; --ty: 28px; }
+.vd-deb.vd3 { --tx: -32px; --ty: -28px; }
+.vd-deb.vd4 { --tx: 32px;  --ty: -28px; }
+.vd-deb { animation: gv-suck 0.95s 0.10s ease-in forwards; }
+@keyframes vd-crack { 0% { stroke-dashoffset: 110; opacity: 0; } 30% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes vd-tnd   { 0% { stroke-dashoffset: 90; opacity: 0; } 35% { stroke-dashoffset: 0; opacity: 1; filter: brightness(1.8); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+
+/* ─── POISON (revamp) ────────────────────────────────────────────── */
+.ps-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.9s ease-out forwards; opacity: 0; }
+.ps-cloud { transform-origin: 50% 50%; animation: ps-cloud 0.9s ease-out forwards; }
+.ps-skull { transform-origin: 50% 50%; animation: ps-skull 0.9s ease-out forwards; }
+.ps-bub   { transform-origin: 50% 50%; transform-box: fill-box; animation: ps-bubble 0.7s ease-out forwards; opacity: 0; }
+.ps-bub.pb1 { animation-delay: 0.10s; }
+.ps-bub.pb2 { animation-delay: 0.16s; }
+.ps-bub.pb3 { animation-delay: 0.22s; }
+.ps-bub.pb4 { animation-delay: 0.28s; }
+.ps-drip  { transform-origin: center; transform-box: fill-box; animation: ps-drip 0.65s ease-in forwards; opacity: 0; }
+.pd1 { animation-delay: 0.28s; }
+.pd2 { animation-delay: 0.34s; }
+.pd3 { animation-delay: 0.40s; }
+.pd4 { animation-delay: 0.46s; }
+@keyframes ps-cloud  { 0% { transform: scale(0.3); opacity: 0; } 30% { transform: scale(1.15); opacity: 0.95; filter: brightness(1.4); } 70% { transform: scale(1); opacity: 0.85; } 100% { transform: scale(1.1); opacity: 0; } }
+@keyframes ps-skull  { 0% { transform: scale(0); opacity: 0; filter: brightness(0.5); } 35% { transform: scale(1.2); opacity: 1; filter: brightness(2); } 70% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(0.9); opacity: 0; } }
+@keyframes ps-bubble { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.4); opacity: 1; } 100% { transform: scale(0.7); opacity: 0; } }
+@keyframes ps-drip   { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 25% { transform: translateY(2px) scale(1.1); opacity: 1; } 100% { transform: translateY(14px) scale(0.5); opacity: 0; } }
+
+/* ─── COUNTER (revamp) ───────────────────────────────────────────── */
+.ct-bloom   { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.ct-mirror  { transform-origin: 50% 50%; animation: ct-mirror 0.85s ease-out forwards; }
+.ct-rebound { transform-origin: 50% 50%; animation: ct-rebound 0.85s ease-out forwards; }
+.ct-ray     { stroke-dasharray: 80; stroke-dashoffset: 80; animation: ct-ray 0.45s 0.20s ease-out forwards; }
+.ct-rebound .ct1 { animation-delay: 0.20s; }
+.ct-rebound .ct2 { animation-delay: 0.22s; }
+.ct-rebound .ct3 { animation-delay: 0.24s; }
+.ct-rebound .ct4 { animation-delay: 0.26s; }
+.ct-rebound .ct5 { animation-delay: 0.28s; }
+.ct-rebound .ct6 { animation-delay: 0.30s; }
+.ct-rebound .ct7 { animation-delay: 0.32s; }
+.ct-rebound .ct8 { animation-delay: 0.34s; }
+.ct-flash   { transform-origin: 50% 50%; animation: ct-flash 0.85s ease-out forwards; }
+@keyframes ct-mirror { 0% { transform: scale(0); opacity: 0; filter: brightness(4); } 25% { transform: scale(1.15); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 18px var(--c)); } 60% { transform: scale(1); opacity: 0.85; } 100% { transform: scale(0.95); opacity: 0; } }
+@keyframes ct-rebound{ 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes ct-ray    { 0% { stroke-dashoffset: 80; opacity: 0; } 35% { stroke-dashoffset: 0; opacity: 1; filter: brightness(3); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes ct-flash  { 0% { transform: scale(0); opacity: 0; } 25% { transform: scale(1.5); opacity: 1; filter: brightness(5) drop-shadow(0 0 24px var(--c)); } 60% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(0.7); opacity: 0; } }
 </style>
