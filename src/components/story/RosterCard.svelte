@@ -4,10 +4,14 @@
   import { powerRating, formatPower } from '$lib/story/powerRating'
   import { raceGlyph } from '$lib/raceGlyphs'
 
-  let { entry, onExpand, onSell, goldFrame = false }: {
+  let { entry, onExpand, onSell, onDismantle, dismantleUnlocked = false, goldFrame = false }: {
     entry: StoryRosterEntry
     onExpand: (id: string) => void
     onSell: (entry: StoryRosterEntry) => void
+    onDismantle?: (entry: StoryRosterEntry) => void
+    /** Set true once the player reaches L4 — controls whether the
+     *  Dismantle button appears on the card. */
+    dismantleUnlocked?: boolean
     goldFrame?: boolean
   } = $props()
 
@@ -159,12 +163,26 @@
     </div>
   {/if}
 
-  <!-- Sell button -->
-  <button
-    class="metal-stamp-crimson w-full rounded text-sm font-bold font-mono"
-    style="min-height: 36px; margin-top: 4px; color: #ffb4ab;"
-    onclick={(e) => { e.stopPropagation(); onSell(entry); }}
-  >
-    Sell Character
-  </button>
+  <!-- Action row — Sell + Dismantle when unlocked. Dismantle (L4+) shares
+       a row with Sell so the player can choose whether to liquidate for
+       gems or break the character down for crystals + item recovery. -->
+  <div class="flex gap-2 mt-1">
+    <button
+      class="metal-stamp-crimson flex-1 rounded text-xs font-bold font-mono"
+      style="min-height: 32px; color: #ffb4ab;"
+      onclick={(e) => { e.stopPropagation(); onSell(entry); }}
+    >
+      Sell
+    </button>
+    {#if dismantleUnlocked && onDismantle}
+      <button
+        class="metal-stamp-purple flex-1 rounded text-xs font-bold font-mono"
+        style="min-height: 32px; color: #ddd6fe;"
+        onclick={(e) => { e.stopPropagation(); onDismantle(entry); }}
+        title="Dismantle for stat crystals + chance to recover equipped items"
+      >
+        Dismantle
+      </button>
+    {/if}
+  </div>
 </div>

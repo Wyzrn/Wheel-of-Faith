@@ -535,6 +535,129 @@ export function sellCharacterFromSlot(
   }
 }
 
+// ── Dismantle ──────────────────────────────────────────────────────────────
+// Player level 4+ feature. Spends gems (~half of sell value) to break a
+// character into stat crystals + a chance roll on each equipped weapon /
+// armor / power going to inventory. Stat crystal tier banding:
+//   F-SS       → common  (T1)
+//   SSS-Cosmic → elite   (T2)
+//   Immortal+  → legendary (T3)
+// Per-stat crystal chance scales with the character's tier-rank position in
+// the relevant band (1%/stat at the band floor, ~50%/stat at the highest
+// band's ceiling). Equipped items each roll independently at ~30%.
+
+export const DISMANTLE_PLAYER_LEVEL_REQUIRED = 4
+
+/** Tier-rank index → which stat-crystal type the dismantle yields. */
+function dismantleCrystalType(tierIdx: number): StatCrystalType {
+  // Tier ladder positions: F-: 0 ... SS+: 23, SSS-: 24 ... Cosmic+: 38,
+  // Immortal-: 39 ... Infinite+: 59. Indices come from TIER_THRESHOLDS.
+  if (tierIdx <= 23) return 'common'      // F- through SS+
+  if (tierIdx <= 38) return 'elite'       // SSS- through Cosmic+
+  return 'legendary'                       // Immortal- and above
+}
+
+/** Per-stat probability of getting a crystal — anchored at 1%/5% for F/SS,
+ *  then climbs to ~16% by Cosmic+ and ~50% by Infinite+. */
+function dismantleStatChance(tierIdx: number): number {
+  // Common band: 1% at F-, 5% at SS+
+  if (tierIdx <= 23) return 0.01 + (tierIdx / 23) * 0.04
+  // Elite band: 6% at SSS-, 16% at Cosmic+
+  if (tierIdx <= 38) return 0.06 + ((tierIdx - 24) / 14) * 0.10
+  // Legendary band: 18% at Immortal-, 50% at Infinite+
+  return 0.18 + ((tierIdx - 39) / 20) * 0.32
+}
+
+/** Gem cost to dismantle — half of the sell value, rounded up. */
+export function getDismantleCost(gemSellValue: number): number {
+  return Math.ceil(gemSellValue * 0.5)
+}
+
+/** Probability an equipped item is recovered into the inventory. */
+const DISMANTLE_ITEM_RECOVER_CHANCE = 0.30
+
+/** Result of a dismantle — exposed so the modal can show what dropped. */
+export interface DismantleResult {
+  crystalsByStat: Record<string, StatCrystalType>  // statCategory -> crystal type rolled
+  recoveredWeapons: string[]                       // item ids
+  recoveredArmors: string[]
+  recoveredPowers: string[]
+}
+
+/** Dismantles a character. Subtracts gems, removes them from the roster,
+ *  adds rolled crystals + recovered equipment to inventory. */
+export function dismantleCharacterFromSlot(
+  slot: StorySaveSlot,
+  characterId: string,
+  gemSellValue: number,
+  tierIdx: number,
+  randFn: () => number = Math.random,
+): { slot: StorySaveSlot; result: DismantleResult } | 'insufficient_gems' | 'char_not_found' | 'locked' {
+  if (slot.playerLevel < DISMANTLE_PLAYER_LEVEL_REQUIRED) return 'locked'
+  const cost = getDismantleCost(gemSellValue)
+  if (slot.gems < cost) return 'insufficient_gems'
+  const char = slot.roster.find(r => r.id === characterId)
+  if (!char) return 'char_not_found'
+
+  const crystalType = dismantleCrystalType(tierIdx)
+  const pStat = dismantleStatChance(tierIdx)
+
+  // Per-stat roll across the character's spun stats. Each successful roll
+  // yields one crystal of the band's type.
+  const STATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','armorStrength','potential','energyLevel']
+  const crystalsByStat: Record<string, StatCrystalType> = {}
+  let gainedCrystals = 0
+  for (const s of STATS) {
+    const hasStat = char.spins.some(r => r.category === s)
+    if (!hasStat) continue
+    if (randFn() < pStat) {
+      crystalsByStat[s] = crystalType
+      gainedCrystals++
+    }
+  }
+
+  // Equipped-item recovery — each piece rolls independently.
+  const recoveredWeapons: string[] = []
+  const recoveredArmors: string[] = []
+  const recoveredPowers: string[] = []
+  for (const w of char.equippedWeapons ?? []) {
+    if (randFn() < DISMANTLE_ITEM_RECOVER_CHANCE) recoveredWeapons.push(w.id)
+  }
+  for (const a of char.equippedArmors ?? []) {
+    if (randFn() < DISMANTLE_ITEM_RECOVER_CHANCE) recoveredArmors.push(a.id)
+  }
+  for (const p of char.equippedPowers ?? []) {
+    if (randFn() < DISMANTLE_ITEM_RECOVER_CHANCE) recoveredPowers.push(p.id)
+  }
+
+  // Build new inventory: add crystals, append recovered opened items.
+  const inv = { ...slot.inventory }
+  if (gainedCrystals > 0) {
+    inv.statCrystals = {
+      ...inv.statCrystals,
+      [crystalType]: inv.statCrystals[crystalType] + gainedCrystals,
+    }
+  }
+  // Recovered equipment goes back to the opened-item pools as proper
+  // OpenedItem records (id / grade / name). The character's
+  // equippedWeapons / equippedArmors / equippedPowers shape already matches.
+  const recover = (list: { id: string; grade: string; name: string }[], ids: string[]): OpenedItem[] =>
+    list.filter(i => ids.includes(i.id)).map(i => ({ id: i.id, grade: i.grade as CrystalGrade, name: i.name }))
+  if (recoveredWeapons.length) inv.openedWeapons = [...(inv.openedWeapons ?? []), ...recover(char.equippedWeapons ?? [], recoveredWeapons)]
+  if (recoveredArmors.length)  inv.openedArmors  = [...(inv.openedArmors  ?? []), ...recover(char.equippedArmors  ?? [], recoveredArmors)]
+  if (recoveredPowers.length)  inv.openedPowers  = [...(inv.openedPowers  ?? []), ...recover(char.equippedPowers  ?? [], recoveredPowers)]
+
+  return {
+    slot: {
+      ...slot,
+      gems: slot.gems - cost,
+      roster: slot.roster.filter(r => r.id !== characterId),
+      inventory: inv,
+    },
+    result: { crystalsByStat, recoveredWeapons, recoveredArmors, recoveredPowers },
+  }
+}
+
 /** Purchases spin credits using shards. Returns updated slot or null if insufficient shards. */
 export const SHARD_COST_PER_SPIN = 50
 export function purchaseSpin(slot: StorySaveSlot): StorySaveSlot | null {

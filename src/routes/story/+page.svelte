@@ -11,6 +11,8 @@
     recordWorldReplayStart, worldReplayCooldownMs, WORLD_REPLAY_COOLDOWN_MS,
     createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
     openCrystal, equipOpenedItem, useStatCrystal,
+    dismantleCharacterFromSlot, getDismantleCost, DISMANTLE_PLAYER_LEVEL_REQUIRED,
+    type DismantleResult,
     SHARD_COST_PER_SPIN, STAGE_LABELS, MAX_DAILY_SPINS,
     STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, STAT_CRYSTAL_SHARD_COSTS,
     CRYSTAL_BUY_PRICES_GEMS, CRYSTAL_BUY_PRICES_SHARDS, CRYSTAL_SELL_PRICES, CRYSTAL_GRADE_LIST,
@@ -27,7 +29,7 @@
   import { getStageTierLabel } from '$lib/story/raceTiers'
   import type { WorldGrade } from '$lib/story/worlds'
   import type { StoryRosterEntry } from '$lib/story/types'
-  import { extendedTierFromScore, boostedTier } from '$lib/game/scoreTier'
+  import { extendedTierFromScore, boostedTier, scoreTier, TIER_THRESHOLDS } from '$lib/game/scoreTier'
   import { getArchetype } from '$lib/content/archetypes'
   import { powerRating } from '$lib/story/powerRating'
   import { quickEquipBestGear } from '$lib/story/saveSlots'
@@ -417,6 +419,42 @@
       value,
     )
     sellTarget = null
+  }
+
+  // ── Dismantle (level 4+) ──────────────────────────────────────────────────
+  let dismantleTarget = $state<StoryRosterEntry | null>(null)
+  let dismantleResult = $state<DismantleResult | null>(null)
+  let dismantleError  = $state<string | null>(null)
+
+  function handleDismantle(entry: StoryRosterEntry) {
+    dismantleTarget = entry
+    dismantleResult = null
+    dismantleError = null
+  }
+
+  function confirmDismantle() {
+    const target = dismantleTarget
+    if (!target || !currentSlot) return
+    const snap = $state.snapshot(currentSlot) as StorySaveSlot
+    const baseValue = getGemValue(target.overallTier)
+    // Use tier-rank from the overall score so the band classification matches
+    // the character card / wheel rendering (post-recompute on the new ladder).
+    const tierIdx = TIER_THRESHOLDS.findIndex(t => t.grade === scoreTier(target.overallScore))
+    const out = dismantleCharacterFromSlot(snap, target.id, baseValue, Math.max(0, tierIdx))
+    if (out === 'insufficient_gems') {
+      dismantleError = `Not enough gems — need ${getDismantleCost(baseValue).toLocaleString()}.`
+      return
+    }
+    if (out === 'locked') { dismantleError = 'Reach Level 4 to unlock Dismantle.'; return }
+    if (out === 'char_not_found') { dismantleTarget = null; return }
+    currentSlot = out.slot
+    dismantleResult = out.result
+    // Keep the modal open with the result preview; player closes it manually.
+  }
+  function closeDismantle() {
+    dismantleTarget = null
+    dismantleResult = null
+    dismantleError = null
   }
 
   function closeExpanded() {
@@ -1779,7 +1817,10 @@
     {:else}
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 max-w-[960px] mx-auto">
         {#each sortedRoster as entry (entry.id)}
-          <RosterCard {entry} onExpand={handleExpand} onSell={handleSell} goldFrame={auth.user?.gamepasses?.includes('gold_roster_frame') ?? false} />
+          <RosterCard {entry} onExpand={handleExpand} onSell={handleSell}
+            onDismantle={handleDismantle}
+            dismantleUnlocked={playerLevel >= DISMANTLE_PLAYER_LEVEL_REQUIRED}
+            goldFrame={auth.user?.gamepasses?.includes('gold_roster_frame') ?? false} />
         {/each}
       </div>
     {/if}
@@ -2641,6 +2682,85 @@
     onConfirm={confirmSell}
     onCancel={() => sellTarget = null}
   />
+{/if}
+
+<!-- ── Dismantle modal (L4+) ──────────────────────────────────────────────── -->
+{#if dismantleTarget !== null}
+  {@const baseValue = getGemValue(dismantleTarget.overallTier)}
+  {@const cost = getDismantleCost(baseValue)}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    style="background: rgba(0,0,0,0.78); backdrop-filter: blur(10px);"
+    onclick={closeDismantle}
+    onkeydown={(e) => { if (e.key === 'Escape') closeDismantle() }}
+    role="dialog" aria-modal="true" tabindex="-1"
+  >
+    <div
+      class="obsidian-slab w-full max-w-md rounded-xl p-5 flex flex-col gap-4"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+      role="document"
+    >
+      <p class="text-lg font-bold text-center" style="font-family: var(--font-cinzel); color: #c4b5fd;">
+        Dismantle {dismantleTarget.name}?
+      </p>
+      <p class="text-sm text-center" style="color: var(--color-on-surface-variant);">
+        Breaks the character down for stat crystals and a chance to recover
+        each equipped weapon, armor, and power into your inventory.
+      </p>
+      {#if dismantleResult === null}
+        <div class="rounded-lg px-4 py-3" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);">
+          <p class="font-mono text-xs mb-1" style="color: var(--color-outline);">Cost</p>
+          <p class="font-bold text-lg" style="color: #ef4444; font-family: var(--font-cinzel);">{cost.toLocaleString()} gems</p>
+          <p class="font-mono text-[10px] mt-2" style="color: var(--color-outline);">
+            Grade band determines crystal type. Per-stat chance scales with the
+            character's tier — F→1%, SS→5%, Cosmic→16%, Infinite→50%.
+          </p>
+        </div>
+        {#if dismantleError}
+          <p class="font-mono text-xs text-center" style="color: #ef4444;">{dismantleError}</p>
+        {/if}
+        <div class="flex gap-2">
+          <button onclick={closeDismantle}
+            class="flex-1 py-2.5 rounded-lg font-mono font-bold text-sm"
+            style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--color-outline); cursor: pointer;">
+            Cancel
+          </button>
+          <button onclick={confirmDismantle}
+            class="metal-stamp-purple flex-1 py-2.5 rounded-lg font-mono font-bold text-sm"
+            style="color: #ddd6fe;">
+            Dismantle
+          </button>
+        </div>
+      {:else}
+        <!-- Result preview -->
+        <div class="rounded-lg px-4 py-3 flex flex-col gap-2" style="background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.3);">
+          <p class="font-mono text-xs uppercase tracking-widest" style="color: #a78bfa;">Yielded</p>
+          {#if Object.keys(dismantleResult.crystalsByStat).length > 0}
+            <p class="text-sm" style="color: var(--color-on-surface);">
+              {Object.keys(dismantleResult.crystalsByStat).length} stat crystal{Object.keys(dismantleResult.crystalsByStat).length === 1 ? '' : 's'}
+              ({Object.values(dismantleResult.crystalsByStat)[0]})
+            </p>
+            <p class="font-mono text-[11px]" style="color: var(--color-outline);">
+              From: {Object.keys(dismantleResult.crystalsByStat).join(', ')}
+            </p>
+          {:else}
+            <p class="text-sm" style="color: var(--color-outline);">No stat crystals — luck wasn't with you.</p>
+          {/if}
+          {#if dismantleResult.recoveredWeapons.length + dismantleResult.recoveredArmors.length + dismantleResult.recoveredPowers.length > 0}
+            <p class="text-sm mt-1" style="color: #34d399;">
+              Recovered {dismantleResult.recoveredWeapons.length + dismantleResult.recoveredArmors.length + dismantleResult.recoveredPowers.length} item{dismantleResult.recoveredWeapons.length + dismantleResult.recoveredArmors.length + dismantleResult.recoveredPowers.length === 1 ? '' : 's'}
+              ({dismantleResult.recoveredWeapons.length}w / {dismantleResult.recoveredArmors.length}a / {dismantleResult.recoveredPowers.length}p)
+            </p>
+          {/if}
+        </div>
+        <button onclick={closeDismantle}
+          class="w-full py-2.5 rounded-lg font-mono font-bold text-sm metal-stamp-gold">
+          Done
+        </button>
+      {/if}
+    </div>
+  </div>
 {/if}
 
 <!-- ── Crystal opening animation overlay ─────────────────────────────────────── -->
