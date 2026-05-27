@@ -182,6 +182,67 @@
     animTimeoutId = setTimeout(() => { activeAnim = null; dodgingName = null }, 950)
   }
 
+  // ── Screen shake ─────────────────────────────────────────────────────────
+  // Camera-style hit feedback. The wrapper translates briefly when an attack
+  // lands; absolutely-positioned VFX children move with it (relative
+  // positioning model is preserved). Skipped when reduced motion is set or
+  // when effects are disabled. Driven by Web Animations API so a new shake
+  // can cleanly cancel an in-flight one.
+  let shakeAnimation: Animation | null = null
+  type ShakeStrength = 'soft' | 'medium' | 'hard'
+  const SHAKE_PROFILES: Record<ShakeStrength, { dur: number; amp: number }> = {
+    soft:   { dur: 220, amp: 4 },
+    medium: { dur: 320, amp: 8 },
+    hard:   { dur: 460, amp: 14 },
+  }
+  function prefersReducedMotion(): boolean {
+    if (typeof window === 'undefined' || !window.matchMedia) return false
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }
+  function shakeStrengthFor(
+    fxAttackType: string | undefined,
+    type: string,
+    grade: string | undefined,
+  ): ShakeStrength | null {
+    // No shake for dodges, shields, heals, buffs, summons — they aren't impacts.
+    if (type === 'dodge' || type === 'shield') return null
+    if (fxAttackType === 'heal' || fxAttackType === 'buff' || fxAttackType === 'summon') return null
+    // AOE always shakes hard — it's an arena-wide event.
+    if (fxAttackType === 'aoe') return 'hard'
+    // Crits / berserker pop one step heavier than their grade would imply.
+    const bump = (type === 'crit' || type === 'berserker') ? 1 : 0
+    const g = (grade ?? '').replace(/[+-]/g, '').toUpperCase()
+    let base: ShakeStrength
+    if (g === 'GOD' || g === 'SSS' || g === 'SS') base = 'hard'
+    else if (g === 'S' || g === 'A' || g === 'B')  base = 'medium'
+    else                                            base = 'soft'
+    if (bump) {
+      if (base === 'soft')   return 'medium'
+      if (base === 'medium') return 'hard'
+    }
+    return base
+  }
+  function triggerShake(strength: ShakeStrength | null) {
+    if (!strength || !wrapperEl) return
+    if (!effectsEnabled) return
+    if (prefersReducedMotion()) return
+    const { dur, amp } = SHAKE_PROFILES[strength]
+    shakeAnimation?.cancel()
+    // Classic camera-shake keyframes: decaying jitter on x/y.
+    shakeAnimation = wrapperEl.animate(
+      [
+        { transform: 'translate(0, 0)' },
+        { transform: `translate(${ amp}px, ${-amp * 0.5}px)` },
+        { transform: `translate(${-amp * 0.85}px, ${ amp * 0.4}px)` },
+        { transform: `translate(${ amp * 0.65}px, ${ amp * 0.25}px)` },
+        { transform: `translate(${-amp * 0.45}px, ${-amp * 0.3}px)` },
+        { transform: `translate(${ amp * 0.25}px, ${ amp * 0.15}px)` },
+        { transform: 'translate(0, 0)' },
+      ],
+      { duration: dur, easing: 'cubic-bezier(.36,.07,.19,.97)', fill: 'none' },
+    )
+  }
+
   // ── Damage indicators ──────────────────────────────────────────────────────
   let damageEvents = $state<DamageEvent[]>([])
   let dmgIdCounter = 0
@@ -527,6 +588,7 @@
           // misplaced attacks toward one side of the column.
           const targetOrigin = resolveTargetOrigin() ?? wrapperOrigin('center')
           showAnim(type, color, direction, grade, targetOrigin, fxAttackType)
+          triggerShake(shakeStrengthFor(fxAttackType, type, grade))
           const hit = damageHitFromLine(head, allNames)
           if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
           deferDamageEmit = true
@@ -547,6 +609,7 @@
                 // toward the attacker and made beams look like they
                 // were firing both directions at once.
                 showAnim(type, color, 'center', grade, targetOrigin, fxAttackType)
+                triggerShake(shakeStrengthFor(fxAttackType, type, grade))
                 if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
               },
               type,
@@ -556,6 +619,7 @@
             // Fallback to in-place burst at target.
             const fallbackOrigin = targetOrigin ?? wrapperOrigin(direction)
             showAnim(type, color, direction, grade, fallbackOrigin, fxAttackType)
+            triggerShake(shakeStrengthFor(fxAttackType, type, grade))
           }
         } else if (canProjectile) {
           const attacker = memberFromFxIndex(fx.attackerSide, fx.attackerIdx)
@@ -620,6 +684,9 @@
             : undefined
           if (!origin) origin = wrapperOrigin(originDir)
           showAnim(type, color, direction, grade, origin, fxAttackType, lineLeader ?? undefined)
+          // Crits/berserker land as impacts — shake. Dodges/shields/heals
+          // are filtered out inside shakeStrengthFor.
+          triggerShake(shakeStrengthFor(fxAttackType, type, grade))
         }
       }
     }
