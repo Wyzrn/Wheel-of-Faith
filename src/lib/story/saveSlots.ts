@@ -1004,7 +1004,7 @@ export function openCrystal(
 /**
  * Advances a spin result by N tier levels (not raw score points).
  * Sets the new score to the minimum of the target tier band so repeated boosts
- * always cross the next boundary. Clears displayLabel (all TIER_THRESHOLDS entries ≤ 150).
+ * always cross the next boundary. Clears displayLabel (all TIER_THRESHOLDS entries ≤ 165).
  */
 function boostSpin(r: SpinResult, tierLevels: number): SpinResult {
   if (r.score == null) return r

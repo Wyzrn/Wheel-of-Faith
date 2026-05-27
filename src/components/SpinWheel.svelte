@@ -231,18 +231,22 @@
     nSrc.start(now)
   }
 
-  // Maps a tier label to an "intensity" score in [0, 1]. F-tier = 0, Absolute = 1.
+  // Maps a tier label to an "intensity" score in [0, 1]. F-tier = 0, Infinite+ = 1.
   // Used to scale the landing animation, sound design, and haptic punch so a
   // mythic roll feels different from a C-tier roll. Stat-less wheels (race, etc.)
-  // pass undefined and we default to mid (0.4).
+  // pass undefined and we default to mid (0.4). Infinite+N overflow tiers
+  // saturate at 1.
   function tierIntensity(tier: string | undefined): number {
     if (!tier) return 0.4
+    if (/^Infinite\+\d+$/.test(tier)) return 1
     const ladder = [
       'F-','F','F+','E-','E','E+','D-','D','D+','C-','C','C+',
       'B-','B','B+','A-','A','A+','S-','S','S+','SS-','SS','SS+',
       'SSS-','SSS','SSS+','Z-','Z','Z+','ZZ-','ZZ','ZZ+','ZZZ-','ZZZ','ZZZ+',
-      'Celestial-','Celestial','Celestial+','Godly-','Godly',
-      'Primordial','Primordial+','Absolute-','Absolute','Absolute+',
+      'Cosmic-','Cosmic','Cosmic+','Immortal-','Immortal','Immortal+',
+      'Celestial-','Celestial','Celestial+','Godly-','Godly','Godly+',
+      'Primordial-','Primordial','Primordial+','Absolute-','Absolute','Absolute+',
+      'Transcendent-','Transcendent','Transcendent+','Infinite-','Infinite','Infinite+',
     ]
     const idx = ladder.indexOf(tier)
     if (idx < 0) return 0.4

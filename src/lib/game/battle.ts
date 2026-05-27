@@ -2,7 +2,7 @@
 // Tier-scaled HP/damage, full stat mechanics. Pure functions only. No default export.
 
 import type { SpinResult } from '$lib/session/types'
-import { TIER_THRESHOLDS, scoreTier, extendedTierFromScore } from '$lib/game/scoreTier'
+import { TIER_THRESHOLDS, scoreTier, extendedTierFromScore, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
 import type { TierGrade } from '$lib/game/scoreTier'
 import { powers as powersPool } from '$lib/content/powers'
 import { weapons as weaponsPool } from '$lib/content/weapons'
@@ -60,6 +60,9 @@ export function moveGradeMult(grade?: string): number {
 
 // ─── HP Table ─────────────────────────────────────────────────────────────────
 // F- through C+ are user-specified. Higher tiers extrapolated ~2× per major tier.
+// Cosmic and above scale ~1.3× per minor tier (steeper, since these are
+// post-mortal grades). Infinite+ tops out at 1.2B; overflow (Infinite+N) is
+// handled exponentially in hpForTier().
 const HP_TABLE: Record<string, number> = {
   'F-': 50,          'F': 100,          'F+': 150,
   'E-': 200,         'E': 300,          'E+': 400,
@@ -73,14 +76,16 @@ const HP_TABLE: Record<string, number> = {
   'Z-': 78_000,      'Z': 100_000,      'Z+': 130_000,
   'ZZ-': 170_000,    'ZZ': 220_000,     'ZZ+': 280_000,
   'ZZZ-': 360_000,   'ZZZ': 470_000,    'ZZZ+': 600_000,
-  'Celestial-': 780_000, 'Celestial': 1_000_000, 'Celestial+': 1_300_000,
-  'Godly-': 1_700_000,   'Godly': 2_200_000,
-  'Primordial': 3_000_000,
-  'Primordial+': 4_000_000,
-  'Absolute-': 5_200_000,
-  'Absolute': 6_800_000,
-  'Absolute+': 9_000_000,
+  'Cosmic-': 780_000,        'Cosmic': 1_000_000,        'Cosmic+': 1_300_000,
+  'Immortal-': 1_700_000,    'Immortal': 2_200_000,      'Immortal+': 2_900_000,
+  'Celestial-': 3_800_000,   'Celestial': 4_900_000,     'Celestial+': 6_400_000,
+  'Godly-': 8_300_000,       'Godly': 10_800_000,        'Godly+': 14_000_000,
+  'Primordial-': 18_200_000, 'Primordial': 23_700_000,   'Primordial+': 30_800_000,
+  'Absolute-': 40_000_000,   'Absolute': 52_000_000,     'Absolute+': 67_600_000,
+  'Transcendent-': 88_000_000, 'Transcendent': 114_000_000, 'Transcendent+': 148_000_000,
+  'Infinite-': 192_000_000,  'Infinite': 250_000_000,    'Infinite+': 325_000_000,
 }
+const INFINITE_PLUS_BASE_HP = 325_000_000
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -433,10 +438,15 @@ function getTier(results: SpinResult[], category: string): TierGrade {
   return 'F-'
 }
 
-// Returns displayLabel when it's an "Absolute+N" extended grade, else falls back to tier/score.
+// Returns the best available tier display for a category. Prefers an explicit
+// overflow displayLabel ("Infinite+N" or legacy "Absolute+N", remapped), then
+// the persisted tier, then derives from score. Legacy overflow labels are
+// rewritten on read so older saves get the new ladder for free.
 function getDisplayTier(results: SpinResult[], category: string): string {
   const r = results.find(s => s.category === category)
-  if (r?.displayLabel && /^Absolute\+\d+$/.test(r.displayLabel)) return r.displayLabel
+  if (r?.displayLabel && /^(Infinite|Absolute)\+\d+$/.test(r.displayLabel)) {
+    return normalizeLegacyDisplayLabel(r.displayLabel) ?? r.displayLabel
+  }
   if (r?.tier) return r.tier
   if (r?.score !== undefined) return scoreTier(r.score)
   return 'F-'
@@ -445,7 +455,7 @@ function getDisplayTier(results: SpinResult[], category: string): string {
 function tierRank(grade: string): number {
   const idx = TIER_THRESHOLDS.findIndex(t => t.grade === grade)
   if (idx >= 0) return idx
-  const m = /^Absolute\+(\d+)$/.exec(grade)
+  const m = /^Infinite\+(\d+)$/.exec(grade)
   if (m) return TIER_THRESHOLDS.length - 1 + parseInt(m[1])
   return 0
 }
@@ -453,9 +463,9 @@ function tierRank(grade: string): number {
 function hpForTier(grade: string): number {
   const val = HP_TABLE[grade as TierGrade]
   if (val !== undefined) return val
-  // "Absolute+N" (N = 1..20): exponential scale from 9M base at ~18% per step
-  const m = /^Absolute\+(\d+)$/.exec(grade)
-  if (m) return Math.round(9_000_000 * Math.pow(1.18, parseInt(m[1])))
+  // "Infinite+N" (N = 1..20): exponential scale from the Infinite+ base at ~18% per step.
+  const m = /^Infinite\+(\d+)$/.exec(grade)
+  if (m) return Math.round(INFINITE_PLUS_BASE_HP * Math.pow(1.18, parseInt(m[1])))
   return 50
 }
 

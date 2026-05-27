@@ -65,22 +65,68 @@
   --stone-d2: #0c091a;
   --stone-d3: #131028;
 
-  /* ── Tier colors ── */
-  --tier-f-minus: #4a4a4a; --tier-f: #5c5c5c;  --tier-f-plus: #6e6e6e;
-  --tier-e-minus: #6b7280; --tier-e: #9ca3af;  --tier-e-plus: #d1d5db;
-  --tier-d-minus: #92400e; --tier-d: #b45309;  --tier-d-plus: #d97706;
-  --tier-c-minus: #1d4ed8; --tier-c: #2563eb;  --tier-c-plus: #3b82f6;
-  --tier-b-minus: #065f46; --tier-b: #059669;  --tier-b-plus: #34d399;
-  --tier-a-minus: #7c3aed; --tier-a: #8b5cf6;  --tier-a-plus: #a78bfa;
-  --tier-s-minus: #b91c1c; --tier-s: #dc2626;  --tier-s-plus: #ef4444;
-  --tier-ss-minus: #ea580c; --tier-ss: #f97316; --tier-ss-plus: #fb923c;
-  --tier-sss-minus: #ca8a04; --tier-sss: #eab308; --tier-sss-plus: #fde047;
-  --tier-god:           #e879f9;
-  --tier-primordial:    #ffffff;
-  --tier-primordial-p:  #ccffff;
-  --tier-absolute-m:    #99ffff;
-  --tier-absolute:      #00ffff;
-  --tier-absolute-p:    #00ddff;
+  /* ── Tier colors ──
+     F- through ZZZ+ are solid colors. Cosmic and above are SOLID rep colors
+     (used for chips, small badges where a flat color is needed) plus matching
+     GRADIENT strings (--tier-*-grad) used for wheel segment fills, tier-name
+     text fills on hero displays, and the Cosmic+ landing animations.
+     The base solid for Cosmic+ tiers is the gradient's mid-stop. */
+  --tier-f-minus:  #4a4a4a;  --tier-f:    #5c5c5c;  --tier-f-plus:    #6e6e6e;
+  --tier-e-minus:  #6b7280;  --tier-e:    #9ca3af;  --tier-e-plus:    #d1d5db;
+  --tier-d-minus:  #92400e;  --tier-d:    #b45309;  --tier-d-plus:    #d97706;
+  --tier-c-minus:  #1d4ed8;  --tier-c:    #2563eb;  --tier-c-plus:    #3b82f6;
+  --tier-b-minus:  #065f46;  --tier-b:    #059669;  --tier-b-plus:    #34d399;
+  --tier-a-minus:  #7c3aed;  --tier-a:    #8b5cf6;  --tier-a-plus:    #a78bfa;
+  --tier-s-minus:  #b91c1c;  --tier-s:    #dc2626;  --tier-s-plus:    #ef4444;
+  --tier-ss-minus: #ea580c;  --tier-ss:   #f97316;  --tier-ss-plus:   #fb923c;
+  --tier-sss-minus:#ca8a04;  --tier-sss:  #eab308;  --tier-sss-plus:  #fde047;
+  --tier-z-minus:  #be185d;  --tier-z:    #db2777;  --tier-z-plus:    #ec4899;
+  --tier-zz-minus: #6d28d9;  --tier-zz:   #7c3aed;  --tier-zz-plus:   #8b5cf6;
+  --tier-zzz-minus:#0e7490;  --tier-zzz:  #06b6d4;  --tier-zzz-plus:  #22d3ee;
+
+  /* COSMIC — deep cyan gradient */
+  --tier-cosmic-minus: #0e6b8a; --tier-cosmic: #0891b2; --tier-cosmic-plus: #06b6d4;
+  --tier-cosmic-grad:  linear-gradient(135deg, #083344 0%, #0e7490 35%, #0891b2 65%, #22d3ee 100%);
+
+  /* IMMORTAL — rainbow gradient */
+  --tier-immortal-minus: #d946ef; --tier-immortal: #ec4899; --tier-immortal-plus: #f472b6;
+  --tier-immortal-grad:  linear-gradient(135deg, #ef4444 0%, #f97316 18%, #eab308 36%, #22c55e 54%, #06b6d4 72%, #6366f1 88%, #d946ef 100%);
+
+  /* CELESTIAL — dark pink gradient */
+  --tier-celestial-minus: #831843; --tier-celestial: #9d174d; --tier-celestial-plus: #be185d;
+  --tier-celestial-grad:  linear-gradient(135deg, #500724 0%, #831843 35%, #be185d 70%, #db2777 100%);
+
+  /* GODLY — light pink gradient */
+  --tier-godly-minus: #f9a8d4; --tier-godly: #f472b6; --tier-godly-plus: #ec4899;
+  --tier-godly-grad:  linear-gradient(135deg, #fce7f3 0%, #fbcfe8 25%, #f9a8d4 55%, #f472b6 100%);
+
+  /* PRIMORDIAL — white / gray gradient */
+  --tier-primordial-minus: #d4d4d8; --tier-primordial: #e4e4e7; --tier-primordial-plus: #fafafa;
+  --tier-primordial-grad:  linear-gradient(135deg, #71717a 0%, #a1a1aa 30%, #d4d4d8 60%, #ffffff 100%);
+
+  /* ABSOLUTE — light cyan-blue gradient */
+  --tier-absolute-minus: #7dd3fc; --tier-absolute: #38bdf8; --tier-absolute-plus: #0ea5e9;
+  --tier-absolute-grad:  linear-gradient(135deg, #bae6fd 0%, #7dd3fc 35%, #38bdf8 70%, #0ea5e9 100%);
+
+  /* TRANSCENDENT — lime green gradient */
+  --tier-transcendent-minus: #84cc16; --tier-transcendent: #65a30d; --tier-transcendent-plus: #4d7c0f;
+  --tier-transcendent-grad:  linear-gradient(135deg, #ecfccb 0%, #bef264 25%, #84cc16 60%, #4d7c0f 100%);
+
+  /* INFINITE — black and white gradient */
+  --tier-infinite-minus: #525252; --tier-infinite: #262626; --tier-infinite-plus: #000000;
+  --tier-infinite-grad:  linear-gradient(135deg, #fafafa 0%, #a3a3a3 20%, #404040 50%, #171717 75%, #000000 100%);
+}
+
+/* Animated rainbow shift for Immortal-tier displays.
+   Used on text + segment fills that opt-in via class .tier-immortal-anim. */
+@keyframes immortalShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.tier-immortal-anim {
+  background-size: 200% 200%;
+  animation: immortalShift 6s ease-in-out infinite;
 }
 
 /* ════════════════════════════ BASE ════════════════════════════ */

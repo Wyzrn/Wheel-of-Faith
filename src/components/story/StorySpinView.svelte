@@ -116,7 +116,7 @@
     const maxVti = TIER_ORDER.length - 1 + 20
     const vti = Math.max(minVti, Math.min(maxVti, rawVti))
     if (vti < 0) return { tier: 'F-' as import('$lib/game/scoreTier').TierGrade, score: Math.max(-19, 1 + vti), displayLabel: `F- -${Math.abs(vti)}` }
-    if (vti >= TIER_ORDER.length) return { tier: 'Absolute+' as import('$lib/game/scoreTier').TierGrade, score: 150 + (vti - (TIER_ORDER.length - 1)), displayLabel: `Absolute+${vti - (TIER_ORDER.length - 1)}` }
+    if (vti >= TIER_ORDER.length) return { tier: 'Infinite+' as import('$lib/game/scoreTier').TierGrade, score: 165 + (vti - (TIER_ORDER.length - 1)), displayLabel: `Infinite+${vti - (TIER_ORDER.length - 1)}` }
     return { tier: TIER_ORDER[vti], score: gradeToScore(TIER_ORDER[vti]), displayLabel: undefined }
   }
 

@@ -43,7 +43,7 @@
   >
     <div class="font-bold leading-none" style="font-size: clamp(2rem, 8vw, 4.5rem);">{label}</div>
     {#if score !== undefined}
-      <div class="text-sm text-gray-400 mt-1">{score} / 170</div>
+      <div class="text-sm text-gray-400 mt-1">{score} / 185</div>
     {/if}
   </div>
 {:else}

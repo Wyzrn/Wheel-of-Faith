@@ -60,19 +60,30 @@ const TIER_COLORS: Record<AchievementTier, string> = {
 }
 export function colorForTier(t: AchievementTier): string { return TIER_COLORS[t] }
 
-// Tier-comparable set helpers — share with profile's lifetime stats
+// Tier-comparable set helpers — share with profile's lifetime stats.
+// ELITE = S and up. MYTHIC = SSS and up. GODLY = post-mortal tiers (Godly and up).
+const TOP_TIERS = [
+  'Cosmic-','Cosmic','Cosmic+','Immortal-','Immortal','Immortal+',
+  'Celestial-','Celestial','Celestial+','Godly-','Godly','Godly+',
+  'Primordial-','Primordial','Primordial+','Absolute-','Absolute','Absolute+',
+  'Transcendent-','Transcendent','Transcendent+','Infinite-','Infinite','Infinite+',
+]
 const ELITE_TIERS = new Set([
   'S','S+','SS-','SS','SS+','SSS-','SSS','SSS+',
   'Z-','Z','Z+','ZZ-','ZZ','ZZ+','ZZZ-','ZZZ','ZZZ+',
-  'Celestial-','Celestial','Celestial+','Godly-','Godly',
-  'Primordial','Primordial+','Absolute-','Absolute','Absolute+',
+  ...TOP_TIERS,
 ])
 const MYTHIC_TIERS = new Set([
   'SSS-','SSS','SSS+','Z-','Z','Z+','ZZ-','ZZ','ZZ+','ZZZ-','ZZZ','ZZZ+',
-  'Celestial-','Celestial','Celestial+','Godly-','Godly',
-  'Primordial','Primordial+','Absolute-','Absolute','Absolute+',
+  ...TOP_TIERS,
 ])
-const GODLY_TIERS = new Set(['Godly-','Godly','Primordial','Primordial+','Absolute-','Absolute','Absolute+'])
+const GODLY_TIERS = new Set([
+  'Godly-','Godly','Godly+',
+  'Primordial-','Primordial','Primordial+',
+  'Absolute-','Absolute','Absolute+',
+  'Transcendent-','Transcendent','Transcendent+',
+  'Infinite-','Infinite','Infinite+',
+])
 
 function countMatching(history: SpinHistoryEntry[], pred: (e: SpinHistoryEntry) => boolean): number {
   let n = 0

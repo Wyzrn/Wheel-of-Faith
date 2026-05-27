@@ -355,13 +355,13 @@
   }
 
   // Applies a tier shift to a stat result and returns updated fields.
-  // Tiers run F- through Absolute+ (score 1–150), plus up to Absolute+20 (score 170) via bonuses.
+  // Tiers run F- through Infinite+ (score 1–165), plus up to Infinite+20 (score 185) via bonuses.
   // Health/damage stats (NO_NEGATIVE_STATS) are floored at 0 (F-).
   function applyStatShift(result: SpinResult, tierShift: number, statCategory: string): Pick<SpinResult, 'tier' | 'score' | 'displayLabel'> {
     const currentVti = getVirtualTierIdx(result)
     const rawVti = currentVti + tierShift
     const minVti = NO_NEGATIVE_STATS.has(statCategory) ? 0 : -20
-    const maxVti = TIER_ORDER.length - 1 + 20  // caps at Absolute+20 (score 170)
+    const maxVti = TIER_ORDER.length - 1 + 20  // caps at Infinite+20 (score 185)
     const vti = Math.max(minVti, Math.min(maxVti, rawVti))
 
     if (vti < 0) {
@@ -374,9 +374,9 @@
     if (vti >= TIER_ORDER.length) {
       const n = vti - (TIER_ORDER.length - 1)  // 1..20
       return {
-        tier: 'Absolute+' as TierGrade,
-        score: 150 + n,
-        displayLabel: `Absolute+${n}`,
+        tier: 'Infinite+' as TierGrade,
+        score: 165 + n,
+        displayLabel: `Infinite+${n}`,
       }
     }
     return {

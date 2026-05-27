@@ -36,7 +36,7 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
           name:               { type: 'string', maxLength: 40 },
           race:               { type: 'string' },
           archetype:          { type: 'string' },
-          overall_score:      { type: 'number', minimum: -20, maximum: 150 },
+          overall_score:      { type: 'number', minimum: -20, maximum: 185 },
           overall_tier:       { type: 'string' },
           spins:              { type: 'array' },
           session_started_at: { type: 'string', format: 'date-time' },

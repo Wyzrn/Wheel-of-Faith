@@ -77,13 +77,15 @@
   }
 
   // "Transcendent" is the cinematic tier above mythic, reserved for the
-  // truly cosmic stat rolls — Celestial / Godly / Primordial / Absolute.
-  // Gated by tier label (not raw intensity) so a God-grade ITEM still hits
-  // mythic, not transcendent — those grades aren't the same kind of
-  // moment as a Primordial stat roll. Items + races/archetypes always
-  // top out at 'mythic'.
+  // truly cosmic stat rolls — Cosmic / Immortal / Celestial / Godly /
+  // Primordial / Absolute / Transcendent / Infinite. (Note: "Transcendent"
+  // here is the celebration LEVEL name, distinct from the Transcendent tier
+  // grade — both trigger the same level.) Gated by tier label (not raw
+  // intensity) so a God-grade ITEM still hits mythic, not transcendent —
+  // those grades aren't the same kind of moment as a Primordial stat roll.
+  // Items + races/archetypes always top out at 'mythic'.
   let isCosmicTier = $derived(
-    !!tier && /Celestial|Godly|Primordial|Absolute/i.test(tier),
+    !!tier && /Cosmic|Immortal|Celestial|Godly|Primordial|Absolute|Transcendent|Infinite/i.test(tier),
   )
   let level = $derived(
     isCosmicTier      ? 'transcendent' :
@@ -299,12 +301,17 @@
   // since cosmic stats outrank it.
   let bannerText = $derived(
     !tier ? 'MYTHIC ROLL!' :
+    /^Infinite\+\d+$/i.test(tier) ? 'BEYOND INFINITE!' :
+    /Infinite/i.test(tier) ? 'INFINITE!' :
+    /Transcendent/i.test(tier) ? 'TRANSCENDENT!' :
     /Absolute/i.test(tier) ? 'ABSOLUTE!' :
     /Primordial/i.test(tier) ? 'PRIMORDIAL!' :
     /Godly|^God$/i.test(tier) ? 'GODLY!' :
     /Celestial/i.test(tier) ? 'CELESTIAL!' :
+    /Immortal/i.test(tier) ? 'IMMORTAL!' :
+    /Cosmic/i.test(tier) ? 'COSMIC!' :
     /ZZZ/.test(tier) ? 'BEYOND MYTHIC!' :
-    /ZZ/.test(tier) ? 'TRANSCENDENT!' :
+    /ZZ/.test(tier) ? 'ASCENDED!' :
     /^Z[-+]?$/.test(tier) ? 'MYTHIC!' :
     /SSS/i.test(tier) ? 'LEGENDARY!' :
     /SS[-+]?$/i.test(tier) ? 'LEGENDARY!' :
