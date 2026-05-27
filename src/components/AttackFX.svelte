@@ -600,31 +600,51 @@
     </svg>
 
   {:else if type === 'ice'}
-    <svg viewBox="0 0 100 100" class="fx-svg ice-g" overflow="visible">
-      <circle cx="50" cy="50" r="40" fill="var(--c)" opacity="0.10" style="filter:blur(10px)"/>
-      <polygon class="ice-shard is1" points="50,4 53,16 50,20 47,16" fill="var(--c)" opacity="0.7"/>
-      <polygon class="ice-shard is2" points="96,50 84,53 80,50 84,47" fill="var(--c)" opacity="0.7"/>
-      <polygon class="ice-shard is3" points="50,96 47,84 50,80 53,84" fill="var(--c)" opacity="0.65"/>
-      <polygon class="ice-shard is4" points="4,50 16,47 20,50 16,53"  fill="var(--c)" opacity="0.65"/>
-      <polygon class="ice-shard is5" points="14,14 22,24 18,28 10,20" fill="var(--c)" opacity="0.5"/>
-      <polygon class="ice-shard is6" points="86,14 90,24 86,28 78,20" fill="var(--c)" opacity="0.5"/>
-      <line x1="50" y1="12" x2="50" y2="88" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="12" y1="50" x2="88" y2="50" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="22" y1="22" x2="78" y2="78" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="78" y1="22" x2="22" y2="78" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="50" y1="12" x2="43" y2="22" stroke="var(--c)" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="50" y1="12" x2="57" y2="22" stroke="var(--c)" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="50" y1="88" x2="43" y2="78" stroke="var(--c)" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="50" y1="88" x2="57" y2="78" stroke="var(--c)" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="12" y1="50" x2="22" y2="43" stroke="var(--c)" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="12" y1="50" x2="22" y2="57" stroke="var(--c)" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="88" y1="50" x2="78" y2="43" stroke="var(--c)" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="88" y1="50" x2="78" y2="57" stroke="var(--c)" stroke-width="1.8" stroke-linecap="round"/>
-      <circle cx="50" cy="50" r="6" fill="var(--c)"/>
-      <circle class="frost fc1" cx="30" cy="30" r="2"   fill="var(--c)" opacity="0.6"/>
-      <circle class="frost fc2" cx="70" cy="30" r="1.5" fill="var(--c)" opacity="0.5"/>
-      <circle class="frost fc3" cx="30" cy="70" r="1.5" fill="var(--c)" opacity="0.5"/>
-      <circle class="frost fc4" cx="70" cy="70" r="2"   fill="var(--c)" opacity="0.6"/>
+    <!-- Ice — crystalline frost burst. Bloom backdrop, 6 ice shards
+         thrust outward from a central crystal core, 8 frost cracks
+         radiate outward with arrows at the tips, frozen mist particles
+         hang in the air. Snowflake-like silhouette with sharp edges. -->
+    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
+      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.28" class="ic-bloom" style="filter:blur(18px)"/>
+      <!-- Eight frost ray lines with arrowheads at the tips -->
+      <g class="ic-rays">
+        <line class="ic-ry" x1="50" y1="50" x2="50" y2="8"  stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+        <line class="ic-ry" x1="50" y1="50" x2="92" y2="50" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+        <line class="ic-ry" x1="50" y1="50" x2="50" y2="92" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+        <line class="ic-ry" x1="50" y1="50" x2="8"  y2="50" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+        <line class="ic-ry" x1="50" y1="50" x2="20" y2="20" stroke="var(--c)" stroke-width="2.4" stroke-linecap="round"/>
+        <line class="ic-ry" x1="50" y1="50" x2="80" y2="20" stroke="var(--c)" stroke-width="2.4" stroke-linecap="round"/>
+        <line class="ic-ry" x1="50" y1="50" x2="80" y2="80" stroke="var(--c)" stroke-width="2.4" stroke-linecap="round"/>
+        <line class="ic-ry" x1="50" y1="50" x2="20" y2="80" stroke="var(--c)" stroke-width="2.4" stroke-linecap="round"/>
+        <!-- Snowflake arrow notches at ray tips -->
+        <path d="M50 8 L46 16 M50 8 L54 16" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M92 50 L84 46 M92 50 L84 54" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M50 92 L46 84 M50 92 L54 84" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M8 50 L16 46 M8 50 L16 54"   stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round"/>
+      </g>
+      <!-- Six thrusting ice shards from center -->
+      <g class="ic-shards">
+        <polygon class="ic-sh ish1" points="50,50 46,18 54,18" fill="var(--c)"/>
+        <polygon class="ic-sh ish2" points="50,50 78,30 78,38" fill="var(--c)" opacity="0.9"/>
+        <polygon class="ic-sh ish3" points="50,50 78,70 78,62" fill="var(--c)" opacity="0.9"/>
+        <polygon class="ic-sh ish4" points="50,50 54,82 46,82" fill="var(--c)"/>
+        <polygon class="ic-sh ish5" points="50,50 22,70 22,62" fill="var(--c)" opacity="0.9"/>
+        <polygon class="ic-sh ish6" points="50,50 22,30 22,38" fill="var(--c)" opacity="0.9"/>
+      </g>
+      <!-- Central frost crystal -->
+      <g class="ic-core">
+        <polygon points="50,38 60,50 50,62 40,50" fill="var(--c)"/>
+        <polygon points="50,42 56,50 50,58 44,50" fill="white" opacity="0.85"/>
+      </g>
+      <!-- Frozen mist particles in air -->
+      <circle class="ic-frost fc1" cx="32" cy="32" r="2"   fill="var(--c)" opacity="0.85"/>
+      <circle class="ic-frost fc2" cx="68" cy="32" r="1.6" fill="var(--c)" opacity="0.75"/>
+      <circle class="ic-frost fc3" cx="32" cy="68" r="1.6" fill="var(--c)" opacity="0.75"/>
+      <circle class="ic-frost fc4" cx="68" cy="68" r="2"   fill="var(--c)" opacity="0.85"/>
+      <circle class="ic-frost fc5" cx="50" cy="22" r="1.4" fill="var(--c)" opacity="0.7"/>
+      <circle class="ic-frost fc6" cx="78" cy="50" r="1.4" fill="var(--c)" opacity="0.7"/>
+      <circle class="ic-frost fc7" cx="50" cy="78" r="1.4" fill="var(--c)" opacity="0.7"/>
+      <circle class="ic-frost fc8" cx="22" cy="50" r="1.4" fill="var(--c)" opacity="0.7"/>
     </svg>
 
   {:else if type === 'shadow'}
@@ -1427,32 +1447,52 @@
     </svg>
 
   {:else if type === 'cosmic'}
-    <!-- Cosmic — galactic spiral, nebula glow, star points -->
+    <!-- Cosmic — galactic supernova. Massive bloom, four spiral arms
+         sweeping around the core, supernova flash at center, exploding
+         star points at the corners, scattered stardust + comet streak
+         tails radiating outward from the explosion. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.18" style="filter:blur(16px)"/>
-      <!-- Galactic spiral arms -->
-      <g class="cos-spiral">
-        <path d="M50 50 Q40 30 20 28 Q12 38 16 52 Q26 64 50 50" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.7"/>
-        <path d="M50 50 Q60 70 80 72 Q88 62 84 48 Q74 36 50 50" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.7"/>
+      <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.34" class="cs-bloom" style="filter:blur(22px)"/>
+      <!-- Four spiral arms sweeping around the core -->
+      <g class="cs-spiral">
+        <path d="M50 50 Q40 30 20 28 Q8 38 12 56 Q24 70 50 50" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.8"/>
+        <path d="M50 50 Q60 70 80 72 Q92 62 88 44 Q76 30 50 50" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.8"/>
+        <path d="M50 50 Q70 40 72 20 Q60 8 42 12 Q28 24 50 50" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.7"/>
+        <path d="M50 50 Q30 60 28 80 Q40 92 58 88 Q72 76 50 50" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.7"/>
+        <!-- Thin secondary arms -->
         <path d="M50 50 Q34 44 28 18" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.5"/>
         <path d="M50 50 Q66 56 72 82" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.5"/>
+        <path d="M50 50 Q66 44 88 36" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.5"/>
+        <path d="M50 50 Q34 56 12 64" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.5"/>
       </g>
-      <!-- Nebula core -->
-      <g class="cos-core">
-        <circle cx="50" cy="50" r="14" fill="var(--c)" opacity="0.65" style="filter:blur(3px)"/>
-        <circle cx="50" cy="50" r="9"  fill="var(--c)"/>
-        <circle cx="50" cy="50" r="4"  fill="white" opacity="0.95"/>
+      <!-- Comet streak tails radiating outward -->
+      <g class="cs-comets">
+        <line class="cs-ct" x1="50" y1="50" x2="14" y2="14" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        <line class="cs-ct" x1="50" y1="50" x2="86" y2="14" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        <line class="cs-ct" x1="50" y1="50" x2="86" y2="86" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        <line class="cs-ct" x1="50" y1="50" x2="14" y2="86" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
       </g>
-      <!-- Star points -->
-      <g class="cos-stars">
-        <polygon class="cstar cs1" points="22,14 24,20 30,20 25,24 27,30 22,26 17,30 19,24 14,20 20,20" fill="var(--c)"/>
-        <polygon class="cstar cs2" points="78,12 80,18 86,18 81,22 83,28 78,24 73,28 75,22 70,18 76,18" fill="var(--c)" opacity="0.9"/>
-        <polygon class="cstar cs3" points="80,82 82,88 88,88 83,92 85,98 80,94 75,98 77,92 72,88 78,88" fill="var(--c)" opacity="0.85"/>
-        <polygon class="cstar cs4" points="20,84 22,90 28,90 23,94 25,100 20,96 15,100 17,94 12,90 18,90" fill="var(--c)" opacity="0.85"/>
-        <circle class="cstar-dot" cx="90" cy="50" r="1.8" fill="var(--c)" opacity="0.9"/>
-        <circle class="cstar-dot" cx="10" cy="50" r="1.8" fill="var(--c)" opacity="0.9"/>
-        <circle class="cstar-dot" cx="50" cy="6"  r="1.5" fill="var(--c)" opacity="0.8"/>
-        <circle class="cstar-dot" cx="50" cy="94" r="1.5" fill="var(--c)" opacity="0.8"/>
+      <!-- Supernova core flash -->
+      <g class="cs-core">
+        <circle cx="50" cy="50" r="18" fill="var(--c)" opacity="0.6" style="filter:blur(4px)"/>
+        <circle cx="50" cy="50" r="11" fill="var(--c)"/>
+        <circle cx="50" cy="50" r="6"  fill="white" opacity="0.95"/>
+      </g>
+      <!-- Exploding star points at the corners -->
+      <g class="cs-stars">
+        <polygon class="cs-star csA" points="22,14 24,20 30,20 25,24 27,30 22,26 17,30 19,24 14,20 20,20" fill="var(--c)"/>
+        <polygon class="cs-star csB" points="78,12 80,18 86,18 81,22 83,28 78,24 73,28 75,22 70,18 76,18" fill="var(--c)" opacity="0.95"/>
+        <polygon class="cs-star csC" points="80,82 82,88 88,88 83,92 85,98 80,94 75,98 77,92 72,88 78,88" fill="var(--c)" opacity="0.9"/>
+        <polygon class="cs-star csD" points="20,84 22,90 28,90 23,94 25,100 20,96 15,100 17,94 12,90 18,90" fill="var(--c)" opacity="0.9"/>
+        <circle class="cs-dot" cx="90" cy="50" r="2" fill="var(--c)"/>
+        <circle class="cs-dot" cx="10" cy="50" r="2" fill="var(--c)"/>
+        <circle class="cs-dot" cx="50" cy="6"  r="1.8" fill="var(--c)" opacity="0.85"/>
+        <circle class="cs-dot" cx="50" cy="94" r="1.8" fill="var(--c)" opacity="0.85"/>
+        <!-- Stardust scatter -->
+        <circle class="cs-dust" cx="34" cy="34" r="1.2" fill="var(--c)" opacity="0.7"/>
+        <circle class="cs-dust" cx="66" cy="34" r="1.2" fill="var(--c)" opacity="0.7"/>
+        <circle class="cs-dust" cx="34" cy="66" r="1.2" fill="var(--c)" opacity="0.7"/>
+        <circle class="cs-dust" cx="66" cy="66" r="1.2" fill="var(--c)" opacity="0.7"/>
       </g>
     </svg>
 
@@ -2986,4 +3026,52 @@
 @keyframes hh-rays     { 0% { transform: scale(0); opacity: 0; } 25% { transform: scale(1.2); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 18px var(--c)); } 70% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(0.9); opacity: 0; } }
 @keyframes hh-core     { 0% { transform: scale(0); opacity: 0; filter: brightness(1); } 30% { transform: scale(1.5); opacity: 1; filter: brightness(4.5) drop-shadow(0 0 24px var(--c)); } 70% { transform: scale(1.1); opacity: 0.95; } 100% { transform: scale(0.8); opacity: 0; } }
 @keyframes hh-mote-rise{ 0% { transform: translateY(8px) scale(0); opacity: 0; } 30% { transform: translateY(0) scale(1.4); opacity: 1; filter: brightness(2); } 100% { transform: translateY(-30px) scale(0.5); opacity: 0; } }
+
+/* ─── ICE (revamp) ───────────────────────────────────────────────── */
+.ic-bloom  { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.ic-rays   { transform-origin: 50% 50%; animation: ic-rays 0.85s ease-out forwards; }
+.ic-shards { transform-origin: 50% 50%; animation: ic-shards 0.85s ease-out forwards; }
+.ic-sh     { transform-origin: 50% 50%; transform-box: fill-box; animation: ic-shard 0.55s ease-out forwards; opacity: 0; }
+.ic-shards .ish1 { animation-delay: 0.08s; }
+.ic-shards .ish2 { animation-delay: 0.11s; }
+.ic-shards .ish3 { animation-delay: 0.14s; }
+.ic-shards .ish4 { animation-delay: 0.17s; }
+.ic-shards .ish5 { animation-delay: 0.20s; }
+.ic-shards .ish6 { animation-delay: 0.23s; }
+.ic-core   { transform-origin: 50% 50%; animation: ic-core 0.85s ease-out forwards; }
+.ic-frost  { transform-origin: center; transform-box: fill-box; animation: ic-frost 0.7s ease-out forwards; opacity: 0; }
+.fc2 { animation-delay: 0.22s; }
+.fc3 { animation-delay: 0.24s; }
+.fc4 { animation-delay: 0.26s; }
+.fc5 { animation-delay: 0.28s; }
+.fc6 { animation-delay: 0.30s; }
+.fc7 { animation-delay: 0.32s; }
+.fc8 { animation-delay: 0.34s; }
+@keyframes ic-rays   { 0% { transform: scale(0); opacity: 0; } 25% { transform: scale(1.2); opacity: 1; filter: brightness(2.5); } 70% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(0.9); opacity: 0; } }
+@keyframes ic-shards { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes ic-shard  { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.15); opacity: 1; filter: brightness(2); } 100% { transform: scale(0.95); opacity: 0; } }
+@keyframes ic-core   { 0% { transform: scale(0) rotate(-45deg); opacity: 0; } 30% { transform: scale(1.4) rotate(20deg); opacity: 1; filter: brightness(3) drop-shadow(0 0 18px var(--c)); } 100% { transform: scale(0.9) rotate(0); opacity: 0; } }
+@keyframes ic-frost  { 0% { transform: scale(0); opacity: 0; } 45% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(0.5); opacity: 0; } }
+
+/* ─── COSMIC (revamp) ────────────────────────────────────────────── */
+.cs-bloom  { transform-origin: 50% 50%; animation: sh-bloom 0.95s ease-out forwards; opacity: 0; }
+.cs-spiral { transform-origin: 50% 50%; animation: cs-spiral 1.1s ease-out forwards; }
+.cs-comets { transform-origin: 50% 50%; animation: cs-comets 0.85s ease-out forwards; }
+.cs-ct     { stroke-dasharray: 70; stroke-dashoffset: 70; animation: cs-comet 0.6s 0.10s ease-out forwards; }
+.cs-comets line:nth-child(2) { animation-delay: 0.13s; }
+.cs-comets line:nth-child(3) { animation-delay: 0.16s; }
+.cs-comets line:nth-child(4) { animation-delay: 0.19s; }
+.cs-core   { transform-origin: 50% 50%; animation: cs-core 0.9s ease-out forwards; }
+.cs-star   { transform-origin: center; transform-box: fill-box; animation: cs-twinkle 0.7s ease-out forwards; opacity: 0; }
+.cs-stars .csA { animation-delay: 0.10s; }
+.cs-stars .csB { animation-delay: 0.14s; }
+.cs-stars .csC { animation-delay: 0.18s; }
+.cs-stars .csD { animation-delay: 0.22s; }
+.cs-dot    { transform-origin: center; transform-box: fill-box; animation: spark-pop 0.5s 0.26s ease-out forwards; opacity: 0; }
+.cs-dust   { transform-origin: center; transform-box: fill-box; animation: cs-twinkle 0.55s 0.30s ease-out forwards; opacity: 0; }
+@keyframes cs-spiral  { 0% { transform: scale(0.3) rotate(0); opacity: 0; } 35% { transform: scale(1.25) rotate(-60deg); opacity: 1; filter: brightness(2); } 100% { transform: scale(1.4) rotate(-180deg); opacity: 0; } }
+@keyframes cs-comets  { 0%,100% { opacity: 1; } }
+@keyframes cs-comet   { 0% { stroke-dashoffset: 70; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes cs-core    { 0% { transform: scale(0); opacity: 0; filter: brightness(1); } 30% { transform: scale(1.6); opacity: 1; filter: brightness(5) drop-shadow(0 0 28px var(--c)); } 70% { transform: scale(1.2); opacity: 0.95; } 100% { transform: scale(0.8); opacity: 0; } }
+@keyframes cs-twinkle { 0% { transform: scale(0) rotate(0); opacity: 0; } 50% { transform: scale(1.5) rotate(45deg); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(0.6) rotate(90deg); opacity: 0; } }
 </style>
