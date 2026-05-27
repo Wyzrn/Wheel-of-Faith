@@ -22,7 +22,7 @@
 
   const COLORS = ['#E63946','#457B9D','#2A9D8F','#E9C46A','#F4A261','#264653','#6A0572','#0077B6']
 
-  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false, spinTrigger = 0, replayTrigger = 0, resolveLandingColors, onLanded }: {
+  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false, spinTrigger = 0, replayTrigger = 0, resolveLandingColors, onLanded, wheelSignature = null }: {
     segments: WeightedSegment[]
     onSpinComplete: (resultIndex: number, resultLabel: string) => void
     // Fires when the wheel finishes landing, just BEFORE celebration mounts
@@ -37,6 +37,12 @@
     spinSpeedMultiplier?: number
     cursedTheme?: boolean
     spinTrigger?: number
+    // Per-race visual signature. When set to a race label, the SVG root
+    // gets a matching .wheel-sig-* class that applies a bespoke CSS
+    // treatment (Eldritch glitches, Fire Genasi heat distortion, Air
+    // Genasi floating wheel, etc.). Set after the race spin lands and
+    // cleared between sessions. Null = standard wheel.
+    wheelSignature?: string | null
     // Increment to re-fire the most recent celebration (Replay button on
     // the reveal panel). No-op if no prior celebration was captured.
     replayTrigger?: number
@@ -383,6 +389,36 @@
   const _fxMult = effectsMultiplier()
   const _perfTier = getPerfTier()
 
+  // Maps a race label to its wheel-signature CSS class. The class drives the
+  // bespoke visual treatment authored in app.css — Eldritch wheel-glitches,
+  // Fire Genasi heat distortion, Air Genasi floating wheel, etc. Null when
+  // either the wheelSignature prop is unset or the race has no special
+  // treatment (most races still use the default wheel look).
+  function signatureClass(race: string | null | undefined): string {
+    if (!race) return ''
+    const map: Record<string, string> = {
+      'Eldritch Being':  'wheel-sig-eldritch',
+      'Creator':         'wheel-sig-creator',
+      'Primordial':      'wheel-sig-primordial',
+      'God':             'wheel-sig-god',
+      'Time Lord':       'wheel-sig-timelord',
+      'Vampire':         'wheel-sig-vampire',
+      'Demon':           'wheel-sig-demon',
+      'Genasi (Fire)':   'wheel-sig-fire-genasi',
+      'Genasi (Water)':  'wheel-sig-water-genasi',
+      'Genasi (Air)':    'wheel-sig-air-genasi',
+      'Genasi (Earth)':  'wheel-sig-earth-genasi',
+      'Saiyan':          'wheel-sig-saiyan',
+      'Kryptonian':      'wheel-sig-kryptonian',
+      'Viltrumite':      'wheel-sig-viltrumite',
+      'Mindflayer':      'wheel-sig-mindflayer',
+      'Hollow / Arrancar': 'wheel-sig-hollow',
+      'Angel':           'wheel-sig-angel',
+    }
+    return map[race] ?? ''
+  }
+  let _wheelSigClass = $derived(signatureClass(wheelSignature))
+
   function spawnParticles(normalizedSpeed: number) {
     if (normalizedSpeed < 0.04 || !particleCanvas || !svgEl) return
     if (_perfTier === 'low') return  // skip particle spawn entirely on low-end
@@ -664,6 +700,7 @@
     <svg
       bind:this={svgEl}
       viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
+      class={_wheelSigClass}
       style="grid-area: 1/1; width: 100%; height: 100%; overflow: visible;"
       aria-label="Spinning wheel"
       role="img"

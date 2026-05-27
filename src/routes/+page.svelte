@@ -2979,6 +2979,7 @@
               spinTrigger={spinTriggerKey}
               replayTrigger={replayTriggerKey}
               resolveLandingColors={resolveLandingColors}
+              wheelSignature={results.find(r => r.category === 'race')?.resultLabel ?? null}
               onLanded={({ centerX, centerY }) => {
                 wheelCenterX = centerX
                 wheelCenterY = centerY

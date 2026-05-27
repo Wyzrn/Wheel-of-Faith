@@ -1350,6 +1350,7 @@
           effectsEnabled={settings.effectsEnabled}
           spinSpeedMultiplier={settings.spinSpeed}
           replayTrigger={replayTriggerKey}
+          wheelSignature={results.find(r => r.category === 'race')?.resultLabel ?? null}
           resolveLandingColors={(_i, label) => resolveLandingForCategory(currentDef?.category, label)}
           onLanded={({ centerX, centerY }) => {
             wheelCenterX = centerX

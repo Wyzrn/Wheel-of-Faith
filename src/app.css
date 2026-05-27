@@ -825,3 +825,177 @@ a:focus-visible {
   outline-color: #f0c040;
   box-shadow: 0 0 0 4px rgba(240, 192, 64, 0.22);
 }
+
+/* ──────────────────────────────────────────────────────────────────────
+   Per-race wheel signatures (Phase 5)
+   Each `.wheel-sig-*` class is applied to the SVG root of SpinWheel
+   after the race spin lands. Treatments are subtle ambient effects
+   ON THE WHEEL ITSELF (not landing celebrations) so the player feels
+   "this run is different" before any roll fires. Keep effects under
+   ~5% CPU on mid-tier devices.
+
+   Convention: prefer transform + filter + box-shadow (compositor-only).
+   Avoid layout-affecting properties or per-segment selectors that
+   would force restyle across all wheel paths every frame.
+   ────────────────────────────────────────────────────────────────── */
+
+/* ── ELDRITCH BEING — wheel-glitches: hue rotation + chromatic
+   aberration on a slow loop. Sells "reality is fraying around this
+   character" without breaking the spin physics. */
+@keyframes wheelSigEldritch {
+  0%, 100% { filter: hue-rotate(0deg) drop-shadow(2px 0 0 rgba(255,0,80,0.55)) drop-shadow(-2px 0 0 rgba(0,255,200,0.45)); }
+  35%      { filter: hue-rotate(40deg) drop-shadow(-3px 0 0 rgba(255,0,80,0.55)) drop-shadow(3px 0 0 rgba(0,255,200,0.45)); }
+  65%      { filter: hue-rotate(-20deg) drop-shadow(3px 1px 0 rgba(255,0,80,0.55)) drop-shadow(-3px -1px 0 rgba(0,255,200,0.45)); }
+}
+@keyframes wheelSigEldritchJitter {
+  0%, 92%, 100% { transform: translate(0,0); }
+  93%           { transform: translate(-2px, 1px); }
+  94%           { transform: translate(2px, -1px); }
+  95%           { transform: translate(-1px, 0); }
+  96%           { transform: translate(0, 1px); }
+}
+.wheel-sig-eldritch {
+  animation: wheelSigEldritch 4.2s ease-in-out infinite,
+             wheelSigEldritchJitter 5.6s linear infinite;
+}
+
+/* ── CREATOR — gradient sweep + golden over-saturation. The wheel
+   looks like it's being painted-into-existence on every frame. */
+@keyframes wheelSigCreator {
+  0%, 100% { filter: saturate(1.0) brightness(1.0) drop-shadow(0 0 0 transparent); }
+  50%       { filter: saturate(1.18) brightness(1.08) drop-shadow(0 0 32px rgba(240,192,64,0.45)); }
+}
+.wheel-sig-creator { animation: wheelSigCreator 3.6s ease-in-out infinite; }
+
+/* ── PRIMORDIAL — pearlescent shimmer. White-grey aura that
+   slowly cycles through the gradient palette. */
+@keyframes wheelSigPrimordial {
+  0%, 100% { filter: brightness(1.0) drop-shadow(0 0 16px rgba(255,255,255,0.25)); }
+  50%       { filter: brightness(1.05) drop-shadow(0 0 36px rgba(255,255,255,0.55)); }
+}
+.wheel-sig-primordial { animation: wheelSigPrimordial 5s ease-in-out infinite; }
+
+/* ── GOD — divine radiance. Warm light haloed around the wheel. */
+@keyframes wheelSigGod {
+  0%, 100% { filter: drop-shadow(0 0 14px rgba(253,224,71,0.32)); }
+  50%       { filter: drop-shadow(0 0 32px rgba(253,224,71,0.6)); }
+}
+.wheel-sig-god { animation: wheelSigGod 3.8s ease-in-out infinite; }
+
+/* ── TIME LORD — chromatic aberration on a slower cycle.
+   The wheel looks slightly displaced in time. */
+@keyframes wheelSigTimeLord {
+  0%, 100% { filter: drop-shadow(1px 0 0 rgba(0,200,255,0.55)) drop-shadow(-1px 0 0 rgba(255,80,180,0.55)); }
+  50%       { filter: drop-shadow(2px 0 0 rgba(0,200,255,0.65)) drop-shadow(-2px 0 0 rgba(255,80,180,0.65)); }
+}
+.wheel-sig-timelord { animation: wheelSigTimeLord 5.5s ease-in-out infinite; }
+
+/* ── VAMPIRE — blood-red vignette pulse. */
+@keyframes wheelSigVampire {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(190,24,93,0.30)); }
+  50%       { filter: drop-shadow(0 0 36px rgba(190,24,93,0.6)) saturate(1.12); }
+}
+.wheel-sig-vampire { animation: wheelSigVampire 4.4s ease-in-out infinite; }
+
+/* ── DEMON — hellfire glow at edges. */
+@keyframes wheelSigDemon {
+  0%, 100% { filter: drop-shadow(0 0 14px rgba(220,38,38,0.4)) drop-shadow(0 0 28px rgba(249,115,22,0.25)); }
+  50%       { filter: drop-shadow(0 0 28px rgba(220,38,38,0.7)) drop-shadow(0 0 48px rgba(249,115,22,0.4)); }
+}
+.wheel-sig-demon { animation: wheelSigDemon 3.2s ease-in-out infinite; }
+
+/* ── FIRE GENASI — heat distortion. Wheel ripples like air over
+   hot pavement. Implemented as a wobbly transform + warm aura. */
+@keyframes wheelSigFireGenasi {
+  0%, 100% { transform: skew(0deg, 0deg);     filter: drop-shadow(0 0 18px rgba(251,146,60,0.5)); }
+  25%       { transform: skew(0.4deg, -0.2deg); }
+  50%       { transform: skew(-0.3deg, 0.3deg); filter: drop-shadow(0 0 30px rgba(251,146,60,0.75)); }
+  75%       { transform: skew(0.2deg, 0.2deg); }
+}
+.wheel-sig-fire-genasi { animation: wheelSigFireGenasi 2.4s ease-in-out infinite; }
+
+/* ── WATER GENASI — slow blue ripple. Gentle pulse, no skew. */
+@keyframes wheelSigWaterGenasi {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(56,189,248,0.35)) hue-rotate(0deg); }
+  50%       { filter: drop-shadow(0 0 32px rgba(56,189,248,0.6))  hue-rotate(-8deg); }
+}
+.wheel-sig-water-genasi { animation: wheelSigWaterGenasi 4.6s ease-in-out infinite; }
+
+/* ── AIR GENASI — floating wheel. Subtle vertical sine + slight
+   rotational sway so the wheel appears weightless. */
+@keyframes wheelSigAirGenasiFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%       { transform: translateY(-6px) rotate(0.3deg); }
+}
+@keyframes wheelSigAirGenasiGlow {
+  0%, 100% { filter: drop-shadow(0 0 14px rgba(165,243,252,0.4)); }
+  50%       { filter: drop-shadow(0 0 28px rgba(165,243,252,0.6)); }
+}
+.wheel-sig-air-genasi {
+  animation: wheelSigAirGenasiFloat 4.8s ease-in-out infinite,
+             wheelSigAirGenasiGlow 3.6s ease-in-out infinite;
+}
+
+/* ── EARTH GENASI — heavy/grounded. Slight settle into a fixed
+   position, deep stone-coloured shadow. No motion. */
+.wheel-sig-earth-genasi {
+  filter: drop-shadow(0 6px 0 rgba(20,20,20,0.7)) drop-shadow(0 0 18px rgba(120,80,40,0.35));
+}
+
+/* ── SAIYAN — golden aura, evokes Super Saiyan / Kaioken charge. */
+@keyframes wheelSigSaiyan {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(253,224,71,0.45)); }
+  50%       { filter: drop-shadow(0 0 38px rgba(253,224,71,0.75)) drop-shadow(0 0 60px rgba(249,115,22,0.35)); }
+}
+.wheel-sig-saiyan { animation: wheelSigSaiyan 2.8s ease-in-out infinite; }
+
+/* ── KRYPTONIAN — solar yellow + red cape inner glow. */
+@keyframes wheelSigKryptonian {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(253,224,71,0.5)) drop-shadow(0 0 28px rgba(220,38,38,0.2)); }
+  50%       { filter: drop-shadow(0 0 32px rgba(253,224,71,0.75)) drop-shadow(0 0 44px rgba(220,38,38,0.35)); }
+}
+.wheel-sig-kryptonian { animation: wheelSigKryptonian 4s ease-in-out infinite; }
+
+/* ── VILTRUMITE — imperial purple intensity. Less playful than
+   Saiyan/Kryptonian — feels like inevitable conquest. */
+@keyframes wheelSigViltrumite {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(124,58,237,0.5)) brightness(1.0); }
+  50%       { filter: drop-shadow(0 0 32px rgba(124,58,237,0.78)) brightness(1.06); }
+}
+.wheel-sig-viltrumite { animation: wheelSigViltrumite 3.4s ease-in-out infinite; }
+
+/* ── MINDFLAYER — psychic green-purple ripple. Suggests something
+   is reading thoughts from inside the wheel. */
+@keyframes wheelSigMindflayer {
+  0%, 100% { filter: drop-shadow(0 0 16px rgba(126,200,80,0.5)) hue-rotate(0deg); }
+  50%       { filter: drop-shadow(0 0 28px rgba(168,85,247,0.6))  hue-rotate(40deg); }
+}
+.wheel-sig-mindflayer { animation: wheelSigMindflayer 5s ease-in-out infinite; }
+
+/* ── HOLLOW/ARRANCAR — spiritual pressure (reiatsu) — black core,
+   white-light edges. */
+@keyframes wheelSigHollow {
+  0%, 100% { filter: drop-shadow(0 0 14px rgba(255,255,255,0.4)) drop-shadow(0 0 40px rgba(0,0,0,0.7)); }
+  50%       { filter: drop-shadow(0 0 28px rgba(255,255,255,0.65)) drop-shadow(0 0 60px rgba(0,0,0,0.85)); }
+}
+.wheel-sig-hollow { animation: wheelSigHollow 3.8s ease-in-out infinite; }
+
+/* ── ANGEL — pure white halo. Soft, constant, no jitter. */
+@keyframes wheelSigAngel {
+  0%, 100% { filter: drop-shadow(0 0 22px rgba(255,255,224,0.5)); }
+  50%       { filter: drop-shadow(0 0 42px rgba(255,255,224,0.78)) brightness(1.05); }
+}
+.wheel-sig-angel { animation: wheelSigAngel 5.2s ease-in-out infinite; }
+
+/* Performance: kill all wheel-signature animations on devices that
+   respect prefers-reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  .wheel-sig-eldritch,    .wheel-sig-creator,    .wheel-sig-primordial,
+  .wheel-sig-god,         .wheel-sig-timelord,   .wheel-sig-vampire,
+  .wheel-sig-demon,       .wheel-sig-fire-genasi,.wheel-sig-water-genasi,
+  .wheel-sig-air-genasi,  .wheel-sig-saiyan,     .wheel-sig-kryptonian,
+  .wheel-sig-viltrumite,  .wheel-sig-mindflayer, .wheel-sig-hollow,
+  .wheel-sig-angel {
+    animation: none !important;
+  }
+}
