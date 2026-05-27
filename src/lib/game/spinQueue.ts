@@ -360,8 +360,10 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
       return titles as WeightedSegment[]
 
     case 'possessionRace':
-      // Which entity/race is possessing the character — draws from the full race pool
-      return races as WeightedSegment[]
+      // Which entity/race is possessing the character — draws from the full
+      // race pool minus Hybrid (Hybrid has no real abilities/classes of its
+      // own, so possessing a Hybrid would graft nothing onto the character).
+      return (races as WeightedSegment[]).filter(s => s.label !== 'Hybrid')
 
     case 'possessionStrength':
       return POSSESSION_STRENGTH_POOL

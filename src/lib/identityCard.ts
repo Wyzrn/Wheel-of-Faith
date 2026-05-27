@@ -260,6 +260,16 @@ export function buildArchetypeIdentityCard(label: string): IdentityCard | null {
 
   const perks: IdentityPerk[] = []
 
+  // Possessed is a twist archetype — surface the dynamic flow explicitly
+  // so the player knows the possession % determines how much they graft on.
+  if (label === 'Possessed') {
+    perks.push({
+      icon: 'psychology_alt',
+      label: 'Possession Sub-Wheels',
+      detail: 'Spins for a possessing race, then for % strength. Higher % grafts more of that race onto you — traits, class, awakening.',
+    })
+  }
+
   // Gimmicks first — combat passives are the archetype's signature.
   for (const gid of ARCHETYPE_GIMMICKS[label] ?? []) {
     const g = GIMMICKS[gid]

@@ -358,13 +358,28 @@
   }
 
   // ── Stat grants applied when possessionStrength lands ────────────────────
+  // Each tier guarantees AT LEAST one stat boost from the possessing race
+  // (per Segment 2.5 C.2 spec). Higher % = more bonuses.
   const POSSESSION_GRANTS: Record<string, Record<string, 'statBonus' | 'statPenalty'>> = {
-    'Barely a Whisper (5%)':        {},
+    'Barely a Whisper (5%)':        { charisma: 'statBonus' },
     'A Flicker of Influence (20%)': { charisma: 'statBonus' },
     'Shared Consciousness (40%)':   { charisma: 'statBonus', iq: 'statBonus' },
     'Dominant Presence (60%)':      { strength: 'statBonus', charisma: 'statBonus' },
     'Consuming Takeover (80%)':     { strength: 'statBonus', speed: 'statBonus', charisma: 'statBonus' },
     'Full Possession (100%)':       { strength: 'statBonus', speed: 'statBonus', iq: 'statBonus', durability: 'statBonus' },
+  }
+
+  // ── Possession sub-spin map ──────────────────────────────────────────────
+  // How many racial abilities + whether to splice a class/transformation
+  // spin from the POSSESSING race when this tier lands. The higher the
+  // possession %, the more of the possessing race's identity is grafted on.
+  const POSSESSION_SPLICE: Record<string, { abilities: number; classSpin: boolean; transformation: boolean }> = {
+    'Barely a Whisper (5%)':        { abilities: 0, classSpin: false, transformation: false },
+    'A Flicker of Influence (20%)': { abilities: 1, classSpin: false, transformation: false },
+    'Shared Consciousness (40%)':   { abilities: 1, classSpin: false, transformation: false },
+    'Dominant Presence (60%)':      { abilities: 2, classSpin: true,  transformation: false },
+    'Consuming Takeover (80%)':     { abilities: 2, classSpin: true,  transformation: false },
+    'Full Possession (100%)':       { abilities: 3, classSpin: true,  transformation: true  },
   }
 
   // ── Tier → color map (used by result overlay and sidebar badges) ──────────
@@ -1041,11 +1056,49 @@
       for (const [stat, bonusType] of Object.entries(grants)) {
         pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
       }
-      if (grantKeys.length > 0) {
-        showAnnouncement = `${resultLabel} — the possession grants ${grantKeys.length} stat modifier${grantKeys.length > 1 ? 's' : ''}!`
-      } else {
-        showAnnouncement = `${resultLabel} — the possession barely stirs within you.`
+
+      // ── Splice race-derived sub-spins from the POSSESSING race ─────────
+      // Higher possession % grafts more of the possessing race's identity
+      // onto the character. Each spliced slot carries forRace=possessing
+      // race so its segment lookups hit the right pool (the player's own
+      // race is unaffected).
+      const possessingRaceLabel = results.find(r => r.category === 'possessionRace')?.resultLabel
+      const splice = POSSESSION_SPLICE[resultLabel] ?? { abilities: 0, classSpin: false, transformation: false }
+      const slots: SpinDefinition[] = []
+      if (possessingRaceLabel) {
+        const possessingRace = getRace(possessingRaceLabel)
+        for (let i = 0; i < splice.abilities; i++) {
+          slots.push({
+            category: 'racialAbility' as const,
+            displayName: splice.abilities > 1 ? `${possessingRaceLabel} Trait ${i + 1}` : `${possessingRaceLabel} Trait`,
+            forRace: possessingRaceLabel,
+          })
+        }
+        if (splice.classSpin && possessingRace?.classPool?.length) {
+          slots.push({
+            category: 'raceClass' as const,
+            displayName: `${possessingRaceLabel} Aspect`,
+            forRace: possessingRaceLabel,
+          })
+        }
+        if (splice.transformation && possessingRace?.transformationPool?.length) {
+          slots.push({
+            category: 'raceTransformation' as const,
+            displayName: `${possessingRaceLabel} Awakening`,
+            forRace: possessingRaceLabel,
+          })
+        }
+        if (slots.length > 0) spinQueue.splice(currentSpinIndex + 1, 0, ...slots)
       }
+
+      const parts: string[] = []
+      if (grantKeys.length > 0) parts.push(`${grantKeys.length} stat modifier${grantKeys.length > 1 ? 's' : ''}`)
+      if (splice.abilities > 0) parts.push(`${splice.abilities} ${possessingRaceLabel} trait${splice.abilities > 1 ? 's' : ''}`)
+      if (splice.classSpin) parts.push(`${possessingRaceLabel} aspect`)
+      if (splice.transformation) parts.push(`${possessingRaceLabel} awakening`)
+      showAnnouncement = parts.length > 0
+        ? `${resultLabel} — grants ${parts.join(', ')}!`
+        : `${resultLabel} — the possession barely stirs within you.`
     } else if (def.category === 'archetype') {
       const archetype = getArchetype(resultLabel)
       const count = archetype?.abilitySpinCount ?? 1
