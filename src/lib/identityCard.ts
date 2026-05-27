@@ -11,6 +11,7 @@ import type { ElementType, ItemGrade, Race } from '$lib/content/types'
 import { GIMMICKS, RACE_GIMMICKS, ARCHETYPE_GIMMICKS } from '$lib/gimmicks'
 import { backstories } from '$lib/content/backstories'
 import { titles } from '$lib/content/titles'
+import { RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS, twistByKey } from '$lib/twists'
 
 export interface IdentityPerk {
   // Material Symbols icon name
@@ -147,6 +148,19 @@ export function buildRaceIdentityCard(label: string): IdentityCard | null {
     })
   }
 
+  // Twist trigger — surface that this race spawns a unique sub-wheel.
+  const raceTwistKey = RACE_TWIST_TRIGGERS[label]
+  if (raceTwistKey) {
+    const t = twistByKey(raceTwistKey)
+    if (t) {
+      perks.push({
+        icon: 'casino',
+        label: `${t.title} Sub-Wheel`,
+        detail: t.prompt ?? 'A unique sub-wheel spawns when this race lands.',
+      })
+    }
+  }
+
   // Gimmicks first — these are the race's signature COMBAT mechanic, not
   // just stat tilt. Lead with them so the player sees Saiyan's Last Stand
   // before they see "+2 weapon spins."
@@ -272,6 +286,19 @@ export function buildArchetypeIdentityCard(label: string): IdentityCard | null {
       label: 'Possession Sub-Wheels',
       detail: 'Spins for a possessing race, then for % strength. Higher % grafts more of that race onto you — traits, class, awakening.',
     })
+  }
+
+  // Twist trigger — surface that this archetype spawns a unique sub-wheel.
+  const arcTwistKey = ARCHETYPE_TWIST_TRIGGERS[label]
+  if (arcTwistKey) {
+    const t = twistByKey(arcTwistKey)
+    if (t) {
+      perks.push({
+        icon: 'casino',
+        label: `${t.title} Sub-Wheel`,
+        detail: t.prompt ?? 'A unique sub-wheel spawns when this archetype lands.',
+      })
+    }
   }
 
   // Gimmicks first — combat passives are the archetype's signature.

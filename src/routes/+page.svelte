@@ -39,6 +39,7 @@
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
   import { buildIdentityCard } from '$lib/identityCard'
+  import { twistForRace, twistForArchetype, twistByKey, RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS } from '$lib/twists'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   const _powerLookup      = new Map(powersPool.map(p => [p.label, p]))
   const _weaponLookup     = new Map(weaponsPool.map(w => [w.label, w]))
@@ -75,6 +76,10 @@
   let pendingStatBonuses = $state<Record<string, Array<'statBonus' | 'statPenalty'>>>({})
   // Class/subType/transformation power pool override — used only by racial bonus power spins
   let activePowerPool = $state<{ label: string; weight: number }[]>([])
+  // Element locked in by a twist sub-spin (Bender: Fire, Demi-God: Storms,
+  // Cursed Sorcerer: domain). Power + ability spins downstream prefer this
+  // element when set. Null = no lock.
+  let lockedElement = $state<import('$lib/content/types').ElementType | null>(null)
   // Tracks cumulative tier shifts per stat so rerolls can re-apply bonuses
   let statBonusOffsets = $state<Record<string, number>>({})
   // Track which ability labels have been used to enable greyed-out deduplication
@@ -450,9 +455,16 @@
     armorEnchantment:    55,
     gender:             330,
     corruptionReveal:    40,
+    twistSpin:           45,  // fallback only; twistSpin uses twist.hue when set
   }
 
-  let currentCategoryHue = $derived(CATEGORY_HUES[currentDef?.category ?? ''])
+  // Per-twist hue override (twistSpin uses the registered hue), otherwise
+  // fall back to the category default.
+  let currentCategoryHue = $derived(
+    currentDef?.category === 'twistSpin' && currentDef.twistKind
+      ? (twistByKey(currentDef.twistKind)?.hue ?? CATEGORY_HUES.twistSpin ?? 45)
+      : CATEGORY_HUES[currentDef?.category ?? ''],
+  )
   let reversedResults = $derived([...results].reverse())
 
   // ── Landing celebration color/intensity resolver ─────────────────────────
@@ -473,6 +485,12 @@
     // filtered out so we don't recurse (Hybrid → Hybrid → Hybrid → ...).
     if (def.category === 'race' && def.isHybridParent) {
       return getSegmentsForCategory('race').filter(s => s.label !== 'Hybrid')
+    }
+
+    // Twist spin — pull segments from the twist registry.
+    if (def.category === 'twistSpin' && def.twistKind) {
+      const twist = twistByKey(def.twistKind)
+      if (twist) return twist.segments
     }
 
     // Use race-specific ability pool — prefer class or subType abilities when available.
@@ -622,11 +640,20 @@
 
     const baseSegments = getSegmentsForCategory(def.category)
 
-    // Power category: racial bonus spins use activePowerPool; the global 'power' spin always uses global pool
+    // Power category: racial bonus spins use activePowerPool; the global 'power' spin always uses global pool.
+    // If a twist locked an element (Bender, Demi-God, Cursed Sorcerer
+    // domain, etc.), boost matching-element powers 3x so they win more often.
     if (def.category === 'power') {
       const pool = (def.useRacialPowerPool && activePowerPool.length > 0) ? activePowerPool : baseSegments
       const usedPowerLabels = new Set(results.filter(r => r.category === 'power').map(r => r.resultLabel))
-      return pool.filter(s => !usedPowerLabels.has(s.label))
+      let segs = pool.filter(s => !usedPowerLabels.has(s.label))
+      if (lockedElement) {
+        segs = segs.map(s => {
+          const el = (s as { element?: string }).element
+          return el === lockedElement ? { ...s, weight: s.weight * 3 } : s
+        })
+      }
+      return segs
     }
 
     // Stat categories: apply tier rarity weights + race stat modifiers + transformation bonus
@@ -942,6 +969,22 @@
         insertSlots.push({ category: 'weakness' as const, displayName: weaknessCount > 1 ? `Weakness ${i + 1}` : 'Weakness', forRace })
       }
 
+      // Twist sub-wheel splice — for races with a registered twist (God →
+      // worshippers, Saiyan → power level, Bender → element, etc.), prepend
+      // the twist slot at the front of the extras so it lands BEFORE the
+      // racial abilities/weapons that depend on the locked element.
+      const raceTwistKey = RACE_TWIST_TRIGGERS[resultLabel]
+      if (raceTwistKey) {
+        const twist = twistByKey(raceTwistKey)
+        if (twist) {
+          insertSlots.unshift({
+            category: 'twistSpin' as const,
+            displayName: `${resultLabel}: ${twist.title}`,
+            twistKind: raceTwistKey,
+          })
+        }
+      }
+
       spinQueue.splice(currentSpinIndex + 1, 0, ...insertSlots)
 
       // Dark races raise the corruption meter
@@ -1048,6 +1091,31 @@
         }
         // Normal range (5'4"–6'3") — no modifiers
       }
+    } else if (def.category === 'twistSpin' && def.twistKind) {
+      // Resolve the twist effect — applies stat bonuses and optionally
+      // locks an element for downstream power spins. The twist itself
+      // doesn't splice further spins; effects are folded into pending
+      // grants and lockedElement that influence later resolution.
+      const twist = twistByKey(def.twistKind)
+      const eff = twist?.effects[resultLabel]
+      if (eff?.statBonusGrants) {
+        for (const [stat, bonusType] of Object.entries(eff.statBonusGrants)) {
+          pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+        }
+      }
+      if (eff?.lockElement) {
+        // Tag the activePowerPool source so race/bonus power spins prefer
+        // the locked element. Stored as a tag-only marker — actual filtering
+        // happens in the racialAbility / power segment derivations.
+        lockedElement = eff.lockElement
+      }
+      const grantedCount = eff?.statBonusGrants ? Object.keys(eff.statBonusGrants).length : 0
+      const parts: string[] = []
+      if (grantedCount > 0) parts.push(`${grantedCount} stat modifier${grantedCount > 1 ? 's' : ''}`)
+      if (eff?.lockElement) parts.push(`${eff.lockElement} element bias`)
+      showAnnouncement = parts.length > 0
+        ? `${resultLabel}: ${parts.join(' + ')}.`
+        : `${resultLabel}: ${eff?.flavor ?? 'fate has spoken.'}`
     } else if (def.category === 'weakness') {
       corruptionScore += 1
     } else if (def.category === 'racialAbility') {
@@ -1151,6 +1219,22 @@
           category: bonusSpin.category as SpinCategory,
           displayName: bonusSpin.displayName,
         })
+      }
+
+      // Archetype twist splice (Time Traveler → era, Chaos Gremlin → chaos
+      // roll, Cursed Sorcerer → domain, etc.). Prepended so it lands before
+      // the archetype's ability spins, allowing the twist to lock element
+      // before downstream powers are rolled.
+      const arcTwistKey = ARCHETYPE_TWIST_TRIGGERS[resultLabel]
+      if (arcTwistKey) {
+        const twist = twistByKey(arcTwistKey)
+        if (twist) {
+          insertSlots.unshift({
+            category: 'twistSpin' as const,
+            displayName: `${resultLabel}: ${twist.title}`,
+            twistKind: arcTwistKey,
+          })
+        }
       }
 
       // Granted powers — injected directly without a spin

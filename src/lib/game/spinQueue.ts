@@ -141,6 +141,7 @@ export type SpinCategory =
   | 'armorEnchantment'
   | 'gender'
   | 'corruptionReveal'
+  | 'twistSpin'
 
 export interface SpinDefinition {
   category: SpinCategory
@@ -149,6 +150,13 @@ export interface SpinDefinition {
   targetStat?: string  // for statBonus/statPenalty spins: which stat category this bonus modifies
   useRacialPowerPool?: boolean  // if true, power spin draws from activePowerPool instead of global pool
   isReroll?: boolean   // if true, this spin replaces an existing result of the same category
+  // Dynamic twist spin — when a race/archetype triggers a custom sub-wheel
+  // (God worshippers, Saiyan power level, Bender element, etc.), the trigger
+  // splices a slot with twistKind set to a key in TWIST_REGISTRY. The wheel
+  // reads the registered segments + the handler applies registered effects
+  // when the result lands. Lets us add new twists by adding registry entries
+  // without growing SpinCategory each time.
+  twistKind?: string
   // Hybrid race twist: when the player rolls "Hybrid", we splice two extra
   // race spins (the two parents). These slots set this flag so the wheel
   // filters Hybrid itself out of the parent pool (no infinite recursion) and
