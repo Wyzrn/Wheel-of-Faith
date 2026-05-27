@@ -36,3 +36,16 @@ export function bulkRegisterRaceWheels(raceLabel: string, wheels: RaceWheel[] | 
   if (!wheels) return
   for (const w of wheels) registerRaceWheel(raceLabel, w)
 }
+
+/** Returns the description for a specific segment in a race wheel. Used by
+ *  the spin reveal modal so landing on, say, the Saiyan "Battle-Lust"
+ *  segment surfaces its flavour line ("Lives for the next fight…") under
+ *  the result. Returns undefined when no description was authored. */
+export function getRaceWheelSegmentDescription(
+  raceLabel: string, wheelId: string, segmentLabel: string,
+): string | undefined {
+  const wheel = getRaceWheel(raceLabel, wheelId)
+  if (!wheel) return undefined
+  const seg = wheel.segments.find(s => s.label === segmentLabel)
+  return seg?.description
+}

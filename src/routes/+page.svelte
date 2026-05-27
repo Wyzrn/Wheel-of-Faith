@@ -16,7 +16,7 @@
   import { loadSession, saveSession, clearSession, flushSession, createSession } from '$lib/session/store'
   import type { SessionState, SpinResult } from '$lib/session/types'
   import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_LEVEL_POOL, LIMIT_BREAK_SHIFT } from '$lib/game/spinQueue'
-  import { getRaceWheelSegments } from '$lib/game/raceWheelRegistry'
+  import { getRaceWheelSegments, getRaceWheelSegmentDescription } from '$lib/game/raceWheelRegistry'
   import { resolveMutatedSegments, getMutation } from '$lib/game/archetypeMutations'
   import { rollSecretEvent, getEventDef, applyEventToResults, type SecretEventId } from '$lib/game/secretEvents'
   import type { SpinDefinition, SpinCategory } from '$lib/game/spinQueue'
@@ -3023,9 +3023,18 @@
                 last.category === 'backstory' ||
                 last.category === 'title'
               ) ? buildIdentityCard(last.category, last.resultLabel ?? '') : null}
+              {@const raceWheelDef = last.category === 'raceWheel' ? spinQueue[currentSpinIndex] : undefined}
+              {@const raceWheelDesc = (last.category === 'raceWheel' && raceWheelDef?.raceWheelId)
+                ? getRaceWheelSegmentDescription(
+                    raceWheelDef.forRace ?? results.find(r => r.category === 'race')?.resultLabel ?? '',
+                    raceWheelDef.raceWheelId,
+                    last.resultLabel ?? ''
+                  )
+                : undefined}
               {@const resolvedMeta = {
                 ...(itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}),
                 ...(identityCard ? { identityCard } : {}),
+                ...(raceWheelDesc ? { description: raceWheelDesc } : {}),
               } as ResolvedMeta}
               <SpinResultReveal
                 result={last}

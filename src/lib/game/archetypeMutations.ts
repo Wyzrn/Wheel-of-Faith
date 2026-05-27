@@ -348,6 +348,169 @@ registerMutation('Ghoul', 'Anti-Hero', {
   secretEventBias: 1.2,
 })
 
+// ── VAMPIRE × archetype ──────────────────────────────────────────────────
+registerMutation('Vampire', 'Bard', {
+  // Noble vampires — high-society manipulation, charisma-coded.
+  wheelOverrides: {
+    bloodline: [
+      { label: 'Noble',     weight: 6, statBonusGrants: { charisma: 'statBonus', iq: 'statBonus' } },
+      { label: 'Ancient',   weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' } },
+      { label: 'Crimson',   weight: 2, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Shadow',    weight: 1, statBonusGrants: { agility: 'statBonus', speed: 'statBonus', powerMastery: 'statBonus' } },
+    ],
+  },
+  synergyFlavor: 'Noble Vampire — society itself is the hunt.',
+})
+registerMutation('Vampire', 'Berserker', {
+  // Feral vampires — Bloodline biased Feral; Corruption pushed towards Beast-Near.
+  wheelOverrides: {
+    bloodline: [
+      { label: 'Feral',    weight: 6, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', charisma: 'statPenalty' } },
+      { label: 'Crimson',  weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Ancient',  weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' } },
+    ],
+    corruption: [
+      { label: 'Beast-Near', weight: 6, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', iq: 'statPenalty' } },
+      { label: 'Awakening',  weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', charisma: 'statPenalty' } },
+      { label: 'Slipping',   weight: 2, statBonusGrants: { strength: 'statBonus', charisma: 'statPenalty' } },
+    ],
+  },
+  secretEventBias: 1.3,
+  synergyFlavor: 'Feral Vampire — the leash is decorative.',
+})
+
+// ── WEREWOLF × archetype ─────────────────────────────────────────────────
+registerMutation('Werewolf', 'Berserker', {
+  wheelOverrides: {
+    moon: [
+      { label: 'Full Moon', weight: 6, statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus', iq: 'statPenalty' } },
+      { label: 'Gibbous',   weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Crescent',  weight: 2, statBonusGrants: { speed: 'statBonus', agility: 'statBonus' } },
+    ],
+    alpha: [
+      { label: 'Alpha',   weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus', potential: 'statBonus' } },
+      { label: 'Hunter',  weight: 3, statBonusGrants: { fightingSkill: 'statBonus', agility: 'statBonus' } },
+      { label: 'Lone',    weight: 2, statBonusGrants: { agility: 'statBonus', charisma: 'statPenalty' } },
+    ],
+  },
+})
+
+// ── DEMON × archetype ────────────────────────────────────────────────────
+registerMutation('Demon', 'Cursed Sorcerer', {
+  // Demons paired with cursed sorcery — Sin pushes toward Wrath/Greed,
+  // Pact biased toward Sovereign, Hellfire biased toward Crowned.
+  wheelOverrides: {
+    sin: [
+      { label: 'Wrath',  weight: 5, statBonusGrants: { strength: 'statBonus', charisma: 'statPenalty' } },
+      { label: 'Greed',  weight: 4, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' } },
+      { label: 'Pride',  weight: 3, statBonusGrants: { charisma: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Envy',   weight: 2, statBonusGrants: { agility: 'statBonus', speed: 'statBonus', charisma: 'statPenalty' } },
+    ],
+    pact: [
+      { label: 'Sovereign Pact',weight: 4, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', fightingSkill: 'statBonus', potential: 'statBonus', charisma: 'statPenalty' } },
+      { label: 'Domain Pact',   weight: 4, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Soul Trade',    weight: 2, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', potential: 'statPenalty' } },
+    ],
+  },
+  secretEventBias: 1.5,
+  synergyFlavor: 'Cursed Demon — the curse and the demon converge.',
+})
+
+// ── SHINOBI × archetype ──────────────────────────────────────────────────
+registerMutation('Shinobi', 'Shinobi', {
+  wheelOverrides: {
+    clan: [
+      { label: 'Heir',          weight: 5, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' } },
+      { label: 'Main House',    weight: 4, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Forbidden Clan',weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus', iq: 'statBonus', charisma: 'statPenalty' } },
+      { label: 'Outer Clan',    weight: 1, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' } },
+    ],
+  },
+  synergyFlavor: 'True Shinobi — bloodline and discipline align.',
+})
+
+// ── NEN USER × archetype ─────────────────────────────────────────────────
+registerMutation('Nen User', 'Nen Hunter', {
+  // Restriction-heavy build — Nen restrictions amplify power.
+  wheelOverrides: {
+    restriction: [
+      { label: 'Condition Lock',  weight: 5, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', durability: 'statPenalty' } },
+      { label: 'Target Restriction',weight: 4, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Death Vow',       weight: 2, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', potential: 'statBonus' } },
+      { label: 'Time Restriction',weight: 2, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' } },
+    ],
+    vow: [
+      { label: 'Blood Vow',  weight: 5, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus', durability: 'statPenalty' } },
+      { label: 'Soul Vow',   weight: 3, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Public Vow', weight: 2, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus' } },
+    ],
+  },
+  synergyFlavor: 'Nen Specialist — drawbacks become advantages.',
+})
+
+// ── DRAGON × archetype ───────────────────────────────────────────────────
+registerMutation('Dragon', 'Necromancer', {
+  // Catastrophe-coded Dragon Sorcerer
+  wheelOverrides: {
+    lineage: [
+      { label: 'Catastrophe Line',weight: 5, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'Elder Wyrm',      weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' } },
+      { label: 'Primal Drake',    weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' } },
+    ],
+    catastrophe: [
+      { label: 'Sky-Cracker', weight: 5, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' } },
+      { label: 'World-Ender', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Stirring',    weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
+    ],
+  },
+  secretEventBias: 1.4,
+})
+
+// ── ELDRITCH × archetype ─────────────────────────────────────────────────
+registerMutation('Eldritch Being', 'Warlock', {
+  // Eldritch + Warlock = Reality Fracture biased + secret events nearly
+  // guaranteed.
+  wheelOverrides: {
+    realityFracture: [
+      { label: 'Cracked',             weight: 4, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus' } },
+      { label: 'Bleeding',            weight: 4, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statPenalty' } },
+      { label: 'Glitched',            weight: 3, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus' } },
+      { label: 'Architecture Broken', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus', iq: 'statBonus' } },
+      { label: 'Stable',              weight: 1 },
+    ],
+  },
+  secretEventBias: 2.0,
+  synergyFlavor: 'Warlock of the Unspeakable — reality fractures around them.',
+})
+
+// ── ANGEL × archetype ────────────────────────────────────────────────────
+registerMutation('Angel', 'Paladin', {
+  wheelOverrides: {
+    choir: [
+      { label: 'Seraphim',  weight: 4, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Principal', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus', iq: 'statBonus' } },
+      { label: 'Cherubim',  weight: 3, statBonusGrants: { durability: 'statBonus', fightingSkill: 'statBonus' } },
+      { label: 'Thrones',   weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus' } },
+    ],
+    divineDuty: [
+      { label: 'Executor', weight: 5, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Warrior',  weight: 4, statBonusGrants: { fightingSkill: 'statBonus', strength: 'statBonus' } },
+      { label: 'Judge',    weight: 2, statBonusGrants: { iq: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus' } },
+    ],
+  },
+})
+
+// ── HOLLOW/ARRANCAR × archetype ──────────────────────────────────────────
+registerMutation('Hollow / Arrancar', 'Demon Slayer', {
+  wheelOverrides: {
+    mask: [
+      { label: 'Fragment Only', weight: 4, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus', speed: 'statBonus', iq: 'statBonus' } },
+      { label: 'Half Mask',     weight: 4, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus', iq: 'statBonus' } },
+      { label: 'Vasto Lorde',   weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' } },
+    ],
+  },
+})
+
 registerMutation('Creator', 'Mage', {
   // Strategist Creator goes Order-heavy + biases towards Override Caps.
   wheelOverrides: {

@@ -18,7 +18,7 @@
     type StorySessionState,
   } from '$lib/story/storySession'
   import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_SHIFT, type SpinCategory } from '$lib/game/spinQueue'
-  import { getRaceWheelSegments } from '$lib/game/raceWheelRegistry'
+  import { getRaceWheelSegments, getRaceWheelSegmentDescription } from '$lib/game/raceWheelRegistry'
   import { resolveMutatedSegments, getMutation } from '$lib/game/archetypeMutations'
   import { rollSecretEvent, applyEventToResults, type SecretEventId } from '$lib/game/secretEvents'
   import SecretEventOverlay from '../SecretEventOverlay.svelte'
@@ -286,6 +286,18 @@
     if (category === 'race')      return { description: generateRaceDescription(label), statEffect: 'Determines racial abilities, stat tendencies, and weaknesses' }
     if (category === 'archetype') return { description: generateArchetypeDescription(label), statEffect: 'Defines combat role, ability pool, and power orientation' }
     if (category === 'raceSubType' || category === 'raceClass') return { statEffect: 'May grant stat bonus spins based on variant' }
+    if (category === 'raceWheel') {
+      // Pull the segment's authored description from the registry. Falls
+      // back to a generic line so the reveal panel still has copy when an
+      // older save replays a wheel that's since lost its description.
+      const def = queue[currentIndex]
+      const raceResult = results.find(r => r.category === 'race')
+      const raceLabel = def?.forRace ?? raceResult?.resultLabel ?? ''
+      const desc = def?.raceWheelId
+        ? getRaceWheelSegmentDescription(raceLabel, def.raceWheelId, label)
+        : undefined
+      return { description: desc, statEffect: 'Shapes how this race feels mid-spin — biases later wheels, archetype synergy, and event chances.' }
+    }
     const statEffect = STAT_EFFECTS[category]
     if (statEffect) return { statEffect }
     return {}
