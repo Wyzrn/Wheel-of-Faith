@@ -52,6 +52,10 @@ export interface ArenaRound {
 // ── Element → FX lookup ─────────────────────────────────────────────────────
 // Single source of truth — previously duplicated across all 4 views.
 
+// Every element resolves to its OWN dedicated AttackFX type now — no more
+// recycling. Sound, Cosmic, Arcane, Nature, Metal, Soul, and Chaos each
+// have bespoke SVG+CSS animations (see AttackFX.svelte). Neutral falls
+// back to the generic weapon slash since "no element" is the weapon path.
 export const ELEMENT_FX: Record<string, { type: string; color: string }> = {
   Fire:      { type: 'fire',      color: '#f97316' },
   Ice:       { type: 'ice',       color: '#7dd3fc' },
@@ -60,20 +64,20 @@ export const ELEMENT_FX: Record<string, { type: string; color: string }> = {
   Wind:      { type: 'wind',      color: '#e2e8f0' },
   Shadow:    { type: 'shadow',    color: '#8b5cf6' },
   Light:     { type: 'holy',      color: '#fde68a' },
-  Arcane:    { type: 'energy',    color: '#c084fc' },
-  Nature:    { type: 'poison',    color: '#22c55e' },
+  Arcane:    { type: 'arcane',    color: '#c084fc' },
+  Nature:    { type: 'nature',    color: '#22c55e' },
   Void:      { type: 'void',      color: '#6b21a8' },
-  Cosmic:    { type: 'energy',    color: '#818cf8' },
+  Cosmic:    { type: 'cosmic',    color: '#818cf8' },
   Blood:     { type: 'blood',     color: '#dc2626' },
-  Metal:     { type: 'slash',     color: '#94a3b8' },
-  Soul:      { type: 'holy',      color: '#f9a8d4' },
+  Metal:     { type: 'metal',     color: '#94a3b8' },
+  Soul:      { type: 'soul',      color: '#f9a8d4' },
   Poison:    { type: 'poison',    color: '#84cc16' },
   Time:      { type: 'time',      color: '#a78bfa' },
   Water:     { type: 'water',     color: '#38bdf8' },
-  Sound:     { type: 'lightning', color: '#e0f2fe' },
+  Sound:     { type: 'sound',     color: '#e0f2fe' },
   Gravity:   { type: 'gravity',   color: '#6366f1' },
   Psychic:   { type: 'psychic',   color: '#e879f9' },
-  Chaos:     { type: 'cursed',    color: '#f43f5e' },
+  Chaos:     { type: 'chaos',     color: '#f43f5e' },
   Neutral:   { type: 'slash',     color: '#f87171' },
 }
 

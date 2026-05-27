@@ -23,6 +23,41 @@
   // Shockwave count: 0 for < S, 1 for S, 2 for SSS, 3 for God
   let shockwaveCount = $derived(gradeIdx >= 6 ? Math.min(3, gradeIdx - 5) : 0)
 
+  // Per-grade slash intensity for weapon attacks. The slash SVG renders this
+  // many primary blade lines (plus matching echoes + sparks) so an F-grade
+  // weapon shows a single muted swipe and a God-tier weapon erupts into a
+  // screen-filling 8-line crosscut.
+  //   F (0) → 1 slash · E (1) → 1 · D (2) → 2 · C (3) → 3 · B (4) → 3 ·
+  //   A (5) → 4 · S (6) → 5 · SS (7) → 6 · SSS (8) → 7 · God (9) → 8
+  const _SLASH_COUNTS = [1, 1, 2, 3, 3, 4, 5, 6, 7, 8]
+  let slashCount = $derived(_SLASH_COUNTS[gradeIdx] ?? 3)
+
+  // Procedurally-laid slash lines. Each entry is one diagonal cut across
+  // the 100×100 viewBox with a small angle jitter so the bundle reads as a
+  // multi-strike combo rather than a perfect fan.
+  interface SlashLine { x1: number; y1: number; x2: number; y2: number; w: number; delay: number }
+  let slashLines = $derived.by<SlashLine[]>(() => {
+    const lines: SlashLine[] = []
+    const n = slashCount
+    // Spread the bundle across an arc — first slash at the canonical
+    // top-right→bottom-left diagonal, others fanned around it.
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0 : (i - (n - 1) / 2) / Math.max(1, n - 1)  // -0.5 … +0.5
+      const xOff = t * 18    // shifts the line left/right
+      const yOff = t * 14    // shifts vertically
+      const widthShift = t * 6
+      const x1 = 72 + xOff + widthShift
+      const y1 = 18 + yOff - widthShift
+      const x2 = 28 + xOff - widthShift
+      const y2 = 62 + yOff + widthShift
+      // Top-most line is the thickest, trailing ones taper down.
+      const w = Math.max(1.6, 4.2 - i * 0.4)
+      const delay = i * 0.045
+      lines.push({ x1, y1, x2, y2, w, delay })
+    }
+    return lines
+  })
+
   // Grade CSS class for filter/brightness effects
   let gradeClass = $derived(
     gradeIdx >= 9 ? 'fx-grade-god' :
@@ -34,8 +69,8 @@
   let isRtl = $derived(direction === 'rtl')
 
   const noFlyTypes  = new Set(['dodge', 'shield'])
-  const swirlTypes  = new Set(['void', 'psychic', 'time', 'shadow', 'gravity', 'cursed'])
-  const crashTypes  = new Set(['crit', 'berserker', 'earth', 'slash'])
+  const swirlTypes  = new Set(['void', 'psychic', 'time', 'shadow', 'gravity', 'cursed', 'arcane', 'cosmic', 'soul', 'chaos'])
+  const crashTypes  = new Set(['crit', 'berserker', 'earth', 'slash', 'metal'])
 
   let flyClass = $derived(
     attackType === 'aoe'    ? 'fx-aoe-burst' :
@@ -297,18 +332,48 @@
   {/if}
 
   {#if type === 'slash'}
+    <!-- Weapon slash — grade-scaled. F-tier weapons show one tired
+         swipe; God-tier weapons erupt with 8 stacked slashes plus a
+         heavy motion-blur sweep and a shockwave ring. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <ellipse cx="50" cy="38" rx="34" ry="22" fill="var(--c)" opacity="0.13" style="filter:blur(10px)"/>
-      <line class="sl-echo sl-e1" x1="70" y1="15" x2="26" y2="59" stroke="var(--c)" stroke-width="3" stroke-linecap="round" opacity="0.25"/>
-      <line class="sl-echo sl-e2" x1="78" y1="25" x2="34" y2="69" stroke="var(--c)" stroke-width="2" stroke-linecap="round" opacity="0.18"/>
-      <line class="sl sl1" x1="72" y1="18" x2="28" y2="62" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
-      <line class="sl sl2" x1="80" y1="28" x2="36" y2="72" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-      <line class="sl sl3" x1="64" y1="12" x2="20" y2="56" stroke="var(--c)" stroke-width="2" stroke-linecap="round"/>
-      <circle class="sp sp1" cx="72" cy="18" r="3.5" fill="var(--c)"/>
-      <circle class="sp sp2" cx="28" cy="62" r="3"   fill="var(--c)"/>
-      <circle class="sp sp3" cx="80" cy="28" r="2.5" fill="var(--c)"/>
-      <circle class="sp sp4" cx="64" cy="12" r="2"   fill="var(--c)"/>
-      <circle class="sp sp5" cx="20" cy="56" r="2"   fill="var(--c)" opacity="0.7"/>
+      <!-- Motion-blur sweep band that brightens with grade -->
+      <ellipse cx="50" cy="38" rx={34 + gradeIdx * 1.6} ry={22 + gradeIdx * 1.2}
+               fill="var(--c)" opacity={0.10 + gradeIdx * 0.018}
+               style="filter:blur({8 + gradeIdx}px)"/>
+      <!-- Trailing echo of each slash (drawn first so it sits beneath) -->
+      {#each slashLines as l, i}
+        <line class="sl-echo"
+              x1={l.x1 + 8} y1={l.y1 + 4}
+              x2={l.x2 + 8} y2={l.y2 + 4}
+              stroke="var(--c)" stroke-width={l.w * 0.55} stroke-linecap="round"
+              opacity={0.18 + Math.min(0.18, gradeIdx * 0.02)}
+              style="--d:{l.delay - 0.08}s"/>
+      {/each}
+      <!-- Primary slash lines -->
+      {#each slashLines as l, i}
+        <line class="sl"
+              x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              stroke="var(--c)" stroke-width={l.w} stroke-linecap="round"
+              style="--d:{l.delay}s"/>
+      {/each}
+      <!-- Endpoint sparks — one per line endpoint -->
+      {#each slashLines as l, i}
+        <circle class="sp" cx={l.x1} cy={l.y1} r={Math.max(1.8, 3.5 - i * 0.3)} fill="var(--c)"
+                style="animation-delay:{0.18 + l.delay}s"/>
+        <circle class="sp" cx={l.x2} cy={l.y2} r={Math.max(1.5, 3.0 - i * 0.3)} fill="var(--c)" opacity="0.85"
+                style="animation-delay:{0.22 + l.delay}s"/>
+      {/each}
+      <!-- High-grade exclusives: cross-cuts + impact ring -->
+      {#if gradeIdx >= 6}
+        <line class="sl-cross sl-cross-a" x1="20" y1="20" x2="80" y2="80"
+              stroke="var(--c)" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/>
+        <line class="sl-cross sl-cross-b" x1="80" y1="20" x2="20" y2="80"
+              stroke="var(--c)" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/>
+      {/if}
+      {#if gradeIdx >= 8}
+        <circle class="sl-ring" cx="50" cy="50" r="38"
+                stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.7"/>
+      {/if}
     </svg>
 
   {:else if type === 'fire'}
@@ -758,6 +823,222 @@
       <ellipse class="water-ripple wr2" cx="50" cy="80" rx="24" ry="10" stroke="var(--c)" stroke-width="1.5" fill="none"/>
     </svg>
 
+  {:else if type === 'arcane'}
+    <!-- Arcane — counter-rotating sigil rings, runic glyphs, mystic core -->
+    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
+      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.16" style="filter:blur(14px)"/>
+      <!-- Outer rotating ring with runic marks -->
+      <g class="arc-ring-out">
+        <circle cx="50" cy="50" r="40" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.55"
+                stroke-dasharray="3 5"/>
+        <circle cx="50" cy="50" r="36" stroke="var(--c)" stroke-width="1"   fill="none" opacity="0.35"
+                stroke-dasharray="6 3"/>
+      </g>
+      <!-- Inner pentagram sigil — counter-rotating -->
+      <g class="arc-pent">
+        <polygon points="50,14 60,42 90,42 65,60 76,88 50,70 24,88 35,60 10,42 40,42"
+                 stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.85"/>
+        <polygon points="50,28 56,44 72,44 58,55 64,72 50,62 36,72 42,55 28,44 44,44"
+                 stroke="var(--c)" stroke-width="1.2" fill="var(--c)" fill-opacity="0.08" opacity="0.7"/>
+      </g>
+      <!-- Hex glyphs around perimeter -->
+      <g class="arc-glyph">
+        <polygon points="50,4 53,10 50,14 47,10"   fill="var(--c)" opacity="0.85"/>
+        <polygon points="96,50 90,53 86,50 90,47"  fill="var(--c)" opacity="0.85"/>
+        <polygon points="50,96 47,90 50,86 53,90"  fill="var(--c)" opacity="0.85"/>
+        <polygon points="4,50 10,47 14,50 10,53"   fill="var(--c)" opacity="0.85"/>
+      </g>
+      <!-- Crackling lines between glyphs -->
+      <line class="arc-bolt arc-b1" x1="50" y1="10" x2="50" y2="38" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
+      <line class="arc-bolt arc-b2" x1="90" y1="50" x2="62" y2="50" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
+      <line class="arc-bolt arc-b3" x1="50" y1="90" x2="50" y2="62" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
+      <line class="arc-bolt arc-b4" x1="10" y1="50" x2="38" y2="50" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
+      <!-- Core orb -->
+      <circle cx="50" cy="50" r="9" fill="var(--c)" class="arc-core"/>
+      <circle cx="50" cy="50" r="4" fill="white" opacity="0.85"/>
+    </svg>
+
+  {:else if type === 'nature'}
+    <!-- Nature — spiraling vines, blooming flowers, leaf burst -->
+    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
+      <ellipse cx="50" cy="55" rx="38" ry="34" fill="var(--c)" opacity="0.16" style="filter:blur(12px)"/>
+      <!-- Spiral vines from center outward -->
+      <g class="nat-vines">
+        <path d="M50 50 Q40 35 32 22 Q26 14 20 10" stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.85"/>
+        <path d="M50 50 Q60 35 68 22 Q74 14 82 10" stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.85"/>
+        <path d="M50 50 Q40 65 32 78 Q26 86 18 90" stroke="var(--c)" stroke-width="2"   fill="none" stroke-linecap="round" opacity="0.75"/>
+        <path d="M50 50 Q60 65 68 78 Q74 86 84 90" stroke="var(--c)" stroke-width="2"   fill="none" stroke-linecap="round" opacity="0.75"/>
+        <path d="M50 50 Q30 50 14 48" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+        <path d="M50 50 Q70 50 88 52" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+      </g>
+      <!-- Leaves along vines -->
+      <g class="nat-leaves">
+        <ellipse class="leaf l1" cx="28" cy="20" rx="4" ry="2.5" fill="var(--c)" transform="rotate(-30 28 20)"/>
+        <ellipse class="leaf l2" cx="72" cy="20" rx="4" ry="2.5" fill="var(--c)" transform="rotate(30 72 20)"/>
+        <ellipse class="leaf l3" cx="26" cy="82" rx="4" ry="2.5" fill="var(--c)" opacity="0.85" transform="rotate(40 26 82)"/>
+        <ellipse class="leaf l4" cx="74" cy="82" rx="4" ry="2.5" fill="var(--c)" opacity="0.85" transform="rotate(-40 74 82)"/>
+      </g>
+      <!-- Bloom center -->
+      <g class="nat-bloom">
+        <circle cx="50" cy="50" r="10" fill="var(--c)"/>
+        <ellipse cx="50" cy="42" rx="4" ry="6"   fill="var(--c)" opacity="0.95"/>
+        <ellipse cx="58" cy="50" rx="6" ry="4"   fill="var(--c)" opacity="0.9"/>
+        <ellipse cx="50" cy="58" rx="4" ry="6"   fill="var(--c)" opacity="0.9"/>
+        <ellipse cx="42" cy="50" rx="6" ry="4"   fill="var(--c)" opacity="0.95"/>
+        <circle cx="50" cy="50" r="3" fill="white" opacity="0.85"/>
+      </g>
+      <!-- Pollen motes -->
+      <circle class="pollen p1" cx="34" cy="40" r="1.4" fill="var(--c)" opacity="0.7"/>
+      <circle class="pollen p2" cx="66" cy="40" r="1.4" fill="var(--c)" opacity="0.7"/>
+      <circle class="pollen p3" cx="34" cy="60" r="1.2" fill="var(--c)" opacity="0.6"/>
+      <circle class="pollen p4" cx="66" cy="60" r="1.2" fill="var(--c)" opacity="0.6"/>
+    </svg>
+
+  {:else if type === 'cosmic'}
+    <!-- Cosmic — galactic spiral, nebula glow, star points -->
+    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
+      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.18" style="filter:blur(16px)"/>
+      <!-- Galactic spiral arms -->
+      <g class="cos-spiral">
+        <path d="M50 50 Q40 30 20 28 Q12 38 16 52 Q26 64 50 50" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.7"/>
+        <path d="M50 50 Q60 70 80 72 Q88 62 84 48 Q74 36 50 50" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.7"/>
+        <path d="M50 50 Q34 44 28 18" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.5"/>
+        <path d="M50 50 Q66 56 72 82" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.5"/>
+      </g>
+      <!-- Nebula core -->
+      <g class="cos-core">
+        <circle cx="50" cy="50" r="14" fill="var(--c)" opacity="0.65" style="filter:blur(3px)"/>
+        <circle cx="50" cy="50" r="9"  fill="var(--c)"/>
+        <circle cx="50" cy="50" r="4"  fill="white" opacity="0.95"/>
+      </g>
+      <!-- Star points -->
+      <g class="cos-stars">
+        <polygon class="cstar cs1" points="22,14 24,20 30,20 25,24 27,30 22,26 17,30 19,24 14,20 20,20" fill="var(--c)"/>
+        <polygon class="cstar cs2" points="78,12 80,18 86,18 81,22 83,28 78,24 73,28 75,22 70,18 76,18" fill="var(--c)" opacity="0.9"/>
+        <polygon class="cstar cs3" points="80,82 82,88 88,88 83,92 85,98 80,94 75,98 77,92 72,88 78,88" fill="var(--c)" opacity="0.85"/>
+        <polygon class="cstar cs4" points="20,84 22,90 28,90 23,94 25,100 20,96 15,100 17,94 12,90 18,90" fill="var(--c)" opacity="0.85"/>
+        <circle class="cstar-dot" cx="90" cy="50" r="1.8" fill="var(--c)" opacity="0.9"/>
+        <circle class="cstar-dot" cx="10" cy="50" r="1.8" fill="var(--c)" opacity="0.9"/>
+        <circle class="cstar-dot" cx="50" cy="6"  r="1.5" fill="var(--c)" opacity="0.8"/>
+        <circle class="cstar-dot" cx="50" cy="94" r="1.5" fill="var(--c)" opacity="0.8"/>
+      </g>
+    </svg>
+
+  {:else if type === 'metal'}
+    <!-- Metal — razor-shard storm with hard impact crack -->
+    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
+      <ellipse cx="50" cy="50" rx="38" ry="30" fill="var(--c)" opacity="0.14" style="filter:blur(10px)"/>
+      <!-- Impact starburst crack lines (geometric, sharp) -->
+      <g class="met-crack">
+        <line x1="50" y1="50" x2="12" y2="20" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="88" y2="20" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="10" y2="80" stroke="var(--c)" stroke-width="2"   stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="90" y2="80" stroke="var(--c)" stroke-width="2"   stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="50" y2="6"  stroke="var(--c)" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="50" y2="94" stroke="var(--c)" stroke-width="2"   stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="6"  y2="50" stroke="var(--c)" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="94" y2="50" stroke="var(--c)" stroke-width="2"   stroke-linecap="round"/>
+      </g>
+      <!-- Razor shards fanning outward — sharp triangular blades -->
+      <g class="met-shards">
+        <polygon class="shard mshd1" points="50,50 32,12 38,16" fill="var(--c)"/>
+        <polygon class="shard mshd2" points="50,50 70,14 64,18" fill="var(--c)"/>
+        <polygon class="shard mshd3" points="50,50 88,38 84,44" fill="var(--c)" opacity="0.9"/>
+        <polygon class="shard mshd4" points="50,50 88,62 84,56" fill="var(--c)" opacity="0.9"/>
+        <polygon class="shard mshd5" points="50,50 70,86 64,82" fill="var(--c)" opacity="0.85"/>
+        <polygon class="shard mshd6" points="50,50 32,88 36,84" fill="var(--c)" opacity="0.85"/>
+        <polygon class="shard mshd7" points="50,50 12,60 18,54" fill="var(--c)" opacity="0.8"/>
+        <polygon class="shard mshd8" points="50,50 12,38 18,44" fill="var(--c)" opacity="0.8"/>
+      </g>
+      <!-- Metallic core glint -->
+      <g class="met-core">
+        <polygon points="50,38 58,50 50,62 42,50" fill="var(--c)"/>
+        <polygon points="50,42 54,50 50,58 46,50" fill="white" opacity="0.85"/>
+      </g>
+    </svg>
+
+  {:else if type === 'soul'}
+    <!-- Soul — wispy ghost form, skull silhouette, ethereal threads -->
+    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
+      <ellipse cx="50" cy="48" rx="32" ry="38" fill="var(--c)" opacity="0.20" style="filter:blur(14px)"/>
+      <!-- Ghost form -->
+      <g class="soul-ghost">
+        <path d="M50 14 C32 14 22 28 22 46 C22 58 24 68 22 82 L30 76 L36 84 L42 76 L50 84 L58 76 L64 84 L70 76 L78 82 C76 68 78 58 78 46 C78 28 68 14 50 14 Z"
+              fill="var(--c)" opacity="0.9"/>
+      </g>
+      <!-- Empty eye sockets -->
+      <g class="soul-eyes">
+        <ellipse cx="40" cy="42" rx="5" ry="7" fill="#0d0d16"/>
+        <ellipse cx="60" cy="42" rx="5" ry="7" fill="#0d0d16"/>
+        <circle  cx="40" cy="44" r="2" fill="var(--c)" opacity="0.9"/>
+        <circle  cx="60" cy="44" r="2" fill="var(--c)" opacity="0.9"/>
+      </g>
+      <!-- Skull mouth grid -->
+      <g class="soul-mouth">
+        <rect x="36" y="58" width="28" height="6" fill="#0d0d16" rx="1"/>
+        <line x1="42" y1="58" x2="42" y2="64" stroke="var(--c)" stroke-width="0.8" opacity="0.5"/>
+        <line x1="50" y1="58" x2="50" y2="64" stroke="var(--c)" stroke-width="0.8" opacity="0.5"/>
+        <line x1="58" y1="58" x2="58" y2="64" stroke="var(--c)" stroke-width="0.8" opacity="0.5"/>
+      </g>
+      <!-- Wisp threads trailing upward -->
+      <g class="soul-wisps">
+        <path class="wisp-thread sw1" d="M30 20 Q26 8 18 4"  stroke="var(--c)" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+        <path class="wisp-thread sw2" d="M50 12 Q50 4 52 0"  stroke="var(--c)" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.8"/>
+        <path class="wisp-thread sw3" d="M70 20 Q74 8 82 4"  stroke="var(--c)" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+        <circle class="wisp-mote wm1" cx="18" cy="4"  r="1.5" fill="var(--c)" opacity="0.7"/>
+        <circle class="wisp-mote wm2" cx="52" cy="0"  r="1.8" fill="var(--c)" opacity="0.8"/>
+        <circle class="wisp-mote wm3" cx="82" cy="4"  r="1.5" fill="var(--c)" opacity="0.7"/>
+      </g>
+    </svg>
+
+  {:else if type === 'sound'}
+    <!-- Sound — concentric sonic ripples expanding outward + cone -->
+    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
+      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.10" style="filter:blur(10px)"/>
+      <!-- Three expanding rings — staggered to create a pulsing sonic feel -->
+      <circle class="sonic-ring snr1" cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="3"   fill="none"/>
+      <circle class="sonic-ring snr2" cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="2.5" fill="none"/>
+      <circle class="sonic-ring snr3" cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="2"   fill="none"/>
+      <circle class="sonic-ring snr4" cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="1.5" fill="none"/>
+      <!-- Speaker-cone arcs to one side (direction-agnostic) -->
+      <g class="sonic-cone">
+        <path d="M62 30 Q78 50 62 70"   stroke="var(--c)" stroke-width="3"   fill="none" opacity="0.85" stroke-linecap="round"/>
+        <path d="M68 22 Q88 50 68 78"   stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.7" stroke-linecap="round"/>
+        <path d="M38 30 Q22 50 38 70"   stroke="var(--c)" stroke-width="3"   fill="none" opacity="0.85" stroke-linecap="round"/>
+        <path d="M32 22 Q12 50 32 78"   stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.7" stroke-linecap="round"/>
+      </g>
+      <!-- Center pulse -->
+      <circle cx="50" cy="50" r="6" fill="var(--c)" class="sonic-core"/>
+      <circle cx="50" cy="50" r="3" fill="white" opacity="0.85"/>
+    </svg>
+
+  {:else if type === 'chaos'}
+    <!-- Chaos — fractured reality glitch, jagged shards, color-shift -->
+    <svg viewBox="0 0 100 100" class="fx-svg chaos-glitch" overflow="visible">
+      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.16" style="filter:blur(12px)"/>
+      <!-- Reality fracture lines — irregular, branching -->
+      <g class="chaos-frac">
+        <polyline points="20,18 32,30 28,42 42,46 38,60 54,58" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.85"/>
+        <polyline points="82,18 70,28 76,40 62,46 68,58 54,58" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.85"/>
+        <polyline points="82,82 70,72 76,60 62,54" stroke="var(--c)" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.75"/>
+        <polyline points="20,82 32,72 28,60 42,54" stroke="var(--c)" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.75"/>
+      </g>
+      <!-- Reality fragments — irregular geometric shapes -->
+      <g class="chaos-frags">
+        <polygon class="cfrag cf1" points="30,32 38,28 42,38 34,42" fill="var(--c)" opacity="0.7"/>
+        <polygon class="cfrag cf2" points="70,28 78,34 72,42 64,38" fill="var(--c)" opacity="0.7"/>
+        <polygon class="cfrag cf3" points="28,68 38,66 34,76 26,74" fill="var(--c)" opacity="0.65"/>
+        <polygon class="cfrag cf4" points="68,72 76,68 74,78 64,76" fill="var(--c)" opacity="0.65"/>
+      </g>
+      <!-- Glitched core: stacked offset rings to suggest dimensional misalignment -->
+      <g class="chaos-core">
+        <rect class="chaos-glitch-a" x="40" y="40" width="20" height="20" fill="var(--c)" opacity="0.9"/>
+        <rect class="chaos-glitch-b" x="38" y="42" width="20" height="20" fill="var(--c)" opacity="0.6"/>
+        <rect class="chaos-glitch-c" x="42" y="38" width="20" height="20" fill="var(--c)" opacity="0.4"/>
+        <circle cx="50" cy="50" r="5" fill="white" opacity="0.9"/>
+      </g>
+    </svg>
+
   {:else}
     <!-- generic impact -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
@@ -955,18 +1236,44 @@
   100% { transform: scale(0.5) rotate(-420deg); opacity: 0;   filter: brightness(1); }
 }
 
-/* ─── SLASH ──────────────────────────────────────────────────────── */
-.sl { stroke-dasharray: 70; stroke-dashoffset: 70; }
-.sl1 { animation: slash-draw 0.65s ease-out forwards; }
-.sl2 { animation: slash-draw 0.65s 0.06s ease-out forwards; }
-.sl3 { animation: slash-draw 0.65s 0.13s ease-out forwards; }
+/* ─── SLASH (grade-scaled weapon strike) ─────────────────────────── */
+.sl,
+.sl-echo {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: slash-draw 0.65s ease-out forwards;
+  animation-delay: var(--d, 0s);
+}
 @keyframes slash-draw {
-  0%   { stroke-dashoffset: 70; opacity: 0; }
-  30%  { stroke-dashoffset: 0;  opacity: 0.95; }
-  70%  { stroke-dashoffset: 0;  opacity: 0.85; }
+  0%   { stroke-dashoffset: 80; opacity: 0; }
+  28%  { stroke-dashoffset: 0;  opacity: 0.95; }
+  72%  { stroke-dashoffset: 0;  opacity: 0.85; }
   100% { stroke-dashoffset: 0;  opacity: 0; }
 }
-.sl-echo { stroke-dasharray: 70; stroke-dashoffset: 70; animation: slash-draw 0.65s -0.10s ease-out forwards; }
+.sl-echo { opacity: 0.2; }
+/* High-grade-only cross-cut: two long diagonals scissor across the target.
+   Drawn at 100% opacity for visual weight, fading at the end. */
+.sl-cross {
+  stroke-dasharray: 110;
+  stroke-dashoffset: 110;
+  animation: slash-cross 0.55s 0.22s ease-out forwards;
+}
+.sl-cross-b { animation-delay: 0.28s; }
+@keyframes slash-cross {
+  0%   { stroke-dashoffset: 110; opacity: 0; }
+  30%  { stroke-dashoffset: 0;   opacity: 1; filter: brightness(2); }
+  100% { stroke-dashoffset: 0;   opacity: 0; }
+}
+/* God-tier exclusive: shockwave ring expanding from the impact center. */
+.sl-ring {
+  transform-origin: 50% 50%;
+  animation: slash-ring 0.6s 0.32s ease-out forwards;
+}
+@keyframes slash-ring {
+  0%   { transform: scale(0.2); opacity: 1; }
+  60%  { transform: scale(1.1); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
 .sp { transform-origin: center center; transform-box: fill-box; animation: spark-pop 0.5s ease-out forwards; opacity: 0; }
 .sp1 { animation-delay: 0.18s; }
 .sp2 { animation-delay: 0.22s; }
@@ -1564,4 +1871,118 @@
   0%   { width: 0; height: 0; opacity: 1; }
   100% { width: 160px; height: 160px; opacity: 0; }
 }
+
+/* ─── ARCANE ─────────────────────────────────────────────────────── */
+.arc-ring-out  { transform-origin: 50% 50%; animation: arc-rotate 1.4s linear infinite; }
+.arc-pent      { transform-origin: 50% 50%; animation: arc-pent 0.85s ease-out forwards; }
+.arc-glyph polygon { transform-origin: 50% 50%; transform-box: fill-box; animation: arc-glyph-flash 0.7s ease-out forwards; opacity: 0; }
+.arc-glyph polygon:nth-child(1) { animation-delay: 0.08s; }
+.arc-glyph polygon:nth-child(2) { animation-delay: 0.14s; }
+.arc-glyph polygon:nth-child(3) { animation-delay: 0.20s; }
+.arc-glyph polygon:nth-child(4) { animation-delay: 0.26s; }
+.arc-bolt { stroke-dasharray: 30; stroke-dashoffset: 30; animation: arc-bolt-draw 0.55s ease-out forwards; }
+.arc-b1 { animation-delay: 0.16s; } .arc-b2 { animation-delay: 0.22s; }
+.arc-b3 { animation-delay: 0.18s; } .arc-b4 { animation-delay: 0.24s; }
+.arc-core { transform-origin: 50% 50%; transform-box: fill-box; animation: arc-core-pulse 0.85s ease-out forwards; }
+@keyframes arc-rotate     { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
+@keyframes arc-pent       { 0% { transform: rotate(0)    scale(0.5); opacity: 0; } 25% { opacity: 1; transform: rotate(-30deg) scale(1.15); } 100% { transform: rotate(-90deg) scale(1); opacity: 0; } }
+@keyframes arc-glyph-flash{ 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.6); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(1); opacity: 0; } }
+@keyframes arc-bolt-draw  { 0% { stroke-dashoffset: 30; opacity: 0; } 35% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes arc-core-pulse { 0% { transform: scale(0); opacity: 0; } 35% { transform: scale(1.5); opacity: 1; filter: brightness(3); } 100% { transform: scale(0.6); opacity: 0; } }
+
+/* ─── NATURE ─────────────────────────────────────────────────────── */
+.nat-vines  { transform-origin: 50% 50%; animation: nat-grow 0.85s ease-out forwards; }
+.nat-leaves .leaf { transform-origin: center; transform-box: fill-box; animation: nat-leaf 0.6s ease-out forwards; opacity: 0; }
+.nat-leaves .leaf.l1 { animation-delay: 0.20s; }
+.nat-leaves .leaf.l2 { animation-delay: 0.22s; }
+.nat-leaves .leaf.l3 { animation-delay: 0.26s; }
+.nat-leaves .leaf.l4 { animation-delay: 0.28s; }
+.nat-bloom  { transform-origin: 50% 50%; animation: nat-bloom 0.75s 0.10s ease-out forwards; }
+.pollen     { transform-origin: center; transform-box: fill-box; animation: nat-pollen 0.8s 0.30s ease-out forwards; opacity: 0; }
+@keyframes nat-grow   { 0% { transform: scale(0); opacity: 0; } 30% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.1); opacity: 0; } }
+@keyframes nat-leaf   { 0% { transform: scale(0) rotate(-20deg); opacity: 0; } 50% { transform: scale(1.3) rotate(0); opacity: 1; } 100% { transform: scale(1) rotate(20deg); opacity: 0; } }
+@keyframes nat-bloom  { 0% { transform: scale(0); opacity: 0; } 45% { transform: scale(1.3); opacity: 1; filter: brightness(2); } 100% { transform: scale(0.9); opacity: 0; } }
+@keyframes nat-pollen { 0% { transform: translateY(0) scale(0); opacity: 0; } 40% { transform: translateY(-8px) scale(1.4); opacity: 1; } 100% { transform: translateY(-22px) scale(0.6); opacity: 0; } }
+
+/* ─── COSMIC ─────────────────────────────────────────────────────── */
+.cos-spiral { transform-origin: 50% 50%; animation: cos-spiral 1.1s ease-out forwards; }
+.cos-core   { transform-origin: 50% 50%; animation: cos-core 0.85s ease-out forwards; }
+.cos-stars .cstar { transform-origin: center; transform-box: fill-box; animation: cos-twinkle 0.7s ease-out forwards; opacity: 0; }
+.cos-stars .cstar.cs1 { animation-delay: 0.10s; }
+.cos-stars .cstar.cs2 { animation-delay: 0.16s; }
+.cos-stars .cstar.cs3 { animation-delay: 0.22s; }
+.cos-stars .cstar.cs4 { animation-delay: 0.28s; }
+.cstar-dot { transform-origin: center; transform-box: fill-box; animation: cos-twinkle 0.6s 0.34s ease-out forwards; opacity: 0; }
+@keyframes cos-spiral { 0% { transform: scale(0.3) rotate(0); opacity: 0; } 35% { transform: scale(1.2) rotate(-60deg); opacity: 1; } 100% { transform: scale(1.4) rotate(-180deg); opacity: 0; } }
+@keyframes cos-core   { 0% { transform: scale(0); opacity: 0; filter: brightness(1); } 40% { transform: scale(1.4); opacity: 1; filter: brightness(3) drop-shadow(0 0 18px var(--c)); } 100% { transform: scale(0.8); opacity: 0; } }
+@keyframes cos-twinkle{ 0% { transform: scale(0) rotate(0); opacity: 0; } 50% { transform: scale(1.4) rotate(40deg); opacity: 1; filter: brightness(2); } 100% { transform: scale(0.6) rotate(80deg); opacity: 0; } }
+
+/* ─── METAL ──────────────────────────────────────────────────────── */
+.met-crack line { stroke-dasharray: 80; stroke-dashoffset: 80; animation: met-crack 0.45s ease-out forwards; }
+.met-crack line:nth-child(1) { animation-delay: 0.00s; }
+.met-crack line:nth-child(2) { animation-delay: 0.04s; }
+.met-crack line:nth-child(3) { animation-delay: 0.08s; }
+.met-crack line:nth-child(4) { animation-delay: 0.12s; }
+.met-crack line:nth-child(5) { animation-delay: 0.06s; }
+.met-crack line:nth-child(6) { animation-delay: 0.10s; }
+.met-crack line:nth-child(7) { animation-delay: 0.14s; }
+.met-crack line:nth-child(8) { animation-delay: 0.16s; }
+.met-shards .shard { transform-origin: 50% 50%; transform-box: fill-box; animation: met-shard 0.55s ease-out forwards; opacity: 0; }
+.met-shards .shard.mshd1 { animation-delay: 0.18s; }
+.met-shards .shard.mshd2 { animation-delay: 0.20s; }
+.met-shards .shard.mshd3 { animation-delay: 0.22s; }
+.met-shards .shard.mshd4 { animation-delay: 0.24s; }
+.met-shards .shard.mshd5 { animation-delay: 0.26s; }
+.met-shards .shard.mshd6 { animation-delay: 0.28s; }
+.met-shards .shard.mshd7 { animation-delay: 0.30s; }
+.met-shards .shard.mshd8 { animation-delay: 0.32s; }
+.met-core { transform-origin: 50% 50%; animation: met-core 0.55s 0.08s ease-out forwards; }
+@keyframes met-crack { 0% { stroke-dashoffset: 80; opacity: 0; } 30% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2.5); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes met-shard { 0% { transform: scale(0); opacity: 0; } 45% { transform: scale(1.2); opacity: 1; filter: brightness(2); } 100% { transform: scale(0.8); opacity: 0; } }
+@keyframes met-core  { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.4); opacity: 1; filter: brightness(3) drop-shadow(0 0 14px var(--c)); } 100% { transform: scale(0.5); opacity: 0; } }
+
+/* ─── SOUL ───────────────────────────────────────────────────────── */
+.soul-ghost  { transform-origin: 50% 50%; animation: soul-rise 0.95s ease-out forwards; }
+.soul-eyes   { animation: soul-eyes 0.85s 0.15s ease-out forwards; opacity: 0; }
+.soul-mouth  { animation: soul-eyes 0.85s 0.20s ease-out forwards; opacity: 0; }
+.soul-wisps .wisp-thread { stroke-dasharray: 40; stroke-dashoffset: 40; animation: soul-wisp 0.85s 0.10s ease-out forwards; }
+.soul-wisps .wisp-mote   { transform-origin: center; transform-box: fill-box; animation: soul-mote 0.7s 0.40s ease-out forwards; opacity: 0; }
+@keyframes soul-rise { 0% { transform: translateY(12px) scale(0.7); opacity: 0; filter: brightness(1); } 30% { transform: translateY(0)    scale(1.05); opacity: 1; filter: brightness(2) drop-shadow(0 0 14px var(--c)); } 100% { transform: translateY(-16px) scale(0.95); opacity: 0; } }
+@keyframes soul-eyes { 0% { opacity: 0; } 40% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes soul-wisp { 0% { stroke-dashoffset: 40; opacity: 0; } 40% { stroke-dashoffset: 0; opacity: 0.9; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes soul-mote { 0% { transform: translateY(6px) scale(0); opacity: 0; } 40% { transform: translateY(0) scale(1.4); opacity: 1; } 100% { transform: translateY(-14px) scale(0.6); opacity: 0; } }
+
+/* ─── SOUND ──────────────────────────────────────────────────────── */
+.sonic-ring { transform-origin: 50% 50%; animation: sonic-ring 1.0s ease-out forwards; opacity: 0; }
+.sonic-ring.snr1 { animation-delay: 0.00s; }
+.sonic-ring.snr2 { animation-delay: 0.10s; }
+.sonic-ring.snr3 { animation-delay: 0.22s; }
+.sonic-ring.snr4 { animation-delay: 0.34s; }
+.sonic-cone { transform-origin: 50% 50%; animation: sonic-cone-pulse 0.85s ease-out forwards; }
+.sonic-core { transform-origin: 50% 50%; transform-box: fill-box; animation: sonic-core-pulse 0.85s ease-out forwards; }
+@keyframes sonic-ring       { 0% { transform: scale(0.2); opacity: 1; stroke-width: 4; } 50% { opacity: 0.9; } 100% { transform: scale(3.4); opacity: 0; stroke-width: 1; } }
+@keyframes sonic-cone-pulse { 0% { transform: scale(0.6); opacity: 0; } 30% { transform: scale(1.1); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(1.4); opacity: 0; } }
+@keyframes sonic-core-pulse { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.6); opacity: 1; filter: brightness(3) drop-shadow(0 0 14px var(--c)); } 70% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.3); opacity: 0; } }
+
+/* ─── CHAOS ──────────────────────────────────────────────────────── */
+.chaos-glitch { animation: chaos-shake 0.5s ease-in-out infinite; }
+.chaos-frac polyline { stroke-dasharray: 100; stroke-dashoffset: 100; animation: chaos-frac-draw 0.55s ease-out forwards; }
+.chaos-frac polyline:nth-child(1) { animation-delay: 0.00s; }
+.chaos-frac polyline:nth-child(2) { animation-delay: 0.06s; }
+.chaos-frac polyline:nth-child(3) { animation-delay: 0.12s; }
+.chaos-frac polyline:nth-child(4) { animation-delay: 0.18s; }
+.chaos-frags .cfrag { transform-origin: 50% 50%; transform-box: fill-box; animation: chaos-frag 0.65s ease-out forwards; opacity: 0; }
+.chaos-frags .cfrag.cf1 { animation-delay: 0.20s; }
+.chaos-frags .cfrag.cf2 { animation-delay: 0.22s; }
+.chaos-frags .cfrag.cf3 { animation-delay: 0.24s; }
+.chaos-frags .cfrag.cf4 { animation-delay: 0.26s; }
+.chaos-glitch-a { transform-origin: 50% 50%; transform-box: fill-box; animation: chaos-glitch-a 0.85s ease-out forwards; }
+.chaos-glitch-b { transform-origin: 50% 50%; transform-box: fill-box; animation: chaos-glitch-b 0.85s ease-out forwards; }
+.chaos-glitch-c { transform-origin: 50% 50%; transform-box: fill-box; animation: chaos-glitch-c 0.85s ease-out forwards; }
+@keyframes chaos-shake     { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-1px,1px); } 50% { transform: translate(1px,-1px); } 75% { transform: translate(-1px,-1px); } }
+@keyframes chaos-frac-draw { 0% { stroke-dashoffset: 100; opacity: 0; } 30% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes chaos-frag      { 0% { transform: scale(0) rotate(0); opacity: 0; } 50% { transform: scale(1.3) rotate(45deg); opacity: 1; filter: brightness(2); } 100% { transform: scale(0.8) rotate(80deg); opacity: 0; } }
+@keyframes chaos-glitch-a  { 0% { transform: scale(0.3) rotate(0); opacity: 0; } 35% { transform: scale(1.2) rotate(15deg); opacity: 1; } 100% { transform: scale(0.6) rotate(40deg); opacity: 0; } }
+@keyframes chaos-glitch-b  { 0% { transform: scale(0.3) translateX(0) rotate(0); opacity: 0; } 35% { transform: scale(1.1) translateX(-2px) rotate(-10deg); opacity: 0.7; } 100% { transform: scale(0.6) translateX(-5px) rotate(-30deg); opacity: 0; } }
+@keyframes chaos-glitch-c  { 0% { transform: scale(0.3) translateX(0) rotate(0); opacity: 0; } 35% { transform: scale(1.1) translateX(2px)  rotate(10deg);  opacity: 0.5; } 100% { transform: scale(0.6) translateX(5px)  rotate(30deg);  opacity: 0; } }
 </style>
