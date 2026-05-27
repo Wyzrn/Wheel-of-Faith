@@ -13,6 +13,8 @@
     openCrystal, equipOpenedItem, useStatCrystal,
     dismantleCharacterFromSlot, getDismantleCost, DISMANTLE_PLAYER_LEVEL_REQUIRED,
     type DismantleResult,
+    fuseCharactersInSlot, previewFuse, getFuseCost, FUSE_PLAYER_LEVEL_REQUIRED,
+    type FuseResult,
     SHARD_COST_PER_SPIN, STAGE_LABELS, MAX_DAILY_SPINS,
     STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, STAT_CRYSTAL_SHARD_COSTS,
     CRYSTAL_BUY_PRICES_GEMS, CRYSTAL_BUY_PRICES_SHARDS, CRYSTAL_SELL_PRICES, CRYSTAL_GRADE_LIST,
@@ -455,6 +457,44 @@
     dismantleTarget = null
     dismantleResult = null
     dismantleError = null
+  }
+
+  // ── Fuse (level 6+) ───────────────────────────────────────────────────────
+  // The baseplate id is committed when the player taps the Fuse button on the
+  // expanded character modal. They then pick a donor from the picker; the
+  // confirm modal shows the cost + max-of-stats preview before paying gems.
+  let fuseBaseId  = $state<string | null>(null)
+  let fuseDonorId = $state<string | null>(null)
+  let fuseResult  = $state<FuseResult | null>(null)
+  let fuseError   = $state<string | null>(null)
+  let fuseBase  = $derived(fuseBaseId  ? roster.find(r => r.id === fuseBaseId)  ?? null : null)
+  let fuseDonor = $derived(fuseDonorId ? roster.find(r => r.id === fuseDonorId) ?? null : null)
+  let fusePreview = $derived(fuseBase && fuseDonor ? previewFuse(fuseBase, fuseDonor) : null)
+  let fuseCost  = $derived(fuseBase && fuseDonor
+    ? getFuseCost(getGemValue(fuseBase.overallTier), getGemValue(fuseDonor.overallTier))
+    : 0)
+
+  function confirmFuse() {
+    const base = fuseBase, donor = fuseDonor
+    if (!base || !donor || !currentSlot) return
+    const out = fuseCharactersInSlot(
+      $state.snapshot(currentSlot) as StorySaveSlot,
+      base.id, donor.id,
+      getGemValue(base.overallTier), getGemValue(donor.overallTier),
+    )
+    if (out === 'locked') { fuseError = 'Reach Level 6 to unlock Fuse.'; return }
+    if (out === 'insufficient_gems') { fuseError = `Not enough gems — need ${fuseCost.toLocaleString()}.`; return }
+    if (out === 'char_not_found') { closeFuse(); return }
+    if (out === 'same_char') { fuseError = 'Pick a different donor.'; return }
+    currentSlot = out.slot
+    fuseResult = out.result
+    // Reset donor selection so the modal collapses back to the result view.
+  }
+  function closeFuse() {
+    fuseBaseId = null
+    fuseDonorId = null
+    fuseResult = null
+    fuseError = null
   }
 
   function closeExpanded() {
@@ -1862,6 +1902,21 @@
             <span class="material-symbols-outlined" style="font-size: 13px;">compare_arrows</span>
             Compare
           </button>
+          <!-- Fuse: L6+ feature. Pick a donor character to combine into this
+               one — keeps base identity, takes max-of-each stat. Hidden
+               below L6 so the header doesn't get crowded. -->
+          {#if playerLevel >= FUSE_PLAYER_LEVEL_REQUIRED}
+            <button
+              class="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
+              style="background: rgba(244,63,94,0.12); border: 1px solid rgba(244,63,94,0.4); color: #f87171; cursor: pointer;"
+              onclick={() => fuseBaseId = expandedEntry!.id}
+              data-fx="big"
+              title="Fuse with another character — takes the max of each stat"
+            >
+              <span class="material-symbols-outlined" style="font-size: 13px;">join</span>
+              Fuse
+            </button>
+          {/if}
           <!-- Quick-equip: auto-picks highest-grade unequipped items. Subtle
                button, fires the action on tap with a confirming toast. -->
           <button
@@ -2755,6 +2810,104 @@
           {/if}
         </div>
         <button onclick={closeDismantle}
+          class="w-full py-2.5 rounded-lg font-mono font-bold text-sm metal-stamp-gold">
+          Done
+        </button>
+      {/if}
+    </div>
+  </div>
+{/if}
+
+<!-- ── Fuse modal (L6+) ──────────────────────────────────────────────────── -->
+{#if fuseBase}
+  <div
+    class="fixed inset-0 z-[60] flex items-center justify-center px-4"
+    style="background: rgba(7,7,13,0.92); backdrop-filter: blur(12px);"
+    onclick={closeFuse}
+    onkeydown={(e) => { if (e.key === 'Escape') closeFuse() }}
+    role="dialog" aria-modal="true" tabindex="-1"
+  >
+    <div
+      class="obsidian-slab w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-5 flex flex-col gap-4"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+      role="document"
+      style="border: 1px solid rgba(244,63,94,0.4);"
+    >
+      {#if fuseResult === null}
+        <p class="text-lg font-bold text-center" style="font-family: var(--font-cinzel); color: #f87171;">Fuse Characters</p>
+        <p class="text-sm text-center" style="color: var(--color-on-surface-variant);">
+          Keeps <span style="color: #ffdf96; font-weight: 700;">{fuseBase.name}</span>'s identity.
+          For each stat, the higher of the two is preserved. The donor character is consumed.
+        </p>
+
+        {#if !fuseDonor}
+          <!-- Donor picker -->
+          <p class="font-mono text-xs uppercase tracking-widest" style="color: #a78bfa;">Pick a donor</p>
+          <div class="flex flex-col gap-2 overflow-y-auto" style="max-height: 50vh;">
+            {#each roster.filter(r => r.id !== fuseBaseId) as donor}
+              <button onclick={() => fuseDonorId = donor.id}
+                class="text-left rounded-lg px-3 py-2.5 flex items-center justify-between gap-3"
+                style="background: rgba(255,255,255,0.03); border: 1px solid rgba(244,63,94,0.18); cursor: pointer;">
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-sm truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{donor.name}</p>
+                  <p class="text-xs truncate" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">{donor.race} · {donor.archetype}</p>
+                </div>
+                <span class="font-mono text-xs font-bold" style="color: #f87171;">{donor.overallTier}</span>
+              </button>
+            {/each}
+          </div>
+          <button onclick={closeFuse}
+            class="w-full py-2.5 rounded-lg font-mono font-bold text-sm"
+            style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--color-outline); cursor: pointer;">
+            Cancel
+          </button>
+        {:else if fusePreview}
+          <!-- Cost + preview -->
+          <div class="rounded-lg px-4 py-3" style="background: rgba(244,63,94,0.10); border: 1px solid rgba(244,63,94,0.3);">
+            <div class="flex items-center justify-between mb-2">
+              <p class="font-mono text-xs" style="color: var(--color-outline);">Base · {fuseBase.name}</p>
+              <p class="font-mono text-xs" style="color: var(--color-outline);">Donor · {fuseDonor.name}</p>
+            </div>
+            <div class="flex flex-col gap-1 text-[11px] font-mono">
+              {#each Object.entries(fusePreview.fusedScores) as [stat, score]}
+                {@const src = fusePreview.sources[stat]}
+                <div class="flex items-center justify-between gap-2">
+                  <span style="color: var(--color-outline);">{stat}</span>
+                  <span style="color: {src === 'base' ? '#fbbf24' : src === 'donor' ? '#f87171' : '#9a907b'};">
+                    {score} ({src})
+                  </span>
+                </div>
+              {/each}
+            </div>
+          </div>
+          <div class="rounded-lg px-4 py-3" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);">
+            <p class="font-mono text-xs mb-1" style="color: var(--color-outline);">Cost</p>
+            <p class="font-bold text-lg" style="color: #f87171; font-family: var(--font-cinzel);">{fuseCost.toLocaleString()} gems</p>
+          </div>
+          {#if fuseError}
+            <p class="font-mono text-xs text-center" style="color: #ef4444;">{fuseError}</p>
+          {/if}
+          <div class="flex gap-2">
+            <button onclick={() => fuseDonorId = null}
+              class="flex-1 py-2.5 rounded-lg font-mono font-bold text-sm"
+              style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--color-outline); cursor: pointer;">
+              Change Donor
+            </button>
+            <button onclick={confirmFuse}
+              class="metal-stamp-crimson flex-1 py-2.5 rounded-lg font-mono font-bold text-sm"
+              style="color: #ffe5e5;">
+              Fuse
+            </button>
+          </div>
+        {/if}
+      {:else}
+        <!-- Result -->
+        <p class="text-lg font-bold text-center" style="font-family: var(--font-cinzel); color: #f87171;">Fusion Complete</p>
+        <p class="text-sm text-center" style="color: var(--color-on-surface-variant);">
+          {fuseBase.name} now carries the best of both. The donor has been consumed.
+        </p>
+        <button onclick={closeFuse}
           class="w-full py-2.5 rounded-lg font-mono font-bold text-sm metal-stamp-gold">
           Done
         </button>

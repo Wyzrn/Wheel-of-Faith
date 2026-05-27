@@ -535,6 +535,91 @@ export function sellCharacterFromSlot(
   }
 }
 
+// ── Fuse ───────────────────────────────────────────────────────────────────
+// Player level 6+ feature. Combines two roster characters into one — the
+// baseplate keeps its identity (name, race, archetype, equipment) and each
+// stat takes the maximum score across both characters. The non-baseplate
+// character is consumed. Very expensive — costs 3× the higher gem value
+// of the pair, paid in gems.
+
+export const FUSE_PLAYER_LEVEL_REQUIRED = 6
+
+const FUSE_STAT_CATEGORIES = [
+  'strength','speed','agility','durability','iq','charisma','fightingSkill',
+  'powerMastery','weaponMastery','armorStrength','potential','energyLevel',
+] as const
+
+/** Gem cost to fuse two characters — proportional to the higher gem value
+ *  of the pair, scaled up so fusing is genuinely a late-game commitment. */
+export function getFuseCost(baseValue: number, donorValue: number): number {
+  return Math.ceil(Math.max(baseValue, donorValue) * 3)
+}
+
+export interface FuseResult {
+  /** Final per-stat score (max across the two characters). */
+  fusedScores: Record<string, number>
+  /** Which character (base/donor) contributed each stat — for UI preview. */
+  sources: Record<string, 'base' | 'donor' | 'tie'>
+}
+
+/** Computes the would-be fused stat block + source map without mutating
+ *  anything. Lets the modal show a preview before the player confirms. */
+export function previewFuse(base: StoryRosterEntry, donor: StoryRosterEntry): FuseResult {
+  const fusedScores: Record<string, number> = {}
+  const sources: Record<string, 'base' | 'donor' | 'tie'> = {}
+  for (const cat of FUSE_STAT_CATEGORIES) {
+    const baseScore  = base.spins.find(r => r.category === cat)?.score ?? 0
+    const donorScore = donor.spins.find(r => r.category === cat)?.score ?? 0
+    fusedScores[cat] = Math.max(baseScore, donorScore)
+    sources[cat] = baseScore > donorScore ? 'base' : donorScore > baseScore ? 'donor' : 'tie'
+  }
+  return { fusedScores, sources }
+}
+
+/** Executes the fuse. The baseplate is replaced with a fused version; the
+ *  donor is removed from the roster; gems are debited. */
+export function fuseCharactersInSlot(
+  slot: StorySaveSlot,
+  baseId: string,
+  donorId: string,
+  baseGemValue: number,
+  donorGemValue: number,
+): { slot: StorySaveSlot; result: FuseResult } | 'locked' | 'insufficient_gems' | 'char_not_found' | 'same_char' {
+  if (slot.playerLevel < FUSE_PLAYER_LEVEL_REQUIRED) return 'locked'
+  if (baseId === donorId) return 'same_char'
+  const base  = slot.roster.find(r => r.id === baseId)
+  const donor = slot.roster.find(r => r.id === donorId)
+  if (!base || !donor) return 'char_not_found'
+  const cost = getFuseCost(baseGemValue, donorGemValue)
+  if (slot.gems < cost) return 'insufficient_gems'
+
+  const { fusedScores, sources } = previewFuse(base, donor)
+
+  // Apply the max-of-two scores into the baseplate's spins. Recompute the
+  // tier label from the new score so the displayed grade lands on the new
+  // ladder (Cosmic / Immortal / etc.) without a separate migration.
+  const newSpins = base.spins.map(r => {
+    if (r.category in fusedScores) {
+      const newScore = fusedScores[r.category]
+      return { ...r, score: newScore, tier: scoreTier(newScore) }
+    }
+    return r
+  })
+  const { overallScore, overallTier } = recomputeOverall(newSpins)
+  const fusedBase: StoryRosterEntry = { ...base, spins: newSpins, overallScore, overallTier }
+
+  return {
+    slot: {
+      ...slot,
+      gems: slot.gems - cost,
+      roster: slot.roster
+        .filter(r => r.id !== donorId)
+        .map(r => r.id === baseId ? fusedBase : r),
+    },
+    result: { fusedScores, sources },
+  }
+}
+
 // ── Dismantle ──────────────────────────────────────────────────────────────
 // Player level 4+ feature. Spends gems (~half of sell value) to break a
 // character into stat crystals + a chance roll on each equipped weapon /
