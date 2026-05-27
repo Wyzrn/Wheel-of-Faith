@@ -274,4 +274,23 @@ export const backstories: SimpleItem[] = [
 
   { label: 'Fell in love with combat after the third time it nearly killed them',
     weight: 1, statBonusGrants: { fightingSkill: 'statBonus', strength: 'statBonus', iq: 'statPenalty' } },
+
+  // Armor-themed backstories — buff the new armorStrength stat
+  { label: 'Apprenticed to a master blacksmith and never took the armor off',
+    weight: 1, statBonusGrants: { armorStrength: 'statBonus', durability: 'statBonus', agility: 'statPenalty' } },
+
+  { label: 'Survived a war by inheriting their fallen captain\'s plate',
+    weight: 1, statBonusGrants: { armorStrength: 'statBonus', fightingSkill: 'statBonus', speed: 'statPenalty' } },
+
+  { label: 'Spent ten years guarding a vault; the armor and them became one',
+    weight: 1, statBonusGrants: { armorStrength: 'statBonus', durability: 'statBonus', charisma: 'statPenalty' } },
+
+  { label: 'Their armor is bonded by ritual; it cannot be removed without permission',
+    weight: 1, statBonusGrants: { armorStrength: 'statBonus', potential: 'statBonus', charisma: 'statPenalty' } },
+
+  { label: 'Forged plate from a meteorite they survived',
+    weight: 1, statBonusGrants: { armorStrength: 'statBonus', strength: 'statBonus', iq: 'statPenalty' } },
+
+  { label: 'Royal guard for a king who never ruled anything; learned to make every shift count',
+    weight: 1, statBonusGrants: { armorStrength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', charisma: 'statPenalty' } },
 ]
