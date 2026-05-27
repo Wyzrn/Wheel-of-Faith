@@ -304,9 +304,11 @@ function getOrResetDaily(slot: StorySaveSlot): DailyCrystalPurchases {
   return slot.dailyCrystalPurchases
 }
 
-/** Returns the spin stage (1–6) for the wheel filter, derived from playerLevel. */
+/** Returns the spin stage (1–9) for the wheel filter, derived from playerLevel.
+ *  Stage = playerLevel + 1 so stage 1 = L0, stage 9 = L8 (no cap). The wheel
+ *  filter indexes STAGE_MAX_STAT_SCORES with stage - 1. */
 export function getStageForPlayerLevel(playerLevel: number): number {
-  return Math.max(1, Math.min(6, playerLevel + 1))
+  return Math.max(1, Math.min(9, playerLevel + 1))
 }
 
 /** Gems cost for the Nth roster capacity upgrade (0-indexed). */

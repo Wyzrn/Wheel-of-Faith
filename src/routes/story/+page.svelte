@@ -539,12 +539,26 @@
   // ── Level-up popup ─────────────────────────────────────────────────────────
   let levelUpPopup = $state<{ newLevel: number } | null>(null)
 
+  // Stat-cap labels MUST match the actual cap in STAT_LEVEL_MAX_SCORES /
+  // STAGE_MAX_STAT_SCORES. Source of truth:
+  //   L0:  54  → F+
+  //   L1:  92  → SS-
+  //   L2:  99  → SSS+
+  //   L3: 107  → ZZ-
+  //   L4: 119  → Cosmic-
+  //   L5: 131  → Celestial-
+  //   L6: 143  → Primordial-
+  //   L7: 155  → Transcendent-
+  //   L8:  ∞   → Uncapped
   const LEVEL_UNLOCKS: Record<number, { unlocks: string[]; statCap: string }> = {
-    1: { unlocks: ['Team size increased to 3', 'Stat cap raised to SS+'], statCap: 'SS+' },
+    1: { unlocks: ['Team size increased to 3', 'Stat cap raised to SS-'], statCap: 'SS-' },
     2: { unlocks: ['Team size increased to 4', 'Hero Spins unlocked (100 shards each)', '2× stat multiplier + luck boost in battle'], statCap: 'SSS+' },
-    3: { unlocks: ['Endless Mode unlocked', 'Stat cap raised to Z'], statCap: 'Z' },
-    4: { unlocks: ['Legend Spins unlocked (500 shards each)', '4× stat multiplier + luck boost in battle', 'Stat cap raised to ZZZ'], statCap: 'ZZZ' },
-    5: { unlocks: ['Stat cap removed — no more limits', 'All systems at maximum'], statCap: 'Uncapped' },
+    3: { unlocks: ['Endless Mode unlocked', 'Stat cap raised to ZZ-'], statCap: 'ZZ-' },
+    4: { unlocks: ['Legend Spins unlocked (500 shards each)', '4× stat multiplier + luck boost in battle', 'Dismantle unlocked', 'Stat cap raised to Cosmic-'], statCap: 'Cosmic-' },
+    5: { unlocks: ['Stat cap raised to Celestial-', 'Cosmic / Immortal worlds unlocked'], statCap: 'Celestial-' },
+    6: { unlocks: ['Paragon Spins unlocked (2500 shards each)', '8× stat multiplier + luck boost in battle', 'Fuse unlocked', 'Stat cap raised to Primordial-'], statCap: 'Primordial-' },
+    7: { unlocks: ['Stat cap raised to Transcendent-', 'Godly / Primordial worlds unlocked'], statCap: 'Transcendent-' },
+    8: { unlocks: ['Stat cap removed — no more limits', 'Absolute / Transcendent / Infinite worlds unlocked', 'All systems at maximum'], statCap: 'Uncapped' },
   }
 
   function checkLevelUp(oldLevel: number, updated: StorySaveSlot) {

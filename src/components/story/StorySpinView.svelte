@@ -88,10 +88,11 @@
   }
 
   // ── Stat tier caps per stage (scores above this are dimmed / unspinnable) ────
-  // Stage 1 (lv0) → B+ (54), Stage 2 (lv1) → SS+ (92), Stage 3 (lv2) → SSS+ (99),
-  // Stage 4 (lv3) → Z (103), Stage 5 (lv4) → ZZZ (115), Stage 6 (lv5) → uncapped
-  // Stat-score cap per stage. Mirrors saveSlots STAT_LEVEL_MAX_SCORES.
-  // Stage index 0 = level 0 cap, stage 8 = no cap.
+  // Mirror of saveSlots STAT_LEVEL_MAX_SCORES; stage = playerLevel + 1.
+  // Stage 1 (L0) → F+ 54   · Stage 2 (L1) → SS- 92  · Stage 3 (L2) → SSS+ 99
+  // Stage 4 (L3) → ZZ- 107 · Stage 5 (L4) → Cosmic- 119
+  // Stage 6 (L5) → Celestial- 131 · Stage 7 (L6) → Primordial- 143
+  // Stage 8 (L7) → Transcendent- 155 · Stage 9 (L8) → no cap
   const STAGE_MAX_STAT_SCORES = [54, 92, 99, 107, 119, 131, 143, 155, Infinity] as const
 
   // ── STAT_CATEGORIES matching scoreTier.ts STAT_WEIGHTS keys ─────────────────
