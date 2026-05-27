@@ -662,24 +662,44 @@
 
   {:else if type === 'holy'}
     {#if direction === 'center'}
-      <!-- Heal mode: radiant cross burst -->
+      <!-- Heal mode — radiant divine bloom. Massive halo glow, a healing
+           rune circle expanding outward with cross + 8 rays inside,
+           rising starlight motes drift upward (signals "restoration" not
+           "attack"), and bright central core that pulses. -->
       <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-        <circle cx="50" cy="50" r="40" fill="var(--c)" opacity="0.18" style="filter:blur(16px)"/>
-        <g class="holy-g">
-          <circle cx="50" cy="50" r="9" fill="var(--c)"/>
-          <line x1="50" y1="39" x2="50" y2="13" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-          <line x1="50" y1="61" x2="50" y2="87" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-          <line x1="39" y1="50" x2="13" y2="50" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-          <line x1="61" y1="50" x2="87" y2="50" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-          <line x1="41" y1="41" x2="22" y2="22" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="59" y1="59" x2="78" y2="78" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="59" y1="41" x2="78" y2="22" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="41" y1="59" x2="22" y2="78" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-          <circle class="holy-mote hm1" cx="50" cy="13" r="2.5" fill="var(--c)"/>
-          <circle class="holy-mote hm2" cx="87" cy="50" r="2"   fill="var(--c)"/>
-          <circle class="holy-mote hm3" cx="50" cy="87" r="2.5" fill="var(--c)"/>
-          <circle class="holy-mote hm4" cx="13" cy="50" r="2"   fill="var(--c)"/>
+        <!-- Big halo backdrop -->
+        <circle cx="50" cy="50" r="48" fill="var(--c)" opacity="0.34" class="hh-bloom" style="filter:blur(20px)"/>
+        <!-- Healing rune ring -->
+        <circle class="hh-rune-ring" cx="50" cy="50" r="36" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.85" stroke-dasharray="3 4"/>
+        <!-- Cross + 8 divine rays inside the ring -->
+        <g class="hh-rays">
+          <line x1="50" y1="38" x2="50" y2="14" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="50" y1="62" x2="50" y2="86" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="38" y1="50" x2="14" y2="50" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="62" y1="50" x2="86" y2="50" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="41" y1="41" x2="22" y2="22" stroke="var(--c)" stroke-width="2.2" stroke-linecap="round" opacity="0.8"/>
+          <line x1="59" y1="59" x2="78" y2="78" stroke="var(--c)" stroke-width="2.2" stroke-linecap="round" opacity="0.8"/>
+          <line x1="59" y1="41" x2="78" y2="22" stroke="var(--c)" stroke-width="2.2" stroke-linecap="round" opacity="0.8"/>
+          <line x1="41" y1="59" x2="22" y2="78" stroke="var(--c)" stroke-width="2.2" stroke-linecap="round" opacity="0.8"/>
         </g>
+        <!-- Central healing orb -->
+        <g class="hh-core">
+          <circle cx="50" cy="50" r="11" fill="var(--c)"/>
+          <circle cx="50" cy="50" r="6"  fill="white" opacity="0.95"/>
+        </g>
+        <!-- Rising healing motes — drift UPWARD signaling "restoration" -->
+        <circle class="hh-mote hm1" cx="32" cy="70" r="1.8" fill="var(--c)"/>
+        <circle class="hh-mote hm2" cx="50" cy="74" r="2"   fill="var(--c)"/>
+        <circle class="hh-mote hm3" cx="68" cy="70" r="1.8" fill="var(--c)"/>
+        <circle class="hh-mote hm4" cx="40" cy="78" r="1.5" fill="var(--c)" opacity="0.85"/>
+        <circle class="hh-mote hm5" cx="60" cy="78" r="1.5" fill="var(--c)" opacity="0.85"/>
+        <circle class="hh-mote hm6" cx="26" cy="66" r="1.6" fill="var(--c)" opacity="0.8"/>
+        <circle class="hh-mote hm7" cx="74" cy="66" r="1.6" fill="var(--c)" opacity="0.8"/>
+        <!-- Tip sparkles at ray endpoints -->
+        <circle class="hh-sparkle hs1" cx="50" cy="14" r="2.2" fill="white"/>
+        <circle class="hh-sparkle hs2" cx="86" cy="50" r="2"   fill="white"/>
+        <circle class="hh-sparkle hs3" cx="50" cy="86" r="2.2" fill="white"/>
+        <circle class="hh-sparkle hs4" cx="14" cy="50" r="2"   fill="white"/>
       </svg>
     {:else}
       <!-- Attack mode: star charges up → fires light beam trailing behind -->
@@ -923,49 +943,88 @@
     </svg>
 
   {:else if type === 'shield'}
+    <!-- Shield — divine aegis. Bloom pulses, three nested hex shields
+         with runic etchings rotate in opposite directions, an impact
+         flash sparks off the center where the blow lands, sparks burst
+         from each hex vertex. Three layered block-impact rings ripple
+         outward. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <!-- Bloom glow -->
-      <circle cx="50" cy="50" r="52" fill="var(--c)" opacity="0.30" class="shld-bloom" style="filter:blur(22px)"/>
-      <!-- Shield body -->
-      <g class="shld-body">
-        <polygon class="shld-hex" points="50,8 88,29 88,71 50,92 12,71 12,29" stroke="var(--c)" stroke-width="4" fill="var(--c)" fill-opacity="0.18"/>
-        <polygon points="50,20 76,35 76,65 50,80 24,65 24,35" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.6"/>
-        <polygon points="50,30 66,40 66,60 50,70 34,60 34,40" stroke="var(--c)" stroke-width="1" fill="var(--c)" fill-opacity="0.10" opacity="0.45"/>
-        <line x1="50" y1="26" x2="50" y2="74" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round" opacity="0.85"/>
-        <line x1="26" y1="50" x2="74" y2="50" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round" opacity="0.85"/>
-        <circle cx="50" cy="50" r="7" fill="white" opacity="0.85" class="shld-core"/>
+      <circle cx="50" cy="50" r="54" fill="var(--c)" opacity="0.38" class="sd-bloom" style="filter:blur(22px)"/>
+      <!-- Outer hex shield -->
+      <g class="sd-hex-outer">
+        <polygon points="50,4 90,27 90,73 50,96 10,73 10,27"
+                 stroke="var(--c)" stroke-width="4" fill="var(--c)" fill-opacity="0.22"/>
+        <!-- Runic etchings on each face -->
+        <line x1="50" y1="4"  x2="50" y2="14" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
+        <line x1="90" y1="27" x2="82" y2="32" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
+        <line x1="90" y1="73" x2="82" y2="68" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
+        <line x1="50" y1="96" x2="50" y2="86" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
+        <line x1="10" y1="73" x2="18" y2="68" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
+        <line x1="10" y1="27" x2="18" y2="32" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
       </g>
-      <!-- Three expanding block-impact rings -->
-      <circle class="blk-ring bkr1" cx="50" cy="50" r="46" stroke="var(--c)" stroke-width="5" fill="none"/>
-      <circle class="blk-ring bkr2" cx="50" cy="50" r="46" stroke="var(--c)" stroke-width="3" fill="none"/>
-      <circle class="blk-ring bkr3" cx="50" cy="50" r="46" stroke="var(--c)" stroke-width="2" fill="none"/>
-      <!-- Hex-vertex sparks -->
-      <circle class="blk-spark bks1" cx="50" cy="8"  r="4"   fill="var(--c)"/>
-      <circle class="blk-spark bks2" cx="88" cy="29" r="3.5" fill="var(--c)"/>
-      <circle class="blk-spark bks3" cx="88" cy="71" r="3.5" fill="var(--c)"/>
-      <circle class="blk-spark bks4" cx="50" cy="92" r="4"   fill="var(--c)"/>
-      <circle class="blk-spark bks5" cx="12" cy="71" r="3.5" fill="var(--c)"/>
-      <circle class="blk-spark bks6" cx="12" cy="29" r="3.5" fill="var(--c)"/>
+      <!-- Middle hex (counter-rotating) -->
+      <g class="sd-hex-mid">
+        <polygon points="50,18 76,33 76,67 50,82 24,67 24,33"
+                 stroke="var(--c)" stroke-width="2" fill="none" opacity="0.75"/>
+      </g>
+      <!-- Inner hex with cross and core -->
+      <g class="sd-hex-inner">
+        <polygon points="50,28 66,38 66,62 50,72 34,62 34,38"
+                 stroke="var(--c)" stroke-width="1.5" fill="var(--c)" fill-opacity="0.18" opacity="0.85"/>
+        <line x1="50" y1="28" x2="50" y2="72" stroke="var(--c)" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+        <line x1="34" y1="50" x2="66" y2="50" stroke="var(--c)" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="50" cy="50" r="9" fill="var(--c)" class="sd-core"/>
+        <circle cx="50" cy="50" r="5" fill="white" opacity="0.95"/>
+      </g>
+      <!-- Three expanding block-impact rings (drawn LAST so they sit on top) -->
+      <circle class="sd-ring sdr1" cx="50" cy="50" r="46" stroke="var(--c)" stroke-width="5"   fill="none"/>
+      <circle class="sd-ring sdr2" cx="50" cy="50" r="46" stroke="var(--c)" stroke-width="3"   fill="none"/>
+      <circle class="sd-ring sdr3" cx="50" cy="50" r="46" stroke="var(--c)" stroke-width="2"   fill="none"/>
+      <!-- Hex-vertex impact sparks -->
+      <circle class="sd-spark ss1" cx="50" cy="4"  r="4"   fill="var(--c)"/>
+      <circle class="sd-spark ss2" cx="90" cy="27" r="3.5" fill="var(--c)"/>
+      <circle class="sd-spark ss3" cx="90" cy="73" r="3.5" fill="var(--c)"/>
+      <circle class="sd-spark ss4" cx="50" cy="96" r="4"   fill="var(--c)"/>
+      <circle class="sd-spark ss5" cx="10" cy="73" r="3.5" fill="var(--c)"/>
+      <circle class="sd-spark ss6" cx="10" cy="27" r="3.5" fill="var(--c)"/>
     </svg>
 
   {:else if type === 'berserker'}
+    <!-- Berserker — primal fury surge. Crimson bloom pulses, jagged rage
+         spikes burst outward from a roaring core, dripping bloodlust
+         motes shake violently, screaming arc lines vibrate the air. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.22" style="filter:blur(16px)"/>
-      <g class="bsrk-g">
-        <circle cx="50" cy="50" r="13" fill="var(--c)"/>
-        <line x1="50" y1="37" x2="50" y2="10" stroke="var(--c)" stroke-width="7" stroke-linecap="round"/>
-        <line x1="50" y1="63" x2="50" y2="90" stroke="var(--c)" stroke-width="7" stroke-linecap="round"/>
-        <line x1="37" y1="50" x2="10" y2="50" stroke="var(--c)" stroke-width="7" stroke-linecap="round"/>
-        <line x1="63" y1="50" x2="90" y2="50" stroke="var(--c)" stroke-width="7" stroke-linecap="round"/>
-        <line x1="41" y1="41" x2="22" y2="22" stroke="var(--c)" stroke-width="6" stroke-linecap="round"/>
-        <line x1="59" y1="59" x2="78" y2="78" stroke="var(--c)" stroke-width="6" stroke-linecap="round"/>
-        <line x1="59" y1="41" x2="78" y2="22" stroke="var(--c)" stroke-width="6" stroke-linecap="round"/>
-        <line x1="41" y1="59" x2="22" y2="78" stroke="var(--c)" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="50" cy="50" r="48" fill="var(--c)" opacity="0.36" class="bk-bloom" style="filter:blur(20px)"/>
+      <!-- Outer pulsing rage ring with jagged inner edge -->
+      <polygon class="bk-ring" fill="none" stroke="var(--c)" stroke-width="2.5" opacity="0.7"
+               points="50,2 56,18 70,8 64,24 84,16 70,30 92,32 74,40 96,52 76,52 92,68 72,60 80,80 62,70 64,92 50,76 36,92 38,70 20,80 28,60 8,68 24,52 4,52 26,40 8,32 30,30 16,16 36,24 30,8 44,18"/>
+      <!-- Eight rage spikes — jagged, thicker at the inside -->
+      <g class="bk-spikes">
+        <polygon class="bk-sp bsp1" points="50,50 38,8 50,18 62,8" fill="var(--c)"/>
+        <polygon class="bk-sp bsp2" points="50,50 92,38 82,50 92,62" fill="var(--c)" opacity="0.92"/>
+        <polygon class="bk-sp bsp3" points="50,50 62,92 50,82 38,92" fill="var(--c)" opacity="0.92"/>
+        <polygon class="bk-sp bsp4" points="50,50 8,62 18,50 8,38" fill="var(--c)" opacity="0.92"/>
+        <polygon class="bk-sp bsp5" points="50,50 18,18 32,22 26,32" fill="var(--c)" opacity="0.85"/>
+        <polygon class="bk-sp bsp6" points="50,50 82,18 74,32 68,22" fill="var(--c)" opacity="0.85"/>
+        <polygon class="bk-sp bsp7" points="50,50 82,82 68,78 74,68" fill="var(--c)" opacity="0.85"/>
+        <polygon class="bk-sp bsp8" points="50,50 18,82 26,68 32,78" fill="var(--c)" opacity="0.85"/>
       </g>
-      <circle class="rage-mote rm1" cx="50" cy="6"  r="3"   fill="var(--c)" opacity="0.7"/>
-      <circle class="rage-mote rm2" cx="94" cy="50" r="2.5" fill="var(--c)" opacity="0.6"/>
-      <circle class="rage-mote rm3" cx="50" cy="94" r="3"   fill="var(--c)" opacity="0.7"/>
-      <circle class="rage-mote rm4" cx="6"  cy="50" r="2.5" fill="var(--c)" opacity="0.6"/>
+      <!-- Roaring core — pulsing dark center -->
+      <g class="bk-core">
+        <circle cx="50" cy="50" r="16" fill="var(--c)"/>
+        <circle cx="50" cy="50" r="10" fill="#0d0d16" opacity="0.55"/>
+        <circle cx="50" cy="50" r="5"  fill="white" opacity="0.95"/>
+      </g>
+      <!-- Vibrating arc lines (screaming air) -->
+      <path class="bk-arc bka1" d="M16 32 Q30 24 44 32" stroke="var(--c)" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <path class="bk-arc bka2" d="M84 32 Q70 24 56 32" stroke="var(--c)" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <path class="bk-arc bka3" d="M16 68 Q30 76 44 68" stroke="var(--c)" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.6"/>
+      <path class="bk-arc bka4" d="M84 68 Q70 76 56 68" stroke="var(--c)" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.6"/>
+      <!-- Bloodlust motes scattering outward -->
+      <circle class="bk-mote bm1" cx="50" cy="4"  r="2.4" fill="var(--c)"/>
+      <circle class="bk-mote bm2" cx="96" cy="50" r="2"   fill="var(--c)" opacity="0.85"/>
+      <circle class="bk-mote bm3" cx="50" cy="96" r="2.4" fill="var(--c)"/>
+      <circle class="bk-mote bm4" cx="4"  cy="50" r="2"   fill="var(--c)" opacity="0.85"/>
     </svg>
 
   {:else if type === 'wind'}
@@ -2853,4 +2912,78 @@
 @keyframes er-spike { 0% { transform: translateY(20px) scaleY(0.2); opacity: 0; } 35% { transform: translateY(0) scaleY(1.1); opacity: 1; filter: brightness(1.6); } 70% { transform: translateY(0) scaleY(1); opacity: 0.95; } 100% { transform: translateY(0) scaleY(0.9); opacity: 0; } }
 @keyframes er-rock  { 0% { transform: translateY(20px) scale(0); opacity: 0; } 40% { transform: translateY(0) scale(1.3); opacity: 1; } 100% { transform: translateY(-12px) scale(0.6); opacity: 0; } }
 @keyframes er-dust  { 0% { transform: translateY(6px) scale(0); opacity: 0; } 40% { transform: translateY(-4px) scale(1.4); opacity: 0.8; } 100% { transform: translateY(-20px) scale(0.5); opacity: 0; } }
+
+/* ─── BERSERKER (revamp) ─────────────────────────────────────────── */
+.bk-bloom  { transform-origin: 50% 50%; animation: bk-bloom 0.9s ease-out forwards; opacity: 0; }
+.bk-ring   { transform-origin: 50% 50%; animation: bk-ring 0.9s ease-out forwards; }
+.bk-spikes { transform-origin: 50% 50%; animation: bk-spikes 0.85s ease-out forwards; }
+.bk-sp     { transform-origin: 50% 50%; transform-box: fill-box; animation: bk-spike 0.6s ease-out forwards; opacity: 0; }
+.bk-spikes .bsp1 { animation-delay: 0.04s; }
+.bk-spikes .bsp2 { animation-delay: 0.07s; }
+.bk-spikes .bsp3 { animation-delay: 0.10s; }
+.bk-spikes .bsp4 { animation-delay: 0.13s; }
+.bk-spikes .bsp5 { animation-delay: 0.16s; }
+.bk-spikes .bsp6 { animation-delay: 0.19s; }
+.bk-spikes .bsp7 { animation-delay: 0.22s; }
+.bk-spikes .bsp8 { animation-delay: 0.25s; }
+.bk-core   { transform-origin: 50% 50%; animation: bk-core 0.85s ease-out forwards; }
+.bk-arc    { stroke-dasharray: 50; stroke-dashoffset: 50; animation: bk-arc 0.45s ease-out forwards; }
+.bka1 { animation-delay: 0.20s; }
+.bka2 { animation-delay: 0.22s; }
+.bka3 { animation-delay: 0.24s; }
+.bka4 { animation-delay: 0.26s; }
+.bk-mote   { transform-origin: center; transform-box: fill-box; animation: spark-pop 0.55s 0.28s ease-out forwards; opacity: 0; }
+.bm2 { animation-delay: 0.30s; }
+.bm3 { animation-delay: 0.32s; }
+.bm4 { animation-delay: 0.34s; }
+@keyframes bk-bloom  { 0% { opacity: 0; transform: scale(0.3); } 20% { opacity: 0.85; transform: scale(1.3); filter: brightness(3); } 60% { opacity: 0.45; transform: scale(1.1); } 100% { opacity: 0; transform: scale(2.0); } }
+@keyframes bk-ring   { 0% { transform: scale(0.4) rotate(-10deg); opacity: 0; } 30% { transform: scale(1.15) rotate(8deg); opacity: 1; filter: brightness(2); } 70% { transform: scale(1) rotate(-4deg); opacity: 0.7; } 100% { transform: scale(1.2) rotate(0); opacity: 0; } }
+@keyframes bk-spikes { 0%,100% { transform: translate(0,0); } 30%,50%,70% { transform: translate(-1px,1px); } 40%,60% { transform: translate(1px,-1px); } }
+@keyframes bk-spike  { 0% { transform: scale(0); opacity: 0; } 35% { transform: scale(1.2); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(0.9); opacity: 0; } }
+@keyframes bk-core   { 0% { transform: scale(0); opacity: 0; filter: brightness(1); } 30% { transform: scale(1.4); opacity: 1; filter: brightness(3.5) drop-shadow(0 0 22px var(--c)); } 70% { transform: scale(1.1); opacity: 0.95; } 100% { transform: scale(0.8); opacity: 0; } }
+@keyframes bk-arc    { 0% { stroke-dashoffset: 50; opacity: 0; } 40% { stroke-dashoffset: 0; opacity: 0.9; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+
+/* ─── SHIELD (revamp) ────────────────────────────────────────────── */
+.sd-bloom     { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.sd-hex-outer { transform-origin: 50% 50%; animation: sd-hex-outer 0.85s ease-out forwards; }
+.sd-hex-mid   { transform-origin: 50% 50%; animation: sd-hex-mid   0.85s ease-out forwards; }
+.sd-hex-inner { transform-origin: 50% 50%; animation: sd-hex-inner 0.85s ease-out forwards; }
+.sd-core      { transform-origin: 50% 50%; transform-box: fill-box; animation: sd-core 0.85s ease-out forwards; }
+.sd-ring      { transform-origin: 50% 50%; opacity: 0; }
+.sdr1 { animation: sd-ring 0.65s ease-out forwards; }
+.sdr2 { animation: sd-ring 0.75s 0.08s ease-out forwards; }
+.sdr3 { animation: sd-ring 0.85s 0.16s ease-out forwards; }
+.sd-spark     { transform-origin: center; transform-box: fill-box; animation: spark-pop 0.55s 0.18s ease-out forwards; opacity: 0; }
+.ss2 { animation-delay: 0.20s; }
+.ss3 { animation-delay: 0.22s; }
+.ss4 { animation-delay: 0.24s; }
+.ss5 { animation-delay: 0.26s; }
+.ss6 { animation-delay: 0.28s; }
+@keyframes sd-hex-outer { 0% { transform: scale(0.3) rotate(0); opacity: 0; } 25% { transform: scale(1.15) rotate(15deg); opacity: 1; filter: brightness(2.5); } 65% { transform: scale(1) rotate(8deg); opacity: 0.95; } 100% { transform: scale(0.95) rotate(0); opacity: 0; } }
+@keyframes sd-hex-mid   { 0% { transform: scale(0.4) rotate(0); opacity: 0; } 30% { transform: scale(1.1) rotate(-15deg); opacity: 1; } 70% { transform: scale(1) rotate(-8deg); opacity: 0.85; } 100% { transform: scale(0.95) rotate(0); opacity: 0; } }
+@keyframes sd-hex-inner { 0% { transform: scale(0.4) rotate(0); opacity: 0; } 30% { transform: scale(1.2) rotate(10deg); opacity: 1; filter: brightness(2) drop-shadow(0 0 14px var(--c)); } 100% { transform: scale(0.9) rotate(0); opacity: 0; } }
+@keyframes sd-core      { 0% { transform: scale(0); opacity: 0; } 30% { transform: scale(1.6); opacity: 1; filter: brightness(4) drop-shadow(0 0 18px var(--c)); } 100% { transform: scale(0.7); opacity: 0; } }
+@keyframes sd-ring      { 0% { transform: scale(0.1); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+
+/* ─── HOLY HEAL MODE (revamp) ────────────────────────────────────── */
+.hh-bloom     { transform-origin: 50% 50%; animation: sh-bloom 0.95s ease-out forwards; opacity: 0; }
+.hh-rune-ring { transform-origin: 50% 50%; animation: hh-rune 1.0s ease-out forwards; }
+.hh-rays      { transform-origin: 50% 50%; animation: hh-rays 0.9s ease-out forwards; }
+.hh-core      { transform-origin: 50% 50%; animation: hh-core 0.9s ease-out forwards; }
+.hh-mote      { transform-origin: center; transform-box: fill-box; animation: hh-mote-rise 1.0s ease-out forwards; opacity: 0; }
+.hh-mote.hm1 { animation-delay: 0.12s; }
+.hh-mote.hm2 { animation-delay: 0.16s; }
+.hh-mote.hm3 { animation-delay: 0.20s; }
+.hh-mote.hm4 { animation-delay: 0.24s; }
+.hh-mote.hm5 { animation-delay: 0.28s; }
+.hh-mote.hm6 { animation-delay: 0.32s; }
+.hh-mote.hm7 { animation-delay: 0.36s; }
+.hh-sparkle   { transform-origin: center; transform-box: fill-box; animation: spark-pop 0.5s 0.30s ease-out forwards; opacity: 0; }
+.hs2 { animation-delay: 0.34s; }
+.hs3 { animation-delay: 0.38s; }
+.hs4 { animation-delay: 0.42s; }
+@keyframes hh-rune     { 0% { transform: scale(0.3) rotate(0); opacity: 0; } 25% { transform: scale(1.2) rotate(60deg); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(1.6) rotate(180deg); opacity: 0; } }
+@keyframes hh-rays     { 0% { transform: scale(0); opacity: 0; } 25% { transform: scale(1.2); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 18px var(--c)); } 70% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(0.9); opacity: 0; } }
+@keyframes hh-core     { 0% { transform: scale(0); opacity: 0; filter: brightness(1); } 30% { transform: scale(1.5); opacity: 1; filter: brightness(4.5) drop-shadow(0 0 24px var(--c)); } 70% { transform: scale(1.1); opacity: 0.95; } 100% { transform: scale(0.8); opacity: 0; } }
+@keyframes hh-mote-rise{ 0% { transform: translateY(8px) scale(0); opacity: 0; } 30% { transform: translateY(0) scale(1.4); opacity: 1; filter: brightness(2); } 100% { transform: translateY(-30px) scale(0.5); opacity: 0; } }
 </style>
