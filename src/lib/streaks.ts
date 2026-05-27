@@ -71,19 +71,3 @@ export function detectStreak(results: SpinResult[]): Streak | null {
   return { length: len, floorTier: floor, accentColor, message }
 }
 
-// Result-by-result diff: returns the streak that just FORMED on the
-// latest spin. Compares the streak BEFORE and AFTER the most recent
-// result. If the streak count grew (or transitioned from 0 → 2), the
-// banner fires. Avoids firing the same banner repeatedly on subsequent
-// non-stat spins.
-export function newlyFormedStreak(
-  prevResults: SpinResult[],
-  nextResults: SpinResult[],
-): Streak | null {
-  const prev = detectStreak(prevResults)
-  const next = detectStreak(nextResults)
-  if (!next) return null
-  // Streak length grew → it's a fresh moment.
-  if (!prev || next.length > prev.length) return next
-  return null
-}

@@ -917,14 +917,17 @@
       </div>
 
     {:else}
-      <!-- Gallery opt-in toggle -->
-      <label class="flex items-center gap-2.5 cursor-pointer select-none py-1" style="opacity: {saving ? 0.5 : 1};">
-        <div class="relative shrink-0 w-9 h-5"
+      <!-- Gallery opt-in toggle — switched from <label>+<div role=checkbox>
+           to a single <button role=switch> so it satisfies a11y rules
+           without a hidden input. -->
+      <div class="flex items-center gap-2.5 select-none py-1" style="opacity: {saving ? 0.5 : 1};">
+        <button
+          type="button"
+          class="relative shrink-0 w-9 h-5 cursor-pointer"
           onclick={() => { if (!saving) shareInGallery = !shareInGallery }}
-          role="checkbox"
+          role="switch"
           aria-checked={shareInGallery}
-          tabindex="0"
-          onkeydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !saving) shareInGallery = !shareInGallery }}
+          aria-label="Share in public gallery"
         >
           <div class="absolute inset-0 rounded-full transition-all duration-200"
             style="background: {shareInGallery ? 'rgba(167,139,250,0.35)' : 'rgba(255,255,255,0.06)'}; border: 1px solid {shareInGallery ? 'rgba(167,139,250,0.6)' : 'rgba(255,255,255,0.12)'};">
@@ -932,11 +935,11 @@
           <div class="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
             style="background: {shareInGallery ? '#a78bfa' : '#4e4635'}; left: {shareInGallery ? '18px' : '2px'}; box-shadow: 0 1px 4px rgba(0,0,0,0.4);">
           </div>
-        </div>
+        </button>
         <span class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: {shareInGallery ? '#a78bfa' : '#6b7280'};">
           Share in public gallery
         </span>
-      </label>
+      </div>
 
       <!-- Default / disabled / saving state: two buttons side by side -->
       <div class="flex gap-3">

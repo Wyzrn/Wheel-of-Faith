@@ -7,7 +7,7 @@
   import SpinProgressDots from '../components/SpinProgressDots.svelte'
   import FirstTimeTooltip from '../components/FirstTimeTooltip.svelte'
   import StreakBanner from '../components/StreakBanner.svelte'
-  import { detectStreak, newlyFormedStreak, type Streak } from '$lib/streaks'
+  import { detectStreak, type Streak } from '$lib/streaks'
   import { saveToHallOfFame } from '$lib/hallOfFame'
   import TierBadge from '../components/TierBadge.svelte'
   import CharacterCard from '../components/CharacterCard.svelte'

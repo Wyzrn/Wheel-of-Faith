@@ -8,11 +8,20 @@
   import { goto, onNavigate } from '$app/navigation'
   import { triggerMenu, triggerStoryHome } from '$lib/menuState.svelte'
   import { auth } from '$lib/stores/auth.svelte'
+  import { settings } from '$lib/settings.svelte'
+  import { setPerfTierOverride } from '$lib/perf'
 
   let { children } = $props()
   let showSettings = $state(false)
 
   onMount(() => { auth.init() })
+
+  // Keep the perf-tier override in sync with the High Quality settings
+  // toggle. Default 'auto' = use device detection; 'high' = force every
+  // device to render full fidelity.
+  $effect(() => {
+    setPerfTierOverride(settings.highQualityOverride === 'high' ? 'high' : null)
+  })
 
   let isStoryRoute = $derived($page.url.pathname.startsWith('/story'))
 

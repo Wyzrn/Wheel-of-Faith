@@ -85,12 +85,20 @@
   // Replay trigger — when the parent's counter increments, re-fire the
   // most-recently captured celebration spec. The lc-root component
   // unmounts when its onComplete fires; the key bump here guarantees the
-  // new mount runs its animations fresh.
-  let prevReplayTrigger = replayTrigger
+  // new mount runs its animations fresh. prevReplayTrigger initialized
+  // to the current value inside the effect (not at declaration) so we
+  // don't capture a stale snapshot of the prop.
+  let prevReplayTrigger = $state(0)
+  let _replayInit = false
   $effect(() => {
-    void replayTrigger
-    if (replayTrigger !== prevReplayTrigger) {
-      prevReplayTrigger = replayTrigger
+    const t = replayTrigger
+    if (!_replayInit) {
+      _replayInit = true
+      prevReplayTrigger = t
+      return
+    }
+    if (t !== prevReplayTrigger) {
+      prevReplayTrigger = t
       if (lastCelebration) {
         celebration = { ...lastCelebration, key: ++celebrationKey }
       }
@@ -141,11 +149,13 @@
   let shakeStartTime = 0
 
   // External spin trigger — incremented by parent to programmatically fire a spin
-  let prevSpinTrigger = spinTrigger
+  let prevSpinTrigger = $state(0)
+  let _spinTriggerInit = false
   $effect(() => {
-    void spinTrigger
-    if (spinTrigger !== prevSpinTrigger) {
-      prevSpinTrigger = spinTrigger
+    const t = spinTrigger
+    if (!_spinTriggerInit) { _spinTriggerInit = true; prevSpinTrigger = t; return }
+    if (t !== prevSpinTrigger) {
+      prevSpinTrigger = t
       if (spinStatus === 'IDLE') handleSpin()
     }
   })

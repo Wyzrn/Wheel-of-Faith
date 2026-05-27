@@ -1,7 +1,12 @@
 <script lang="ts">
   import { settings } from '$lib/settings.svelte'
+  import { getPerfTier } from '$lib/perf'
 
   let { onClose }: { onClose: () => void } = $props()
+  // Tier the heuristic has bucketed this device into — surfaced as a tiny
+  // info line under the High Quality toggle so users understand whether
+  // enabling the override is risky on their device.
+  let detectedTier = $derived(getPerfTier())
 
   const SPIN_SPEED_OPTIONS: { value: number; label: string }[] = [
     { value: 0.5,  label: 'Slow'    },
@@ -82,6 +87,28 @@
       </div>
       <button onclick={() => toggle('effectsEnabled')} class="toggle-btn" style="background: {settings.effectsEnabled ? '#f0c040' : '#0c0b14'}; box-shadow: {settings.effectsEnabled ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.effectsEnabled ? '#f0c040' : 'rgba(78,70,53,0.5)'};" aria-label="Toggle effects">
         <span class="toggle-knob" style="left: {settings.effectsEnabled ? '22px' : '2px'}; background: {settings.effectsEnabled ? '#0d0d16' : '#3a3848'};"></span>
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ─ High Quality override ─ -->
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-semibold" style="color: #e4e1ee;">High Quality</p>
+        <p class="text-xs mt-0.5" style="color: #9a907b;">
+          Force full-fidelity VFX on this device. May lag on phones.
+          <span class="ml-1 opacity-70">(detected: <span style="color: {detectedTier === 'high' ? '#34d399' : detectedTier === 'mid' ? '#f0c040' : '#fb923c'}">{detectedTier}</span>)</span>
+        </p>
+      </div>
+      <button
+        onclick={() => { settings.highQualityOverride = settings.highQualityOverride === 'high' ? 'auto' : 'high'; settings.save() }}
+        class="toggle-btn"
+        style="background: {settings.highQualityOverride === 'high' ? '#f0c040' : '#0c0b14'}; box-shadow: {settings.highQualityOverride === 'high' ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.highQualityOverride === 'high' ? '#f0c040' : 'rgba(78,70,53,0.5)'};"
+        aria-label="Toggle high quality"
+        aria-pressed={settings.highQualityOverride === 'high'}
+      >
+        <span class="toggle-knob" style="left: {settings.highQualityOverride === 'high' ? '22px' : '2px'}; background: {settings.highQualityOverride === 'high' ? '#0d0d16' : '#3a3848'};"></span>
       </button>
     </div>
 

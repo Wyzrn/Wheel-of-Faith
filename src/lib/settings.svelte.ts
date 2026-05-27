@@ -17,6 +17,11 @@ class SettingsStore {
   autoBattle      = $state(true)
   autoBattleSpeed = $state(1.0)
   autoContinueMs  = $state(0)     // auto-fire Continue after spin reveal (0 = off)
+  // Force-high-quality override. When true, perf scaling is bypassed and
+  // every device renders at full fidelity regardless of detected tier.
+  // Useful on flagship phones that the heuristic mis-buckets as 'low'
+  // (any touch device defaults to low). null = auto (default).
+  highQualityOverride: 'auto' | 'high' = $state('auto')
 
   // Backward-compat shim: existing views still read settings.battleSpeed
   // as a single numeric multiplier. Resolves to the auto speed when auto is
@@ -44,6 +49,7 @@ class SettingsStore {
       if (typeof s.autoBattle      === 'boolean') this.autoBattle      = s.autoBattle
       if (typeof s.autoBattleSpeed === 'number')  this.autoBattleSpeed = s.autoBattleSpeed
       if (typeof s.autoContinueMs  === 'number')  this.autoContinueMs  = s.autoContinueMs
+      if (s.highQualityOverride === 'auto' || s.highQualityOverride === 'high') this.highQualityOverride = s.highQualityOverride
       // Migrate the old battleSpeed field (single slider, 99 = instant).
       if (s.autoBattleSpeed === undefined && typeof s.battleSpeed === 'number') {
         if (s.battleSpeed >= 99) { this.autoBattle = true; this.autoBattleSpeed = 1.6 }
@@ -61,6 +67,7 @@ class SettingsStore {
       autoBattle:      this.autoBattle,
       autoBattleSpeed: this.autoBattleSpeed,
       autoContinueMs:  this.autoContinueMs,
+      highQualityOverride: this.highQualityOverride,
     }))
   }
 }

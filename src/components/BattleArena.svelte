@@ -16,7 +16,6 @@
 <script lang="ts">
   import { onDestroy, tick, type Snippet } from 'svelte'
   import AttackFX from './AttackFX.svelte'
-  import BattleProjectile from './BattleProjectile.svelte'
   import BattleHotbar from './BattleHotbar.svelte'
   import DamageIndicator from './DamageIndicator.svelte'
   import type { DamageEvent } from '$lib/game/damageEvent'
@@ -270,21 +269,9 @@
     return null
   }
 
-  // ── Projectile registry (Segment 2) ────────────────────────────────────────
-  // Each entry corresponds to one in-flight comet from an attacker anchor to
-  // a target anchor. On the projectile's onImpact we play the impact burst
-  // (existing AttackFX) at the target coords + drop the damage number.
-  interface Projectile {
-    id: number
-    startX: number; startY: number
-    endX: number; endY: number
-    color: string
-    gradeIdx: number
-    durationMs: number
-    onImpact: () => void
-  }
-  let projectiles = $state<Projectile[]>([])
-  let projIdCounter = 0
+  // ── Projectile registry retired post-S5 — all damage now flows through
+  //     the in-place / beam paths. Component file + helpers kept around
+  //     only as reference if a future feature wants them back.
 
   // ── Beam registry ─────────────────────────────────────────────────────────
   // A beam is a straight line of light from the attacker anchor to the
@@ -359,30 +346,6 @@
 
   const GRADE_IDX: Record<string, number> = {
     F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, SS: 7, SSS: 8, God: 9, Godly: 9,
-  }
-
-  function spawnProjectile(
-    startX: number, startY: number,
-    endX: number, endY: number,
-    color: string, grade: string | undefined,
-    onImpact: () => void,
-  ) {
-    const gradeIdx = GRADE_IDX[grade ?? 'C'] ?? 3
-    const dist = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2)
-    // Slower comets for longer distances feel weightier; cap to keep
-    // gameplay snappy. Speed factor scales like battle log delay.
-    const baseDur = Math.max(280, Math.min(600, 280 + dist * 0.6))
-    const durationMs = Math.max(80, baseDur / Math.min(speedFactor, 3))
-    const p: Projectile = {
-      id: ++projIdCounter,
-      startX, startY, endX, endY,
-      color, gradeIdx, durationMs,
-      onImpact: () => {
-        projectiles = projectiles.filter(x => x.id !== p.id)
-        onImpact()
-      },
-    }
-    projectiles = [...projectiles, p]
   }
 
   // Resolve an ArenaMember from a fxEvent.attackerSide / targetIdxs entry.
@@ -540,7 +503,6 @@
         const isActorBurst = type === 'crit' || type === 'dodge' ||
                              type === 'shield' || type === 'berserker'
         const isInPlace    = !isHeal && !isBeam && !isActorBurst && isDamage && !!fx
-        const canProjectile = false
 
         // Resolve attacker + targets once for the next several branches.
         const resolveAttackerOrigin = (): { x: number; y: number } | undefined => {
@@ -620,54 +582,6 @@
             const fallbackOrigin = targetOrigin ?? wrapperOrigin(direction)
             showAnim(type, color, direction, grade, fallbackOrigin, fxAttackType)
             triggerShake(shakeStrengthFor(fxAttackType, type, grade))
-          }
-        } else if (canProjectile) {
-          const attacker = memberFromFxIndex(fx.attackerSide, fx.attackerIdx)
-          const enemySide = oppositeSide(fx.attackerSide)
-          const targets: ArenaMember[] = (fx.targetIdxs ?? [0])
-            .map(i => memberFromFxIndex(enemySide, i))
-            .filter((m): m is ArenaMember => !!m)
-
-          const startOrigin = attacker ? memberOriginById(attacker.id) : undefined
-          const targetOrigins = targets
-            .map(t => ({ t, o: memberOriginById(t.id) }))
-            .filter((x): x is { t: ArenaMember; o: { x: number; y: number } } => !!x.o)
-
-          if (startOrigin && targetOrigins.length > 0) {
-            const hit = damageHitFromLine(head, allNames)
-            // Direction for the impact burst reflects the attacker's side
-            // so the burst's particle flight reads as "energy carrying
-            // through from the attacker" rather than a symmetrical pop.
-            // Team1 (left) → ltr; team2 (right) → rtl.
-            const impactDir: AnimDir =
-              fx.attackerSide === 'p1' || fx.attackerSide === 'team1' ? 'ltr' :
-              fx.attackerSide === 'p2' || fx.attackerSide === 'team2' ? 'rtl' :
-              direction
-            // Spawn one comet per target. First comet drives the damage
-            // indicator for THIS log line; secondary targets show their own
-            // burst (their damage numbers will come from subsequent AOE
-            // lines, which emit immediately as part of the legacy path).
-            targetOrigins.forEach((to, i) => {
-              spawnProjectile(
-                startOrigin.x, startOrigin.y, to.o.x, to.o.y,
-                color, grade,
-                () => {
-                  showAnim(type, color, impactDir, grade, to.o, fxAttackType)
-                  if (i === 0 && hit) emitDamage(hit.targetName, hit.value, hit.kind)
-                },
-              )
-            })
-            deferDamageEmit = true
-          } else {
-            // Fallback: legacy in-place burst at wrapper-relative position.
-            const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
-            const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
-            const attackerName = inferAttackerName(head)
-            let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
-              ? memberOrigin(attackerName)
-              : undefined
-            if (!origin) origin = wrapperOrigin(originDir)
-            showAnim(type, color, direction, grade, origin, fxAttackType)
           }
         } else {
           // Non-projectile path: dodges, shields, crits (in-place flash),
@@ -874,7 +788,6 @@
     if (animTimeoutId) clearTimeout(animTimeoutId)
     timeoutId = null
     awaitingPlayerInput = false
-    projectiles = []
     activeAnim = null
 
     if (controllerMode && controller) {
@@ -1119,17 +1032,9 @@
     {/each}
   </div>
 
-  <!-- Projectile layer (S2): comets in flight from attacker → target. -->
-  {#if phase === 'battle' && effectsEnabled}
-    {#each projectiles as p (p.id)}
-      <BattleProjectile
-        startX={p.startX} startY={p.startY}
-        endX={p.endX} endY={p.endY}
-        color={p.color} gradeIdx={p.gradeIdx}
-        durationMs={p.durationMs}
-        onImpact={p.onImpact}/>
-    {/each}
-  {/if}
+  <!-- Projectile layer retired post-S5: damage dispatches go through the
+       in-place / beam paths in showAnim now. Component file kept around
+       only if a future feature wants it back. -->
 
   <!-- Beam layer: a static line from attacker anchor to target anchor that
        draws in (stroke-dashoffset), holds, and fades. Used by beam-type

@@ -6,7 +6,17 @@ export type PerfTier = 'low' | 'mid' | 'high'
 
 let cached: PerfTier | null = null
 
+// User override — when set to 'high', forces every device to render at
+// full fidelity regardless of detected tier. Set from SettingsPanel's
+// "High Quality" toggle so flagship phones that the heuristic mis-buckets
+// as 'low' can opt back in. Bypasses the cache so toggling is live.
+let userOverride: PerfTier | null = null
+export function setPerfTierOverride(tier: PerfTier | null) {
+  userOverride = tier
+}
+
 export function getPerfTier(): PerfTier {
+  if (userOverride) return userOverride
   if (cached) return cached
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     cached = 'mid'
