@@ -85,6 +85,13 @@
   let raceOverride = $state<string | null>(null)
   let showNameScreen = $state(false)
   let characterName = $state('')
+  // Tracks the index in results[] of the PRIMARY result for the current
+  // spin reveal. The reveal panel can't use results.at(-1) because some
+  // race/archetype lands push granted powers / weapons as extra result
+  // entries after the primary one — at(-1) would surface those instead
+  // of the actual race/archetype card. Set when handleSpinComplete pushes
+  // the primary result; the reveal uses this index to render the right card.
+  let primarySpinResultIndex = $state<number | null>(null)
   // Auto-generated 2-3 sentence "roast" combining race + archetype + best/
   // worst stat + signature power + gimmick. Recomputes when the results
   // list changes; the name is included in the seed so renames re-flavor
@@ -1646,6 +1653,10 @@
     }
 
     results.push(spinResult)
+    // Capture the primary result index BEFORE any extras (granted powers,
+    // granted weapons) get pushed below — the reveal panel reads from this
+    // so it shows the right card even when grantedPowers spawn extra rows.
+    primarySpinResultIndex = results.length - 1
 
     // Relay spin to rivals partner when in online rivals mode
     if (rivalsOnlineMode) {
@@ -2677,7 +2688,7 @@
           <!-- Result reveal overlay — shared SpinResultReveal component so the
                main game and Story Mode render the post-spin panel identically. -->
           {#if isRevealed}
-            {@const last = results.at(-1)}
+            {@const last = (primarySpinResultIndex != null && results[primarySpinResultIndex]) || results.at(-1)}
             {#if last}
               {@const tc = TIER_COLORS[last.tier ?? ''] ?? null}
               {@const itemMeta = last.category === 'power' ? _powerLookup.get(last.resultLabel ?? '')
