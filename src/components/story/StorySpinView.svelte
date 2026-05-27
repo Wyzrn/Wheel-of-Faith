@@ -5,6 +5,8 @@
   import SpinResultReveal from '../SpinResultReveal.svelte'
   import SpinProgressDots from '../SpinProgressDots.svelte'
   import FirstTimeTooltip from '../FirstTimeTooltip.svelte'
+  import StreakBanner from '../StreakBanner.svelte'
+  import { detectStreak, type Streak } from '$lib/streaks'
   import type { ResolvedMeta } from '$lib/spinResultMeta'
   import {
     createStorySession,
@@ -156,6 +158,11 @@
   // modal anchors over the wheel, not the viewport center.
   let wheelCenterX = $state<number | null>(null)
   let wheelCenterY = $state<number | null>(null)
+  // Streak banner derived from results (S- and above stats). Re-animates
+  // when the streak grows, ignored when it stays the same length.
+  let currentStreak = $derived<Streak | null>(detectStreak(results))
+  // Replay trigger — incremented by the reveal's Replay button.
+  let replayTriggerKey = $state(0)
 
   // ── Possessed archetype handler tables (mirror main game) ──────────────
   // Stat bonuses applied per possession-strength tier. 5% guarantees at
@@ -1206,6 +1213,7 @@
           soundEnabled={settings.soundEnabled}
           effectsEnabled={settings.effectsEnabled}
           spinSpeedMultiplier={settings.spinSpeed}
+          replayTrigger={replayTriggerKey}
           resolveLandingColors={(_i, label) => resolveLandingForCategory(currentDef?.category, label)}
           onLanded={({ centerX, centerY }) => {
             wheelCenterX = centerX
@@ -1215,10 +1223,11 @@
       {/key}
 
       <!-- Spin label + progress counter under the wheel -->
-      <div class="flex flex-col items-center gap-1 mt-1">
+      <div class="flex flex-col items-center gap-1.5 mt-1">
         <p style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: 15px; color: var(--color-on-surface); font-weight: 600;">
           {currentDef.displayName}
         </p>
+        <StreakBanner streak={currentStreak} />
         <SpinProgressDots
           currentIndex={currentIndex}
           total={queue.length}
@@ -1303,6 +1312,7 @@
     categoryDisplayName={pendingResult.categoryDisplayName}
     continueLabel={isSessionDone ? 'Complete!' : 'Continue'}
     onContinue={handleContinue}
+    onReplay={() => { replayTriggerKey++ }}
     layout="modal"
     anchorX={wheelCenterX}
     anchorY={wheelCenterY}

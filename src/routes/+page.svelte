@@ -6,6 +6,8 @@
   import SpinWheel from '../components/SpinWheel.svelte'
   import SpinProgressDots from '../components/SpinProgressDots.svelte'
   import FirstTimeTooltip from '../components/FirstTimeTooltip.svelte'
+  import StreakBanner from '../components/StreakBanner.svelte'
+  import { detectStreak, newlyFormedStreak, type Streak } from '$lib/streaks'
   import TierBadge from '../components/TierBadge.svelte'
   import CharacterCard from '../components/CharacterCard.svelte'
   import SettingsPanel from '../components/SettingsPanel.svelte'
@@ -97,6 +99,13 @@
   // instead of viewport center.
   let wheelCenterX = $state<number | null>(null)
   let wheelCenterY = $state<number | null>(null)
+  // Streak banner — derives the current high-tier streak from results.
+  // StreakBanner re-animates only when the streak length grows (so we
+  // don't re-fire on every non-stat spin afterward).
+  let currentStreak = $derived<Streak | null>(detectStreak(results))
+  // Counter incremented by the reveal's Replay button to re-fire the
+  // most recent celebration on the SpinWheel.
+  let replayTriggerKey = $state(0)
   // Tracks the index in results[] of the PRIMARY result for the current
   // spin reveal. The reveal panel can't use results.at(-1) because some
   // race/archetype lands push granted powers / weapons as extra result
@@ -2784,6 +2793,7 @@
               spinSpeedMultiplier={settings.spinSpeed}
               cursedTheme={auth.user?.gamepasses?.includes('cursed_wheel') ?? false}
               spinTrigger={spinTriggerKey}
+              replayTrigger={replayTriggerKey}
               resolveLandingColors={resolveLandingColors}
               onLanded={({ centerX, centerY }) => {
                 wheelCenterX = centerX
@@ -2796,7 +2806,8 @@
                run you are. Filled dots = done, ringed = current, dim = upcoming.
                Tier-tinted on completed spins so a streak of high rolls visually
                pops. Matches Story Mode placement. -->
-          <div class="flex justify-center mt-2">
+          <div class="flex flex-col items-center gap-2 mt-2">
+            <StreakBanner streak={currentStreak} />
             <SpinProgressDots
               currentIndex={currentSpinIndex}
               total={spinQueue.length}
@@ -2837,6 +2848,7 @@
                 tierColor={tc}
                 announcement={null}
                 onContinue={handleNextSpin}
+                onReplay={() => { replayTriggerKey++ }}
                 layout="modal"
                 anchorX={wheelCenterX}
                 anchorY={wheelCenterY}

@@ -29,6 +29,7 @@
     announcement = null,
     continueLabel = 'Continue',
     onContinue,
+    onReplay = undefined,
     layout = 'overlay',
     categoryDisplayName = null,
     anchorX = null,
@@ -40,6 +41,10 @@
     announcement?: string | null
     continueLabel?: string
     onContinue: () => void
+    // Optional — when provided, a small "↺ Replay" button appears next to
+    // Continue. Tapping re-fires the celebration (parent re-triggers VFX)
+    // so the player can rewatch a roll they blinked through.
+    onReplay?: () => void
     // 'overlay' renders inside its parent's relatively-positioned container
     // (used in the wheel area). 'modal' renders fixed full-screen.
     layout?: 'overlay' | 'modal'
@@ -259,16 +264,30 @@
         {#if announcement}
           <p class="text-sm" style="color: #a78bfa; max-width: 28ch; line-height: 1.4;">{announcement}</p>
         {/if}
-        <button
-          onclick={onContinue}
-          data-fx="big"
-          class="metal-stamp-gold mt-2 flex items-center gap-2 px-7 py-2.5 rounded-lg relative"
-          style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;"
-        >
-          <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
-          <span>{continueLabel}{settings.autoContinueMs > 0 && countdown > 0 ? ` · ${Math.ceil(countdown / 1000)}s` : ""}</span>
-          <span class="material-symbols-outlined leading-none" style="font-size: 16px; color: #1a0e00; font-variation-settings: 'FILL' 1;">arrow_circle_right</span>
-        </button>
+        <div class="flex items-center gap-2 mt-2 flex-wrap justify-center">
+          {#if onReplay}
+            <button
+              type="button"
+              onclick={(e) => { e.stopPropagation(); onReplay?.() }}
+              class="srr-replay-btn flex items-center gap-1.5 px-3 py-2 rounded-lg"
+              title="Replay celebration"
+              aria-label="Replay landing celebration"
+            >
+              <span class="material-symbols-outlined leading-none" style="font-size: 15px; font-variation-settings: 'FILL' 1;">replay</span>
+              <span>Replay</span>
+            </button>
+          {/if}
+          <button
+            onclick={onContinue}
+            data-fx="big"
+            class="metal-stamp-gold flex items-center gap-2 px-7 py-2.5 rounded-lg relative"
+            style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;"
+          >
+            <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
+            <span>{continueLabel}{settings.autoContinueMs > 0 && countdown > 0 ? ` · ${Math.ceil(countdown / 1000)}s` : ""}</span>
+            <span class="material-symbols-outlined leading-none" style="font-size: 16px; color: #1a0e00; font-variation-settings: 'FILL' 1;">arrow_circle_right</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -372,16 +391,30 @@
       {#if announcement}
         <p class="text-sm" style="color: #a78bfa; max-width: 28ch; line-height: 1.4;">{announcement}</p>
       {/if}
-      <button
-        onclick={onContinue}
-        data-fx="big"
-        class="metal-stamp-gold mt-1 flex items-center gap-2 px-7 py-2.5 rounded-lg relative"
-        style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;"
-      >
-        <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
-        <span>{continueLabel}{settings.autoContinueMs > 0 && countdown > 0 ? ` · ${Math.ceil(countdown / 1000)}s` : ""}</span>
-        <span class="material-symbols-outlined leading-none" style="font-size: 16px; color: #1a0e00; font-variation-settings: 'FILL' 1;">arrow_circle_right</span>
-      </button>
+      <div class="flex items-center gap-2 mt-1 flex-wrap justify-center">
+        {#if onReplay}
+          <button
+            type="button"
+            onclick={(e) => { e.stopPropagation(); onReplay?.() }}
+            class="srr-replay-btn flex items-center gap-1.5 px-3 py-2 rounded-lg"
+            title="Replay celebration"
+            aria-label="Replay landing celebration"
+          >
+            <span class="material-symbols-outlined leading-none" style="font-size: 15px; font-variation-settings: 'FILL' 1;">replay</span>
+            <span>Replay</span>
+          </button>
+        {/if}
+        <button
+          onclick={onContinue}
+          data-fx="big"
+          class="metal-stamp-gold flex items-center gap-2 px-7 py-2.5 rounded-lg relative"
+          style="font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;"
+        >
+          <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
+          <span>{continueLabel}{settings.autoContinueMs > 0 && countdown > 0 ? ` · ${Math.ceil(countdown / 1000)}s` : ""}</span>
+          <span class="material-symbols-outlined leading-none" style="font-size: 16px; color: #1a0e00; font-variation-settings: 'FILL' 1;">arrow_circle_right</span>
+        </button>
+      </div>
     </div>
   </div>
 {/if}
@@ -505,6 +538,28 @@
     color: #9a907b;
     letter-spacing: 0.03em;
     margin-top: 0.08rem;
+  }
+
+  /* ── Replay button — secondary action next to Continue ─────────────── */
+  .srr-replay-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #c9a050;
+    background: rgba(240, 192, 64, 0.06);
+    border: 1px solid rgba(240, 192, 64, 0.35);
+    transition: background 0.18s, color 0.18s, transform 0.1s;
+    cursor: pointer;
+  }
+  .srr-replay-btn:hover {
+    background: rgba(240, 192, 64, 0.14);
+    color: #ffdf96;
+    border-color: rgba(240, 192, 64, 0.55);
+  }
+  .srr-replay-btn:active {
+    transform: scale(0.96);
   }
 
   @media (prefers-reduced-motion: reduce) {

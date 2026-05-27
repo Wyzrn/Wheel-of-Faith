@@ -22,7 +22,7 @@
 
   const COLORS = ['#E63946','#457B9D','#2A9D8F','#E9C46A','#F4A261','#264653','#6A0572','#0077B6']
 
-  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false, spinTrigger = 0, resolveLandingColors, onLanded }: {
+  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false, spinTrigger = 0, replayTrigger = 0, resolveLandingColors, onLanded }: {
     segments: WeightedSegment[]
     onSpinComplete: (resultIndex: number, resultLabel: string) => void
     // Fires when the wheel finishes landing, just BEFORE celebration mounts
@@ -37,6 +37,9 @@
     spinSpeedMultiplier?: number
     cursedTheme?: boolean
     spinTrigger?: number
+    // Increment to re-fire the most recent celebration (Replay button on
+    // the reveal panel). No-op if no prior celebration was captured.
+    replayTrigger?: number
     // Optional. Lets the host (main game / story) resolve the celebration's
     // element color + tier color + intensity for the landed segment. Without
     // it, we fall back to tier intensity guessed from segment.tier. Returns
@@ -75,6 +78,24 @@
     centerY: number | null
   } | null>(null)
   let celebrationKey = 0
+  // Cached spec from the most recent celebration — used by Replay so the
+  // player can re-watch the VFX without re-spinning the wheel.
+  let lastCelebration: typeof celebration = null
+
+  // Replay trigger — when the parent's counter increments, re-fire the
+  // most-recently captured celebration spec. The lc-root component
+  // unmounts when its onComplete fires; the key bump here guarantees the
+  // new mount runs its animations fresh.
+  let prevReplayTrigger = replayTrigger
+  $effect(() => {
+    void replayTrigger
+    if (replayTrigger !== prevReplayTrigger) {
+      prevReplayTrigger = replayTrigger
+      if (lastCelebration) {
+        celebration = { ...lastCelebration, key: ++celebrationKey }
+      }
+    }
+  })
 
   let spinStatus = $state<SpinStatus>('IDLE')
   let currentRotation = $state(Math.random() * 360)
@@ -596,6 +617,7 @@
                 centerX: cx,
                 centerY: cy,
               }
+              lastCelebration = celebration
             }
           }
         }
