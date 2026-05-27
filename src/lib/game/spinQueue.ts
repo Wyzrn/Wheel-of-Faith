@@ -222,10 +222,19 @@ export function buildInitialQueue(): SpinDefinition[] {
 // racialAbility and archetypeAbility use GENERAL_ABILITY_POOL until
 // a dedicated racial-abilities module is authored.
 // redemptionSpin uses a placeholder until Plan 02-04.
+// Sort helper — descending weight (commons first), label tie-break, so the
+// wheel renders as a clean rarity gradient (big arcs cluster, sliver arcs
+// cluster) instead of races + archetypes mixed by declaration order. Used
+// for the race + archetype wheels in Main Game so they match Story Mode's
+// already-sorted versions. Stable, deterministic.
+function sortedByWeight<T extends { label: string; weight: number }>(arr: readonly T[]): T[] {
+  return [...arr].sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label))
+}
+
 export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[] {
   switch (category) {
     case 'race':
-      return races as WeightedSegment[]
+      return sortedByWeight(races as WeightedSegment[])
 
     case 'raceSubType':
       // Fallback; actual pool resolved in +page.svelte from race.subTypePool
@@ -243,7 +252,7 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
       return GENERAL_ABILITY_POOL
 
     case 'archetype':
-      return archetypes as WeightedSegment[]
+      return sortedByWeight(archetypes as WeightedSegment[])
 
     case 'archetypeAbility':
       return GENERAL_ABILITY_POOL
@@ -371,7 +380,8 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
       // Which entity/race is possessing the character — draws from the full
       // race pool minus Hybrid (Hybrid has no real abilities/classes of its
       // own, so possessing a Hybrid would graft nothing onto the character).
-      return (races as WeightedSegment[]).filter(s => s.label !== 'Hybrid')
+      // Sorted by weight descending so the wheel reads as a rarity gradient.
+      return sortedByWeight((races as WeightedSegment[]).filter(s => s.label !== 'Hybrid'))
 
     case 'possessionStrength':
       return POSSESSION_STRENGTH_POOL
