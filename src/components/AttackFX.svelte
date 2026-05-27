@@ -100,10 +100,13 @@
   )
 
   // ─── Particle sprite definitions ─────────────────────────────────────────
-  const K  = '/fx/k/'
-  const CI = '/fx/c/'
+  const K  = '/fx/k/'   // Kenney pack — base sprites
+  const CI = '/fx/c/'   // Complex impacts (single-shot impact discs)
   const CF = '/fx/c/'
   const CS = '/fx/c/'
+  const P  = '/fx/p/'   // Premium pack — colored stars, magic, spirowires,
+                        // energyballs, lightrays, complex bursts/flares.
+                        // Used by the 7 new element banks below.
 
   interface Sprite { src: string; x: number; y: number; tx: number; ty: number; rot: number; scale: number; delay: number; size: number }
 
@@ -299,6 +302,103 @@
       p(K+'twirl_03.png',   50, 50,  18,  26, -15, 0.8, 0.56, 18),
       p(CI+'impact_4.png',  50, 50,   0,   0,   0, 1.5, 0.44, 36),
       p(K+'smoke_01.png',   50, 50,  14,  22, -10, 0.7, 0.60, 16),
+    ],
+
+    // ── Particle banks for the 7 new element types ─────────────────────
+    // These layer on top of the type-specific SVG geometry below. Each
+    // bank uses the premium /fx/p/ asset pack heavily — magic particles,
+    // colored stars, spirowires, energyballs, lightrays — to deliver
+    // visible spectacle rather than relying on minimal SVG primitives.
+
+    arcane: [
+      p(P+'magic_a.png',    50, 50,   0,   0,   0, 1.6, 0.00, 40),
+      p(P+'magic_c.png',    50, 50,  22, -20,  45, 1.2, 0.06, 28),
+      p(P+'magic_e.png',    50, 50, -22, -18, -30, 1.1, 0.10, 26),
+      p(P+'spiro_a.png',    50, 50,  -4,  -4, 120, 1.4, 0.04, 34),
+      p(P+'spiro_c.png',    50, 50,   2,   2,-180, 1.0, 0.14, 26),
+      p(K+'symbol_01.png',  50, 50,  28, -28,  60, 0.9, 0.08, 20),
+      p(K+'symbol_02.png',  50, 50, -28,  24, -60, 0.9, 0.12, 20),
+      p(P+'star_a.png',     50, 50,  -8, -32,  30, 0.85,0.16, 18),
+      p(P+'star_d.png',     50, 50,  30,  -8, -45, 0.85,0.18, 18),
+      p(CF+'flare_3.png',   50, 50,   0,   0,   0, 1.5, 0.22, 38),
+    ],
+
+    nature: [
+      p(P+'ring_a.png',     50, 50,   0,   0,   0, 1.5, 0.00, 36),
+      p(P+'ring_b.png',     50, 50,  -4,  -4,  20, 1.3, 0.04, 30),
+      p(P+'magic_b.png',    50, 50,  22, -18,  30, 1.1, 0.08, 24),
+      p(P+'magic_d.png',    50, 50, -22, -16, -25, 1.0, 0.10, 22),
+      p(K+'scratch_01.png', 50, 50,  28, -22,  35, 0.9, 0.06, 22),
+      p(K+'scratch_01.png', 50, 50, -28,  22,-145, 0.9, 0.12, 22),
+      p(P+'star_b.png',     50, 50,  20,  24,  15, 0.8, 0.14, 18),
+      p(P+'star_e.png',     50, 50, -24,  20, -25, 0.8, 0.16, 18),
+      p(K+'circle_03.png',  50, 50,  10, -34,  10, 0.7, 0.18, 16),
+      p(K+'circle_04.png',  50, 50, -12,  30, -10, 0.7, 0.20, 16),
+    ],
+
+    cosmic: [
+      p(P+'orb_a.png',      50, 50,   0,   0,   0, 1.7, 0.00, 42),
+      p(P+'orb_c.png',      50, 50,  -2,  -2,  45, 1.4, 0.04, 36),
+      p(P+'cstar_a.png',    50, 50,  28, -28,  60, 1.2, 0.08, 26),
+      p(P+'cstar_b.png',    50, 50, -28,  24, -50, 1.1, 0.10, 24),
+      p(P+'cstar_c.png',    50, 50,  24,  26,  40, 1.0, 0.12, 22),
+      p(P+'star_c.png',     50, 50, -32, -22, -40, 0.95,0.06, 20),
+      p(P+'star_f.png',     50, 50,  32, -20,  30, 0.95,0.14, 20),
+      p(P+'star_g.png',     50, 50, -20,  32,  50, 0.9, 0.16, 18),
+      p(P+'magic_a.png',    50, 50,  -8, -36,  60, 0.85,0.18, 18),
+      p(CF+'flare_5.png',   50, 50,   0,   0,   0, 1.6, 0.22, 40),
+    ],
+
+    metal: [
+      p(K+'slash_01.png',   50, 50,  22, -18,  30, 1.5, 0.00, 34),
+      p(K+'slash_02.png',   50, 50, -22, -16, -25, 1.3, 0.04, 30),
+      p(K+'slash_03.png',   50, 50,  18,  22,  45, 1.2, 0.08, 28),
+      p(K+'slash_04.png',   50, 50, -20,  20, -45, 1.1, 0.10, 26),
+      p(K+'spark_01.png',   50, 50,  28, -28,  60, 1.0, 0.06, 22),
+      p(K+'spark_03.png',   50, 50, -32, -24, -55, 0.9, 0.08, 20),
+      p(K+'spark_05.png',   50, 50,  32,  26,  45, 0.9, 0.12, 20),
+      p(K+'spark_06.png',   50, 50, -28,  28, -40, 0.85,0.14, 18),
+      p(K+'spark_07.png',   50, 50,   6, -38,  20, 0.8, 0.16, 16),
+      p(CI+'impact_10.png', 50, 50,   0,   0,   0, 1.7, 0.20, 42),
+    ],
+
+    soul: [
+      p(P+'magic_e.png',    50, 50,   0, -10,  10, 1.5, 0.00, 38),
+      p(P+'magic_c.png',    50, 50,  18, -24, -20, 1.2, 0.06, 28),
+      p(K+'smoke_09.png',   50, 50, -22, -20,  30, 1.2, 0.04, 30),
+      p(K+'smoke_10.png',   50, 50,  20,  18, -25, 1.1, 0.10, 26),
+      p(K+'smoke_07.png',   50, 50, -18,  22,  45, 0.95,0.12, 24),
+      p(K+'light_01.png',   50, 50,   0, -32,   0, 1.0, 0.16, 22),
+      p(K+'light_03.png',   50, 50,  28, -24,  20, 0.9, 0.18, 20),
+      p(K+'light_03.png',   50, 50, -28,  20, -20, 0.9, 0.20, 20),
+      p(P+'star_g.png',     50, 50,   0, -40,  60, 0.8, 0.22, 16),
+      p(CS+'smoke2_3.png',  50, 50,   0,   0,   0, 1.6, 0.24, 38),
+    ],
+
+    sound: [
+      p(P+'ring_a.png',     50, 50,   0,   0,   0, 1.4, 0.00, 36),
+      p(P+'ring_b.png',     50, 50,   0,   0,   0, 1.7, 0.10, 44),
+      p(P+'ring_c.png',     50, 50,   0,   0,   0, 2.0, 0.22, 52),
+      p(P+'muzz_a.png',     50, 50,  28,   0,   0, 1.2, 0.06, 28),
+      p(P+'muzz_b.png',     50, 50, -28,   0, 180, 1.2, 0.08, 28),
+      p(P+'rays_a.png',     50, 50,   0,   0,   0, 1.3, 0.04, 32),
+      p(K+'window_01.png',  50, 50,  22, -22,  45, 0.9, 0.14, 20),
+      p(K+'window_02.png',  50, 50, -22,  22, -45, 0.9, 0.16, 20),
+      p(K+'spark_06.png',   50, 50,  32,   0,   0, 0.7, 0.18, 16),
+      p(K+'spark_07.png',   50, 50, -32,   0, 180, 0.7, 0.20, 16),
+    ],
+
+    chaos: [
+      p(P+'burst_a.png',    50, 50,   0,   0,   0, 1.6, 0.00, 38),
+      p(P+'burst_c.png',    50, 50,   0,   0,  60, 1.4, 0.06, 34),
+      p(P+'burst_d.png',    50, 50,   0,   0, -45, 1.3, 0.10, 32),
+      p(P+'spiro_b.png',    50, 50,  -4,  -4,  90, 1.2, 0.08, 28),
+      p(P+'line_a.png',     50, 50,  22, -18,  25, 1.0, 0.04, 24),
+      p(P+'line_b.png',     50, 50, -22,  18, -25, 1.0, 0.12, 24),
+      p(P+'line_c.png',     50, 50,  18,  22,  55, 0.95,0.14, 22),
+      p(K+'spark_02.png',   50, 50,  28, -28,  45, 0.9, 0.06, 20),
+      p(K+'spark_04.png',   50, 50, -28,  24, -50, 0.85,0.16, 18),
+      p(P+'impact_a.png',   50, 50,   0,   0,   0, 1.8, 0.22, 44),
     ],
   }
 
@@ -522,27 +622,90 @@
     {/if}
 
   {:else if type === 'time'}
+    <!-- Time — concentric clock face with rotating gears, ticking minute
+         and hour hands, hourglass ghosts trailing behind, and chrono-rune
+         ticks at the cardinal positions. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="40" fill="var(--c)" opacity="0.10" style="filter:blur(10px)"/>
-      <circle cx="50" cy="50" r="37" stroke="var(--c)" stroke-width="2.5" fill="none" class="tr tr1"/>
-      <circle cx="50" cy="50" r="27" stroke="var(--c)" stroke-width="1.8" fill="none" class="tr tr2" opacity="0.75"/>
-      <circle cx="50" cy="50" r="16" stroke="var(--c)" stroke-width="1.2" fill="none" class="tr tr3" opacity="0.55"/>
-      <line x1="50" y1="50" x2="50" y2="20" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" class="th th1"/>
-      <line x1="50" y1="50" x2="72" y2="50" stroke="var(--c)" stroke-width="2" stroke-linecap="round" class="th th2"/>
-      <circle cx="50" cy="50" r="3.5" fill="var(--c)"/>
-      <circle class="time-spark ts1" cx="50" cy="13" r="2" fill="var(--c)" opacity="0.7"/>
-      <circle class="time-spark ts2" cx="87" cy="50" r="1.8" fill="var(--c)" opacity="0.6"/>
+      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.14" style="filter:blur(12px)"/>
+      <!-- Outer clock-face ring with tick marks -->
+      <g class="time-face">
+        <circle cx="50" cy="50" r="42" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.85"/>
+        <circle cx="50" cy="50" r="36" stroke="var(--c)" stroke-width="1"   fill="none" opacity="0.45" stroke-dasharray="2 4"/>
+        <!-- 12 cardinal tick marks -->
+        <line x1="50" y1="10" x2="50" y2="16" stroke="var(--c)" stroke-width="2.5"/>
+        <line x1="90" y1="50" x2="84" y2="50" stroke="var(--c)" stroke-width="2.5"/>
+        <line x1="50" y1="90" x2="50" y2="84" stroke="var(--c)" stroke-width="2.5"/>
+        <line x1="10" y1="50" x2="16" y2="50" stroke="var(--c)" stroke-width="2.5"/>
+        <line x1="78" y1="22" x2="74" y2="26" stroke="var(--c)" stroke-width="1.8"/>
+        <line x1="78" y1="78" x2="74" y2="74" stroke="var(--c)" stroke-width="1.8"/>
+        <line x1="22" y1="22" x2="26" y2="26" stroke="var(--c)" stroke-width="1.8"/>
+        <line x1="22" y1="78" x2="26" y2="74" stroke="var(--c)" stroke-width="1.8"/>
+      </g>
+      <!-- Concentric middle + inner rings (counter-rotating) -->
+      <g class="time-mid">
+        <circle cx="50" cy="50" r="27" stroke="var(--c)" stroke-width="2"   fill="none" opacity="0.75"/>
+        <line x1="50" y1="23" x2="50" y2="29" stroke="var(--c)" stroke-width="1.8"/>
+        <line x1="77" y1="50" x2="71" y2="50" stroke="var(--c)" stroke-width="1.8"/>
+        <line x1="50" y1="77" x2="50" y2="71" stroke="var(--c)" stroke-width="1.8"/>
+        <line x1="23" y1="50" x2="29" y2="50" stroke="var(--c)" stroke-width="1.8"/>
+      </g>
+      <g class="time-inner">
+        <circle cx="50" cy="50" r="16" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.55"/>
+      </g>
+      <!-- Echo hands — trailing ghost copies of the clock hands -->
+      <line class="th-echo th-e1" x1="50" y1="50" x2="50" y2="22" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+      <line class="th-echo th-e2" x1="50" y1="50" x2="68" y2="50" stroke="var(--c)" stroke-width="1.2" stroke-linecap="round" opacity="0.30"/>
+      <!-- Primary clock hands -->
+      <line class="time-hand th1" x1="50" y1="50" x2="50" y2="20" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+      <line class="time-hand th2" x1="50" y1="50" x2="72" y2="50" stroke="var(--c)" stroke-width="2.2" stroke-linecap="round"/>
+      <!-- Center hub -->
+      <circle cx="50" cy="50" r="4.5" fill="var(--c)"/>
+      <circle cx="50" cy="50" r="2"   fill="white" opacity="0.85"/>
+      <!-- Sand particles falling through (hourglass feel) -->
+      <circle class="sand-grain sg1" cx="46" cy="32" r="1.3" fill="var(--c)"/>
+      <circle class="sand-grain sg2" cx="54" cy="34" r="1.0" fill="var(--c)" opacity="0.85"/>
+      <circle class="sand-grain sg3" cx="50" cy="38" r="1.2" fill="var(--c)" opacity="0.7"/>
+      <circle class="sand-grain sg4" cx="48" cy="62" r="1.3" fill="var(--c)" opacity="0.8"/>
+      <circle class="sand-grain sg5" cx="52" cy="66" r="1.0" fill="var(--c)" opacity="0.65"/>
     </svg>
 
   {:else if type === 'psychic'}
+    <!-- Psychic — concentric mental-wave rings + third eye + radiating
+         thought spokes + neural sparks scattering outward. -->
     <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.12" style="filter:blur(12px)"/>
-      <circle cx="50" cy="50" r="10" stroke="var(--c)" stroke-width="2.5" fill="none" class="pr pr1"/>
-      <circle cx="50" cy="50" r="24" stroke="var(--c)" stroke-width="2"   fill="none" class="pr pr2" opacity="0.8"/>
-      <circle cx="50" cy="50" r="38" stroke="var(--c)" stroke-width="1.5" fill="none" class="pr pr3" opacity="0.5"/>
-      <circle cx="50" cy="50" r="5" fill="var(--c)" class="pr-core"/>
-      <line class="psy-wave pw1" x1="28" y1="28" x2="72" y2="72" stroke="var(--c)" stroke-width="1" opacity="0.3" stroke-linecap="round"/>
-      <line class="psy-wave pw2" x1="72" y1="28" x2="28" y2="72" stroke="var(--c)" stroke-width="1" opacity="0.3" stroke-linecap="round"/>
+      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.15" style="filter:blur(14px)"/>
+      <!-- Brainwave rings — staggered expansion -->
+      <circle cx="50" cy="50" r="10" stroke="var(--c)" stroke-width="3"   fill="none" class="psy-ring pr1"/>
+      <circle cx="50" cy="50" r="22" stroke="var(--c)" stroke-width="2.5" fill="none" class="psy-ring pr2" opacity="0.8"/>
+      <circle cx="50" cy="50" r="34" stroke="var(--c)" stroke-width="2"   fill="none" class="psy-ring pr3" opacity="0.6"/>
+      <circle cx="50" cy="50" r="44" stroke="var(--c)" stroke-width="1.5" fill="none" class="psy-ring pr4" opacity="0.35"/>
+      <!-- Third-eye almond shape -->
+      <g class="psy-eye">
+        <ellipse cx="50" cy="50" rx="20" ry="11" fill="var(--c)" opacity="0.18"/>
+        <ellipse cx="50" cy="50" rx="20" ry="11" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.9"/>
+        <!-- Iris -->
+        <circle cx="50" cy="50" r="7"  fill="var(--c)"/>
+        <!-- Pupil -->
+        <circle cx="50" cy="50" r="3.5" fill="#0d0d16"/>
+        <!-- Highlight -->
+        <circle cx="48" cy="48" r="1.5" fill="white" opacity="0.85"/>
+      </g>
+      <!-- Radiating thought-spokes (8 rays) -->
+      <g class="psy-spokes">
+        <line x1="50" y1="50" x2="50" y2="6"  stroke="var(--c)" stroke-width="1.6" opacity="0.55" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="50" y2="94" stroke="var(--c)" stroke-width="1.6" opacity="0.55" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="6"  y2="50" stroke="var(--c)" stroke-width="1.6" opacity="0.55" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="94" y2="50" stroke="var(--c)" stroke-width="1.6" opacity="0.55" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="20" y2="20" stroke="var(--c)" stroke-width="1.2" opacity="0.45" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="80" y2="20" stroke="var(--c)" stroke-width="1.2" opacity="0.45" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="20" y2="80" stroke="var(--c)" stroke-width="1.2" opacity="0.45" stroke-linecap="round"/>
+        <line x1="50" y1="50" x2="80" y2="80" stroke="var(--c)" stroke-width="1.2" opacity="0.45" stroke-linecap="round"/>
+      </g>
+      <!-- Mind-sparks at the spoke tips -->
+      <circle class="psy-spark ps1" cx="50" cy="6"  r="2" fill="var(--c)"/>
+      <circle class="psy-spark ps2" cx="94" cy="50" r="2" fill="var(--c)"/>
+      <circle class="psy-spark ps3" cx="50" cy="94" r="2" fill="var(--c)"/>
+      <circle class="psy-spark ps4" cx="6"  cy="50" r="2" fill="var(--c)"/>
     </svg>
 
   {:else if type === 'poison'}
@@ -1391,43 +1554,55 @@
 .holy-mote { transform-origin: center; transform-box: fill-box; animation: spark-pop 0.55s 0.20s ease-out forwards; opacity: 0; }
 
 /* ─── TIME ───────────────────────────────────────────────────────── */
-.tr { transform-origin: 50% 50%; }
-.tr1 { animation: ring-expand 0.82s ease-out forwards; }
-.tr2 { animation: ring-expand 0.82s 0.07s ease-out forwards; }
-.tr3 { animation: ring-expand 0.82s 0.14s ease-out forwards; }
-.th { transform-origin: 50% 50%; }
-.th1 { animation: clock-spin 0.82s linear forwards; }
-.th2 { animation: clock-spin 0.55s linear forwards; }
-@keyframes ring-expand {
-  0%   { transform: scale(0.2); opacity: 0; }
-  40%  { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(1.3); opacity: 0; }
-}
-@keyframes clock-spin {
-  0%   { transform: rotate(0deg); opacity: 1; }
-  100% { transform: rotate(720deg); opacity: 0; }
-}
-.time-spark { transform-origin: center; transform-box: fill-box; animation: spark-pop 0.5s 0.22s ease-out forwards; opacity: 0; }
+/* Multi-layer clock — outer face rotates one way, middle ring counter-rotates,
+   echo hands lag behind the primary hands, sand grains drift down. */
+.time-face   { transform-origin: 50% 50%; animation: time-face 0.95s ease-out forwards; }
+.time-mid    { transform-origin: 50% 50%; animation: time-mid  0.95s ease-out forwards; }
+.time-inner  { transform-origin: 50% 50%; animation: time-inner 0.95s ease-out forwards; }
+.time-hand   { transform-origin: 50% 50%; }
+.th1         { animation: clock-spin-h 0.95s linear forwards; }
+.th2         { animation: clock-spin-m 0.65s linear forwards; }
+.th-echo     { transform-origin: 50% 50%; }
+.th-e1       { animation: clock-spin-h 0.95s -0.05s linear forwards; opacity: 0; }
+.th-e2       { animation: clock-spin-m 0.65s -0.05s linear forwards; opacity: 0; }
+.sand-grain  { transform-origin: center; transform-box: fill-box; opacity: 0; animation: sand-fall 0.9s ease-in forwards; }
+.sg1 { animation-delay: 0.06s; }
+.sg2 { animation-delay: 0.14s; }
+.sg3 { animation-delay: 0.22s; }
+.sg4 { animation-delay: 0.30s; }
+.sg5 { animation-delay: 0.38s; }
+@keyframes time-face   { 0% { transform: scale(0.3) rotate(0); opacity: 0; } 30% { transform: scale(1.05) rotate(20deg); opacity: 1; filter: brightness(2); } 100% { transform: scale(1.3) rotate(60deg); opacity: 0; } }
+@keyframes time-mid    { 0% { transform: scale(0.4) rotate(0); opacity: 0; } 30% { transform: scale(1) rotate(-25deg); opacity: 0.85; } 100% { transform: scale(1.2) rotate(-90deg); opacity: 0; } }
+@keyframes time-inner  { 0% { transform: scale(0.4) rotate(0); opacity: 0; } 30% { transform: scale(1) rotate(45deg);  opacity: 0.7; } 100% { transform: scale(1.15) rotate(180deg); opacity: 0; } }
+@keyframes clock-spin-h{ 0% { transform: rotate(0); opacity: 1; } 100% { transform: rotate(540deg); opacity: 0; } }
+@keyframes clock-spin-m{ 0% { transform: rotate(0); opacity: 1; } 100% { transform: rotate(720deg); opacity: 0; } }
+@keyframes sand-fall   { 0% { transform: translateY(-8px) scale(0); opacity: 0; } 30% { transform: translateY(0) scale(1.3); opacity: 1; } 100% { transform: translateY(14px) scale(0.6); opacity: 0; } }
 
 /* ─── PSYCHIC ────────────────────────────────────────────────────── */
-.pr { transform-origin: 50% 50%; }
-.pr1 { animation: ripple 0.72s ease-out forwards; }
-.pr2 { animation: ripple 0.72s 0.11s ease-out forwards; }
-.pr3 { animation: ripple 0.72s 0.22s ease-out forwards; }
-.pr-core { transform-origin: 50% 50%; animation: core-pulse 0.72s ease-out forwards; }
-@keyframes ripple {
-  0%   { transform: scale(0.1); opacity: 0; }
-  30%  { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(1.45); opacity: 0; }
-}
-@keyframes core-pulse {
-  0%   { transform: scale(0); opacity: 0; }
-  40%  { transform: scale(1.6); opacity: 1; }
-  100% { transform: scale(1.0); opacity: 0; }
-}
-.psy-wave { stroke-dasharray: 80; stroke-dashoffset: 80; }
-.pw1 { animation: branch-draw 0.6s 0.10s ease-out forwards, bolt-fade 0.4s 0.60s forwards; }
-.pw2 { animation: branch-draw 0.6s 0.18s ease-out forwards, bolt-fade 0.4s 0.65s forwards; }
+/* Brain-wave rings expand outward; third-eye opens; thought spokes
+   shoot from center to perimeter; mind-sparks burst at the tips. */
+.psy-ring { transform-origin: 50% 50%; }
+.psy-ring.pr1 { animation: psy-ripple 0.85s         ease-out forwards; }
+.psy-ring.pr2 { animation: psy-ripple 0.85s 0.08s   ease-out forwards; }
+.psy-ring.pr3 { animation: psy-ripple 0.85s 0.16s   ease-out forwards; }
+.psy-ring.pr4 { animation: psy-ripple 0.85s 0.24s   ease-out forwards; }
+.psy-eye      { transform-origin: 50% 50%; animation: psy-eye-open 0.85s ease-out forwards; }
+.psy-spokes line { stroke-dasharray: 60; stroke-dashoffset: 60; animation: psy-spoke-draw 0.55s ease-out forwards; }
+.psy-spokes line:nth-child(1) { animation-delay: 0.20s; }
+.psy-spokes line:nth-child(2) { animation-delay: 0.22s; }
+.psy-spokes line:nth-child(3) { animation-delay: 0.24s; }
+.psy-spokes line:nth-child(4) { animation-delay: 0.26s; }
+.psy-spokes line:nth-child(5) { animation-delay: 0.28s; }
+.psy-spokes line:nth-child(6) { animation-delay: 0.30s; }
+.psy-spokes line:nth-child(7) { animation-delay: 0.32s; }
+.psy-spokes line:nth-child(8) { animation-delay: 0.34s; }
+.psy-spark    { transform-origin: center; transform-box: fill-box; opacity: 0; animation: spark-pop 0.5s 0.42s ease-out forwards; }
+.ps2 { animation-delay: 0.45s; }
+.ps3 { animation-delay: 0.48s; }
+.ps4 { animation-delay: 0.51s; }
+@keyframes psy-ripple    { 0% { transform: scale(0.4); opacity: 0; } 25% { transform: scale(1); opacity: 1; filter: brightness(2); } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes psy-eye-open  { 0% { transform: scale(0.2); opacity: 0; filter: brightness(1); } 30% { transform: scale(1.2); opacity: 1; filter: brightness(2.2) drop-shadow(0 0 16px var(--c)); } 100% { transform: scale(0.9); opacity: 0; } }
+@keyframes psy-spoke-draw{ 0% { stroke-dashoffset: 60; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
 
 /* ─── POISON ─────────────────────────────────────────────────────── */
 .pb { transform-origin: 50% 50%; }
