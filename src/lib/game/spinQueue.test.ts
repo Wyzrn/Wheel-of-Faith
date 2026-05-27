@@ -6,11 +6,11 @@ import {
 } from './spinQueue'
 
 describe('buildInitialQueue', () => {
-  // NOTE: The initial queue has 20 fixed entries (Race through Title, no ability slots).
-  // weaponEnchantment is spliced in conditionally based on weaponMastery tier,
-  // and weaknesses are added dynamically based on race. No sentinel entries.
-  it('returns an array with length 20', () => {
-    expect(buildInitialQueue()).toHaveLength(20)
+  // NOTE: The initial queue has 24 fixed entries (Race through Title, no ability slots).
+  // weaponEnchantment / armorEnchantment / racial-ability slots are spliced
+  // in dynamically based on prior results. No sentinel entries.
+  it('returns an array with length 24', () => {
+    expect(buildInitialQueue()).toHaveLength(24)
   })
 
   it('first entry has category "race"', () => {
@@ -21,8 +21,9 @@ describe('buildInitialQueue', () => {
     expect(buildInitialQueue()[0].displayName).toBe('Race')
   })
 
-  it('last entry (index 19) has category "title"', () => {
-    expect(buildInitialQueue()[19].category).toBe('title')
+  it('last entry has category "title"', () => {
+    const q = buildInitialQueue()
+    expect(q[q.length - 1].category).toBe('title')
   })
 
   it('contains no entry with category "racialAbility"', () => {
@@ -41,11 +42,11 @@ describe('buildInitialQueue', () => {
 })
 
 describe('splice simulation — queue expansion', () => {
-  it('splice 3 racialAbility entries at index 1: length becomes 23', () => {
+  it('splice 3 racialAbility entries at index 1: base 24 + 3 = 27', () => {
     const queue = Array.from(buildInitialQueue()) as SpinDefinition[]
     const slot = (n: number): SpinDefinition => ({ category: 'racialAbility', displayName: `Racial Ability ${n}` })
     queue.splice(1, 0, slot(1), slot(2), slot(3))
-    expect(queue).toHaveLength(23)
+    expect(queue).toHaveLength(27)
   })
 
   it('splice 3 racialAbility entries: indices 1/2/3 have category "racialAbility"', () => {
@@ -64,11 +65,11 @@ describe('splice simulation — queue expansion', () => {
     expect(queue[4].category).toBe('archetype')
   })
 
-  it('splice 1 racialAbility entry: length becomes 21', () => {
+  it('splice 1 racialAbility entry: base 24 + 1 = 25', () => {
     const queue = Array.from(buildInitialQueue()) as SpinDefinition[]
     const slot: SpinDefinition = { category: 'racialAbility', displayName: 'Racial Ability 1' }
     queue.splice(1, 0, slot)
-    expect(queue).toHaveLength(21)
+    expect(queue).toHaveLength(25)
   })
 
   it('splice 1 racialAbility entry: index 1 is "racialAbility", index 2 is "archetype"', () => {
@@ -79,14 +80,14 @@ describe('splice simulation — queue expansion', () => {
     expect(queue[2].category).toBe('archetype')
   })
 
-  it('splice 4 racialAbility entries: length becomes 24', () => {
+  it('splice 4 racialAbility entries: base 24 + 4 = 28', () => {
     const queue = Array.from(buildInitialQueue()) as SpinDefinition[]
     const slots: SpinDefinition[] = Array.from({ length: 4 }, (_, i) => ({
       category: 'racialAbility' as const,
       displayName: `Racial Ability ${i + 1}`,
     }))
     queue.splice(1, 0, ...slots)
-    expect(queue).toHaveLength(24)
+    expect(queue).toHaveLength(28)
   })
 
   it('splice 4 racialAbility entries: indices 1-4 are "racialAbility", index 5 is "archetype"', () => {

@@ -25,9 +25,11 @@ describe('races', () => {
     }
   })
 
-  it('every Race entry has abilitySpinCount between 1 and 4 inclusive', () => {
+  it('every Race entry has abilitySpinCount between 0 and 4 inclusive', () => {
+    // 0 is allowed for "twist" races like Hybrid that don't spin their
+    // own abilities — they splice parent race spins which provide them.
     for (const race of races) {
-      expect(race.abilitySpinCount).toBeGreaterThanOrEqual(1)
+      expect(race.abilitySpinCount).toBeGreaterThanOrEqual(0)
       expect(race.abilitySpinCount).toBeLessThanOrEqual(4)
       expect(Number.isInteger(race.abilitySpinCount)).toBe(true)
     }

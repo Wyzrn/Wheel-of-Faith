@@ -84,10 +84,10 @@ describe('clearStorySession', () => {
 
 // ── createStorySession ────────────────────────────────────────────────────────
 describe('createStorySession', () => {
-  it('produces a queue with no redemptionSpin entry', () => {
+  it('produces a queue including a redemptionSpin entry (Story uses full main-game queue)', () => {
     const session = createStorySession()
     const hasRedemption = session.spinQueue.some(def => def.category === 'redemptionSpin')
-    expect(hasRedemption).toBe(false)
+    expect(hasRedemption).toBe(true)
   })
 
   it('produces a non-empty sessionId and startedAt', () => {

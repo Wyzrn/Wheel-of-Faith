@@ -1728,14 +1728,18 @@
     class="fixed inset-0 z-50 flex items-center justify-center"
     style="background: rgba(7,7,13,0.88); backdrop-filter: blur(8px);"
     onclick={closeExpanded}
+    onkeydown={(e) => { if (e.key === 'Escape') closeExpanded() }}
     role="dialog"
     aria-modal="true"
     aria-label="Character sheet"
+    tabindex="-1"
   >
     <div
       class="obsidian-slab w-full max-w-[640px] max-h-[90vh] overflow-y-auto rounded-xl mx-4"
       style="animation: slideInBottom 200ms ease-out;"
       onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+      role="document"
     >
       <div class="flex items-center justify-between gap-2 px-4 py-3" style="height: 48px; border-bottom: 1px solid rgba(255,223,150,0.08);">
         <h3 class="font-bold truncate" style="font-family: var(--font-cinzel); font-size: 20px; color: var(--color-on-surface);">

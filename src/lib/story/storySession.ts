@@ -28,8 +28,9 @@ const STAT_CATEGORIES = new Set([
 ])
 
 /**
- * Creates a fresh Story Mode session with a new UUID and filtered queue.
- * The redemptionSpin step is excluded — Story Mode defers redemption to Phase 8+.
+ * Creates a fresh Story Mode session with a new UUID. Uses the same queue
+ * as the main game so Story characters can hit redemption, chaos factor,
+ * wildcards, etc. without divergence.
  */
 export function createStorySession(): StorySessionState {
   return {

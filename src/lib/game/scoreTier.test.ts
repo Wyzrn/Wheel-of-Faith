@@ -142,7 +142,7 @@ describe('computeOverallScore', () => {
     }
   })
 
-  it('TIER_THRESHOLDS has exactly 42 entries', () => {
-    expect(TIER_THRESHOLDS).toHaveLength(42)
+  it('TIER_THRESHOLDS has exactly 46 entries (28 base + extended cosmic bands)', () => {
+    expect(TIER_THRESHOLDS).toHaveLength(46)
   })
 })
