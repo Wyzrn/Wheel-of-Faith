@@ -19,6 +19,7 @@
   } from '$lib/story/storySession'
   import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_SHIFT, type SpinCategory } from '$lib/game/spinQueue'
   import { getRaceWheelSegments, getRaceWheelSegmentDescription } from '$lib/game/raceWheelRegistry'
+  import { generateStatDescription, STAT_DESCRIPTION_CATEGORIES } from '$lib/content/statDescriptions'
   import { resolveMutatedSegments, getMutation } from '$lib/game/archetypeMutations'
   import { rollSecretEvent, applyEventToResults, type SecretEventId } from '$lib/game/secretEvents'
   import SecretEventOverlay from '../SecretEventOverlay.svelte'
@@ -273,7 +274,7 @@
     energyLevel:   'Contributes to Power Damage (40%) and HP (15%)',
   }
 
-  function getSpinMeta(category: string, label: string, element?: ElementType, grade?: ItemGrade): { description?: string; abilityType?: AbilityType; statEffect?: string } {
+  function getSpinMeta(category: string, label: string, element?: ElementType, grade?: ItemGrade, tier?: string): { description?: string; abilityType?: AbilityType; statEffect?: string } {
     if (category === 'power' || category === 'racialAbility' || category === 'archetypeAbility') {
       const abilityType = classifyAbility(label, element)
       const description = category === 'power'
@@ -299,7 +300,12 @@
       return { description: desc, statEffect: 'Shapes how this race feels mid-spin — biases later wheels, archetype synergy, and event chances.' }
     }
     const statEffect = STAT_EFFECTS[category]
-    if (statEffect) return { statEffect }
+    if (statEffect) {
+      const statDesc = STAT_DESCRIPTION_CATEGORIES.has(category)
+        ? generateStatDescription(category, tier, label)
+        : ''
+      return statDesc ? { description: statDesc, statEffect } : { statEffect }
+    }
     return {}
   }
 
@@ -1211,7 +1217,7 @@
         color: resultColor,
         element: resultElement,
         grade: resultGrade,
-        ...getSpinMeta(currentDef.category, resultLabel, resultElement, resultGrade),
+        ...getSpinMeta(currentDef.category, resultLabel, resultElement, resultGrade, spinResult.tier),
       }
     }
 

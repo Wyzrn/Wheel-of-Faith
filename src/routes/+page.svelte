@@ -17,6 +17,7 @@
   import type { SessionState, SpinResult } from '$lib/session/types'
   import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_LEVEL_POOL, LIMIT_BREAK_SHIFT } from '$lib/game/spinQueue'
   import { getRaceWheelSegments, getRaceWheelSegmentDescription } from '$lib/game/raceWheelRegistry'
+  import { generateStatDescription, STAT_DESCRIPTION_CATEGORIES } from '$lib/content/statDescriptions'
   import { resolveMutatedSegments, getMutation } from '$lib/game/archetypeMutations'
   import { rollSecretEvent, getEventDef, applyEventToResults, type SecretEventId } from '$lib/game/secretEvents'
   import type { SpinDefinition, SpinCategory } from '$lib/game/spinQueue'
@@ -3032,10 +3033,13 @@
                     last.resultLabel ?? ''
                   )
                 : undefined}
+              {@const statDesc = STAT_DESCRIPTION_CATEGORIES.has(last.category)
+                ? generateStatDescription(last.category, last.tier, last.resultLabel ?? '')
+                : ''}
               {@const resolvedMeta = {
                 ...(itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}),
                 ...(identityCard ? { identityCard } : {}),
-                ...(raceWheelDesc ? { description: raceWheelDesc } : {}),
+                ...(raceWheelDesc ? { description: raceWheelDesc } : (statDesc ? { description: statDesc } : {})),
               } as ResolvedMeta}
               <SpinResultReveal
                 result={last}
