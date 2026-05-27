@@ -404,6 +404,14 @@
 
           if (startOrigin && targetOrigins.length > 0) {
             const hit = damageHitFromLine(head, allNames)
+            // Direction for the impact burst reflects the attacker's side
+            // so the burst's particle flight reads as "energy carrying
+            // through from the attacker" rather than a symmetrical pop.
+            // Team1 (left) → ltr; team2 (right) → rtl.
+            const impactDir: AnimDir =
+              fx.attackerSide === 'p1' || fx.attackerSide === 'team1' ? 'ltr' :
+              fx.attackerSide === 'p2' || fx.attackerSide === 'team2' ? 'rtl' :
+              direction
             // Spawn one comet per target. First comet drives the damage
             // indicator for THIS log line; secondary targets show their own
             // burst (their damage numbers will come from subsequent AOE
@@ -413,7 +421,7 @@
                 startOrigin.x, startOrigin.y, to.o.x, to.o.y,
                 color, grade,
                 () => {
-                  showAnim(type, color, 'center', grade, to.o, fxAttackType)
+                  showAnim(type, color, impactDir, grade, to.o, fxAttackType)
                   if (i === 0 && hit) emitDamage(hit.targetName, hit.value, hit.kind)
                 },
               )

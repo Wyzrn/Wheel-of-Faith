@@ -65,6 +65,19 @@
   }
   function elColor(el?: string): string { return el ? ELEMENT_COLOR[el] ?? '#9a907b' : '#9a907b' }
 
+  // Tier → accent color for the grade chip. Mirrors the colors used in the
+  // worlds + tier glossary so the player builds one mental map across UIs.
+  const TIER_COLOR: Record<string, string> = {
+    F: '#6b7280',  E: '#78716c',  D: '#a3a3a3', C: '#4ade80',
+    B: '#60a5fa',  A: '#a78bfa',  S: '#f59e0b', SS: '#f97316',
+    SSS: '#ef4444', God: '#fbbf24', Godly: '#fbbf24',
+  }
+  function tierColor(g?: string): string {
+    if (!g) return '#4e4635'
+    const base = g.replace(/[-+]/g, '').replace(/\s+/g, '')
+    return TIER_COLOR[base] ?? '#9a907b'
+  }
+
   function selectPower(p: PowerOption) {
     if (p.cooldown > 0) return
     fire({ kind: 'power', moveName: p.name })
@@ -93,8 +106,13 @@
             class:bh-pop-item-disabled={onCd}
             disabled={onCd}
             onclick={() => selectPower(p)}
-            aria-label="Cast {p.name}{onCd ? ` (on cooldown for ${p.cooldown} turns)` : ''}">
-            <span class="bh-pop-el" style="background: {elColor(p.element)}22; border-color: {elColor(p.element)}66; color: {elColor(p.element)};">
+            aria-label="Cast {p.name}{onCd ? ` (on cooldown for ${p.cooldown} turns)` : ''} — tier {p.grade ?? '?'}, ~{formatHp(p.damage)} damage">
+            <span class="bh-pop-tier"
+                  style="background: {tierColor(p.grade)}1f; border-color: {tierColor(p.grade)}99; color: {tierColor(p.grade)};">
+              {p.grade ?? '?'}
+            </span>
+            <span class="bh-pop-el"
+                  style="background: {elColor(p.element)}22; border-color: {elColor(p.element)}66; color: {elColor(p.element)};">
               {p.element ?? '·'}
             </span>
             <span class="bh-pop-name">{p.name}</span>
@@ -306,9 +324,9 @@
   }
   .bh-pop-item {
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
+    grid-template-columns: auto auto 1fr auto auto;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     padding: 8px 12px 8px 10px;
     border-radius: 8px;
     background: rgba(255,255,255,0.02);
@@ -338,6 +356,19 @@
   .bh-pop-item-disabled .bh-pop-name { color: #6b6552; }
   .bh-pop-item-disabled .bh-pop-dmg  { color: #4e4635; }
 
+  .bh-pop-tier {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    min-width: 32px; height: 22px;
+    padding: 0 6px;
+    border-radius: 6px;
+    border: 1px solid;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1;
+  }
   .bh-pop-el {
     display: inline-flex;
     align-items: center; justify-content: center;

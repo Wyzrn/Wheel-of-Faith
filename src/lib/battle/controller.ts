@@ -14,7 +14,7 @@
 // Segment-3 scope: 1v1 only. Team-battle controller extends this in S6.
 
 import {
-  doAction, formatHp,
+  doAction, formatHp, moveGradeMult,
   type BattleCharacter, type BattleMove, type RoundFxEvent,
 } from '$lib/game/battle'
 import type { ArenaRound, ArenaSide, ArenaWinner } from './arena'
@@ -114,14 +114,18 @@ export interface PowerOption {
   cooldown: number   // 0 = ready, >0 = turns until usable
 }
 
-// Deterministic mid-range damage estimate. The actual battle damage varies
-// with variance, crit, armor, and weakness multipliers — this is just the
-// "typical hit" preview so the player can compare powers at a glance.
-function powerDamageEstimate(char: BattleCharacter): number {
+// Deterministic mid-range damage estimate FOR A SPECIFIC POWER. Folds in
+// the move's own grade multiplier so an F-tier power and a God-tier power
+// surface visibly different damage numbers — matching what doAction will
+// actually roll (the same gradeMult lives inside the engine's damage
+// formula). Variance, crits, armor, and weakness aren't applied here —
+// this is the typical-hit preview, not a guaranteed roll.
+function powerDamageEstimate(char: BattleCharacter, move: BattleMove): number {
   const energyBonus = char.energyRank >= 30 ? 1.25 : 1.0
   const buffMult    = char.buffRoundsLeft > 0 ? char.buffMultiplier : 1.0
-  // Power moveMult: 0.55–1.05, average ~0.80
-  return Math.max(1, Math.round(char.powerDamage * 0.80 * energyBonus * buffMult))
+  // Power moveMult mid-range ≈ 0.80.
+  const gradeMult   = moveGradeMult(move.grade)
+  return Math.max(1, Math.round(char.powerDamage * 0.80 * energyBonus * buffMult * gradeMult))
 }
 
 export function powerOptions(
@@ -135,11 +139,13 @@ export function powerOptions(
       name:     m.name,
       element:  m.element,
       grade:    m.grade,
-      damage:   powerDamageEstimate(char),
+      damage:   powerDamageEstimate(char, m),
       cooldown: cooldowns[m.name] ?? 0,
     })
   }
-  return out
+  // Sort by descending damage so the heaviest hitter sits at the top of
+  // the popover — easier to read at a glance.
+  return out.sort((a, b) => b.damage - a.damage)
 }
 
 // ── Controller availability summary (UI helper) ─────────────────────────────

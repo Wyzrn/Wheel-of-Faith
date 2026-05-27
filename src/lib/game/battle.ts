@@ -15,6 +15,25 @@ const _powerMap  = new Map(powersPool.map(p => [p.label, p]))
 const _weaponMap = new Map(weaponsPool.map(w => [w.label, w]))
 const _armorMap  = new Map(armorsPool.map(a => [a.label, a]))
 
+// ─── Move-grade damage multiplier ─────────────────────────────────────────────
+// Scales an attack's damage by the grade of the underlying move (power /
+// weapon / ability). Lower-tier moves hit softly, higher-tier moves hit hard
+// — so a God-tier signature attack reads as ~5.6× a comparable F-tier flail.
+// Used both inside doAction's damage math and surfaced into the hotbar's
+// Power popover so the player sees the spread before they pick.
+const _MOVE_GRADE_MULT: Record<string, number> = {
+  'F': 0.55,  'E': 0.68,  'D': 0.82,
+  'C': 1.00,  'B': 1.20,  'A': 1.45,
+  'S': 1.75,  'SS': 2.10, 'SSS': 2.55,
+  'God': 3.10, 'Godly': 3.10,
+}
+export function moveGradeMult(grade?: string): number {
+  if (!grade) return 1.0
+  // Tier suffixes like 'A+', 'SSS-', etc. → key off the base letter group.
+  const base = grade.replace(/[-+]/g, '').replace(/\s+/g, '')
+  return _MOVE_GRADE_MULT[base] ?? 1.0
+}
+
 // ─── HP Table ─────────────────────────────────────────────────────────────────
 // F- through C+ are user-specified. Higher tiers extrapolated ~2× per major tier.
 const HP_TABLE: Record<string, number> = {
@@ -568,12 +587,15 @@ export function buildBattleCharacter(
   }
   for (const r of abilitySpins) {
     const at = detectAttackType(r.resultLabel)
+    const abilData = _powerMap.get(r.resultLabel)
     moves.push({
       name: r.resultLabel,
       type: 'ability',
       effectTag: detectEffectTag(r.resultLabel),
       behavior: detectMoveBehavior(r.resultLabel),
       attackType: at,
+      element: abilData?.element,
+      grade: abilData?.grade,
     })
   }
   if (moves.length === 0) {
@@ -827,11 +849,14 @@ export function doAction(
   const weaknessMult = (move.element && defender.elementWeaknesses.includes(move.element)) ? 1.25 : 1.0
   if (weaknessMult > 1) lines.push(`${defender.name} is weak to ${move.element}! Damage amplified!`)
 
-  // Final damage
+  // Final damage. Move-grade multiplier folds in the underlying item tier
+  // so lower-grade moves hit softer and signature high-grade moves hit
+  // dramatically harder — same scaling that surfaces in the hotbar preview.
   const berserkerMult = isBerserker ? 2.2 + Math.random() * 0.8 : 1.0
   const variance = 0.85 + Math.random() * 0.30
+  const gradeMult = moveGradeMult(move.grade)
   let damage = Math.max(1, Math.round(
-    baseDmg * moveMult * weaponBonus * energyMult * critMult * berserkerMult * aoeMult * selfBuffMult * weaknessMult * (1 - effectiveArmor) * variance
+    baseDmg * moveMult * gradeMult * weaponBonus * energyMult * critMult * berserkerMult * aoeMult * selfBuffMult * weaknessMult * (1 - effectiveArmor) * variance
   ))
 
   // Divine armor absorb
