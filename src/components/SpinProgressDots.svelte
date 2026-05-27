@@ -97,7 +97,11 @@
     0%, 100% { box-shadow: 0 0 10px rgba(240, 192, 64, 0.65), inset 0 0 4px rgba(240, 192, 64, 0.5); }
     50%      { box-shadow: 0 0 18px rgba(240, 192, 64, 0.95), inset 0 0 6px rgba(240, 192, 64, 0.7); }
   }
-  @media (prefers-reduced-motion: reduce) {
+  @media (prefers-reduced-motion: reduce),
+         (pointer: coarse) {
+    /* Touch / mobile: dot pulses run all the time which on a 23-spin
+       run means continuous GPU work. Show the current dot at full
+       brightness instead of animating. */
     .spd-dot-current { animation: none; }
   }
 </style>

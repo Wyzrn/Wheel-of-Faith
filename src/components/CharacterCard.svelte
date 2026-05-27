@@ -1022,6 +1022,12 @@
     0%, 100% { transform: scale(1);    opacity: 1; }
     50%      { transform: scale(1.08); opacity: 0.85; }
   }
+  /* Mobile / touch: kill the always-running glyph pulse — small enough
+     that the visual loss is negligible but it removes a constant
+     animation from a page that may show many cards (gallery, roster). */
+  @media (pointer: coarse), (max-width: 640px) {
+    .character-race-glyph { animation: none; }
+  }
 
   /* ── Tier-scaled aura halo — pseudo layer behind the hero banner ──────── */
   .character-aura {

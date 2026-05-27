@@ -140,4 +140,9 @@
     .ftt-card  { animation: none; }
     .ftt-pulse { animation: none; }
   }
+  /* Touch devices: drop the looping pulse ring — single fade-in is
+     enough cue. Cuts a continuous animation on the splash screen. */
+  @media (pointer: coarse) {
+    .ftt-pulse { animation: none; opacity: 0; }
+  }
 </style>

@@ -117,14 +117,27 @@
   // adds its own blur + animation. Mid-tier keeps most but skips a few.
   let cheap = perfTier === 'low'
 
-  let particleCount = $derived(Math.round((
-    level === 'transcendent' ? 84 :
-    level === 'mythic'       ? 56 :
-    level === 'great'        ? 34 :
-    level === 'good'         ? 18 :
-    level === 'basic'        ? 10 :
-    0
-  ) * fxMult))
+  // Low-tier suppression for low-impact levels — phones can't afford to
+  // fire a particle storm on EVERY spin (23 per run). Basic + good
+  // celebrations get reduced to minimum particles on low tier; the big
+  // moments (great / mythic / transcendent) still pop. Mid + high keep
+  // proportional counts via fxMult only.
+  let particleCount = $derived.by(() => {
+    if (level === 'silent') return 0
+    const designed =
+      level === 'transcendent' ? 84 :
+      level === 'mythic'       ? 56 :
+      level === 'great'        ? 34 :
+      level === 'good'         ? 18 :
+      level === 'basic'        ? 10 :
+      0
+    if (cheap && (level === 'basic' || level === 'good')) {
+      // Skip basic/good particles entirely on low tier — they fire on
+      // every C-tier-ish stat spin and add up to 90% of frame cost.
+      return 0
+    }
+    return Math.round(designed * fxMult)
+  })
 
   // Bonus drifting "confetti" / spark trail at mythic + transcendent.
   // Skipped entirely on low tier (cheap fall = many img elements with

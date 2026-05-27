@@ -21,16 +21,25 @@ export function getPerfTier(): PerfTier {
 
   if (reducedMotion || saveData) { cached = 'low'; return cached }
   if (mem <= 2 || cores <= 2) { cached = 'low'; return cached }
-  if (mem <= 4 && isCoarsePointer) { cached = 'mid'; return cached }
+  // Touch devices (phones, most tablets) — bucketed as 'low' regardless
+  // of advertised memory/cores because mobile GPUs choke on filter:blur
+  // + backdrop-filter + many simultaneous animations. iOS Safari doesn't
+  // expose deviceMemory so it would otherwise default to 'mid' or worse.
+  // Bumping coarse-pointer to low keeps the celebration smooth on phones.
+  if (isCoarsePointer) { cached = 'low'; return cached }
+  if (mem <= 4) { cached = 'mid'; return cached }
   if (cores >= 8 && mem >= 8) { cached = 'high'; return cached }
   cached = 'mid'
   return cached
 }
 
 // Particle/effect budget multiplier — pass through to spawn loops.
+// Lowered the low-tier multiplier to 0.25 so phones get ~quarter the
+// particles instead of ~half (DOM-based animated <img> particles are
+// the single biggest per-frame cost on mobile GPUs).
 export function effectsMultiplier(): number {
   const t = getPerfTier()
-  return t === 'low' ? 0.4 : t === 'mid' ? 0.75 : 1.0
+  return t === 'low' ? 0.25 : t === 'mid' ? 0.65 : 1.0
 }
 
 // Capped DPR — high-DPI displays on weak GPUs murder fillrate. Clamp to 1.5 on

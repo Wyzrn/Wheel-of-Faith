@@ -469,14 +469,19 @@
     ctx = gsap.context(() => {}, wheelGroupEl)
     // Snap to random starting angle, then begin slow idle rotation
     gsap.set(wheelGroupEl, { rotation: currentRotation, svgOrigin: SVG_CENTER, force3D: true })
-    idleTween = gsap.to(wheelGroupEl, {
-      rotation: '+=360',
-      duration: 9,
-      ease: 'none',
-      repeat: -1,
-      svgOrigin: SVG_CENTER,
-      force3D: true,
-    })
+    // Skip idle rotation on low-tier devices — running a 9s loop forever
+    // burns GPU on mobile even when nothing else is happening. The wheel
+    // sits static at its random starting angle until the player spins.
+    if (_perfTier !== 'low') {
+      idleTween = gsap.to(wheelGroupEl, {
+        rotation: '+=360',
+        duration: _perfTier === 'mid' ? 18 : 9,
+        ease: 'none',
+        repeat: -1,
+        svgOrigin: SVG_CENTER,
+        force3D: true,
+      })
+    }
     // Resize after first paint so the canvas has its final layout dimensions.
     // Observe the canvas element itself — its size is what we resize from,
     // and observing it avoids the iOS SVG getBoundingClientRect attribute bug.
@@ -641,7 +646,7 @@
   <!-- Shake wrapper — GSAP applies translate() here during spin -->
   <div bind:this={shakeEl} class="flex justify-center w-full">
   <!-- Wheel + canvas wrapper — CSS Grid overlay so canvas and SVG share identical pixel bounds -->
-  <div style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: drop-shadow(0 0 48px rgba(0,0,0,0.97)) {cursedTheme ? 'drop-shadow(0 0 32px rgba(139,92,246,0.5)) drop-shadow(0 0 16px rgba(100,0,200,0.4))' : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(72,200,224,0.15))'}; {cursedTheme ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
+  <div style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${cursedTheme ? 'drop-shadow(0 0 32px rgba(139,92,246,0.5)) drop-shadow(0 0 16px rgba(100,0,200,0.4))' : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(72,200,224,0.15))'}`}; {cursedTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
     <svg
       bind:this={svgEl}
       viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
@@ -926,6 +931,13 @@
   .rune-ring-slow  { animation: runeRingPulse 7s   ease-in-out infinite 2s; }
   .hub-jewel       { animation: hubJewelPulse 2.4s ease-in-out infinite; }
 
+  /* Mobile / low-tier devices: kill the always-running cosmetic
+     animations that contribute to constant GPU usage even when idle.
+     The wheel still looks ornate — just static instead of pulsing. */
+  @media (pointer: coarse), (max-width: 640px) {
+    .rune-ring-main, .rune-ring-slow, .hub-jewel { animation: none; }
+  }
+
   /* Soft attention pulse on the idle spin button — draws the eye for new users
      without being intrusive. Only fires when the button is enabled. */
   @keyframes spinBtnPulse {
@@ -935,7 +947,8 @@
   .spin-btn-idle:not(:disabled) {
     animation: spinBtnPulse 2.4s ease-in-out infinite;
   }
-  @media (prefers-reduced-motion: reduce) {
+  @media (prefers-reduced-motion: reduce),
+         (pointer: coarse) and (max-width: 768px) {
     .spin-btn-idle:not(:disabled) { animation: none; }
   }
 </style>
