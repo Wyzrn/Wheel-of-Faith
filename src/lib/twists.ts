@@ -272,26 +272,282 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
       'No Domain (untapped)':           { statBonusGrants: { potential: 'statBonus' }, flavor: 'Your cursed energy is raw potential.' },
     },
   },
+
+  // ── Vampire — age (older vampires are absurdly stronger) ───────────────
+  vampireAge: {
+    title: 'Vampiric Age',
+    hue: 0,
+    accentColor: '#dc2626',
+    prompt: 'How long have you walked the night?',
+    segments: [
+      { label: 'Fledgling (under 100 yrs)',      weight: 4 },
+      { label: 'Mature (centuries old)',         weight: 3 },
+      { label: 'Ancient (a millennium)',         weight: 2 },
+      { label: 'Elder (millennia)',              weight: 1 },
+      { label: 'Progenitor (forever)',           weight: 1 },
+    ],
+    effects: {
+      'Fledgling (under 100 yrs)':  { statBonusGrants: { agility: 'statBonus' } },
+      'Mature (centuries old)':     { statBonusGrants: { agility: 'statBonus', charisma: 'statBonus' } },
+      'Ancient (a millennium)':     { statBonusGrants: { strength: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus' } },
+      'Elder (millennia)':          { statBonusGrants: { strength: 'statBonus', durability: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus' } },
+      'Progenitor (forever)':       { statBonusGrants: { strength: 'statBonus', durability: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, flavor: 'You were here when language was invented.' },
+    },
+  },
+
+  // ── Werewolf — moon phase (gates how often Berserker Rage trigger fires) ─
+  moonPhase: {
+    title: 'Moon Phase at Turning',
+    hue: 240,
+    accentColor: '#e8b84b',
+    prompt: 'What moon was overhead when you turned?',
+    segments: [
+      { label: 'New Moon (suppressed)',     weight: 2 },
+      { label: 'Crescent (steady)',         weight: 3 },
+      { label: 'Half Moon (split nature)',  weight: 3 },
+      { label: 'Gibbous (rising power)',    weight: 2 },
+      { label: 'Full Moon (unleashed)',     weight: 2 },
+      { label: 'Blood Moon (cursed)',       weight: 1 },
+    ],
+    effects: {
+      'New Moon (suppressed)':     { statBonusGrants: { iq: 'statBonus', strength: 'statPenalty' } },
+      'Crescent (steady)':         { statBonusGrants: { agility: 'statBonus' } },
+      'Half Moon (split nature)':  { statBonusGrants: { strength: 'statBonus', iq: 'statBonus' } },
+      'Gibbous (rising power)':    { statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
+      'Full Moon (unleashed)':     { statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus' } },
+      'Blood Moon (cursed)':       { lockElement: 'Blood', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' }, flavor: 'The moon was red. You remember nothing else.' },
+    },
+  },
+
+  // ── Dragon — hoard (the more they have, the harder they fight) ─────────
+  dragonHoard: {
+    title: 'Hoard Size',
+    hue: 30,
+    accentColor: '#fde047',
+    prompt: 'How vast is your treasure pile?',
+    segments: [
+      { label: 'Pile of Coins (humble)',          weight: 4 },
+      { label: 'Cavern of Trinkets',              weight: 3 },
+      { label: 'Royal Treasury',                  weight: 2 },
+      { label: 'Mountain of Riches',              weight: 1 },
+      { label: 'A Stolen Civilization',           weight: 1 },
+    ],
+    effects: {
+      'Pile of Coins (humble)':          { statBonusGrants: { charisma: 'statBonus' } },
+      'Cavern of Trinkets':              { statBonusGrants: { durability: 'statBonus', charisma: 'statBonus' } },
+      'Royal Treasury':                  { statBonusGrants: { durability: 'statBonus', strength: 'statBonus', charisma: 'statBonus' } },
+      'Mountain of Riches':              { statBonusGrants: { durability: 'statBonus', strength: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus' } },
+      'A Stolen Civilization':           { statBonusGrants: { durability: 'statBonus', strength: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, flavor: 'They will write songs about what you stole.' },
+    },
+  },
+
+  // ── Dwarf — clan (each clan has a craft + temperament) ─────────────────
+  dwarfClan: {
+    title: 'Clan',
+    hue: 25,
+    accentColor: '#92400e',
+    prompt: 'Which clan raised you?',
+    segments: [
+      { label: 'Mountain (smiths)',          weight: 3 },
+      { label: 'Deep-Stone (miners)',        weight: 3 },
+      { label: 'Iron-Beard (warriors)',      weight: 3 },
+      { label: 'Rune-Carvers (mages)',       weight: 2 },
+      { label: 'Sky-Forged (legendary)',     weight: 1 },
+    ],
+    effects: {
+      'Mountain (smiths)':          { statBonusGrants: { weaponMastery: 'statBonus', durability: 'statBonus' } },
+      'Deep-Stone (miners)':        { statBonusGrants: { durability: 'statBonus', strength: 'statBonus' } },
+      'Iron-Beard (warriors)':      { statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
+      'Rune-Carvers (mages)':       { lockElement: 'Arcane', statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus' } },
+      'Sky-Forged (legendary)':     { lockElement: 'Metal', statBonusGrants: { weaponMastery: 'statBonus', armorStrength: 'statBonus', durability: 'statBonus' }, flavor: 'Your ancestors forged the stars.' },
+    },
+  },
+
+  // ── Stand User — Stand stat (the classic JJBA-style abcd grid) ─────────
+  standStats: {
+    title: 'Stand Stats',
+    hue: 290,
+    accentColor: '#fde047',
+    prompt: 'What kind of Stand is this?',
+    segments: [
+      { label: 'Close-Range Powerhouse (A/A/C/D)',  weight: 3 },
+      { label: 'Long-Range Specialist (D/B/A/B)',   weight: 3 },
+      { label: 'Automatic Stand (E/E/E/A)',         weight: 1 },
+      { label: 'Bound Object Stand (B/C/D/A)',      weight: 2 },
+      { label: 'Reality-Bending Stand (S/S/S/S)',   weight: 1 },
+      { label: 'Joke Stand (F/F/F/F but funny)',    weight: 2 },
+    ],
+    effects: {
+      'Close-Range Powerhouse (A/A/C/D)':  { statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus' } },
+      'Long-Range Specialist (D/B/A/B)':   { statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' } },
+      'Automatic Stand (E/E/E/A)':         { statBonusGrants: { potential: 'statBonus' }, flavor: 'It acts on its own. You\'re just along for the ride.' },
+      'Bound Object Stand (B/C/D/A)':      { statBonusGrants: { iq: 'statBonus', durability: 'statBonus' } },
+      'Reality-Bending Stand (S/S/S/S)':   { lockElement: 'Cosmic', statBonusGrants: { strength: 'statBonus', speed: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, flavor: 'Reality has notes for you.' },
+      'Joke Stand (F/F/F/F but funny)':    { statBonusGrants: { charisma: 'statBonus' }, flavor: 'Everyone laughs. Then everyone dies.' },
+    },
+  },
+
+  // ── Bounty Hunter — current contract (sets the prey for predator gimmick) ─
+  bountyContract: {
+    title: 'Current Contract',
+    hue: 30,
+    accentColor: '#f97316',
+    prompt: 'Who\'s the mark?',
+    segments: [
+      { label: 'Demon Bounty',           weight: 3 },
+      { label: 'Vampire Bounty',         weight: 3 },
+      { label: 'Robot/Cyborg Bounty',    weight: 2 },
+      { label: 'Alien Bounty',           weight: 2 },
+      { label: 'God-Tier Bounty',        weight: 1 },
+      { label: 'Self-Bounty (paradox)',  weight: 1 },
+    ],
+    effects: {
+      'Demon Bounty':           { statBonusGrants: { fightingSkill: 'statBonus', durability: 'statBonus' } },
+      'Vampire Bounty':         { statBonusGrants: { agility: 'statBonus', fightingSkill: 'statBonus' } },
+      'Robot/Cyborg Bounty':    { statBonusGrants: { iq: 'statBonus', weaponMastery: 'statBonus' } },
+      'Alien Bounty':           { statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' } },
+      'God-Tier Bounty':        { statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, flavor: 'You bid on something you cannot fight.' },
+      'Self-Bounty (paradox)':  { statBonusGrants: { iq: 'statBonus', charisma: 'statPenalty' }, flavor: 'You are hunting yourself. Both of you are losing.' },
+    },
+  },
+
+  // ── Demon Slayer — breathing style (canon Demon Slayer style) ──────────
+  breathingStyle: {
+    title: 'Breathing Style',
+    hue: 350,
+    accentColor: '#ef4444',
+    prompt: 'Which Breath have you mastered?',
+    segments: [
+      { label: 'Breath of Water',     weight: 3 },
+      { label: 'Breath of Flame',     weight: 3 },
+      { label: 'Breath of Thunder',   weight: 3 },
+      { label: 'Breath of Stone',     weight: 2 },
+      { label: 'Breath of Wind',      weight: 3 },
+      { label: 'Breath of the Sun',   weight: 1 },
+      { label: 'Breath of the Moon (corrupted)', weight: 1 },
+    ],
+    effects: {
+      'Breath of Water':     { lockElement: 'Water',     statBonusGrants: { agility: 'statBonus', fightingSkill: 'statBonus' } },
+      'Breath of Flame':     { lockElement: 'Fire',      statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
+      'Breath of Thunder':   { lockElement: 'Lightning', statBonusGrants: { speed: 'statBonus', fightingSkill: 'statBonus' } },
+      'Breath of Stone':     { lockElement: 'Earth',     statBonusGrants: { durability: 'statBonus', strength: 'statBonus' } },
+      'Breath of Wind':      { lockElement: 'Wind',      statBonusGrants: { speed: 'statBonus', agility: 'statBonus' } },
+      'Breath of the Sun':   { lockElement: 'Light',     statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' }, flavor: 'The first Breath. The only one demons truly fear.' },
+      'Breath of the Moon (corrupted)': { lockElement: 'Shadow', statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', charisma: 'statPenalty' }, flavor: 'You learned from the wrong teacher.' },
+    },
+  },
+
+  // ── Sorcerer — wild magic surge ─────────────────────────────────────────
+  wildMagic: {
+    title: 'Wild Magic Surge',
+    hue: 330,
+    accentColor: '#ec4899',
+    prompt: 'What\'s leaking out of you today?',
+    segments: [
+      { label: 'Random Element Affinity',   weight: 3 },
+      { label: 'Spell Misfire (CHA boost)', weight: 3 },
+      { label: 'Eldritch Whisper (IQ↑)',    weight: 2 },
+      { label: 'Mana Overflow (PM↑↑)',      weight: 2 },
+      { label: 'Reality Hiccup (everything random)', weight: 1 },
+    ],
+    effects: {
+      'Random Element Affinity':   { statBonusGrants: { powerMastery: 'statBonus' } },
+      'Spell Misfire (CHA boost)': { statBonusGrants: { charisma: 'statBonus' }, flavor: 'It missed. They\'re laughing. You\'re in.' },
+      'Eldritch Whisper (IQ↑)':    { statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' } },
+      'Mana Overflow (PM↑↑)':      { statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' } },
+      'Reality Hiccup (everything random)': { statBonusGrants: { potential: 'statBonus', iq: 'statPenalty' }, flavor: 'Reality stuttered. You felt every version of yourself.' },
+    },
+  },
+
+  // ── Esper — psionic class (Mob Psycho / X-Men hybrid) ──────────────────
+  psionicClass: {
+    title: 'Psionic Class',
+    hue: 260,
+    accentColor: '#b47aec',
+    prompt: 'Which psionic art is yours?',
+    segments: [
+      { label: 'Telekinetic',          weight: 3 },
+      { label: 'Telepathic',           weight: 3 },
+      { label: 'Pyrokinetic',          weight: 2 },
+      { label: 'Precognitive',         weight: 2 },
+      { label: 'Reality-Manipulator',  weight: 1 },
+      { label: 'Class ??? (unknown)',  weight: 1 },
+    ],
+    effects: {
+      'Telekinetic':          { lockElement: 'Gravity', statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus' } },
+      'Telepathic':           { lockElement: 'Psychic', statBonusGrants: { iq: 'statBonus', charisma: 'statBonus' } },
+      'Pyrokinetic':          { lockElement: 'Fire',    statBonusGrants: { powerMastery: 'statBonus', strength: 'statBonus' } },
+      'Precognitive':         { lockElement: 'Time',    statBonusGrants: { iq: 'statBonus', agility: 'statBonus' } },
+      'Reality-Manipulator':  { lockElement: 'Cosmic',  statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', potential: 'statBonus' }, flavor: 'You think. It happens.' },
+      'Class ??? (unknown)':  { statBonusGrants: { potential: 'statBonus' }, flavor: 'No one knows what you do yet. Not even you.' },
+    },
+  },
+
+  // ── Necromancer — undead command (army-scale stat tilt) ────────────────
+  undeadCommand: {
+    title: 'Undead Command',
+    hue: 280,
+    accentColor: '#7c3aed',
+    prompt: 'What walks at your call?',
+    segments: [
+      { label: 'A Few Skeletons',          weight: 3 },
+      { label: 'A Pack of Wights',         weight: 3 },
+      { label: 'A Horde of Revenants',     weight: 2 },
+      { label: 'An Undead Battalion',      weight: 1 },
+      { label: 'A Necropolis',             weight: 1 },
+    ],
+    effects: {
+      'A Few Skeletons':          { lockElement: 'Soul',   statBonusGrants: { powerMastery: 'statBonus' } },
+      'A Pack of Wights':         { lockElement: 'Soul',   statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus' } },
+      'A Horde of Revenants':     { lockElement: 'Shadow', statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', charisma: 'statBonus' } },
+      'An Undead Battalion':      { lockElement: 'Shadow', statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', charisma: 'statBonus', potential: 'statBonus' } },
+      'A Necropolis':             { lockElement: 'Shadow', statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', charisma: 'statBonus', potential: 'statBonus', durability: 'statBonus' }, flavor: 'You rule a city of the dead.' },
+    },
+  },
 }
 
 // ── Trigger maps ────────────────────────────────────────────────────────
 // Which race/archetype labels splice which twist when they land.
 export const RACE_TWIST_TRIGGERS: Record<string, string> = {
+  // Cosmic / divine
   'God':              'worshipperCount',
   'Demi-god':         'divineParent',
+  'Primordial':       'divineParent',
+  'Creator':          'cosmicScope',
+  // Power-tier escalation
   'Saiyan':           'powerLevel',
+  'Viltrumite':       'powerLevel',
+  // Element-locks
   'Bender':           'benderElement',
+  // Insanity / cosmic horror
   'Eldritch Being':   'insanityTier',
+  'Mindflayer':       'insanityTier',
+  // Cosmic scope
   'Kryptonian':       'cosmicScope',
   'Asgardian':        'cosmicScope',
   'Alien':            'cosmicScope',
+  'Cybertronian':     'cosmicScope',
+  // Origin twists
   'Mutant':           'mutantOrigin',
+  // Drainer twists
+  'Vampire':          'vampireAge',
+  'Werewolf':         'moonPhase',
+  'Dragon':           'dragonHoard',
+  'Half-Dragon':      'dragonHoard',
+  // Smith twists
+  'Dwarf':            'dwarfClan',
 }
 
 export const ARCHETYPE_TWIST_TRIGGERS: Record<string, string> = {
   'Time Traveler':    'temporalEra',
   'Chaos Gremlin':    'chaosRoll',
   'Cursed Sorcerer':  'curseDomain',
+  'Stand User':       'standStats',
+  'Bounty Hunter':    'bountyContract',
+  'Demon Slayer':     'breathingStyle',
+  'Sorcerer':         'wildMagic',
+  'Esper':            'psionicClass',
+  'Necromancer':      'undeadCommand',
 }
 
 // Public lookups —
