@@ -30,6 +30,8 @@
     onContinue,
     layout = 'overlay',
     categoryDisplayName = null,
+    anchorX = null,
+    anchorY = null,
   }: {
     result: SpinResult
     meta?: ResolvedMeta
@@ -41,6 +43,12 @@
     // (used in the wheel area). 'modal' renders fixed full-screen.
     layout?: 'overlay' | 'modal'
     categoryDisplayName?: string | null
+    // When set, the modal layout anchors at these viewport-pixel coords
+    // (which the wheel reports via onLanded) instead of viewport center.
+    // Lets the reveal sit OVER the wheel on desktop main game where the
+    // wheel is in the right column. Null = fall back to viewport center.
+    anchorX?: number | null
+    anchorY?: number | null
   } = $props()
 
   // Pull element + grade visuals from the canonical maps
@@ -129,14 +137,15 @@
 </script>
 
 {#if layout === 'modal'}
+  {@const hasAnchor = anchorX != null && anchorY != null}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    class="fixed inset-0 z-50 {hasAnchor ? '' : 'flex items-center justify-center'} px-4"
     style="background: rgba(7,7,13,0.88); backdrop-filter: blur(12px); animation: srrFadeIn 0.18s ease-out forwards;"
   >
     <div
       class="srr-modal-card obsidian-slab w-full max-w-sm rounded-xl p-6 text-center relative overflow-hidden"
       class:srr-id-card={!!idCard}
-      style="border: 1px solid {panelAccent}55; box-shadow: 0 0 80px rgba(0,0,0,0.98), 0 0 50px {panelAccent}33, inset 0 1px 0 rgba(255,255,255,0.04);"
+      style="border: 1px solid {panelAccent}55; box-shadow: 0 0 80px rgba(0,0,0,0.98), 0 0 50px {panelAccent}33, inset 0 1px 0 rgba(255,255,255,0.04); {hasAnchor ? `position: absolute; left: ${anchorX}px; top: ${anchorY}px; transform: translate(-50%, -50%);` : ''}"
     >
       <div class="noise-overlay"></div>
       <div class="absolute top-3 left-3 w-7 h-7" style="border-top: 2px solid {panelAccent}66; border-left: 2px solid {panelAccent}66;"></div>

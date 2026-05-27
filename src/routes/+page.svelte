@@ -90,6 +90,11 @@
   let raceOverride = $state<string | null>(null)
   let showNameScreen = $state(false)
   let characterName = $state('')
+  // Wheel viewport-center coords captured at landing time. Passed to the
+  // reveal modal so it anchors OVER the wheel (right column on desktop)
+  // instead of viewport center.
+  let wheelCenterX = $state<number | null>(null)
+  let wheelCenterY = $state<number | null>(null)
   // Tracks the index in results[] of the PRIMARY result for the current
   // spin reveal. The reveal panel can't use results.at(-1) because some
   // race/archetype lands push granted powers / weapons as extra result
@@ -2766,6 +2771,10 @@
               cursedTheme={auth.user?.gamepasses?.includes('cursed_wheel') ?? false}
               spinTrigger={spinTriggerKey}
               resolveLandingColors={resolveLandingColors}
+              onLanded={({ centerX, centerY }) => {
+                wheelCenterX = centerX
+                wheelCenterY = centerY
+              }}
             />
           {/key}
 
@@ -2802,6 +2811,8 @@
                 announcement={null}
                 onContinue={handleNextSpin}
                 layout="modal"
+                anchorX={wheelCenterX}
+                anchorY={wheelCenterY}
               />
             {/if}
           {/if}

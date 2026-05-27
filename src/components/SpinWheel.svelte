@@ -22,9 +22,15 @@
 
   const COLORS = ['#E63946','#457B9D','#2A9D8F','#E9C46A','#F4A261','#264653','#6A0572','#0077B6']
 
-  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false, spinTrigger = 0, resolveLandingColors }: {
+  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false, spinTrigger = 0, resolveLandingColors, onLanded }: {
     segments: WeightedSegment[]
     onSpinComplete: (resultIndex: number, resultLabel: string) => void
+    // Fires when the wheel finishes landing, just BEFORE celebration mounts
+    // and BEFORE the reveal panel is allowed to show. Parent uses the
+    // viewport-pixel coords to anchor the reveal modal over the wheel
+    // instead of over the screen center. Null centerX/Y when the SVG
+    // ref isn't measurable.
+    onLanded?: (info: { centerX: number | null; centerY: number | null }) => void
     categoryHue?: number
     soundEnabled?: boolean
     effectsEnabled?: boolean
@@ -555,6 +561,20 @@
             { filter: 'brightness(1) drop-shadow(0 0 0 transparent)', duration: 0.9, ease: 'power3.out' })
         }
 
+        // ── Capture wheel center in viewport pixels (fires every land) ────
+        // The reveal modal anchors to these coords so it appears centered
+        // OVER the wheel rather than at viewport center (main game's wheel
+        // sits in a right column on desktop). svgEl is the bound <svg>
+        // element; its bounding rect reflects current layout. Falls back
+        // to null only if the SVG isn't mounted.
+        let cx: number | null = null, cy: number | null = null
+        if (svgEl) {
+          const r = svgEl.getBoundingClientRect()
+          cx = r.left + r.width / 2
+          cy = r.top + r.height / 2
+        }
+        onLanded?.({ centerX: cx, centerY: cy })
+
         // ── Tier-scaled landing celebration overlay ──────────────────────
         // The host resolver can override intensity (grade-based for item
         // spins, weight-based for race/archetype). Anything ≥ 0.10 mounts —
@@ -566,17 +586,6 @@
           if (resolved !== null) {
             finalIntensity = resolved?.intensityOverride ?? intensity
             if (finalIntensity >= 0.10) {
-              // Capture wheel center in viewport pixels. svgEl is the
-              // bound <svg> element; its bounding rect reflects current
-              // layout (right-column on desktop, centered on mobile,
-              // centered in Story Mode). Falls back to null if the SVG
-              // isn't mounted (shouldn't happen after a spin completes).
-              let cx: number | null = null, cy: number | null = null
-              if (svgEl) {
-                const r = svgEl.getBoundingClientRect()
-                cx = r.left + r.width / 2
-                cy = r.top + r.height / 2
-              }
               celebration = {
                 key: ++celebrationKey,
                 intensity: finalIntensity,
@@ -595,17 +604,18 @@
         lastResult = { index: resultIndex, label: segments[resultIndex].label }
         spinStatus = 'LANDED'
         onSpinComplete(resultIndex, segments[resultIndex].label)
-        // Hold the reveal panel until the celebration VFX has FULLY ended,
-        // not partway through. Adds 100ms grace so the panel pops into a
-        // clean frame rather than racing the last fading particle. Matches
-        // (or slightly exceeds) LandingCelebration's effectiveDur ladder.
+        // Hold the reveal panel until the celebration's last lingering
+        // particle has fully faded. effectiveDur is when LandingCelebration
+        // calls onComplete, but confetti + rings can keep animating up to
+        // ~500ms past that. Adding 500ms grace guarantees the reveal pops
+        // into a clean frame, never on top of fading VFX.
         const isTranscendent = !!landedTier && /Celestial|Godly|Primordial|Absolute/i.test(landedTier)
         const revealDelay =
-          isTranscendent          ? 3500 :  // transcendent (VFX 3400 + 100)
-          finalIntensity >= 0.70  ? 2500 :  // mythic        (VFX 2400 + 100)
-          finalIntensity >= 0.50  ? 1800 :  // great         (VFX 1700 + 100)
-          finalIntensity >= 0.30  ? 1300 :  // good          (VFX 1200 + 100)
-                                     900    // basic / silent (VFX 800 + 100)
+          isTranscendent          ? 4000 :  // transcendent (VFX ~3400 + 600 grace)
+          finalIntensity >= 0.70  ? 3000 :  // mythic        (VFX ~2400 + 600)
+          finalIntensity >= 0.50  ? 2200 :  // great         (VFX ~1700 + 500)
+          finalIntensity >= 0.30  ? 1600 :  // good          (VFX ~1200 + 400)
+                                    1100    // basic / silent (VFX ~800 + 300)
         setTimeout(() => { spinStatus = 'REVEALED' }, revealDelay)
       }
     })

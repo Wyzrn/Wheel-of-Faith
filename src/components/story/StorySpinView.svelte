@@ -150,6 +150,10 @@
   // Sorcerer, Breath of Sun, etc.). Power + ability spins downstream
   // prefer this element when set. Null = no lock. Mirrors main game.
   let lockedElement = $state<ElementType | null>(null)
+  // Wheel viewport-center coords captured at landing time so the reveal
+  // modal anchors over the wheel, not the viewport center.
+  let wheelCenterX = $state<number | null>(null)
+  let wheelCenterY = $state<number | null>(null)
 
   // ── Wildcard state ────────────────────────────────────────────────────────
   let wildcardPhase = $state<'idle' | 'flashing' | 'reveal'>('idle')
@@ -1060,6 +1064,10 @@
           effectsEnabled={settings.effectsEnabled}
           spinSpeedMultiplier={settings.spinSpeed}
           resolveLandingColors={(_i, label) => resolveLandingForCategory(currentDef?.category, label)}
+          onLanded={({ centerX, centerY }) => {
+            wheelCenterX = centerX
+            wheelCenterY = centerY
+          }}
         />
       {/key}
 
@@ -1149,6 +1157,8 @@
     continueLabel={isSessionDone ? 'Complete!' : 'Continue'}
     onContinue={handleContinue}
     layout="modal"
+    anchorX={wheelCenterX}
+    anchorY={wheelCenterY}
   />
 {/if}
 
