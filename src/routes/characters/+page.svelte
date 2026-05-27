@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
+  import { scoreTier } from '$lib/game/scoreTier'
 
   type CharInfo = {
     id: string
@@ -104,13 +105,18 @@
       if (r.status === 'fulfilled') {
         const d = r.value
         const titleSpin = (d.spins ?? []).find((s: { category: string }) => s.category === 'title')
+        // Recompute tier from score so legacy characters re-grade onto the new
+        // ladder (same logic the character card uses). Score is the durable
+        // truth — stored overall_tier may be from an older tier scheme.
+        const score = d.overall_score ?? 0
+        const tier = score > 0 ? scoreTier(score) : (d.overall_tier ?? '')
         return {
           id,
           name: d.name ?? '—',
           race: d.race ?? '—',
           title: titleSpin?.resultLabel ?? '',
-          tier: d.overall_tier ?? '',
-          score: d.overall_score ?? 0,
+          tier,
+          score,
           rivalsWins: d.rivals_wins ?? 0,
           inGallery: d.share_in_gallery ?? false,
           error: false,
@@ -198,23 +204,49 @@
     } catch {}
   }
 
+  // Canonical clean palette — mirrors the character card / wheel / app.css.
+  // Cosmic+ entries are the gradient mid-stop; the chip uses tierGradientBg()
+  // for the actual gradient background.
   const TIER_COLORS: Record<string, string> = {
-    'F-':'#555','F':'#666','F+':'#777',
-    'E-':'#6b7280','E':'#9ca3af','E+':'#d1d5db',
-    'D-':'#92400e','D':'#b45309','D+':'#d97706',
-    'C-':'#1d4ed8','C':'#2563eb','C+':'#3b82f6',
-    'B-':'#065f46','B':'#059669','B+':'#34d399',
-    'A-':'#7c3aed','A':'#8b5cf6','A+':'#a78bfa',
-    'S-':'#b91c1c','S':'#dc2626','S+':'#ef4444',
-    'SS-':'#ea580c','SS':'#f97316','SS+':'#fb923c',
-    'SSS-':'#ca8a04','SSS':'#eab308','SSS+':'#fde047',
-    'Z-':'#0e7490','Z':'#0891b2','Z+':'#06b6d4',
-    'ZZ-':'#3730a3','ZZ':'#4f46e5','ZZ+':'#818cf8',
-    'ZZZ-':'#9d174d','ZZZ':'#be185d','ZZZ+':'#ec4899',
-    'Celestial-':'#075985','Celestial':'#0284c7','Celestial+':'#38bdf8',
-    'Godly-':'#c026d3','Godly':'#e879f9',
-    'Primordial':'#ffffff',
-    'Primordial+':'#ccffff','Absolute-':'#99ffff','Absolute':'#00ffff','Absolute+':'#00ddff',
+    'F-':'#2c2c2c','F':'#404040','F+':'#525252',
+    'E-':'#4b5563','E':'#64748b','E+':'#94a3b8',
+    'D-':'#14532d','D':'#166534','D+':'#22c55e',
+    'C-':'#047857','C':'#059669','C+':'#10b981',
+    'B-':'#115e59','B':'#0d9488','B+':'#14b8a6',
+    'A-':'#155e75','A':'#0e7490','A+':'#06b6d4',
+    'S-':'#0c4a6e','S':'#0369a1','S+':'#0ea5e9',
+    'SS-':'#1e3a8a','SS':'#2563eb','SS+':'#3b82f6',
+    'SSS-':'#4338ca','SSS':'#4f46e5','SSS+':'#6366f1',
+    'Z-':'#5b21b6','Z':'#7c3aed','Z+':'#8b5cf6',
+    'ZZ-':'#86198f','ZZ':'#a21caf','ZZ+':'#c026d3',
+    'ZZZ-':'#be185d','ZZZ':'#db2777','ZZZ+':'#ec4899',
+    'Cosmic-':'#0e6b8a','Cosmic':'#0891b2','Cosmic+':'#06b6d4',
+    'Immortal-':'#d946ef','Immortal':'#ec4899','Immortal+':'#f472b6',
+    'Celestial-':'#831843','Celestial':'#9d174d','Celestial+':'#be185d',
+    'Godly-':'#f9a8d4','Godly':'#f472b6','Godly+':'#ec4899',
+    'Primordial-':'#d4d4d8','Primordial':'#e4e4e7','Primordial+':'#fafafa',
+    'Absolute-':'#7dd3fc','Absolute':'#38bdf8','Absolute+':'#0ea5e9',
+    'Transcendent-':'#84cc16','Transcendent':'#65a30d','Transcendent+':'#4d7c0f',
+    'Infinite-':'#525252','Infinite':'#262626','Infinite+':'#000000',
+  }
+  // Returns the matching --tier-*-grad CSS variable for Cosmic-or-above
+  // tiers, or null for everything else. The grade chip uses this to paint a
+  // gradient background instead of a flat solid for top-tier characters,
+  // keeping the chip and the actual character card identical at a glance.
+  function tierGradient(tier: string): string | null {
+    if (!tier) return null
+    const base = tier.replace(/[-+]$/, '').toLowerCase()
+    if (['cosmic','immortal','celestial','godly','primordial','absolute','transcendent','infinite'].includes(base)) {
+      return `var(--tier-${base}-grad)`
+    }
+    return null
+  }
+  // Foreground colour for the chip text — white on most gradients, near-black
+  // on the light Godly/Primordial gradients so the text stays legible.
+  function tierFg(tier: string): string {
+    const grad = tierGradient(tier)
+    if (!grad) return TIER_COLORS[tier] ?? '#9a907b'
+    return /Primordial|Godly/.test(tier) ? '#0a0612' : '#ffffff'
   }
 </script>
 
@@ -385,6 +417,7 @@
           {@const charTeam = teamMap.get(char.id)}
           {@const isT1 = charTeam === 1}
           {@const isT2 = charTeam === 2}
+          {@const grad = char.tier ? tierGradient(char.tier) : null}
           {@const isSelected = charTeam !== undefined}
           {@const borderColor = isT1 ? 'rgba(240,192,64,0.65)' : isT2 ? 'rgba(232,121,249,0.65)' : char.error ? 'rgba(240,192,64,0.06)' : 'rgba(240,192,64,0.18)'}
           {@const glowColor   = isT1 ? 'rgba(240,192,64,0.14)' : isT2 ? 'rgba(232,121,249,0.14)' : 'none'}
@@ -414,11 +447,13 @@
               class="flex items-center gap-3 flex-1 min-w-0 px-4 py-4 transition-all hover:opacity-90 active:scale-[0.99]"
               style="text-decoration: none;"
             >
-              <!-- Tier badge -->
+              <!-- Tier badge — gradient backdrop for Cosmic+ to match the
+                   character card. Falls back to a tinted solid for lower
+                   tiers. -->
               <div class="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-                style="background: {char.tier ? TIER_COLORS[char.tier] + '18' : '#1b1b24'}; border: 1px solid {char.tier ? TIER_COLORS[char.tier] + '44' : '#4e4635'};">
+                style="background: {grad ?? (char.tier ? TIER_COLORS[char.tier] + '22' : '#1b1b24')}; border: 1px solid {char.tier ? (TIER_COLORS[char.tier] ?? '#4e4635') + '88' : '#4e4635'};">
                 {#if char.tier}
-                  <span class="text-xs font-black" style="color: {TIER_COLORS[char.tier] ?? '#9a907b'}; font-family: 'Cinzel', serif;">{char.tier}</span>
+                  <span class="text-xs font-black" style="color: {tierFg(char.tier)}; font-family: 'Cinzel', serif;">{char.tier}</span>
                 {:else}
                   <span class="material-symbols-outlined" style="color: #4e4635; font-size: 18px; font-variation-settings: 'FILL' 1;">person_play</span>
                 {/if}

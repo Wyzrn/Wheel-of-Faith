@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { scoreTier } from '$lib/game/scoreTier'
 
   type GalleryChar = {
     shareId: string
@@ -14,23 +15,51 @@
     spins: Array<{ category: string; resultLabel: string }>
   }
 
+  // Canonical clean palette — mirrors character card / wheel / app.css.
+  // Cosmic+ entries are the gradient mid-stop; the chip uses tierGradient()
+  // for the actual gradient background.
   const TIER_COLORS: Record<string, string> = {
-    'F-':'#555','F':'#666','F+':'#777',
-    'E-':'#6b7280','E':'#9ca3af','E+':'#d1d5db',
-    'D-':'#92400e','D':'#b45309','D+':'#d97706',
-    'C-':'#1d4ed8','C':'#2563eb','C+':'#3b82f6',
-    'B-':'#065f46','B':'#059669','B+':'#34d399',
-    'A-':'#7c3aed','A':'#8b5cf6','A+':'#a78bfa',
-    'S-':'#b91c1c','S':'#dc2626','S+':'#ef4444',
-    'SS-':'#ea580c','SS':'#f97316','SS+':'#fb923c',
-    'SSS-':'#ca8a04','SSS':'#eab308','SSS+':'#fde047',
-    'Z-':'#0e7490','Z':'#0891b2','Z+':'#06b6d4',
-    'ZZ-':'#3730a3','ZZ':'#4f46e5','ZZ+':'#818cf8',
-    'ZZZ-':'#9d174d','ZZZ':'#be185d','ZZZ+':'#ec4899',
-    'Celestial-':'#075985','Celestial':'#0284c7','Celestial+':'#38bdf8',
-    'Godly-':'#c026d3','Godly':'#e879f9',
-    'Primordial':'#ffffff',
-    'Primordial+':'#ccffff','Absolute-':'#99ffff','Absolute':'#00ffff','Absolute+':'#00ddff',
+    'F-':'#2c2c2c','F':'#404040','F+':'#525252',
+    'E-':'#4b5563','E':'#64748b','E+':'#94a3b8',
+    'D-':'#14532d','D':'#166534','D+':'#22c55e',
+    'C-':'#047857','C':'#059669','C+':'#10b981',
+    'B-':'#115e59','B':'#0d9488','B+':'#14b8a6',
+    'A-':'#155e75','A':'#0e7490','A+':'#06b6d4',
+    'S-':'#0c4a6e','S':'#0369a1','S+':'#0ea5e9',
+    'SS-':'#1e3a8a','SS':'#2563eb','SS+':'#3b82f6',
+    'SSS-':'#4338ca','SSS':'#4f46e5','SSS+':'#6366f1',
+    'Z-':'#5b21b6','Z':'#7c3aed','Z+':'#8b5cf6',
+    'ZZ-':'#86198f','ZZ':'#a21caf','ZZ+':'#c026d3',
+    'ZZZ-':'#be185d','ZZZ':'#db2777','ZZZ+':'#ec4899',
+    'Cosmic-':'#0e6b8a','Cosmic':'#0891b2','Cosmic+':'#06b6d4',
+    'Immortal-':'#d946ef','Immortal':'#ec4899','Immortal+':'#f472b6',
+    'Celestial-':'#831843','Celestial':'#9d174d','Celestial+':'#be185d',
+    'Godly-':'#f9a8d4','Godly':'#f472b6','Godly+':'#ec4899',
+    'Primordial-':'#d4d4d8','Primordial':'#e4e4e7','Primordial+':'#fafafa',
+    'Absolute-':'#7dd3fc','Absolute':'#38bdf8','Absolute+':'#0ea5e9',
+    'Transcendent-':'#84cc16','Transcendent':'#65a30d','Transcendent+':'#4d7c0f',
+    'Infinite-':'#525252','Infinite':'#262626','Infinite+':'#000000',
+  }
+  // Returns the matching --tier-*-grad CSS variable for Cosmic-or-above
+  // tiers, or null otherwise. Used so the gallery grade chip paints with
+  // the same gradient as the character card.
+  function tierGradient(tier: string): string | null {
+    if (!tier) return null
+    const base = tier.replace(/[-+]$/, '').toLowerCase()
+    if (['cosmic','immortal','celestial','godly','primordial','absolute','transcendent','infinite'].includes(base)) {
+      return `var(--tier-${base}-grad)`
+    }
+    return null
+  }
+  function tierFg(tier: string): string {
+    const grad = tierGradient(tier)
+    if (!grad) return TIER_COLORS[tier] ?? '#6b7280'
+    return /Primordial|Godly/.test(tier) ? '#0a0612' : '#ffffff'
+  }
+  // Score-derived tier so legacy entries re-grade onto the new ladder.
+  function effectiveTier(c: { overall_score?: number; overall_tier?: string }): string {
+    if (typeof c.overall_score === 'number' && c.overall_score > 0) return scoreTier(c.overall_score)
+    return c.overall_tier ?? ''
   }
 
   type SortField = 'score' | 'rivals' | 'date' | 'name' | 'race' | 'archetype'
@@ -166,13 +195,24 @@
     { value: 'date',      label: 'Newest'   },
   ]
 
+  // Sort rank — covers all 60 tiers on the new ladder. Legacy stored tier
+  // names (old Celestial-, Godly-, Primordial, etc.) still resolve via this
+  // table because effectiveTier() recomputes from score for the badge, while
+  // the sort uses the score directly when available; this table is the
+  // tiebreaker for entries with a tier but no score.
   const TIER_RANK: Record<string, number> = {
     'F-':1,'F':2,'F+':3,'E-':4,'E':5,'E+':6,'D-':7,'D':8,'D+':9,
     'C-':10,'C':11,'C+':12,'B-':13,'B':14,'B+':15,'A-':16,'A':17,'A+':18,
     'S-':19,'S':20,'S+':21,'SS-':22,'SS':23,'SS+':24,'SSS-':25,'SSS':26,'SSS+':27,
     'Z-':28,'Z':29,'Z+':30,'ZZ-':31,'ZZ':32,'ZZ+':33,'ZZZ-':34,'ZZZ':35,'ZZZ+':36,
-    'Celestial-':37,'Celestial':38,'Celestial+':39,'Godly-':40,'Godly':41,'Primordial':42,
-    'Primordial+':43,'Absolute-':44,'Absolute':45,'Absolute+':46,
+    'Cosmic-':37,'Cosmic':38,'Cosmic+':39,
+    'Immortal-':40,'Immortal':41,'Immortal+':42,
+    'Celestial-':43,'Celestial':44,'Celestial+':45,
+    'Godly-':46,'Godly':47,'Godly+':48,
+    'Primordial-':49,'Primordial':50,'Primordial+':51,
+    'Absolute-':52,'Absolute':53,'Absolute+':54,
+    'Transcendent-':55,'Transcendent':56,'Transcendent+':57,
+    'Infinite-':58,'Infinite':59,'Infinite+':60,
   }
 
   let challengeTarget   = $state<GalleryChar | null>(null)
@@ -374,7 +414,9 @@
       <div class="flex flex-col gap-3">
         {#each chars as char}
           {@const titleLabel = getTitle(char)}
-          {@const tierColor = TIER_COLORS[char.overall_tier] ?? '#6b7280'}
+          {@const charTier = effectiveTier(char)}
+          {@const tierColor = TIER_COLORS[charTier] ?? '#6b7280'}
+          {@const tierGrad = tierGradient(charTier)}
           <div
             class="flex rounded-lg overflow-hidden transition-all hover:brightness-110"
             style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(167,139,250,0.18); box-shadow: inset 1px 1px 0 rgba(167,139,250,0.05);"
@@ -385,11 +427,12 @@
               class="flex flex-1 items-center gap-0 min-w-0 active:scale-[0.99] transition-all"
               style="text-decoration: none;"
             >
-              <!-- Tier badge -->
+              <!-- Tier badge — gradient backdrop for Cosmic+ so the gallery
+                   chip matches the character card and wheel exactly. -->
               <div class="shrink-0 w-16 self-stretch flex items-center justify-center"
-                style="background: {tierColor}18; border-right: 1px solid {tierColor}28;">
-                {#if char.overall_tier}
-                  <span class="text-sm font-black" style="color: {tierColor}; font-family: 'Cinzel', serif; letter-spacing: -0.02em;">{char.overall_tier}</span>
+                style="background: {tierGrad ?? tierColor + '22'}; border-right: 1px solid {tierColor}66;">
+                {#if charTier}
+                  <span class="text-sm font-black" style="color: {tierFg(charTier)}; font-family: 'Cinzel', serif; letter-spacing: -0.02em;">{charTier}</span>
                 {:else}
                   <span class="material-symbols-outlined" style="color: #4e4635; font-size: 20px; font-variation-settings: 'FILL' 1;">person_play</span>
                 {/if}
@@ -538,7 +581,9 @@
 
         {:else}
           {#each sortedMyChars as mine}
-            {@const myTierColor = TIER_COLORS[mine.overall_tier] ?? '#6b7280'}
+            {@const myTier = effectiveTier(mine)}
+            {@const myTierColor = TIER_COLORS[myTier] ?? '#6b7280'}
+            {@const myGrad = tierGradient(myTier)}
             <button
               onclick={() => startBattle(mine.shareId)}
               class="flex items-center gap-3 w-full rounded-lg px-4 py-3 text-left transition-all active:scale-[0.98]"
@@ -547,8 +592,8 @@
               onmouseleave={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,223,150,0.1)'}
             >
               <div class="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-                style="background: {myTierColor}18; border: 1px solid {myTierColor}30;">
-                <span class="text-xs font-black" style="font-family: 'Cinzel', serif; color: {myTierColor};">{mine.overall_tier}</span>
+                style="background: {myGrad ?? (myTierColor + '22')}; border: 1px solid {myTierColor}66;">
+                <span class="text-xs font-black" style="font-family: 'Cinzel', serif; color: {tierFg(myTier)};">{myTier}</span>
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{mine.name}</p>

@@ -328,6 +328,26 @@
       : null,
   )
 
+  // Per-top-tier signature kind — each Cosmic+ tier gets its own CSS hook on
+  // the celebration root so the overlay reads as a unique moment instead of a
+  // single shared "transcendent" preset. Hooks: lc-tier-cosmic /
+  // lc-tier-immortal / lc-tier-celestial / lc-tier-godly /
+  // lc-tier-primordial / lc-tier-absolute / lc-tier-transcendent /
+  // lc-tier-infinite. The class drives a hue rotation / gradient backdrop /
+  // banner glow color matching the wheel-segment gradient palette.
+  let tierKind = $derived.by(() => {
+    if (!tier) return ''
+    if (/^Infinite/i.test(tier)) return 'lc-tier-infinite'
+    if (/^Transcendent/i.test(tier)) return 'lc-tier-transcendent'
+    if (/^Absolute/i.test(tier)) return 'lc-tier-absolute'
+    if (/^Primordial/i.test(tier)) return 'lc-tier-primordial'
+    if (/^Godly|^God$/i.test(tier)) return 'lc-tier-godly'
+    if (/^Celestial/i.test(tier)) return 'lc-tier-celestial'
+    if (/^Immortal/i.test(tier)) return 'lc-tier-immortal'
+    if (/^Cosmic/i.test(tier)) return 'lc-tier-cosmic'
+    return ''
+  })
+
   // Precomputed crack angles for reality-shatter lines. Computed once at
   // mount and frozen so they don't churn under reactive triggers.
   let crackAngles = $state<number[]>([])
@@ -342,7 +362,7 @@
        still receives clicks. -->
   <div
     use:portal
-    class="lc-root"
+    class="lc-root {tierKind}"
     class:lc-perf-low={cheap}
     class:lc-perf-mid={perfTier === 'mid'}
     style="--accent: {accent}; --accent2: {accent2}; --tier-color: {tierColor}; --origin-x: {originX}; --origin-y: {originY};"
@@ -1372,5 +1392,73 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
     }
+  }
+
+  /* ──────────────────────────────────────────────────────────────────
+     Per-top-tier signature overrides. Each Cosmic+ tier paints the
+     transcendent landing with its own dominant hue + rotation behaviour
+     so the player learns to read the celebration colour as the grade
+     itself. Banner glow + aurora tint + vignette tint shift in lockstep
+     with the wheel-segment gradients defined in app.css.
+     ────────────────────────────────────────────────────────────────── */
+
+  /* Cosmic — deep cyan */
+  .lc-tier-cosmic .lc-banner { color: #22d3ee; text-shadow: 0 0 22px #0891b2, 0 0 48px #083344; }
+  .lc-tier-cosmic .lc-vignette { box-shadow: inset 0 0 160px rgba(8,145,178,0.45); }
+  .lc-tier-cosmic .lc-aurora { background: conic-gradient(from 0deg, transparent, #0e7490, #22d3ee, #0891b2, transparent); }
+
+  /* Immortal — animated rainbow */
+  .lc-tier-immortal .lc-banner {
+    background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #6366f1, #d946ef);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+    background-size: 300% 100%; animation: lcImmortalHue 2.4s linear infinite;
+    filter: drop-shadow(0 0 22px rgba(217,70,239,0.5));
+  }
+  .lc-tier-immortal .lc-aurora {
+    background: conic-gradient(from 0deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #6366f1, #d946ef, #ef4444);
+    animation-duration: 4s;
+  }
+  .lc-tier-immortal .lc-vignette { box-shadow: inset 0 0 160px rgba(217,70,239,0.35); }
+  @keyframes lcImmortalHue { from { background-position: 0% 0; } to { background-position: 300% 0; } }
+
+  /* Celestial — dark pink */
+  .lc-tier-celestial .lc-banner { color: #db2777; text-shadow: 0 0 22px #be185d, 0 0 48px #500724; }
+  .lc-tier-celestial .lc-vignette { box-shadow: inset 0 0 160px rgba(190,24,93,0.5); }
+  .lc-tier-celestial .lc-aurora { background: conic-gradient(from 0deg, transparent, #500724, #be185d, #db2777, transparent); }
+
+  /* Godly — light pink */
+  .lc-tier-godly .lc-banner { color: #f9a8d4; text-shadow: 0 0 22px #f472b6, 0 0 48px #ec4899; }
+  .lc-tier-godly .lc-vignette { box-shadow: inset 0 0 160px rgba(244,114,182,0.35); }
+  .lc-tier-godly .lc-aurora { background: conic-gradient(from 0deg, transparent, #fbcfe8, #f9a8d4, #f472b6, transparent); }
+
+  /* Primordial — white / gray pearlescent */
+  .lc-tier-primordial .lc-banner { color: #ffffff; text-shadow: 0 0 24px #ffffff, 0 0 48px rgba(255,255,255,0.6); }
+  .lc-tier-primordial .lc-vignette { box-shadow: inset 0 0 180px rgba(255,255,255,0.55); }
+  .lc-tier-primordial .lc-aurora { background: conic-gradient(from 0deg, transparent, #71717a, #d4d4d8, #ffffff, transparent); }
+
+  /* Absolute — light cyan-blue */
+  .lc-tier-absolute .lc-banner { color: #38bdf8; text-shadow: 0 0 22px #7dd3fc, 0 0 48px #0ea5e9; }
+  .lc-tier-absolute .lc-vignette { box-shadow: inset 0 0 160px rgba(56,189,248,0.5); }
+  .lc-tier-absolute .lc-aurora { background: conic-gradient(from 0deg, transparent, #bae6fd, #38bdf8, #0ea5e9, transparent); }
+
+  /* Transcendent — lime green */
+  .lc-tier-transcendent .lc-banner { color: #84cc16; text-shadow: 0 0 24px #4d7c0f, 0 0 56px #65a30d; }
+  .lc-tier-transcendent .lc-vignette { box-shadow: inset 0 0 180px rgba(132,204,22,0.45); }
+  .lc-tier-transcendent .lc-aurora { background: conic-gradient(from 0deg, transparent, #4d7c0f, #84cc16, #bef264, transparent); }
+  .lc-tier-transcendent .lc-hueshift {
+    background: radial-gradient(circle at 50% 50%, rgba(132,204,22,0.32), transparent 65%);
+  }
+
+  /* Infinite — black / white shimmer; the void itself */
+  .lc-tier-infinite .lc-banner {
+    background: linear-gradient(90deg, #ffffff, #a3a3a3, #404040, #000000, #404040, #a3a3a3, #ffffff);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+    background-size: 300% 100%; animation: lcImmortalHue 3.6s linear infinite;
+    filter: drop-shadow(0 0 28px rgba(255,255,255,0.6));
+  }
+  .lc-tier-infinite .lc-vignette { box-shadow: inset 0 0 240px rgba(0,0,0,0.85); }
+  .lc-tier-infinite .lc-aurora { background: conic-gradient(from 0deg, #000000, #404040, #ffffff, #404040, #000000); }
+  .lc-tier-infinite .lc-hueshift {
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.18), transparent 60%);
   }
 </style>
