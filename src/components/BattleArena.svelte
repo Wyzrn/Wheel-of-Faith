@@ -290,14 +290,11 @@
     }, dur + fade)
   }
 
-  // FX types that should render as a beam line attacker→target instead of
-  // a projectile. Each of these has a beam-style SVG too (holy beam mode,
-  // or an equivalent impact burst at the target end).
+  // FX types that render as a beam line attacker→target. Everything else
+  // anchors in-place on the target's card (the legacy "comet flies across
+  // the screen" projectile path is gone — it looked like a skip every time
+  // the comet over/undershot, and read worse than a clean stationary burst).
   const BEAM_TYPES = new Set(['holy', 'arcane', 'cosmic', 'energy', 'void', 'sound'])
-  // FX types that anchor in-place on the TARGET (no projectile, no beam).
-  // Slash is short-range; fire engulfs; lightning strikes from above;
-  // water sweeps in via its own internal direction.
-  const IN_PLACE_TYPES = new Set(['slash', 'fire', 'lightning', 'water'])
 
   const GRADE_IDX: Record<string, number> = {
     F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, SS: 7, SSS: 8, God: 9, Godly: 9,
@@ -463,26 +460,26 @@
         const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
 
         // ── Dispatch by FX category ────────────────────────────────────────
-        // Four rendering paths:
-        //   1. HEAL (fxAttackType==='heal') — anchors on the CASTER (line's
-        //      leading name) and renders the holy heal-rise burst, never
-        //      a beam, even when the element is Light.
-        //   2. IN_PLACE_TYPES (slash / fire / lightning / water) — burst on
-        //      the target's card using the SAME positioning model as
-        //      status effects: parse the target's name from the line text,
-        //      look it up via memberOrigin(name), fall back to wrapper
-        //      center. Fixes the previous fx-index-based lookup that
-        //      mispositioned attacks on team 2.
-        //   3. BEAM_TYPES (holy / arcane / cosmic / energy / void / sound)
+        // Three rendering paths (projectile retired):
+        //   1. HEAL (fxAttackType==='heal') — anchors on the CASTER and
+        //      renders the holy heal-rise burst, never a beam.
+        //   2. BEAM_TYPES (holy / arcane / cosmic / energy / void / sound)
         //      — beam line from attacker anchor to target anchor.
-        //   4. PROJECTILE (everything else) — comet flies attacker → target.
-        const isHeal    = fxAttackType === 'heal'
-        const isInPlace = !isHeal && IN_PLACE_TYPES.has(type)
-        const isBeam    = !isHeal && BEAM_TYPES.has(type)
-
-        const canProjectile = isDamage && fx && !isHeal && !isInPlace && !isBeam &&
-                              type !== 'crit' && type !== 'dodge' &&
-                              type !== 'shield' && type !== 'berserker'
+        //   3. IN_PLACE (default for every other damage attack + status
+        //      VFX) — burst on the target's card. Uses the same
+        //      positioning model as status effects: parse the target's
+        //      name from the line text, look it up via memberOrigin(name),
+        //      fall back to wrapper center.
+        //
+        // Dodge / shield / crit / berserker still take the legacy
+        // non-projectile path below since they fire on the actor, not the
+        // target, and the visual is self-contained at the card.
+        const isHeal       = fxAttackType === 'heal'
+        const isBeam       = !isHeal && BEAM_TYPES.has(type)
+        const isActorBurst = type === 'crit' || type === 'dodge' ||
+                             type === 'shield' || type === 'berserker'
+        const isInPlace    = !isHeal && !isBeam && !isActorBurst && isDamage && !!fx
+        const canProjectile = false
 
         // Resolve attacker + targets once for the next several branches.
         const resolveAttackerOrigin = (): { x: number; y: number } | undefined => {
@@ -543,8 +540,13 @@
               startOrigin.x, startOrigin.y, targetOrigin.x, targetOrigin.y,
               color, grade,
               () => {
-                // Impact burst at the target end of the beam.
-                showAnim(type, color, direction, grade, targetOrigin, fxAttackType)
+                // Impact burst at the target end of the beam. Use the
+                // 'center' direction so beam-type SVGs (holy etc.) play
+                // their compact center-burst instead of their long
+                // beam-extension lines — those lines pointed BACK
+                // toward the attacker and made beams look like they
+                // were firing both directions at once.
+                showAnim(type, color, 'center', grade, targetOrigin, fxAttackType)
                 if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
               },
               type,
