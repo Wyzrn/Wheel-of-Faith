@@ -2703,7 +2703,9 @@
                 last.category === 'archetype' ||
                 last.category === 'raceSubType' ||
                 last.category === 'raceClass' ||
-                last.category === 'raceTransformation'
+                last.category === 'raceTransformation' ||
+                last.category === 'backstory' ||
+                last.category === 'title'
               ) ? buildIdentityCard(last.category, last.resultLabel ?? '') : null}
               {@const resolvedMeta = {
                 ...(itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}),

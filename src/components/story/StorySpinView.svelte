@@ -1035,7 +1035,9 @@
     lastResult.category === 'archetype' ||
     lastResult.category === 'raceSubType' ||
     lastResult.category === 'raceClass' ||
-    lastResult.category === 'raceTransformation'
+    lastResult.category === 'raceTransformation' ||
+    lastResult.category === 'backstory' ||
+    lastResult.category === 'title'
   ) ? buildIdentityCard(lastResult.category, lastResult.resultLabel ?? '') : null}
   {@const resolvedMeta = {
     element: pendingResult.element,

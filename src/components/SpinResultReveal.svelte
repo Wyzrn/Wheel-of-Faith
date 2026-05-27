@@ -176,7 +176,7 @@
           <div class="flex items-center gap-2 flex-wrap justify-center">
             <span class="srr-id-chip"
               style="background: {idCard.accentColor}22; border: 1px solid {idCard.accentColor}66; color: {idCard.accentColor};">
-              {idCard.kind === 'race' ? 'RACE' : 'ARCHETYPE'}
+              {idCard.kind === 'race' ? 'RACE' : idCard.kind === 'archetype' ? 'ARCHETYPE' : idCard.kind === 'backstory' ? 'BACKSTORY' : 'TITLE'}
             </span>
             <span class="srr-id-chip srr-id-chip-rarity"
               style="background: {idCard.accentColor}18; border: 1px solid {idCard.accentColor}44; color: #ffdf96;">

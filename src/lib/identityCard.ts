@@ -9,6 +9,8 @@ import { getArchetype } from '$lib/content/archetypes'
 import { ELEMENT_COLORS } from '$lib/content/elements'
 import type { ElementType, ItemGrade, Race } from '$lib/content/types'
 import { GIMMICKS, RACE_GIMMICKS, ARCHETYPE_GIMMICKS } from '$lib/gimmicks'
+import { backstories } from '$lib/content/backstories'
+import { titles } from '$lib/content/titles'
 
 export interface IdentityPerk {
   // Material Symbols icon name
@@ -20,8 +22,10 @@ export interface IdentityPerk {
 }
 
 export interface IdentityCard {
-  // "race" or "archetype" — drives the badge above the card
-  kind: 'race' | 'archetype'
+  // What kind of card to render — drives the badge above the card and
+  // some style cues. "race" + "archetype" share the perks-list layout;
+  // "backstory" + "title" use a stat-grants-only mini-card.
+  kind: 'race' | 'archetype' | 'backstory' | 'title'
   // Display name shown in big letters
   name: string
   // Flavor description from races.ts / archetypes.ts
@@ -519,6 +523,86 @@ export function buildPoolEntryIdentityCard(
   }
 }
 
+// ── Backstory identity card builder ─────────────────────────────────────
+// Backstories are pure flavor + stat grants. The card surfaces the
+// statBonusGrants as perk rows so the player understands the build
+// implication without having to parse it from the +CHA / -STR icons.
+const _backstoriesByLabel = new Map(backstories.map(b => [b.label, b]))
+export function buildBackstoryIdentityCard(label: string): IdentityCard | null {
+  const b = _backstoriesByLabel.get(label)
+  if (!b) return null
+  const perks: IdentityPerk[] = []
+  if (b.statBonusGrants) {
+    const boosts = Object.entries(b.statBonusGrants).filter(([, v]) => v === 'statBonus').map(([k]) => statLabel(k))
+    const pens   = Object.entries(b.statBonusGrants).filter(([, v]) => v === 'statPenalty').map(([k]) => statLabel(k))
+    if (boosts.length > 0) {
+      perks.push({
+        icon: 'arrow_upward',
+        label: `Bonus: ${boosts.join(' + ')}`,
+        detail: 'Free stat boost spins from this backstory',
+      })
+    }
+    if (pens.length > 0) {
+      perks.push({
+        icon: 'arrow_downward',
+        label: `Penalty: ${pens.join(' + ')}`,
+        detail: 'Forced stat penalty spins from this backstory',
+      })
+    }
+  }
+  return {
+    kind: 'backstory',
+    name: label,
+    description: 'The history that shaped them. Twisted, lucky, or just unbearably specific.',
+    accentColor: '#c9a050',  // parchment/sepia gold — backstory tone
+    rarity: 'Backstory',
+    perks,
+  }
+}
+
+// ── Title identity card builder ─────────────────────────────────────────
+// Titles tend to be more grandiose (Epic + Comedic tier system). Same
+// stat-grants surfacing as backstory but with a different accent so the
+// player visually distinguishes the categories.
+const _titlesByLabel = new Map(titles.map(t => [t.label, t]))
+export function buildTitleIdentityCard(label: string): IdentityCard | null {
+  const t = _titlesByLabel.get(label)
+  if (!t) return null
+  const perks: IdentityPerk[] = []
+  if (t.statBonusGrants) {
+    const boosts = Object.entries(t.statBonusGrants).filter(([, v]) => v === 'statBonus').map(([k]) => statLabel(k))
+    const pens   = Object.entries(t.statBonusGrants).filter(([, v]) => v === 'statPenalty').map(([k]) => statLabel(k))
+    if (boosts.length > 0) {
+      perks.push({
+        icon: 'arrow_upward',
+        label: `Bonus: ${boosts.join(' + ')}`,
+        detail: 'Granted by holding this title',
+      })
+    }
+    if (pens.length > 0) {
+      perks.push({
+        icon: 'arrow_downward',
+        label: `Penalty: ${pens.join(' + ')}`,
+        detail: 'The cost of bearing this name',
+      })
+    }
+  }
+  // Heuristic: titles with more boost grants feel rarer.
+  const boostCount = Object.values(t.statBonusGrants ?? {}).filter(v => v === 'statBonus').length
+  const rarity =
+    boostCount >= 3 ? 'Mythic Title' :
+    boostCount === 2 ? 'Epic Title' :
+    'Title'
+  return {
+    kind: 'title',
+    name: label,
+    description: 'The name they answer to. The story the world will remember.',
+    accentColor: '#f0c040',  // gold — titles are grand
+    rarity,
+    perks,
+  }
+}
+
 // Convenience: resolves the right card kind from a SpinCategory + label.
 export function buildIdentityCard(
   category: string | undefined,
@@ -529,5 +613,7 @@ export function buildIdentityCard(
   if (category === 'raceSubType' || category === 'raceClass' || category === 'raceTransformation') {
     return buildPoolEntryIdentityCard(category, label)
   }
+  if (category === 'backstory') return buildBackstoryIdentityCard(label)
+  if (category === 'title')     return buildTitleIdentityCard(label)
   return null
 }
