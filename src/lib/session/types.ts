@@ -12,6 +12,11 @@ export interface WeightedSegment {
   dimmed?: boolean  // true = shown greyed-out on wheel, weight should be 0 (never selectable)
   element?: ElementType
   grade?: ItemGrade
+  // Optional tier — when present and ≥ Cosmic, the wheel renders a gradient fill
+  // (using the --tier-*-grad CSS variables) instead of the flat `color` value.
+  // Carried over from FlavorLabel.tier so flavor wheels light up the high-tier
+  // segments with the right post-mortal palette.
+  tier?: string
 }
 
 export interface SpinResult {

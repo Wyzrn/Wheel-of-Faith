@@ -15,7 +15,7 @@
   import type { SpinResult } from '$lib/session/types'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   import type { TierGrade } from '$lib/game/scoreTier'
-  import { normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
+  import { normalizeLegacyDisplayLabel, scoreTier } from '$lib/game/scoreTier'
   import { onMount, onDestroy } from 'svelte'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import type { ResolvedMeta } from '$lib/spinResultMeta'
@@ -61,7 +61,13 @@
   // Pull element + grade visuals from the canonical maps
   let elColor    = $derived(meta.element ? ELEMENT_COLORS[meta.element] : '#9a907b')
   let gradeInfo  = $derived(meta.grade ? ITEM_GRADE_INFO[meta.grade] : null)
-  let displayTier = $derived(normalizeLegacyDisplayLabel(result.displayLabel) ?? result.tier)
+  // Recompute tier from score so legacy results display under the new ladder.
+  // Falls back to the stored tier only when score isn't available (non-stat
+  // spins like Race / Archetype that carry a grade but no numeric score).
+  let displayTier = $derived(
+    normalizeLegacyDisplayLabel(result.displayLabel)
+    ?? (result.score !== undefined ? scoreTier(result.score) : result.tier)
+  )
   let hasBadgeRow = $derived(!!meta.element || !!gradeInfo)
   // Identity card payload — race + archetype lands swap the generic
   // description body for a themed perk list. When present, the panel uses

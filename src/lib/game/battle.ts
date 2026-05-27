@@ -438,17 +438,20 @@ function getTier(results: SpinResult[], category: string): TierGrade {
   return 'F-'
 }
 
-// Returns the best available tier display for a category. Prefers an explicit
-// overflow displayLabel ("Infinite+N" or legacy "Absolute+N", remapped), then
-// the persisted tier, then derives from score. Legacy overflow labels are
-// rewritten on read so older saves get the new ladder for free.
+// Returns the best available tier display for a category. Resolution order:
+//   1. Explicit overflow displayLabel ("Infinite+N" or legacy "Absolute+N",
+//      run through normalizeLegacyDisplayLabel so old saves get the new ladder)
+//   2. Score-derived tier (so legacy characters with old-ladder tier names get
+//      re-graded onto the new ladder — score is the durable truth)
+//   3. Persisted tier as a last-resort fallback (non-stat spins that carry
+//      only a grade with no numeric score)
 function getDisplayTier(results: SpinResult[], category: string): string {
   const r = results.find(s => s.category === category)
   if (r?.displayLabel && /^(Infinite|Absolute)\+\d+$/.test(r.displayLabel)) {
     return normalizeLegacyDisplayLabel(r.displayLabel) ?? r.displayLabel
   }
-  if (r?.tier) return r.tier
   if (r?.score !== undefined) return scoreTier(r.score)
+  if (r?.tier) return r.tier
   return 'F-'
 }
 

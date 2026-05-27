@@ -66,23 +66,42 @@
   --stone-d3: #131028;
 
   /* ── Tier colors ──
-     F- through ZZZ+ are solid colors. Cosmic and above are SOLID rep colors
-     (used for chips, small badges where a flat color is needed) plus matching
-     GRADIENT strings (--tier-*-grad) used for wheel segment fills, tier-name
-     text fills on hero displays, and the Cosmic+ landing animations.
-     The base solid for Cosmic+ tiers is the gradient's mid-stop. */
-  --tier-f-minus:  #4a4a4a;  --tier-f:    #5c5c5c;  --tier-f-plus:    #6e6e6e;
-  --tier-e-minus:  #6b7280;  --tier-e:    #9ca3af;  --tier-e-plus:    #d1d5db;
-  --tier-d-minus:  #92400e;  --tier-d:    #b45309;  --tier-d-plus:    #d97706;
-  --tier-c-minus:  #1d4ed8;  --tier-c:    #2563eb;  --tier-c-plus:    #3b82f6;
-  --tier-b-minus:  #065f46;  --tier-b:    #059669;  --tier-b-plus:    #34d399;
-  --tier-a-minus:  #7c3aed;  --tier-a:    #8b5cf6;  --tier-a-plus:    #a78bfa;
-  --tier-s-minus:  #b91c1c;  --tier-s:    #dc2626;  --tier-s-plus:    #ef4444;
-  --tier-ss-minus: #ea580c;  --tier-ss:   #f97316;  --tier-ss-plus:   #fb923c;
-  --tier-sss-minus:#ca8a04;  --tier-sss:  #eab308;  --tier-sss-plus:  #fde047;
-  --tier-z-minus:  #be185d;  --tier-z:    #db2777;  --tier-z-plus:    #ec4899;
-  --tier-zz-minus: #6d28d9;  --tier-zz:   #7c3aed;  --tier-zz-plus:   #8b5cf6;
-  --tier-zzz-minus:#0e7490;  --tier-zzz:  #06b6d4;  --tier-zzz-plus:  #22d3ee;
+     F- through ZZZ+ progress smoothly through hue space (viridis-style).
+     Each tier group is a single hue family with darker → mid → lighter
+     across the -/none/+ subdivisions. Cosmic and above are SOLID rep
+     colors (used for chips, small badges where a flat color is needed)
+     plus matching GRADIENT strings (--tier-*-grad) used for wheel
+     segment fills, tier-name text fills on hero displays, and the
+     Cosmic+ landing animations.
+
+     Progression:  stone → ash → forest → emerald → teal → cyan → sky →
+                   blue → indigo → violet → magenta → hot pink →
+                   [Cosmic gradient palette] */
+
+  /* F — stone / coal */
+  --tier-f-minus:  #2c2c2c;  --tier-f:    #404040;  --tier-f-plus:    #525252;
+  /* E — cool ash */
+  --tier-e-minus:  #4b5563;  --tier-e:    #64748b;  --tier-e-plus:    #94a3b8;
+  /* D — forest */
+  --tier-d-minus:  #14532d;  --tier-d:    #166534;  --tier-d-plus:    #22c55e;
+  /* C — emerald */
+  --tier-c-minus:  #047857;  --tier-c:    #059669;  --tier-c-plus:    #10b981;
+  /* B — teal */
+  --tier-b-minus:  #115e59;  --tier-b:    #0d9488;  --tier-b-plus:    #14b8a6;
+  /* A — cyan */
+  --tier-a-minus:  #155e75;  --tier-a:    #0e7490;  --tier-a-plus:    #06b6d4;
+  /* S — sky */
+  --tier-s-minus:  #0c4a6e;  --tier-s:    #0369a1;  --tier-s-plus:    #0ea5e9;
+  /* SS — blue */
+  --tier-ss-minus: #1e3a8a;  --tier-ss:   #2563eb;  --tier-ss-plus:   #3b82f6;
+  /* SSS — indigo */
+  --tier-sss-minus:#4338ca;  --tier-sss:  #4f46e5;  --tier-sss-plus:  #6366f1;
+  /* Z — violet */
+  --tier-z-minus:  #5b21b6;  --tier-z:    #7c3aed;  --tier-z-plus:    #8b5cf6;
+  /* ZZ — magenta */
+  --tier-zz-minus: #86198f;  --tier-zz:   #a21caf;  --tier-zz-plus:   #c026d3;
+  /* ZZZ — hot pink */
+  --tier-zzz-minus:#be185d;  --tier-zzz:  #db2777;  --tier-zzz-plus:  #ec4899;
 
   /* COSMIC — deep cyan gradient */
   --tier-cosmic-minus: #0e6b8a; --tier-cosmic: #0891b2; --tier-cosmic-plus: #06b6d4;

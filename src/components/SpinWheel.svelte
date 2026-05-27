@@ -708,6 +708,66 @@
           <feGaussianBlur stdDeviation="5" result="blur" />
           <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
+        <!--
+          Post-mortal tier gradients — used by Cosmic-, Cosmic, Cosmic+, Immortal-,
+          ..., Infinite+ segments. Each tier-group shares one gradient (the -/none/+
+          subdivisions render with the same gradient on the wheel since they're
+          visually indistinguishable at segment scale). Gradient stops mirror the
+          --tier-*-grad CSS variables in app.css so the wheel and the rest of the
+          UI agree on what each tier looks like.
+        -->
+        <linearGradient id="tg-cosmic" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#083344" />
+          <stop offset="35%"  stop-color="#0e7490" />
+          <stop offset="65%"  stop-color="#0891b2" />
+          <stop offset="100%" stop-color="#22d3ee" />
+        </linearGradient>
+        <linearGradient id="tg-immortal" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#ef4444" />
+          <stop offset="18%"  stop-color="#f97316" />
+          <stop offset="36%"  stop-color="#eab308" />
+          <stop offset="54%"  stop-color="#22c55e" />
+          <stop offset="72%"  stop-color="#06b6d4" />
+          <stop offset="88%"  stop-color="#6366f1" />
+          <stop offset="100%" stop-color="#d946ef" />
+        </linearGradient>
+        <linearGradient id="tg-celestial" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#500724" />
+          <stop offset="35%"  stop-color="#831843" />
+          <stop offset="70%"  stop-color="#be185d" />
+          <stop offset="100%" stop-color="#db2777" />
+        </linearGradient>
+        <linearGradient id="tg-godly" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#fce7f3" />
+          <stop offset="25%"  stop-color="#fbcfe8" />
+          <stop offset="55%"  stop-color="#f9a8d4" />
+          <stop offset="100%" stop-color="#f472b6" />
+        </linearGradient>
+        <linearGradient id="tg-primordial" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#71717a" />
+          <stop offset="30%"  stop-color="#a1a1aa" />
+          <stop offset="60%"  stop-color="#d4d4d8" />
+          <stop offset="100%" stop-color="#ffffff" />
+        </linearGradient>
+        <linearGradient id="tg-absolute" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#bae6fd" />
+          <stop offset="35%"  stop-color="#7dd3fc" />
+          <stop offset="70%"  stop-color="#38bdf8" />
+          <stop offset="100%" stop-color="#0ea5e9" />
+        </linearGradient>
+        <linearGradient id="tg-transcendent" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#ecfccb" />
+          <stop offset="25%"  stop-color="#bef264" />
+          <stop offset="60%"  stop-color="#84cc16" />
+          <stop offset="100%" stop-color="#4d7c0f" />
+        </linearGradient>
+        <linearGradient id="tg-infinite" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#fafafa" />
+          <stop offset="20%"  stop-color="#a3a3a3" />
+          <stop offset="50%"  stop-color="#404040" />
+          <stop offset="75%"  stop-color="#171717" />
+          <stop offset="100%" stop-color="#000000" />
+        </linearGradient>
       </defs>
 
       <!-- Outer decorative rings — layered bronze-gold rim with arcane ghost -->
@@ -739,7 +799,21 @@
           {@const lightness = isDimmed ? 12 : (17 + 33 * (segWeight / maxSegmentWeight))}
           {@const saturation = isDimmed ? 0 : (50 + 20 * (segWeight / maxSegmentWeight))}
           {@const hue = categoryHue !== undefined ? categoryHue : (i * 47) % 360}
-          {@const color = isDimmed ? `hsl(0, 0%, ${lightness}%)` : (segments[i]?.color ?? `hsl(${hue}, ${saturation}%, ${lightness}%)`)}
+          {@const segTier = segments[i]?.tier}
+          {@const gradId = !isDimmed && segTier ? (
+            /^Cosmic[-+]?$/.test(segTier)      ? 'tg-cosmic' :
+            /^Immortal[-+]?$/.test(segTier)    ? 'tg-immortal' :
+            /^Celestial[-+]?$/.test(segTier)   ? 'tg-celestial' :
+            /^Godly[-+]?$/.test(segTier)       ? 'tg-godly' :
+            /^Primordial[-+]?$/.test(segTier)  ? 'tg-primordial' :
+            /^Absolute[-+]?$/.test(segTier)    ? 'tg-absolute' :
+            /^Transcendent[-+]?$/.test(segTier) ? 'tg-transcendent' :
+            /^Infinite($|[-+]|\+\d+$)/.test(segTier) ? 'tg-infinite' :
+            null
+          ) : null}
+          {@const color = isDimmed
+            ? `hsl(0, 0%, ${lightness}%)`
+            : (gradId ? `url(#${gradId})` : (segments[i]?.color ?? `hsl(${hue}, ${saturation}%, ${lightness}%)`))}
           {@const arcSpan = seg.endDeg - seg.startDeg}
           {@const fontSize = arcSpan >= 6 ? Math.max(7, Math.min(13, arcSpan * 0.42)) : 0}
           {@const tx = CENTER + WHEEL_RADIUS * 0.65 * Math.cos((seg.midDeg - 90) * Math.PI / 180)}

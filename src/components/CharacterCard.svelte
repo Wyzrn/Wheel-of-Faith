@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { SpinResult } from '$lib/session/types'
   import { computeOverallScore, scoreTier, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
+  import { tierHasGradient } from '$lib/game/tierColor'
   import { archetypes, getArchetype } from '$lib/content/archetypes'
   import { races } from '$lib/content/races'
   import { powers as powersPool } from '$lib/content/powers'
@@ -41,33 +42,73 @@
     return results.filter(r => r.category === category).map(r => r.resultLabel)
   }
 
-  function getTier(category: string) {
-    return results.find(r => r.category === category)?.tier
+  // Effective tier for a category: legacy characters stored tier names from the
+  // old ladder (e.g. "Celestial-" at score 120) — we always recompute from
+  // score so existing characters show their re-graded position on the new
+  // ladder. The stored tier is only used as a fallback when score is missing.
+  function getTier(category: string): string | undefined {
+    const r = results.find(r => r.category === category)
+    if (r?.score !== undefined) return scoreTier(r.score)
+    return r?.tier
   }
 
-  // Returns normalized displayLabel (e.g. "Absolute+5"), else falls back to tier string.
+  // Returns normalized displayLabel (e.g. "Infinite+5"), else the recomputed
+  // tier from score, else the stored tier.
   function getTierLabel(category: string): string | undefined {
     const r = results.find(r => r.category === category)
-    return normalizeLegacyDisplayLabel(r?.displayLabel) ?? r?.tier
+    return normalizeLegacyDisplayLabel(r?.displayLabel) ?? getTier(category)
   }
 
+  // Solid tier colors for badges and accents. Mirrors the canonical palette in
+  // app.css; kept inline so the badge can read it without going through CSS
+  // variables (which would break inline-style interpolation with opacity).
+  // Cosmic and above pick the gradient's mid-stop as their solid rep color —
+  // the actual gradient is applied via `tierGradientBg()` below when shown
+  // on the character card.
   const TIER_COLORS: Record<string, string> = {
-    'F-':'#555','F':'#666','F+':'#777',
-    'E-':'#6b7280','E':'#9ca3af','E+':'#d1d5db',
-    'D-':'#92400e','D':'#b45309','D+':'#d97706',
-    'C-':'#1d4ed8','C':'#2563eb','C+':'#3b82f6',
-    'B-':'#065f46','B':'#059669','B+':'#34d399',
-    'A-':'#7c3aed','A':'#8b5cf6','A+':'#a78bfa',
-    'S-':'#b91c1c','S':'#dc2626','S+':'#ef4444',
-    'SS-':'#ea580c','SS':'#f97316','SS+':'#fb923c',
-    'SSS-':'#ca8a04','SSS':'#eab308','SSS+':'#fde047',
-    'Z-':'#0e7490','Z':'#0891b2','Z+':'#06b6d4',
-    'ZZ-':'#3730a3','ZZ':'#4f46e5','ZZ+':'#818cf8',
-    'ZZZ-':'#9d174d','ZZZ':'#be185d','ZZZ+':'#ec4899',
-    'Celestial-':'#075985','Celestial':'#0284c7','Celestial+':'#38bdf8',
-    'Godly-':'#c026d3','Godly':'#e879f9',
-    'Primordial':'#ffffff',
-    'Primordial+':'#ccffff','Absolute-':'#99ffff','Absolute':'#00ffff','Absolute+':'#00ddff',
+    'F-':'#2c2c2c','F':'#404040','F+':'#525252',
+    'E-':'#4b5563','E':'#64748b','E+':'#94a3b8',
+    'D-':'#14532d','D':'#166534','D+':'#22c55e',
+    'C-':'#047857','C':'#059669','C+':'#10b981',
+    'B-':'#115e59','B':'#0d9488','B+':'#14b8a6',
+    'A-':'#155e75','A':'#0e7490','A+':'#06b6d4',
+    'S-':'#0c4a6e','S':'#0369a1','S+':'#0ea5e9',
+    'SS-':'#1e3a8a','SS':'#2563eb','SS+':'#3b82f6',
+    'SSS-':'#4338ca','SSS':'#4f46e5','SSS+':'#6366f1',
+    'Z-':'#5b21b6','Z':'#7c3aed','Z+':'#8b5cf6',
+    'ZZ-':'#86198f','ZZ':'#a21caf','ZZ+':'#c026d3',
+    'ZZZ-':'#be185d','ZZZ':'#db2777','ZZZ+':'#ec4899',
+    // Cosmic and above — solid reps (mid-stop of each gradient). The card uses
+    // tierGradientBg() below to render the actual gradient on these badges.
+    'Cosmic-':'#0e6b8a','Cosmic':'#0891b2','Cosmic+':'#06b6d4',
+    'Immortal-':'#d946ef','Immortal':'#ec4899','Immortal+':'#f472b6',
+    'Celestial-':'#831843','Celestial':'#9d174d','Celestial+':'#be185d',
+    'Godly-':'#f9a8d4','Godly':'#f472b6','Godly+':'#ec4899',
+    'Primordial-':'#d4d4d8','Primordial':'#e4e4e7','Primordial+':'#fafafa',
+    'Absolute-':'#7dd3fc','Absolute':'#38bdf8','Absolute+':'#0ea5e9',
+    'Transcendent-':'#84cc16','Transcendent':'#65a30d','Transcendent+':'#4d7c0f',
+    'Infinite-':'#525252','Infinite':'#262626','Infinite+':'#000000',
+  }
+
+  // Returns a CSS background string for a tier badge. Cosmic and above get the
+  // full gradient (matches the wheel and the design spec); everything else
+  // gets the solid color with a soft tint.
+  function tierBadgeBg(tier: string | undefined): string {
+    if (!tier) return '#37415122'
+    if (tierHasGradient(tier)) {
+      const base = tier.replace(/[-+]$/, '').toLowerCase()
+      return `var(--tier-${base}-grad)`
+    }
+    return (TIER_COLORS[tier] ?? '#374151') + '22'
+  }
+  function tierBadgeFg(tier: string | undefined): string {
+    if (!tier) return '#9a907b'
+    if (tierHasGradient(tier)) {
+      // White on gradient — keeps the gradient readable. Primordial gradient
+      // is light, so use near-black instead.
+      return /Primordial|Godly[-+]?$|Godly$/.test(tier) ? '#0a0612' : '#ffffff'
+    }
+    return TIER_COLORS[tier] ?? '#9a907b'
   }
 
   let displayName       = $derived(name?.trim() || 'The Unnamed')
@@ -102,9 +143,20 @@
   let redemptionOutcome = $derived(results.find(r => r.category === 'redemptionOutcome')?.resultLabel)
 
   const statCategories = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','armorStrength','potential','energyLevel'] as const
+  // Per-stat block. Tier is always recomputed from score so legacy characters
+  // (stored with old-ladder tier names) display their re-graded position on
+  // the new ladder. displayLabel for Infinite+N overflow is normalised through
+  // normalizeLegacyDisplayLabel which remaps any persisted Absolute+N labels.
   let stats = $derived(statCategories.map(cat => {
     const r = results.find(r => r.category === cat)
-    return { cat, label: r?.resultLabel ?? '—', tier: r?.tier, score: r?.score, displayLabel: r?.displayLabel }
+    const tier = r?.score !== undefined ? scoreTier(r.score) : r?.tier
+    return {
+      cat,
+      label: r?.resultLabel ?? '—',
+      tier,
+      score: r?.score,
+      displayLabel: normalizeLegacyDisplayLabel(r?.displayLabel),
+    }
   }))
 
   let overallScore = $derived(computeOverallScore(
@@ -329,10 +381,18 @@
     <div class="absolute bottom-3 left-3 w-8 h-8" style="border-bottom: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60; border-left: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60;"></div>
     <div class="absolute bottom-3 right-3 w-8 h-8" style="border-bottom: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60; border-right: 2px solid {TIER_COLORS[overallGrade] ?? 'rgba(240,192,64,0.4)'}60;"></div>
     <div class="flex items-start justify-between gap-4 relative z-10">
-      <!-- Grade column -->
+      <!-- Grade column. Cosmic+ overall grades get a gradient text fill that
+           matches the wheel + badge gradient; lower tiers stay on the solid
+           tier color so the lower-tier cards keep their punchy palette. -->
       <div class="shrink-0">
         <p class="text-xs tracking-[0.2em] uppercase mb-1" style="font-family: 'JetBrains Mono', monospace; color: {TIER_COLORS[overallGrade] ?? '#9a907b'};">Overall Grade</p>
-        <p class="leading-none font-black" style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 4.5rem); color: {TIER_COLORS[overallGrade] ?? '#ffdf96'}; filter: drop-shadow(0 0 12px {TIER_COLORS[overallGrade] ?? '#f0c040'}55);">{overallGrade}</p>
+        {#if tierHasGradient(overallGrade)}
+          {@const gradBase = overallGrade.replace(/[-+]$/, '').toLowerCase()}
+          <p class="leading-none font-black"
+            style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 4.5rem); background: var(--tier-{gradBase}-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; filter: drop-shadow(0 0 14px {TIER_COLORS[overallGrade] ?? '#f0c040'}66);">{overallGrade}</p>
+        {:else}
+          <p class="leading-none font-black" style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 4.5rem); color: {TIER_COLORS[overallGrade] ?? '#ffdf96'}; filter: drop-shadow(0 0 12px {TIER_COLORS[overallGrade] ?? '#f0c040'}55);">{overallGrade}</p>
+        {/if}
         <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Score {overallScore} / 185</p>
       </div>
       <!-- Identity column -->
@@ -435,8 +495,8 @@
             style="border-left: 3px solid {TIER_COLORS[stat.tier ?? ''] ?? '#4e4635'}; border-top: none; border-right: none; border-bottom: none;">
             {#if stat.tier}
               <span class="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
-                style="background: {TIER_COLORS[stat.tier] ?? '#374151'}22; color: {TIER_COLORS[stat.tier] ?? '#9a907b'}; border: 1px solid {TIER_COLORS[stat.tier] ?? '#4e4635'}66; box-shadow: 0 0 6px {TIER_COLORS[stat.tier] ?? 'transparent'}33;">
-                {normalizeLegacyDisplayLabel(stat.displayLabel) ?? stat.tier}
+                style="background: {tierBadgeBg(stat.tier)}; color: {tierBadgeFg(stat.tier)}; border: 1px solid {TIER_COLORS[stat.tier] ?? '#4e4635'}88; box-shadow: 0 0 8px {TIER_COLORS[stat.tier] ?? 'transparent'}55;">
+                {stat.displayLabel ?? stat.tier}
               </span>
             {/if}
             <span class="text-xs capitalize shrink-0" style="color: #9a907b; width: 5rem;">{stat.cat.replace(/([A-Z])/g, ' $1').trim()}</span>
