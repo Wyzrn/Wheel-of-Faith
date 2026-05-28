@@ -115,6 +115,11 @@ export interface BattleCharacter {
   potentialRank: number
   energyRank: number
   fightingSkillRank: number
+  // Mastery ranks — drive per-attack damage scaling on top of the
+  // tier-based baseDmg. powerMasteryRank multiplies power moves;
+  // weaponMasteryRank multiplies weapon/physical moves.
+  powerMasteryRank: number
+  weaponMasteryRank: number
   weaponEnchantTags: string[]
   armorEnchantTags: string[]
   critChance: number
@@ -702,6 +707,8 @@ export function buildBattleCharacter(
     physicalDamage: finalPhysDmg, powerDamage: finalPwrDmg,
     armorReduction, armorType: armorTypeLabel, weaponType: weaponTypeLabel,
     agilityRank, speedRank, charismaRank, iqRank, potentialRank, energyRank, fightingSkillRank,
+    powerMasteryRank:  tierRank(extendedTierFromScore(pmScore)),
+    weaponMasteryRank: tierRank(extendedTierFromScore(wmScore)),
     weaponEnchantTags, armorEnchantTags,
     critChance, critMultiplier, dodgeChance, initiative, moves,
     elementWeaknesses, statusImmunities, passiveHealPerRound,
@@ -930,6 +937,17 @@ export function doAction(
   const fightingMult = move.type !== 'power'
     ? Math.min(1.45, 1.0 + Math.max(0, attacker.fightingSkillRank - 20) * 0.012)
     : 1.0
+  // Mastery rank scaling — powerMastery on top of energyMult for power
+  // moves, weaponMastery on top of fightingMult for weapon/ability moves.
+  // Caps at +40% so mastery alone never doubles a hit, but a maxed-mastery
+  // build still meaningfully outdamages a same-grade build with neglected
+  // mastery — making the new stat-driven design visible at the damage line.
+  const powerMasteryMult = move.type === 'power'
+    ? Math.min(1.40, 1.0 + Math.max(0, (attacker.powerMasteryRank ?? 0) - 18) * 0.011)
+    : 1.0
+  const weaponMasteryMult = move.type !== 'power'
+    ? Math.min(1.40, 1.0 + Math.max(0, (attacker.weaponMasteryRank ?? 0) - 18) * 0.011)
+    : 1.0
 
   // IQ precision pierce
   let fullPierce = false
@@ -1000,7 +1018,7 @@ export function doAction(
   const variance = 0.85 + Math.random() * 0.30
   const gradeMult = moveGradeMult(move.grade)
   let damage = Math.max(1, Math.round(
-    baseDmg * moveMult * gradeMult * weaponBonus * energyMult * fightingMult * critMult * berserkerMult * aoeMult * selfBuffMult * weaknessMult * conceptMult * predatorMult * underdogMult * takenMult * (1 - effectiveArmor) * variance
+    baseDmg * moveMult * gradeMult * weaponBonus * energyMult * fightingMult * powerMasteryMult * weaponMasteryMult * critMult * berserkerMult * aoeMult * selfBuffMult * weaknessMult * conceptMult * predatorMult * underdogMult * takenMult * (1 - effectiveArmor) * variance
   ))
 
   // Divine armor absorb

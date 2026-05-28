@@ -87,6 +87,19 @@
     gradeIdx >= 6 ? 'fx-grade-s' : ''
   )
 
+  // Tier band — drives the per-element 4-variant visual identity.
+  //   F, E, D       → 'small'   (single projectile / quick burst)
+  //   C, B, A       → 'medium'  (orbiting build-up → directional detonation)
+  //   S, SS, SSS    → 'large'   (sky-falling impact + layered shockwaves)
+  //   God / Godly   → 'epic'    (screen-covering signature moment)
+  type TierBand = 'small' | 'medium' | 'large' | 'epic'
+  let tierBand = $derived<TierBand>(
+    gradeIdx >= 9 ? 'epic' :
+    gradeIdx >= 6 ? 'large' :
+    gradeIdx >= 3 ? 'medium' :
+    'small'
+  )
+
   let isRtl = $derived(direction === 'rtl')
 
   // (Legacy `noFlyTypes` / `swirlTypes` / `crashTypes` sets were retired
@@ -507,54 +520,192 @@
     </svg>
 
   {:else if type === 'fire'}
-    <!-- Fire — ENGULFS the target. Three flame tongues stacked across the
-         target's card (left, center, right), each rising tall above the
-         card to consume them. Scorch pool spreads at the ground, embers
-         rise from the whole burning area. Drawn TALLER than the viewBox
-         so it visibly wraps the target. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <!-- Wrapping bloom — covers a wider area than the cards (it's
-           engulfing them, not exploding next to them) -->
-      <ellipse cx="50" cy="55" rx="62" ry="48" fill="var(--c)" opacity="0.34"
-               class="fi-bloom" style="filter:blur(22px)"/>
-      <ellipse cx="50" cy="60" rx="48" ry="42" fill="var(--c)" opacity="0.24"
-               style="filter:blur(12px)"/>
-      <!-- Scorch pool spreading at the ground (extends past target width) -->
-      <ellipse class="fi-scorch" cx="50" cy="92" rx="38" ry="9" fill="var(--c)" opacity="0.65"/>
-      <!-- LEFT flame tongue — wraps the left side of the target -->
-      <g class="fi-tongue-l">
-        <path d="M22 96 C14 70 10 50 22 24 C18 42 30 36 30 14 C34 30 42 24 36 4 C48 22 50 50 42 70 C46 58 44 50 36 50 C44 64 34 86 22 96Z"
-              fill="var(--c)" opacity="0.85"/>
-      </g>
-      <!-- RIGHT flame tongue -->
-      <g class="fi-tongue-r">
-        <path d="M78 96 C86 70 90 50 78 24 C82 42 70 36 70 14 C66 30 58 24 64 4 C52 22 50 50 58 70 C54 58 56 50 64 50 C56 64 66 86 78 96Z"
-              fill="var(--c)" opacity="0.85"/>
-      </g>
-      <!-- CENTER flame body — tallest, most prominent -->
-      <g class="fi-main">
-        <path d="M50 96 C36 70 28 50 40 22 C36 42 50 36 46 6 C50 22 58 16 52 -8 C66 14 76 50 66 74 C72 60 76 50 66 46 C76 62 70 86 50 96Z"
-              fill="var(--c)"/>
-        <!-- Hot core inside the central flame -->
-        <ellipse cx="50" cy="70" rx="7" ry="18" fill="white" opacity="0.55"/>
-        <ellipse cx="50" cy="78" rx="3.5" ry="8" fill="white" opacity="0.9"/>
-      </g>
-      <!-- Crackling licks reaching outward + upward -->
-      <path class="fi-lick fl1" d="M22 50 Q12 36 6 18"  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
-      <path class="fi-lick fl2" d="M78 50 Q88 36 94 18" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
-      <path class="fi-lick fl3" d="M40 18 Q34 6 28 -8"  stroke="var(--c)" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
-      <path class="fi-lick fl4" d="M60 18 Q66 6 72 -8"  stroke="var(--c)" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
-      <!-- Rising embers — spread across the whole burning area -->
-      <circle class="fi-emb fe1" cx="34" cy="62" r="2.4" fill="var(--c)"/>
-      <circle class="fi-emb fe2" cx="50" cy="50" r="2.2" fill="var(--c)"/>
-      <circle class="fi-emb fe3" cx="66" cy="58" r="2.4" fill="var(--c)"/>
-      <circle class="fi-emb fe4" cx="42" cy="36" r="1.9" fill="var(--c)" opacity="0.9"/>
-      <circle class="fi-emb fe5" cx="58" cy="32" r="1.9" fill="var(--c)" opacity="0.9"/>
-      <circle class="fi-emb fe6" cx="38" cy="22" r="1.6" fill="var(--c)" opacity="0.8"/>
-      <circle class="fi-emb fe7" cx="62" cy="20" r="1.6" fill="var(--c)" opacity="0.8"/>
-      <circle class="fi-emb fe8" cx="50" cy="12" r="1.5" fill="var(--c)" opacity="0.7"/>
-      <circle class="fi-emb fe9" cx="26" cy="78" r="1.8" fill="var(--c)" opacity="0.8"/>
-      <circle class="fi-emb fe10" cx="74" cy="78" r="1.8" fill="var(--c)" opacity="0.8"/>
+    <!-- Fire — tier-band visual identity. Each band tells a different
+         story of heat escalation. Shared filter for heat distortion is
+         declared once and reused per-band where appropriate. -->
+    <svg viewBox="0 0 100 100" class="fx-svg fire-band-{tierBand}" overflow="visible">
+      <defs>
+        <!-- Heat distortion turbulence — multiplied onto bloom layers for
+             that "watching through hot air" wobble. Cheap on GPU. -->
+        <filter id="fi-heat" x="-50%" y="-50%" width="200%" height="200%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="3">
+            <animate attributeName="baseFrequency" dur="0.85s" values="0.018;0.045;0.018" repeatCount="1"/>
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" scale="6"/>
+        </filter>
+        <!-- Hot core radial: white-yellow-orange-c. Used everywhere. -->
+        <radialGradient id="fi-core" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
+          <stop offset="35%" stop-color="#ffe39a" stop-opacity="0.95"/>
+          <stop offset="70%" stop-color="var(--c)" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="var(--c)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      {#if tierBand === 'small'}
+        <!-- F–D: a small ember launches forward and bursts into a quick
+             flame engulf. Reads as a single-cast spell, not a presence. -->
+        <!-- Travel streak: ember rides from off-screen left to center -->
+        <g class="fi-s-streak">
+          <ellipse cx="50" cy="60" rx="14" ry="3.5" fill="var(--c)" opacity="0.55"/>
+          <circle cx="50" cy="60" r="3.2" fill="#fff"/>
+        </g>
+        <!-- Impact burst at target center -->
+        <g class="fi-s-burst">
+          <circle cx="50" cy="60" r="18" fill="url(#fi-core)"/>
+          <!-- Six flame tongues fanning outward -->
+          {#each [0, 60, 120, 180, 240, 300] as deg, i}
+            <path class="fi-s-tongue" style="--rot:{deg}deg; animation-delay:{0.18 + i * 0.012}s;"
+                  d="M50 60 C46 50 46 40 50 28 C54 40 54 50 50 60Z"
+                  fill="var(--c)" opacity="0.85"/>
+          {/each}
+        </g>
+        <!-- Scorch pool -->
+        <ellipse class="fi-s-scorch" cx="50" cy="80" rx="22" ry="5" fill="var(--c)" opacity="0.5"/>
+        <!-- A few rising embers -->
+        {#each [{x:38,y:60,d:0.22},{x:50,y:54,d:0.26},{x:62,y:60,d:0.24},{x:44,y:48,d:0.30},{x:56,y:48,d:0.32}] as e, i}
+          <circle class="fi-s-emb" style="animation-delay:{e.d}s;" cx={e.x} cy={e.y} r="1.6" fill="var(--c)"/>
+        {/each}
+
+      {:else if tierBand === 'medium'}
+        <!-- C–A: fire SPIRALS around the target (orbital build-up), then
+             DETONATES outward in a fiery bloom. Two-beat: gather → bloom. -->
+        <!-- Spinning bloom underlayer (heat haze) -->
+        <ellipse cx="50" cy="55" rx="52" ry="38" fill="var(--c)" opacity="0.22"
+                 class="fi-m-haze" style="filter:url(#fi-heat) blur(8px)"/>
+        <!-- Orbit ring: 8 flame petals spiral inward then outward -->
+        <g class="fi-m-orbit">
+          {#each Array.from({length: 8}) as _, i}
+            {@const a = (i * Math.PI * 2) / 8}
+            {@const x = 50 + Math.cos(a) * 42}
+            {@const y = 55 + Math.sin(a) * 30}
+            <ellipse class="fi-m-petal" style="--delay:{i * 0.025}s;"
+                     cx={x} cy={y} rx="4" ry="9"
+                     transform="rotate({(a * 180) / Math.PI + 90} {x} {y})"
+                     fill="var(--c)" opacity="0.85"/>
+          {/each}
+        </g>
+        <!-- Detonation bloom — fires after the spiral closes -->
+        <circle class="fi-m-deton" cx="50" cy="55" r="34" fill="url(#fi-core)"/>
+        <!-- Shockwave ring -->
+        <circle class="fi-m-shock" cx="50" cy="55" r="20" fill="none"
+                stroke="var(--c)" stroke-width="2.5" opacity="0"/>
+        <!-- Outward flame tongues -->
+        {#each [0, 45, 90, 135, 180, 225, 270, 315] as deg, i}
+          <path class="fi-m-tongue" style="--rot:{deg}deg; animation-delay:{0.42 + i * 0.018}s;"
+                d="M50 55 C46 42 46 30 50 14 C54 30 54 42 50 55Z"
+                fill="var(--c)" opacity="0.9"/>
+        {/each}
+        <!-- Scorch pool spreads wider -->
+        <ellipse class="fi-m-scorch" cx="50" cy="88" rx="42" ry="8" fill="var(--c)" opacity="0.55"/>
+        <!-- Embers spray outward -->
+        {#each Array.from({length: 12}) as _, i}
+          {@const a = (i * Math.PI * 2) / 12}
+          <circle class="fi-m-emb" style="--dx:{Math.cos(a) * 60}px; --dy:{Math.sin(a) * 50}px; animation-delay:{0.48 + i * 0.015}s;"
+                  cx="50" cy="55" r="1.8" fill="var(--c)"/>
+        {/each}
+
+      {:else if tierBand === 'large'}
+        <!-- S–SSS: a MASSIVE molten fireball crashes down from the sky,
+             exploding into layered shockwaves of flame. Three concentric
+             rings + falling impact + tall column. -->
+        <!-- Sky bloom where the meteor falls from -->
+        <ellipse cx="50" cy="-140" rx="60" ry="30" fill="var(--c)" opacity="0.6"
+                 class="fi-l-sky" style="filter:blur(20px)"/>
+        <!-- Trail streak from sky to target -->
+        <line class="fi-l-trail" x1="50" y1="-140" x2="50" y2="60"
+              stroke="url(#fi-core)" stroke-width="14" stroke-linecap="round"/>
+        <!-- Falling fireball -->
+        <g class="fi-l-meteor">
+          <circle cx="50" cy="60" r="22" fill="var(--c)"/>
+          <circle cx="50" cy="60" r="14" fill="url(#fi-core)"/>
+          <!-- Trailing flames behind the meteor -->
+          <path d="M44 60 C36 30 32 0 40 -40 L50 -50 L60 -40 C68 0 64 30 56 60Z"
+                fill="var(--c)" opacity="0.7"/>
+        </g>
+        <!-- Three layered shockwave rings -->
+        <circle class="fi-l-shock fi-l-s1" cx="50" cy="62" r="20" fill="none"
+                stroke="var(--c)" stroke-width="3" opacity="0"/>
+        <circle class="fi-l-shock fi-l-s2" cx="50" cy="62" r="20" fill="none"
+                stroke="#fff" stroke-width="2" opacity="0"/>
+        <circle class="fi-l-shock fi-l-s3" cx="50" cy="62" r="20" fill="none"
+                stroke="var(--c)" stroke-width="2" opacity="0"/>
+        <!-- Tall central pillar of flame post-impact -->
+        <g class="fi-l-pillar">
+          <path d="M30 100 C20 60 26 30 36 -20 C44 14 56 14 64 -20 C74 30 80 60 70 100Z"
+                fill="var(--c)" opacity="0.85"/>
+          <path d="M40 100 C32 60 38 30 46 -10 C50 16 56 16 60 -10 C68 30 68 60 60 100Z"
+                fill="url(#fi-core)"/>
+        </g>
+        <!-- Wide scorched ground -->
+        <ellipse class="fi-l-scorch" cx="50" cy="94" rx="60" ry="11" fill="var(--c)" opacity="0.7"/>
+        <!-- Heavy ember storm -->
+        {#each Array.from({length: 18}) as _, i}
+          {@const a = (i * Math.PI * 2) / 18}
+          {@const r = 60 + (i % 3) * 12}
+          <circle class="fi-l-emb" style="--dx:{Math.cos(a) * r}px; --dy:{Math.sin(a) * r * 0.7 - 30}px; animation-delay:{0.45 + i * 0.014}s;"
+                  cx="50" cy="62" r="2.2" fill="var(--c)"/>
+        {/each}
+
+      {:else}
+        <!-- GOD: a MINIATURE SUN forms overhead, pulling flames inward
+             before collapsing into a CATASTROPHIC solar eruption that
+             covers the screen. Four-beat: form → gather → collapse → erupt. -->
+        <!-- Screen-wide darken flash so the scene reads as cataclysm -->
+        <rect class="fi-g-darken" x="-300" y="-300" width="700" height="700"
+              fill="#1a0500" opacity="0"/>
+        <!-- Sun forms overhead (above viewBox) -->
+        <g class="fi-g-sun">
+          <circle cx="50" cy="-30" r="60" fill="url(#fi-core)" opacity="0.9"/>
+          <circle cx="50" cy="-30" r="36" fill="#fff" opacity="0.95"/>
+          <circle cx="50" cy="-30" r="22" fill="#fff"/>
+          <!-- Solar flares licking around the sun -->
+          {#each [0, 36, 72, 108, 144, 180, 216, 252, 288, 324] as deg, i}
+            <path class="fi-g-flare" style="--rot:{deg}deg; animation-delay:{0.08 + i * 0.025}s;"
+                  d="M50 -30 C44 -55 44 -75 50 -95 C56 -75 56 -55 50 -30Z"
+                  fill="var(--c)" opacity="0.85"/>
+          {/each}
+        </g>
+        <!-- Inward gathering streams: flame ribbons pulled from off-screen
+             edges toward the sun above -->
+        {#each Array.from({length: 16}) as _, i}
+          {@const a = (i * Math.PI * 2) / 16}
+          {@const sx = 50 + Math.cos(a) * 220}
+          {@const sy = -30 + Math.sin(a) * 200}
+          <line class="fi-g-stream" style="animation-delay:{0.18 + i * 0.012}s;"
+                x1={sx} y1={sy} x2="50" y2="-30"
+                stroke="var(--c)" stroke-width="3" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- White-hot collapse pulse before eruption -->
+        <circle class="fi-g-collapse" cx="50" cy="-30" r="80" fill="#fff" opacity="0"/>
+        <!-- ERUPTION: gigantic radial shockwave rings (cover screen) -->
+        <circle class="fi-g-erupt fi-g-e1" cx="50" cy="50" r="20" fill="none"
+                stroke="#fff" stroke-width="6" opacity="0"/>
+        <circle class="fi-g-erupt fi-g-e2" cx="50" cy="50" r="20" fill="none"
+                stroke="var(--c)" stroke-width="5" opacity="0"/>
+        <circle class="fi-g-erupt fi-g-e3" cx="50" cy="50" r="20" fill="none"
+                stroke="var(--c)" stroke-width="4" opacity="0"/>
+        <!-- Massive central inferno after eruption -->
+        <g class="fi-g-inferno">
+          <circle cx="50" cy="50" r="180" fill="url(#fi-core)" opacity="0.85"/>
+          <circle cx="50" cy="50" r="100" fill="#fff" opacity="0.7"/>
+        </g>
+        <!-- Twelve enormous outward flame columns -->
+        {#each [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] as deg, i}
+          <path class="fi-g-column" style="--rot:{deg}deg; animation-delay:{0.62 + i * 0.012}s;"
+                d="M50 50 C42 30 38 0 46 -60 C50 -30 50 -30 54 -60 C62 0 58 30 50 50Z"
+                fill="var(--c)" opacity="0.9"/>
+        {/each}
+        <!-- Apocalyptic scorched ground -->
+        <ellipse class="fi-g-scorch" cx="50" cy="100" rx="200" ry="22" fill="var(--c)" opacity="0.75"/>
+        <!-- Burning ember rain across screen -->
+        {#each Array.from({length: 28}) as _, i}
+          {@const a = (i * Math.PI * 2) / 28}
+          {@const r = 120 + (i % 4) * 30}
+          <circle class="fi-g-emb" style="--dx:{Math.cos(a) * r}px; --dy:{Math.sin(a) * r * 0.85 - 20}px; animation-delay:{0.7 + i * 0.01}s;"
+                  cx="50" cy="50" r="2.5" fill="var(--c)"/>
+        {/each}
+      {/if}
     </svg>
 
   {:else if type === 'lightning'}
@@ -2792,31 +2943,98 @@
 @keyframes ct-ray    { 0% { stroke-dashoffset: 80; opacity: 0; } 35% { stroke-dashoffset: 0; opacity: 1; filter: brightness(3); } 100% { stroke-dashoffset: 0; opacity: 0; } }
 @keyframes ct-flash  { 0% { transform: scale(0); opacity: 0; } 25% { transform: scale(1.5); opacity: 1; filter: brightness(5) drop-shadow(0 0 24px var(--c)); } 60% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(0.7); opacity: 0; } }
 
-/* ─── FIRE (revamp) ──────────────────────────────────────────────── */
-.fi-bloom    { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
-.fi-scorch   { transform-origin: 50% 88%; animation: fi-scorch 0.85s ease-out forwards; }
-.fi-echo-bg  { transform-origin: 50% 90%; animation: fi-flame 0.95s ease-out forwards; opacity: 0; }
-.fi-echo-mid { transform-origin: 50% 90%; animation: fi-flame 0.85s 0.06s ease-out forwards; opacity: 0; }
-.fi-main     { transform-origin: 50% 90%; animation: fi-flame-main 0.85s 0.10s ease-out forwards; }
-.fi-tongue   { stroke-dasharray: 50; stroke-dashoffset: 50; animation: fi-tongue 0.55s ease-out forwards; }
-.ft1 { animation-delay: 0.20s; }
-.ft2 { animation-delay: 0.22s; }
-.ft3 { animation-delay: 0.28s; }
-.ft4 { animation-delay: 0.30s; }
-.fi-emb      { transform-origin: center; transform-box: fill-box; animation: fi-ember-rise 0.85s ease-out forwards; opacity: 0; }
-.fi-emb.fe1 { animation-delay: 0.15s; }
-.fi-emb.fe2 { animation-delay: 0.18s; }
-.fi-emb.fe3 { animation-delay: 0.22s; }
-.fi-emb.fe4 { animation-delay: 0.26s; }
-.fi-emb.fe5 { animation-delay: 0.30s; }
-.fi-emb.fe6 { animation-delay: 0.34s; }
-.fi-emb.fe7 { animation-delay: 0.38s; }
-.fi-emb.fe8 { animation-delay: 0.42s; }
-@keyframes fi-scorch   { 0% { transform: scale(0); opacity: 0; } 30% { transform: scale(1.1); opacity: 0.85; } 100% { transform: scale(1.2); opacity: 0; } }
-@keyframes fi-flame    { 0% { transform: scaleY(0.2)  scaleX(0.6) translateY(20px); opacity: 0; } 35% { transform: scaleY(1.1) scaleX(1.05) translateY(0); opacity: 0.85; filter: brightness(1.6); } 100% { transform: scaleY(0.9) scaleX(0.85) translateY(-12px); opacity: 0; } }
-@keyframes fi-flame-main{ 0% { transform: scaleY(0.2)  scaleX(0.6); opacity: 0; filter: brightness(3); } 25% { transform: scaleY(1.2) scaleX(1.05); opacity: 1; filter: brightness(2.2) drop-shadow(0 0 16px var(--c)); } 65% { transform: scaleY(1.05) scaleX(1); opacity: 1; filter: brightness(1.5); } 100% { transform: scaleY(0.85) scaleX(0.85) translateY(-14px); opacity: 0; } }
-@keyframes fi-tongue   { 0% { stroke-dashoffset: 50; opacity: 0; } 40% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
-@keyframes fi-ember-rise{ 0% { transform: translateY(0) scale(0); opacity: 0; } 30% { transform: translateY(-6px) scale(1.3); opacity: 1; filter: brightness(2.5); } 100% { transform: translateY(-32px) scale(0.4); opacity: 0; } }
+/* ─── FIRE (4-band revamp) ─────────────────────────────────────────
+   Visual identity: expansion, heat, eruption. Four distinct stories:
+     small  (F–D)  → ember projectile + quick engulf
+     medium (C–A)  → spiral orbit → directional detonation
+     large  (S–SSS)→ falling meteor + layered shockwaves + flame column
+     epic   (GOD)  → overhead sun → inward gather → collapse → solar eruption
+   ─────────────────────────────────────────────────────────────── */
+
+/* ── SMALL (F–D) ──────────────────────────────────────────────── */
+.fi-s-streak { transform-origin: 50% 60%; animation: fi-s-streak 0.30s ease-out forwards; opacity: 0; }
+.fi-s-burst  { transform-origin: 50% 60%; animation: fi-s-burst  0.55s 0.18s ease-out forwards; opacity: 0; }
+.fi-s-tongue { transform-origin: 50% 60%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); opacity: 0;
+               animation: fi-s-tongue 0.45s ease-out forwards; }
+.fi-s-scorch { transform-origin: 50% 80%; animation: fi-s-scorch 0.70s 0.16s ease-out forwards; opacity: 0; }
+.fi-s-emb    { transform-origin: center; transform-box: fill-box; animation: fi-s-emb 0.55s ease-out forwards; opacity: 0; }
+@keyframes fi-s-streak { 0% { transform: translateX(-120%) scaleX(0.6); opacity: 0; } 60% { transform: translateX(0) scaleX(1.2); opacity: 1; filter: brightness(2.5); } 100% { transform: translateX(0) scaleX(1); opacity: 0; } }
+@keyframes fi-s-burst  { 0% { transform: scale(0); opacity: 0; filter: brightness(4); } 30% { transform: scale(1.25); opacity: 1; filter: brightness(2.4) drop-shadow(0 0 12px var(--c)); } 70% { transform: scale(1); opacity: 0.85; } 100% { transform: scale(1.4); opacity: 0; } }
+@keyframes fi-s-tongue { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 45% { transform: rotate(var(--rot)) scaleY(1.15); opacity: 1; filter: brightness(2); } 100% { transform: rotate(var(--rot)) scaleY(0.85); opacity: 0; } }
+@keyframes fi-s-scorch { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1.25); opacity: 0; } }
+@keyframes fi-s-emb    { 0% { transform: translateY(0) scale(0); opacity: 0; } 30% { transform: translateY(-8px) scale(1.4); opacity: 1; filter: brightness(2.5); } 100% { transform: translateY(-26px) scale(0.4); opacity: 0; } }
+
+/* ── MEDIUM (C–A) ─────────────────────────────────────────────── */
+.fi-m-haze   { transform-origin: 50% 55%; animation: fi-m-haze 0.95s ease-out forwards; opacity: 0; }
+.fi-m-orbit  { transform-origin: 50% 55%; animation: fi-m-orbit 0.50s ease-in forwards; }
+.fi-m-petal  { transform-origin: 50% 55%; animation: fi-m-petal 0.55s ease-out forwards; animation-delay: var(--delay); opacity: 0; }
+.fi-m-deton  { transform-origin: 50% 55%; animation: fi-m-deton 0.45s 0.42s ease-out forwards; opacity: 0; }
+.fi-m-shock  { transform-origin: 50% 55%; animation: fi-m-shock 0.55s 0.42s ease-out forwards; }
+.fi-m-tongue { transform-origin: 50% 55%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); opacity: 0; animation: fi-m-tongue 0.45s ease-out forwards; }
+.fi-m-scorch { transform-origin: 50% 88%; animation: fi-m-scorch 0.85s 0.40s ease-out forwards; opacity: 0; }
+.fi-m-emb    { transform-origin: center; transform-box: fill-box; animation: fi-m-emb 0.55s ease-out forwards; opacity: 0; }
+@keyframes fi-m-haze   { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.15); opacity: 0.65; } 100% { transform: scale(1.35); opacity: 0; } }
+@keyframes fi-m-orbit  { 0% { transform: rotate(0deg) scale(0.5); opacity: 0; } 60% { transform: rotate(180deg) scale(1.0); opacity: 1; } 100% { transform: rotate(280deg) scale(0.6); opacity: 0.7; } }
+@keyframes fi-m-petal  { 0% { transform: scale(0.4); opacity: 0; filter: brightness(2); } 40% { transform: scale(1.2); opacity: 1; filter: brightness(1.8) drop-shadow(0 0 6px var(--c)); } 100% { transform: scale(0.4); opacity: 0; } }
+@keyframes fi-m-deton  { 0% { transform: scale(0); opacity: 0; filter: brightness(5); } 30% { transform: scale(1.4); opacity: 1; filter: brightness(2.8) drop-shadow(0 0 22px var(--c)); } 100% { transform: scale(2.0); opacity: 0; } }
+@keyframes fi-m-shock  { 0% { transform: scale(0.3); opacity: 0; } 30% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(3.5); opacity: 0; } }
+@keyframes fi-m-tongue { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 45% { transform: rotate(var(--rot)) scaleY(1.25); opacity: 1; filter: brightness(2.2); } 100% { transform: rotate(var(--rot)) scaleY(0.85); opacity: 0; } }
+@keyframes fi-m-scorch { 0% { transform: scale(0); opacity: 0; } 35% { transform: scale(1.15); opacity: 0.75; } 100% { transform: scale(1.35); opacity: 0; } }
+@keyframes fi-m-emb    { 0% { transform: translate(0,0) scale(0); opacity: 0; } 30% { transform: translate(calc(var(--dx) * 0.4), calc(var(--dy) * 0.4)) scale(1.4); opacity: 1; filter: brightness(2.5); } 100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; } }
+
+/* ── LARGE (S–SSS) ────────────────────────────────────────────── */
+.fi-l-sky    { transform-origin: 50% -140%; animation: fi-l-sky 0.40s ease-out forwards; opacity: 0; }
+.fi-l-trail  { stroke-dasharray: 220; stroke-dashoffset: 220; animation: fi-l-trail 0.30s 0.10s ease-in forwards; opacity: 0; }
+.fi-l-meteor { transform-origin: 50% 60%; animation: fi-l-meteor 0.42s ease-in forwards; opacity: 0; }
+.fi-l-shock  { transform-origin: 50% 62%; animation: fi-l-shock 0.65s ease-out forwards; }
+.fi-l-s1 { animation-delay: 0.40s; }
+.fi-l-s2 { animation-delay: 0.46s; }
+.fi-l-s3 { animation-delay: 0.52s; }
+.fi-l-pillar { transform-origin: 50% 100%; animation: fi-l-pillar 0.65s 0.42s ease-out forwards; opacity: 0; }
+.fi-l-scorch { transform-origin: 50% 94%; animation: fi-l-scorch 0.85s 0.40s ease-out forwards; opacity: 0; }
+.fi-l-emb    { transform-origin: center; transform-box: fill-box; animation: fi-l-emb 0.70s ease-out forwards; opacity: 0; }
+@keyframes fi-l-sky    { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1.3); opacity: 0; } }
+@keyframes fi-l-trail  { 0% { stroke-dashoffset: 220; opacity: 0; } 30% { stroke-dashoffset: 0; opacity: 1; filter: brightness(3); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes fi-l-meteor { 0% { transform: translateY(-220%) scale(0.6); opacity: 0; filter: brightness(3); } 60% { transform: translateY(-30%) scale(1.1); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 18px var(--c)); } 90% { transform: translateY(0) scale(1.2); opacity: 1; } 100% { transform: translateY(0) scale(0); opacity: 0; } }
+@keyframes fi-l-shock  { 0% { transform: scale(0.3); opacity: 0; } 25% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(5.0); opacity: 0; } }
+@keyframes fi-l-pillar { 0% { transform: scaleY(0.1) scaleX(0.7); opacity: 0; filter: brightness(3); } 25% { transform: scaleY(1.2) scaleX(1.1); opacity: 1; filter: brightness(2.4) drop-shadow(0 0 20px var(--c)); } 70% { transform: scaleY(1.05) scaleX(1); opacity: 0.95; } 100% { transform: scaleY(0.9) scaleX(0.85) translateY(-18%); opacity: 0; } }
+@keyframes fi-l-scorch { 0% { transform: scale(0); opacity: 0; } 30% { transform: scale(1.15); opacity: 0.8; } 100% { transform: scale(1.4); opacity: 0; } }
+@keyframes fi-l-emb    { 0% { transform: translate(0,0) scale(0); opacity: 0; } 25% { transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) scale(1.5); opacity: 1; filter: brightness(2.8); } 100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; } }
+
+/* ── EPIC (GOD) ───────────────────────────────────────────────── */
+.fi-g-darken   { animation: fi-g-darken 1.0s ease-out forwards; }
+.fi-g-sun      { transform-origin: 50% -30%; animation: fi-g-sun 0.55s ease-out forwards; opacity: 0; }
+.fi-g-flare    { transform-origin: 50% -30%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); opacity: 0; animation: fi-g-flare 0.45s ease-out forwards; }
+.fi-g-stream   { stroke-dasharray: 320; stroke-dashoffset: 320; animation: fi-g-stream 0.35s ease-in forwards; }
+.fi-g-collapse { transform-origin: 50% -30%; animation: fi-g-collapse 0.30s 0.50s ease-out forwards; opacity: 0; }
+.fi-g-erupt    { transform-origin: 50% 50%; animation: fi-g-erupt 0.65s 0.58s ease-out forwards; }
+.fi-g-e1 { animation-delay: 0.58s; }
+.fi-g-e2 { animation-delay: 0.64s; }
+.fi-g-e3 { animation-delay: 0.70s; }
+.fi-g-inferno  { transform-origin: 50% 50%; animation: fi-g-inferno 0.45s 0.60s ease-out forwards; opacity: 0; }
+.fi-g-column   { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); opacity: 0; animation: fi-g-column 0.55s ease-out forwards; }
+.fi-g-scorch   { transform-origin: 50% 100%; animation: fi-g-scorch 0.55s 0.60s ease-out forwards; opacity: 0; }
+.fi-g-emb      { transform-origin: center; transform-box: fill-box; animation: fi-g-emb 0.85s ease-out forwards; opacity: 0; }
+@keyframes fi-g-darken   { 0% { opacity: 0; } 35% { opacity: 0.4; } 75% { opacity: 0.2; } 100% { opacity: 0; } }
+@keyframes fi-g-sun      { 0% { transform: scale(0); opacity: 0; filter: brightness(4); } 50% { transform: scale(1.1); opacity: 1; filter: brightness(3) drop-shadow(0 0 36px var(--c)); } 100% { transform: scale(0.85); opacity: 0; filter: brightness(6); } }
+@keyframes fi-g-flare    { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 50% { transform: rotate(var(--rot)) scaleY(1.25); opacity: 1; filter: brightness(2.5); } 100% { transform: rotate(var(--rot)) scaleY(0.6); opacity: 0; } }
+@keyframes fi-g-stream   { 0% { stroke-dashoffset: 320; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2.5); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes fi-g-collapse { 0% { transform: scale(0.3); opacity: 0; } 40% { transform: scale(1.6); opacity: 1; filter: brightness(8) drop-shadow(0 0 60px #fff); } 100% { transform: scale(0); opacity: 0; } }
+@keyframes fi-g-erupt    { 0% { transform: scale(0.2); opacity: 0; } 20% { transform: scale(1.5); opacity: 1; filter: brightness(3); } 100% { transform: scale(14); opacity: 0; } }
+@keyframes fi-g-inferno  { 0% { transform: scale(0); opacity: 0; filter: brightness(6); } 30% { transform: scale(1.3); opacity: 1; filter: brightness(3) drop-shadow(0 0 60px var(--c)); } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes fi-g-column   { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; filter: brightness(3); } 40% { transform: rotate(var(--rot)) scaleY(1.4); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 24px var(--c)); } 100% { transform: rotate(var(--rot)) scaleY(1.0); opacity: 0; } }
+@keyframes fi-g-scorch   { 0% { transform: scale(0); opacity: 0; } 35% { transform: scale(1.1); opacity: 0.85; } 100% { transform: scale(1.3); opacity: 0; } }
+@keyframes fi-g-emb      { 0% { transform: translate(0,0) scale(0); opacity: 0; } 25% { transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) scale(1.6); opacity: 1; filter: brightness(3); } 100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; } }
+
+/* Camera-coupled cataclysm shake for GOD-tier fire only — paired with
+   the global .fx-grade-god shake so the screen punches harder. */
+.fire-band-epic { animation: fi-g-cataclysm 0.55s 0.55s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes fi-g-cataclysm { 0%, 100% { transform: translate(0,0); } 15% { transform: translate(-3px, 2px); } 30% { transform: translate(3px, -3px); } 45% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 3px); } 75% { transform: translate(-3px, 1px); } 90% { transform: translate(2px, -1px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fire-band-epic { animation: none; }
+  .fi-g-darken { animation: none; opacity: 0; }
+}
 
 /* ─── NATURE (revamp) ────────────────────────────────────────────── */
 .nt-bloom         { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }

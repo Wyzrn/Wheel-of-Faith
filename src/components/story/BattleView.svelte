@@ -109,6 +109,7 @@
       armorType: 'Full-Suit',
       weaponType: 'Melee',
       agilityRank, speedRank, charismaRank, iqRank, potentialRank, energyRank, fightingSkillRank,
+      powerMasteryRank: avgRank, weaponMasteryRank: avgRank,
       weaponEnchantTags: [], armorEnchantTags: [],
       critChance: Math.min(0.35, 0.08 + idx * 0.018),
       critMultiplier: Math.min(2.5, 1.5 + idx * 0.07),
