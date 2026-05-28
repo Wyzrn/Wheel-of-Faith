@@ -1,22 +1,21 @@
 <script lang="ts">
-  import { onDestroy, tick } from 'svelte'
+  import { onDestroy } from 'svelte'
   import {
     BATTLE_SPECS, rollDrops, WORLD_GRADES, ENDLESS_KEY_DROP_RATE,
     type WorldGrade, type Enemy, type WaveEnemySpec,
   } from '$lib/story/worlds'
   import {
-    buildBattleCharacter, simulateTeamBattle, formatHp,
-    type BattleCharacter, type TeamBattleRound, type RoundFxEvent,
+    buildBattleCharacter, formatHp,
+    type BattleCharacter,
   } from '$lib/game/battle'
   import {
     recordEndlessResult, applyBattleDrops,
     type StorySaveSlot, type BattleDrops,
   } from '$lib/story/saveSlots'
   import type { StoryRosterEntry, StoryTeam } from '$lib/story/types'
-  import AttackFX from '../AttackFX.svelte'
-  import DamageIndicator from '../DamageIndicator.svelte'
-  import type { DamageEvent } from '$lib/game/damageEvent'
-  import { deriveStatusBadges } from '$lib/game/battleStatuses'
+  import BattleArena from '../BattleArena.svelte'
+  import { BattleControllerTeam } from '$lib/battle/teamController'
+  import { memberFromChar, type ArenaRound, type ArenaTeam, type ArenaWinner } from '$lib/battle/arena'
   import { settings } from '$lib/settings.svelte'
   import { auth } from '$lib/stores/auth.svelte'
 
@@ -26,37 +25,16 @@
     gamepasses?: string[]
   } = $props()
 
-  const ELEMENT_FX: Record<string, { type: string; color: string }> = {
-    Fire:      { type: 'fire',      color: '#f97316' },
-    Ice:       { type: 'ice',       color: '#7dd3fc' },
-    Lightning: { type: 'lightning', color: '#fbbf24' },
-    Earth:     { type: 'earth',     color: '#a16207' },
-    Wind:      { type: 'wind',      color: '#e2e8f0' },
-    Shadow:    { type: 'shadow',    color: '#8b5cf6' },
-    Light:     { type: 'holy',      color: '#fde68a' },
-    Arcane:    { type: 'energy',    color: '#c084fc' },
-    Nature:    { type: 'poison',    color: '#22c55e' },
-    Void:      { type: 'void',      color: '#6b21a8' },
-    Cosmic:    { type: 'energy',    color: '#818cf8' },
-    Blood:     { type: 'blood',     color: '#dc2626' },
-    Metal:     { type: 'slash',     color: '#94a3b8' },
-    Soul:      { type: 'holy',      color: '#f9a8d4' },
-    Poison:    { type: 'poison',    color: '#84cc16' },
-    Time:      { type: 'time',      color: '#a78bfa' },
-    Water:     { type: 'water',     color: '#38bdf8' },
-    Sound:     { type: 'lightning', color: '#e0f2fe' },
-    Gravity:   { type: 'gravity',   color: '#6366f1' },
-    Psychic:   { type: 'psychic',   color: '#e879f9' },
-    Chaos:     { type: 'cursed',    color: '#f43f5e' },
-    Neutral:   { type: 'slash',     color: '#f87171' },
-  }
-
-  // ── Grade colors ───────────────────────────────────────────────────────────
+  // World-grade → accent color. Mirrors WorldsView's canonical palette so
+  // endless wave chrome reads with the same colors as the story-mode worlds
+  // menu, gallery, and character cards.
   const GRADE_COLORS: Record<string, string> = {
-    F: '#6b7280', E: '#78716c', D: '#a3a3a3', C: '#4ade80',
-    B: '#60a5fa', A: '#a78bfa', S: '#f59e0b', SS: '#f97316',
-    SSS: '#ef4444', Z: '#ec4899', ZZ: '#d946ef', ZZZ: '#8b5cf6',
-    Celestial: '#67e8f9', Godly: '#fbbf24', Primordial: '#f87171', Absolute: '#ffffff',
+    F: '#404040', E: '#64748b', D: '#166534', C: '#059669',
+    B: '#0d9488', A: '#0e7490', S: '#0369a1', SS: '#2563eb',
+    SSS: '#4f46e5', Z: '#7c3aed', ZZ: '#a21caf', ZZZ: '#db2777',
+    Cosmic: '#0891b2', Immortal: '#ec4899',
+    Celestial: '#9d174d', Godly: '#f472b6', Primordial: '#e4e4e7', Absolute: '#38bdf8',
+    Transcendent: '#65a30d', Infinite: '#262626',
   }
   function gradeColor(g: string): string { return GRADE_COLORS[g] ?? '#9a907b' }
 
@@ -212,100 +190,33 @@
     else if (phase !== 'wave_result') cancelAutoplayTimer()
   })
 
-  // Combat state
-  let allSubWaves  = $state<Enemy[][]>([])
-  let subWaveIdx   = $state(0)
-  let t1Chars      = $state<BattleCharacter[]>([])
-  let t2Chars      = $state<BattleCharacter[]>([])
-  let t1DispHp     = $state<number[]>([])
-  let t2DispHp     = $state<number[]>([])
-  let rounds       = $state<TeamBattleRound[]>([])
-  let roundIdx     = $state(0)
-  let logLines     = $state<string[]>([])
-  let logEl        = $state<HTMLDivElement | null>(null)
-  let killedThisSubWave = $state(new Set<number>())
-  let allT2Names   = $state(new Set<string>())
-
-  type AnimDir = 'ltr' | 'rtl' | 'center'
-  let activeAnim   = $state<{ type: string; color: string; key: number; direction: AnimDir; grade?: string; origin?: { x: number; y: number }; attackType?: string } | null>(null)
-
-  // Per-character refs so VFX shoots from the actual attacker card
-  let t1PanelEl       = $state<HTMLDivElement | null>(null)
-  let t2PanelEl       = $state<HTMLDivElement | null>(null)
-  let battleWrapperEl = $state<HTMLDivElement | null>(null)
-  const t1CharEls = new Map<string, HTMLElement>()
-  const t2CharEls = new Map<string, HTMLElement>()
-  function trackCharEl(node: HTMLElement, args: { name: string; team: 1 | 2 }) {
-    const map = args.team === 1 ? t1CharEls : t2CharEls
-    map.set(args.name, node)
-    return { destroy() { map.delete(args.name) } }
-  }
-  function getCharOriginByName(name: string | null): { x: number; y: number } | undefined {
-    if (!name) return undefined
-    const el = t1CharEls.get(name) ?? t2CharEls.get(name)
-    if (!el) return undefined
-    const r = el.getBoundingClientRect()
-    if (r.width === 0) return undefined
-    return {
-      x: r.left + r.width / 2,
-      y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight - 80)),
-    }
-  }
-  function getWrapperOriginForDir(dir: AnimDir): { x: number; y: number } | undefined {
-    if (!battleWrapperEl) return undefined
-    const wr = battleWrapperEl.getBoundingClientRect()
-    if (wr.width === 0) return undefined
-    const xRel = dir === 'rtl' ? 0.75 : dir === 'ltr' ? 0.25 : 0.5
-    return {
-      x: wr.left + wr.width * xRel,
-      y: Math.max(80, Math.min(wr.top + wr.height / 2, window.innerHeight - 80)),
-    }
-  }
-  function getPanelOrigin(dir: AnimDir): { x: number; y: number } | undefined {
-    if (dir === 'center') return getWrapperOriginForDir('center')
-    const el = dir === 'ltr' ? t1PanelEl : dir === 'rtl' ? t2PanelEl : null
-    if (el) {
-      const r = el.getBoundingClientRect()
-      if (r.width > 0) {
-        return {
-          x: r.left + r.width / 2,
-          y: Math.max(80, Math.min(r.top + r.height / 2, window.innerHeight * 0.65)),
-        }
-      }
-    }
-    return getWrapperOriginForDir(dir)
-  }
-  function inferAttackerName(line: string): string | null {
-    for (const n of [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)]) {
-      if (line.startsWith(n)) return n
-    }
-    return null
-  }
-  let animKey      = 0
-  let animTimeoutId: ReturnType<typeof setTimeout> | null = null
+  // Combat state — driven by the shared BattleArena + BattleControllerTeam
+  // since the Endless-mode UI migration. Endless used to pre-roll the whole
+  // sub-wave with simulateTeamBattle and replay it manually with its own VFX
+  // scheduler; now it shares the same live controller pipeline that powers
+  // every other battle screen so damage indicators, stat panels, and the
+  // recent VFX upgrades apply here too.
+  let allSubWaves   = $state<Enemy[][]>([])
+  let subWaveIdx    = $state(0)
+  let t1Chars       = $state<BattleCharacter[]>([])
+  let t2Chars       = $state<BattleCharacter[]>([])
+  let t1DispHp      = $state<number[]>([])      // mirror of player HP for between-wave restore + handoff
+  let arenaPhase    = $state<'intro' | 'battle' | 'result'>('intro')
+  let arenaTeams    = $state<[ArenaTeam, ArenaTeam] | null>(null)
+  let controller    = $state<BattleControllerTeam | null>(null)
+  let prevEnemyHp   = $state<Record<string, number>>({})
+  let killedIds     = $state(new Set<string>())
   let timeoutId:    ReturnType<typeof setTimeout> | null = null
-  let currentFxEvents = $state<RoundFxEvent[]>([])
-  let fxEventIdx = 0
-  let aoeRemainingHits = 0
-
-  function speedDelay(ms: number): number {
-    if (settings.battleSpeed >= 99) return 10
-    return Math.max(50, ms / settings.battleSpeed)
-  }
+  let canInstant    = $derived(gamepasses.includes('instant_battle'))
+  let manualMode    = $state(!settings.autoBattle)
 
   onDestroy(() => {
-    if (timeoutId)     clearTimeout(timeoutId)
-    if (animTimeoutId) clearTimeout(animTimeoutId)
+    if (timeoutId) clearTimeout(timeoutId)
   })
 
   // ── Derived ────────────────────────────────────────────────────────────────
   let currentGrade = $derived(endlessGrade(currentWave))
   let ec           = $derived(gradeColor(currentGrade))
-
-  let t1Names  = $derived(new Set(t1Chars.map(c => c.name)))
-  let t2Names  = $derived(new Set(t2Chars.map(c => c.name)))
-  let t1HpPct  = $derived(t1Chars.map((c, i) => c.maxHp > 0 ? Math.max(0, (t1DispHp[i] ?? 0) / c.maxHp) : 0))
-  let t2HpPct  = $derived(t2Chars.map((c, i) => c.maxHp > 0 ? Math.max(0, (t2DispHp[i] ?? 0) / c.maxHp) : 0))
 
   let teams = $derived(
     (slot.teams ?? []).map(t => ({
@@ -328,197 +239,93 @@
       : []
   )
 
-  function hpColor(pct: number): string {
-    if (pct > 0.50) return '#22c55e'
-    if (pct > 0.25) return '#eab308'
-    return '#ef4444'
+  // ── BattleArena driven flow ────────────────────────────────────────────
+  // Endless used to roll the whole sub-wave with simulateTeamBattle and
+  // play it back via a hand-built VFX scheduler. The migration to the
+  // shared BattleArena collapsed all of that into the same live-controller
+  // pipeline that powers story-mode battles. Endless-specific behaviour
+  // (HP persistence, 30% sub-wave restore, autoplay between waves,
+  // game-over on team wipe) lives in handleArenaEnd below.
+  function startSubWave() {
+    killedIds = new Set()
+    const subEnemies = allSubWaves[subWaveIdx] ?? []
+    t2Chars = subEnemies.map(e => buildEnemyChar(e, currentWave))
+    // t1Chars HP was synced back from controller.getHp() at end of prior
+    // sub-wave (see handleArenaEnd). Apply the cross-sub-wave 30% restore
+    // BEFORE building the controller so the new arena reflects it.
+
+    const t1Ids = t1Chars.map((_, i) => `t1-${i}`)
+    const t2Ids = t2Chars.map((_, i) => `t2-${i}-sw${subWaveIdx}`)
+
+    arenaTeams = [
+      {
+        side: 'team1',
+        label: selectedTeam?.name ?? 'Your Team',
+        accent: '#f0c040',
+        members: t1Chars.map((c, i) =>
+          memberFromChar(c, t1Ids[i], 'team1', formatHp, teamMembers[i]?.spinClass)),
+      },
+      {
+        side: 'team2',
+        label: allSubWaves.length > 1
+          ? `Sub-wave ${subWaveIdx + 1} / ${allSubWaves.length}`
+          : 'Enemies',
+        accent: ec,
+        members: t2Chars.map((c, i) => memberFromChar(c, t2Ids[i], 'team2', formatHp)),
+      },
+    ]
+
+    controller = new BattleControllerTeam(
+      t1Chars.map((c, i) => ({ id: t1Ids[i], side: 'team1', char: c })),
+      t2Chars.map((c, i) => ({ id: t2Ids[i], side: 'team2', char: c })),
+    )
+
+    prevEnemyHp = Object.fromEntries(t2Ids.map((id, i) => [id, t2Chars[i].hp]))
+    arenaPhase = 'intro'
   }
 
-  // ── Attack animation ───────────────────────────────────────────────────────
-  function showAnim(type: string, color: string, direction: AnimDir = 'center', grade?: string, origin?: { x: number; y: number }, attackType?: string) {
-    if (animTimeoutId) clearTimeout(animTimeoutId)
-    activeAnim = { type, color, key: ++animKey, direction, grade, origin, attackType }
-    animTimeoutId = setTimeout(() => { activeAnim = null }, 950)
-  }
-
-  function detectAnim(line: string): { type: string; color: string; direction: AnimDir } | null {
-    const direction: AnimDir =
-      [...t1Names].some(n => line.startsWith(n)) ? 'ltr' :
-      [...t2Names].some(n => line.startsWith(n)) ? 'rtl' : 'center'
-    const hasAction = line.includes('damage!') || line.includes('restores') || line.includes('recovers') ||
-      line.includes('barrier') || line.includes('defensive') || /BERSERK|combo finisher|follow-up/i.test(line) ||
-      /narrowly dodges|weaves around|barely evades|slips past|anticipates|phases through|blinks away|mirrors away|deflects/i.test(line)
-    if (!hasAction) return null
-    if (/narrowly dodges|weaves around|barely evades|slips past|anticipates and sidesteps|phases through|blinks away from|mirrors away/i.test(line)) return { type: 'dodge', color: '#a5f3fc', direction }
-    if (/barrier forms|defensive stance|protective shell|bracing/i.test(line)) return { type: 'shield', color: '#93c5fd', direction }
-    if (/CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)) return { type: 'crit', color: '#fde047', direction }
-    if (/berserk|frenzy/i.test(line)) return { type: 'berserker', color: '#ef4444', direction }
-    if (/combo finisher|follow-up/i.test(line)) return { type: 'combo', color: '#f59e0b', direction }
-    if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction }
-    if (/fire|flame|blaze|inferno|burn|ember|magma|lava|heat/i.test(line)) return { type: 'fire', color: '#f97316', direction }
-    if (/shadow|void|abyss|soul drain|leech/i.test(line)) return { type: 'shadow', color: '#8b5cf6', direction }
-    if (/blood|crimson/i.test(line)) return { type: 'blood', color: '#dc2626', direction }
-    if (/curse/i.test(line)) return { type: 'cursed', color: '#7c3aed', direction }
-    if (/lightning|thunder|electric|storm|volt|spark|shock|arc/i.test(line)) return { type: 'lightning', color: '#fbbf24', direction }
-    if (/ice|frost|freeze|cryo|blizzard|snow|cold|glacier/i.test(line)) return { type: 'ice', color: '#7dd3fc', direction }
-    if (/divine|holy|celestial|angel|sacred|radiant|blessed/i.test(line)) return { type: 'holy', color: '#fde68a', direction }
-    if (/water|wave|aqua|flood|tidal|ocean|torrent/i.test(line)) return { type: 'water', color: '#38bdf8', direction }
-    if (/time|temporal|chrono|rewind|haste|blink|phase/i.test(line)) return { type: 'time', color: '#a78bfa', direction }
-    if (/psychic|mind|telepathy|mental|chaos|reality|warp|phantom/i.test(line)) return { type: 'psychic', color: '#e879f9', direction }
-    if (/poison|acid|toxic|venom|plague|rot/i.test(line)) return { type: 'poison', color: '#84cc16', direction }
-    if (/gravity|black hole|collapse|crush|singularity|weight/i.test(line)) return { type: 'gravity', color: '#6366f1', direction }
-    if (/wind|gust|tornado|vortex|cyclone|whirlwind/i.test(line)) return { type: 'wind', color: '#e2e8f0', direction }
-    if (/earth|rock|stone|ground|quake|mountain|boulder/i.test(line)) return { type: 'earth', color: '#a16207', direction }
-    if (/energy|power|force|blast|surge|beam/i.test(line)) return { type: 'energy', color: '#60a5fa', direction }
-    if (line.includes('damage!')) return { type: 'slash', color: '#f87171', direction }
-    return null
-  }
-
-  // Status chips + damage indicators (same pattern as the other battle views)
-  let charStatusByName = $derived(
-    deriveStatusBadges(logLines, [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)])
-  )
-  let damageEvents = $state<DamageEvent[]>([])
-  let dmgIdCounter = 0
-  function emitDamage(targetName: string, value: number, kind: DamageEvent['kind']) {
-    const el = t1CharEls.get(targetName) ?? t2CharEls.get(targetName)
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    if (r.width === 0) return
-    const ev: DamageEvent = { id: ++dmgIdCounter, x: r.left + r.width / 2, y: r.top + r.height * 0.3, value, kind }
-    damageEvents = [...damageEvents.slice(-29), ev]
-    setTimeout(() => { damageEvents = damageEvents.filter(d => d.id !== ev.id) }, 1400)
-  }
-  function parseDamageNumber(s: string): number {
-    const cleaned = s.replace(/,/g, '').toUpperCase()
-    if (cleaned.endsWith('K')) return Math.round(parseFloat(cleaned) * 1_000)
-    if (cleaned.endsWith('M')) return Math.round(parseFloat(cleaned) * 1_000_000)
-    if (cleaned.endsWith('B')) return Math.round(parseFloat(cleaned) * 1_000_000_000)
-    return Math.round(parseFloat(cleaned) || 0)
-  }
-  function maybeEmitDamageFromLine(line: string) {
-    if (!settings.effectsEnabled) return
-    const allNames = [...t1Chars.map(c => c.name), ...t2Chars.map(c => c.name)]
-    const dmgMatch = line.match(/for\s+([\d.,]+[KMB]?)\s+damage!?/i)
-    if (dmgMatch) {
-      const preBoundary = line.lastIndexOf(' for ')
-      const head = preBoundary > 0 ? line.slice(0, preBoundary) : line
-      let target: string | null = null
-      let lastIdx = -1
-      for (const n of allNames) {
-        const i = head.lastIndexOf(n)
-        if (i > lastIdx) { lastIdx = i; target = n }
-      }
-      if (target) {
-        const isCrit = /CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line)
-        emitDamage(target, parseDamageNumber(dmgMatch[1]), isCrit ? 'crit' : 'damage')
-        return
-      }
-    }
-    const healMatch = line.match(/(?:restores|recovers|mends)\s+([\d.,]+[KMB]?)\s*HP/i)
-    if (healMatch) {
-      for (const n of allNames) if (line.startsWith(n)) { emitDamage(n, parseDamageNumber(healMatch[1]), 'heal'); return }
-    }
-    if (/evades|dodges|misses/i.test(line)) {
-      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'miss'); return }
-    }
-    if (/barrier forms around|defensive stance|bracing/i.test(line)) {
-      for (const n of allNames) if (line.includes(n)) { emitDamage(n, 0, 'shield'); return }
-    }
-  }
-
-  async function scrollLog() {
-    await tick()
-    if (logEl) logEl.scrollTop = logEl.scrollHeight
-  }
-
-  function playLines(lines: string[], onDone: () => void) {
-    if (lines.length === 0) { onDone(); return }
-    const [head, ...rest] = lines
-    logLines = [...logLines, head]
-    scrollLog()
-    maybeEmitDamageFromLine(head)
-    const anim = detectAnim(head)
-    if (anim) {
-      const fx = currentFxEvents[fxEventIdx]
-      const isDamage = head.includes('damage!')
-      const isHealLine = /restores|recovers.*HP|vital force|mends/i.test(head)
-      const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
-      let aoeSkip = false
-      if (isDamage && aoeRemainingHits > 0) {
-        aoeRemainingHits--
-        aoeSkip = true
-      } else if (fx && (isDamage || isHealLine)) {
-        fxEventIdx++
-        if (isDamage && fx.attackType === 'aoe' && fx.targetIdxs) {
-          aoeRemainingHits = Math.max(0, fx.targetIdxs.length - 1)
-        }
-      }
-      if (!aoeSkip) {
-        let { type, color, direction } = anim
-        if (fx && isDamage && type !== 'crit' && type !== 'berserker' && type !== 'dodge') {
-          const elFx = fx.element ? ELEMENT_FX[fx.element] : null
-          if (elFx) { type = elFx.type; color = elFx.color }
-        }
-        const fxAttackType = (fx && type !== 'dodge' && type !== 'shield') ? fx.attackType : undefined
-        const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
-        const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
-        // Three-stage origin: char card → team panel → battle wrapper.
-        const attackerName = inferAttackerName(head)
-        let origin = (fxAttackType !== 'aoe' && fxAttackType !== 'debuff')
-          ? getCharOriginByName(attackerName)
-          : undefined
-        if (!origin) origin = getPanelOrigin(originDir)
-        showAnim(type, color, direction, grade, origin, fxAttackType)
-      }
-    }
-    const delay = speedDelay(head.startsWith('──') ? 350 : 600)
-    timeoutId = setTimeout(() => playLines(rest, onDone), delay)
-  }
-
-  function playRound() {
-    if (roundIdx >= rounds.length) { onSubWaveComplete('draw'); return }
-    const round = rounds[roundIdx]
-    roundIdx++
-    currentFxEvents = round.fxEvents ?? []
-    fxEventIdx = 0
-    aoeRemainingHits = 0
-    const prevT2Hp = [...t2DispHp]
-    playLines([`── Round ${round.roundNum} ──`, ...round.lines], () => {
-      t1DispHp = [...round.t1Hp]
-      round.t2Hp.forEach((hp, i) => {
-        if ((prevT2Hp[i] ?? Infinity) > 0 && hp <= 0 && !killedThisSubWave.has(i)) {
-          killedThisSubWave = new Set([...killedThisSubWave, i])
-          const enemy = allSubWaves[subWaveIdx]?.[i]
-          if (enemy) {
-            const d = rollDrops(enemy)
-            accDrops = { gems: accDrops.gems + d.gems, xp: accDrops.xp + d.xp, chanceDrops: [...accDrops.chanceDrops, ...d.chanceDrops] }
+  function handleArenaRoundEnd(round: ArenaRound) {
+    // Track newly-killed enemies → accumulate drops.
+    for (const id of Object.keys(prevEnemyHp)) {
+      const prev = prevEnemyHp[id]
+      const now  = round.hpAfter[id] ?? prev
+      if (prev > 0 && now <= 0 && !killedIds.has(id)) {
+        killedIds.add(id)
+        killedIds = killedIds  // force reactivity
+        const idx = t2Chars.findIndex((_, i) => `t2-${i}-sw${subWaveIdx}` === id)
+        const enemy = idx >= 0 ? allSubWaves[subWaveIdx]?.[idx] : undefined
+        if (enemy) {
+          const d = rollDrops(enemy)
+          accDrops = {
+            gems: accDrops.gems + d.gems,
+            xp:   accDrops.xp + d.xp,
+            chanceDrops: [...accDrops.chanceDrops, ...d.chanceDrops],
           }
         }
-      })
-      t2DispHp = [...round.t2Hp]
-      if (round.winner !== undefined) {
-        onSubWaveComplete(round.winner)
-      } else {
-        timeoutId = setTimeout(playRound, speedDelay(700))
       }
-    })
+    }
+    prevEnemyHp = { ...prevEnemyHp, ...round.hpAfter }
   }
 
-  function onSubWaveComplete(result: 'team1' | 'team2' | 'draw') {
-    if (result !== 'team1') { finishWave(false); return }
+  function handleArenaEnd(w: ArenaWinner) {
+    // Sync player HP back from controller for the next sub-wave / next wave.
+    if (controller) {
+      t1Chars = t1Chars.map((c, i) => ({ ...c, hp: controller!.getHp(`t1-${i}`) }))
+      t1DispHp = t1Chars.map(c => c.hp)
+    }
+
+    if (w !== 'team1') { finishWave(false); return }
     if (subWaveIdx + 1 >= allSubWaves.length) { finishWave(true); return }
-    // Restore 30% HP to survivors between sub-waves (tougher than story mode)
-    t1DispHp = t1Chars.map((c, i) => {
-      const cur = t1DispHp[i] ?? 0
-      if (cur <= 0) return 0
-      return Math.min(c.maxHp, cur + Math.round(c.maxHp * 0.3))
+
+    // Player won this sub-wave + more sub-waves remain: restore 30% HP to
+    // living allies, advance index, remount the arena for the next group.
+    t1Chars = t1Chars.map(c => {
+      if (c.hp <= 0) return c
+      return { ...c, hp: Math.min(c.maxHp, c.hp + Math.round(c.maxHp * 0.3)) }
     })
-    t1Chars = t1Chars.map((c, i) => ({ ...c, hp: t1DispHp[i] }))
+    t1DispHp = t1Chars.map(c => c.hp)
     subWaveIdx = subWaveIdx + 1
-    logLines = [...logLines, `── Sub-wave ${subWaveIdx} cleared! Team restores 30% HP ──`]
-    scrollLog()
-    timeoutId = setTimeout(startSubWave, speedDelay(1200))
+    timeoutId = setTimeout(startSubWave, 800)
   }
 
   function finishWave(won: boolean) {
@@ -535,35 +342,18 @@
     phase = won ? 'wave_result' : 'gameover'
   }
 
-  function startSubWave() {
-    killedThisSubWave = new Set()
-    const subEnemies = allSubWaves[subWaveIdx] ?? []
-    t2Chars  = subEnemies.map(e => buildEnemyChar(e, currentWave))
-    t2DispHp = t2Chars.map(c => c.hp)
-    allT2Names = new Set([...allT2Names, ...t2Chars.map(c => c.name)])
-    rounds   = simulateTeamBattle(t1Chars, t2Chars)
-    roundIdx = 0
-    if (allSubWaves.length > 1) {
-      logLines = [...logLines, `══ Sub-wave ${subWaveIdx + 1} / ${allSubWaves.length} ══`]
-      scrollLog()
-    }
-    playRound()
-  }
-
   function startWave() {
     allSubWaves = buildEndlessEnemies(currentWave)
     subWaveIdx  = 0
-    allT2Names  = new Set()
 
-    // Team HP persists between endless waves — no full restore
-    // On very first wave build t1Chars from roster, otherwise reuse existing with current HP
+    // Team HP persists between endless waves — no full restore.
+    // First wave: build t1Chars from roster. Subsequent waves: reuse with
+    // current HP from the prior wave's controller (already synced into
+    // t1Chars during handleArenaEnd).
     if (phase === 'intro') {
       t1Chars  = teamMembers.map(m => {
-        // Apply the same spin-class + character-level multipliers that
-        // Story Mode applies (BattleView.svelte). Endless was previously
-        // omitting the 4th statMultiplier argument, so Hero / Legend /
-        // Paragon spins all got built at their flat 1× stats — making
-        // characters feel ~50% weaker than they should in Endless.
+        // Apply the same spin-class + character-level multipliers Story Mode
+        // applies (BattleView.svelte) — Hero ×2, Legend ×4, Paragon ×8.
         const spinMult  = m.spinClass === 'paragon' ? 8
                         : m.spinClass === 'legend'  ? 4
                         : m.spinClass === 'hero'    ? 2
@@ -578,11 +368,10 @@
       t1DispHp = t1Chars.map(c => c.hp)
       accDrops = { gems: 0, xp: 0, chanceDrops: [] }
     }
-    // Sync HP into chars (HP persists across waves)
+    // Re-sync HP back onto t1Chars in case advanceToNextWave updated it.
     t1Chars = t1Chars.map((c, i) => ({ ...c, hp: t1DispHp[i] ?? c.maxHp }))
 
-    logLines = []
-    phase    = 'fight'
+    phase = 'fight'
     startSubWave()
   }
 
@@ -590,8 +379,12 @@
     if (!selectedTeam || teamMembers.length === 0) return
     currentWave = 1
     wavesCleared = 0
+    // BattleArena owns the intro splash now, so we drop the 2.6s blank
+    // screen that used to gate the start of the run. The startWave call
+    // still uses phase==='intro' as the "first-time roster build"
+    // sentinel — set it briefly here so that branch fires once.
     phase = 'intro'
-    timeoutId = setTimeout(() => startWave(), 2600)
+    startWave()
   }
 
   function advanceToNextWave() {
@@ -676,13 +469,7 @@
       <p class="font-mono text-xs" style="color: var(--color-outline);">Best: Wave {slot.endlessHighestWave}</p>
     {/if}
   </div>
-  {#if phase === 'fight'}
-    <span class="font-mono text-xs px-2 py-1 rounded" style="background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.2); color: #a78bfa;">
-      R{roundIdx}/{rounds.length}
-    </span>
-  {:else}
-    <div style="width: 36px;"></div>
-  {/if}
+  <div style="width: 36px;"></div>
 </header>
 
 <div class="pt-20 px-4 w-full flex flex-col" style="max-width: 560px; margin: 0 auto; min-height: 100dvh; padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 96px));">
@@ -768,146 +555,34 @@
     </div>
   {/if}
 
-  <!-- ══ Intro / Fight ═══════════════════════════════════════════════════════ -->
-  {#if phase !== 'pick' && phase !== 'wave_result' && phase !== 'gameover' && t1Chars.length > 0}
-    <div bind:this={battleWrapperEl} class="w-full relative mb-3" style="overflow: visible;">
-      <div class="grid grid-cols-2 gap-2">
-        <!-- Player team — uses shared bv-char-card classes for consistent styling -->
-        <div bind:this={t1PanelEl} class="flex flex-col gap-1.5">
-          {#if t1Chars.length > 1}
-            <p class="font-mono text-xs text-center tracking-widest uppercase" style="color: rgba(240,192,64,0.6);">Your Team</p>
-          {/if}
-          {#each t1Chars as char, i}
-            {@const hp  = t1DispHp[i] ?? 0}
-            {@const pct = t1HpPct[i]  ?? 0}
-            {@const dead = hp <= 0}
-            {@const badges = charStatusByName.get(char.name) ?? []}
-            <div use:trackCharEl={{ name: char.name, team: 1 }} class="bv-char-card bv-team-1" class:bv-dead={dead}>
-              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full mb-1.5">
-                {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>{/if}
-                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 0.78rem; letter-spacing: 0.03em;">{char.name}</p>
-              </div>
-              <div class="bv-hp-track">
-                <div class="bv-hp-fill" style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
-              </div>
-              <p class="text-center mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.62rem; letter-spacing: 0.04em;">{formatHp(hp)}<span style="color: #4e4635;"> / {formatHp(char.maxHp)}</span></p>
-              {#if badges.length > 0 && !dead}
-                <div class="flex flex-wrap gap-1 justify-center mt-1.5">
-                  {#each badges as b}
-                    <span class="bv-status-chip" title="{b.label}: {b.description}"
-                      style="background: {b.color}22; border-color: {b.color}66;">
-                      <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
-                    </span>
-                  {/each}
-                </div>
-              {/if}
-            </div>
-          {/each}
-        </div>
-        <!-- Enemies -->
-        <div bind:this={t2PanelEl} class="flex flex-col gap-1.5">
-          {#if t2Chars.length > 1}
-            <p class="font-mono text-xs text-center tracking-widest uppercase" style="color: rgba(232,121,249,0.6);">Enemies</p>
-          {/if}
-          {#each t2Chars as char, i}
-            {@const hp  = t2DispHp[i] ?? 0}
-            {@const pct = t2HpPct[i]  ?? 0}
-            {@const dead = hp <= 0}
-            {@const badges = charStatusByName.get(char.name) ?? []}
-            <div use:trackCharEl={{ name: char.name, team: 2 }} class="bv-char-card bv-team-2" class:bv-dead={dead} style="--team-accent: {ec};">
-              <div class="flex items-center justify-center gap-1.5 min-w-0 w-full mb-1.5">
-                {#if dead}<span class="material-symbols-outlined shrink-0" style="font-size: 13px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>{/if}
-                <p class="font-bold truncate" style="font-family: 'Cinzel', serif; color: {ec}; font-size: 0.78rem; letter-spacing: 0.03em;">{char.name}</p>
-              </div>
-              <div class="bv-hp-track">
-                <div class="bv-hp-fill" style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
-              </div>
-              <p class="text-center mt-1" style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)}; font-size: 0.62rem; letter-spacing: 0.04em;">{formatHp(hp)}<span style="color: #4e4635;"> / {formatHp(char.maxHp)}</span></p>
-              {#if badges.length > 0 && !dead}
-                <div class="flex flex-wrap gap-1 justify-center mt-1.5">
-                  {#each badges as b}
-                    <span class="bv-status-chip" title="{b.label}: {b.description}"
-                      style="background: {b.color}22; border-color: {b.color}66;">
-                      <span class="material-symbols-outlined" style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
-                    </span>
-                  {/each}
-                </div>
-              {/if}
-            </div>
-          {/each}
-        </div>
-      </div>
-      <!-- Attack FX overlay — anchored on attacker's actual rect (three-stage
-           fallback in JS), with a wrapper-relative fallback in template as
-           a last resort. -->
-      {#if phase === 'fight' && activeAnim}
-        {#key activeAnim.key}
-          {@const ox = activeAnim.origin?.x}
-          {@const oy = activeAnim.origin?.y}
-          {@const _wr = battleWrapperEl?.getBoundingClientRect()}
-          <div style="position:fixed;
-                      left:{ox != null ? ox + 'px' : _wr != null
-                            ? (activeAnim.direction === 'rtl' ? (_wr.left + _wr.width * 0.75) + 'px'
-                              : activeAnim.direction === 'ltr' ? (_wr.left + _wr.width * 0.25) + 'px'
-                              : (_wr.left + _wr.width / 2) + 'px')
-                            : (activeAnim.direction === 'rtl' ? '75vw' : activeAnim.direction === 'center' ? '50vw' : '25vw')};
-                      top:{oy != null ? oy + 'px' : _wr != null
-                            ? (_wr.top + _wr.height / 2) + 'px' : '50vh'};
-                      transform:translate(-50%,-50%);
-                      z-index:9999;pointer-events:none;">
-            <AttackFX type={activeAnim.type} color={activeAnim.color} direction={activeAnim.direction} size={76} grade={activeAnim.grade} attackType={activeAnim.attackType} />
-          </div>
-        {/key}
-      {/if}
-      <!-- Floating damage indicators -->
-      <DamageIndicator events={damageEvents} />
-    </div>
-
-    <!-- VS splash -->
-    {#if phase === 'intro'}
-      <div class="text-center py-6">
-        <p style="font-family: 'Cinzel', serif; font-size: 3rem; font-weight: 900; color: #a78bfa; letter-spacing: 0.2em; filter: drop-shadow(0 0 20px rgba(167,139,250,0.5));">VS</p>
-        <p class="mt-2 text-sm tracking-[0.2em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">
-          Wave {currentWave} · {currentGrade} Grade · Endless Mode
-        </p>
-      </div>
-    {/if}
-
-    <!-- Battle log -->
-    {#if phase === 'fight'}
-      <div class="w-full rounded-xl overflow-hidden mb-4" style="border: 1px solid rgba(167,139,250,0.15); background: #0d0d16;">
-        <div class="flex items-center gap-2 px-4 py-2.5" style="border-bottom: 1px solid rgba(167,139,250,0.08);">
-          <span class="material-symbols-outlined" style="font-size: 14px; color: #9a907b; font-variation-settings: 'FILL' 1;">menu_book</span>
-          <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Battle Log — Wave {currentWave}</p>
-          <span class="ml-auto text-xs px-2 py-0.5 rounded" style="background: rgba(157,23,77,0.3); border: 1px solid rgba(157,23,77,0.5); font-family: 'JetBrains Mono', monospace; color: #f9a8d4;">
-            R{roundIdx} / {rounds.length}
-          </span>
-        </div>
-        <div bind:this={logEl} class="overflow-y-auto px-4 py-3" style="max-height: 260px; scroll-behavior: smooth;">
-          {#if logLines.length === 0}
-            <p class="text-xs text-center py-4" style="color: #4e4635; font-style: italic;">The battle begins…</p>
-          {/if}
-          {#each logLines as line}
-            {#if line.startsWith('──')}
-              <p class="text-xs mt-3 mb-1 tracking-[0.15em]" style="font-family: 'JetBrains Mono', monospace; color: #9a907b; border-bottom: 1px solid rgba(167,139,250,0.08); padding-bottom: 4px;">{line}</p>
-            {:else if line.includes('CRITICAL') || line.includes('DEVASTATING') || line.includes('PERFECT STRIKE') || line.includes('OVERWHELMING') || line.includes('UNSTOPPABLE') || line.includes('OVERKILL')}
-              <p class="text-xs mb-1 font-bold" style="color: #fde047; font-family: 'JetBrains Mono', monospace;">{line}</p>
-            {:else if line.includes('has been defeated!')}
-              <p class="text-xs mb-1 font-bold" style="color: #ef4444; font-family: 'JetBrains Mono', monospace;">{line}</p>
-            {:else if [...t1Names].some(n => line.startsWith(n))}
-              <p class="text-xs mb-1" style="color: #fde68a; font-family: 'JetBrains Mono', monospace;">{line}</p>
-            {:else if [...allT2Names].some(n => line.startsWith(n))}
-              <p class="text-xs mb-1" style="color: #e9d5ff; font-family: 'JetBrains Mono', monospace;">{line}</p>
-            {:else}
-              <p class="text-xs mb-1" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-style: italic;">{line}</p>
-            {/if}
-          {/each}
-        </div>
-      </div>
-    {/if}
-  {/if}
 
 </div>
+
+<!-- ══ Fight phase — unified BattleArena (shared with story mode) ═════════ -->
+<!-- Mount per sub-wave (keyed on currentWave + subWaveIdx) so the arena
+     remounts cleanly between groups. BattleArena owns the chrome that
+     used to be hand-coded here: cards, HP bars, status badges, battle
+     log, VFX overlay, floating damage indicators, intro splash. -->
+{#if phase === 'fight' && arenaTeams && controller}
+  {#key `${currentWave}-${subWaveIdx}`}
+    <BattleArena
+      bind:phase={arenaPhase}
+      teams={arenaTeams}
+      controller={controller}
+      manualMode={manualMode}
+      onManualToggle={(m) => manualMode = m}
+      modeTitle={`Wave ${currentWave} — ${currentGrade}`}
+      modeSubtitle={allSubWaves.length > 1
+        ? `Sub-wave ${subWaveIdx + 1} / ${allSubWaves.length}`
+        : 'Endless Mode'}
+      modeAccent={ec}
+      speedFactor={settings.battleSpeed}
+      effectsEnabled={settings.effectsEnabled}
+      canInstant={canInstant}
+      onRoundEnd={handleArenaRoundEnd}
+      onBattleEnd={handleArenaEnd}/>
+  {/key}
+{/if}
 
 <!-- ══ Wave result overlay ═════════════════════════════════════════════════ -->
 {#if phase === 'wave_result'}
