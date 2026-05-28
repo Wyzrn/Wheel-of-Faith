@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onDestroy } from 'svelte'
   import {
-    BATTLE_SPECS, rollDrops, WORLD_GRADES, ENDLESS_KEY_DROP_RATE,
+    BATTLES_PER_WORLD, specBracketForWorld, ENEMY_TYPE_NAMES,
+    rollDrops, WORLD_GRADES, ENDLESS_KEY_DROP_RATE,
     type WorldGrade, type Enemy, type WaveEnemySpec,
   } from '$lib/story/worlds'
   import {
@@ -50,8 +51,15 @@
     return 1 + Math.floor((wave - 48) / 3) * 0.2
   }
 
+  // Pull the battle spec for an endless wave. The wave's effective grade
+  // selects the SAME bracketed progression Story Mode uses, so the new
+  // enemy types (phaseShifter, shielder, leech, cursed, bomber, reflector,
+  // cloner, berserker) all show up in Endless as the grade climbs. The
+  // battle-within-bracket index cycles through the bracket's 20 battles.
   function endlessSpec(wave: number): WaveEnemySpec[][] {
-    return BATTLE_SPECS[Math.min(wave - 1, BATTLE_SPECS.length - 1)]
+    const grade = endlessGrade(wave)
+    const bracket = specBracketForWorld(grade)
+    return bracket[Math.min(wave - 1, BATTLES_PER_WORLD - 1) % bracket.length]
   }
 
   function buildEndlessEnemies(wave: number): Enemy[][] {
@@ -61,15 +69,15 @@
     return spec.map(waveSpec =>
       waveSpec.flatMap(({ type, count }) =>
         Array.from({ length: count }, (_, i) => {
-          // boss_magnet: 25% chance to upgrade any warrior to elite, or elite to boss
+          // boss_magnet: 25% chance to upgrade any non-boss to a tougher type.
           let effectiveType = type
           if (hasBossMagnet && effectiveType !== 'boss' && Math.random() < 0.25) {
             effectiveType = effectiveType === 'elite' ? 'boss' : 'elite'
           }
           const suffix = count > 1 ? ` ${i + 1}` : ''
-          const name = effectiveType === 'boss' ? `${grade} Overlord`
-            : effectiveType === 'elite' ? `${grade} Champion${suffix}`
-            : `${grade} Warrior${suffix}`
+          const name = effectiveType === 'boss'
+            ? `${grade} Overlord`
+            : `${grade} ${ENEMY_TYPE_NAMES[effectiveType]}${suffix}`
           return { grade, type: effectiveType, name } as Enemy
         })
       )
@@ -342,7 +350,10 @@
     })
     t1DispHp = t1Chars.map(c => c.hp)
     subWaveIdx = subWaveIdx + 1
-    timeoutId = setTimeout(startSubWave, 800)
+    // Snappy hand-off between sub-waves — 800ms felt sluggish across a
+    // multi-sub-wave endless run. 200ms keeps the "wave cleared" beat
+    // readable without stalling the fight.
+    timeoutId = setTimeout(startSubWave, 200)
   }
 
   function finishWave(won: boolean) {
@@ -600,6 +611,7 @@
       speedFactor={settings.battleSpeed}
       effectsEnabled={settings.effectsEnabled}
       canInstant={canInstant}
+      introMs={subWaveIdx === 0 ? 1100 : 350}
       onRoundEnd={handleArenaRoundEnd}
       onBattleEnd={handleArenaEnd}/>
   {/key}

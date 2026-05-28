@@ -180,8 +180,10 @@ const SPEC_BRACKET_COSMIC: BattleSpec[] = [
 ]
 
 /** Picks the BattleSpec[] used for a given world. Higher world brackets
- *  introduce more mechanically dangerous enemy types. */
-function _specBracketFor(worldGrade: WorldGrade): BattleSpec[] {
+ *  introduce more mechanically dangerous enemy types. Exported so Endless
+ *  mode can reuse the exact same bracketed progression keyed off the
+ *  endless wave's effective grade. */
+export function specBracketForWorld(worldGrade: WorldGrade): BattleSpec[] {
   const idx = WORLD_GRADES.indexOf(worldGrade)
   if (idx <= 2)  return SPEC_BRACKET_INTRO    // F E D
   if (idx <= 5)  return SPEC_BRACKET_RISING   // C B A
@@ -189,6 +191,7 @@ function _specBracketFor(worldGrade: WorldGrade): BattleSpec[] {
   if (idx <= 11) return SPEC_BRACKET_APEX     // Z ZZ ZZZ
   return SPEC_BRACKET_COSMIC                  // Cosmic / Immortal / Celestial / Godly / Primordial / Absolute / Transcendent / Infinite
 }
+const _specBracketFor = specBracketForWorld
 
 /** Back-compat export — points at the intro bracket so anything still
  *  importing BATTLE_SPECS gets a sensible default. Prefer
@@ -353,9 +356,9 @@ export interface Enemy {
  * All enemy types use the world grade. Difficulty difference comes from HP/damage
  * multipliers in buildEnemyChar (normal=1×, elite=1.5×, boss=2.5×), not grade offsets.
  */
-/** Display-name prefixes per enemy type. Used by getBattleWaves when
- *  generating the per-enemy name shown on battle cards. */
-const _TYPE_NAME: Record<EnemyType, string> = {
+/** Display-name suffix per enemy type (e.g. "{grade} Bloodleech 2").
+ *  Exported so Endless mode names its enemies identically to Story. */
+export const ENEMY_TYPE_NAMES: Record<EnemyType, string> = {
   normal:       'Warrior',
   elite:        'Champion',
   boss:         'Overlord',
@@ -380,7 +383,7 @@ export function getBattleWaves(worldGrade: WorldGrade, battleNumber: number): En
         const suffix = count > 1 ? ` ${i + 1}` : ''
         const name = type === 'boss'
           ? `${worldGrade} Overlord`
-          : `${grade} ${_TYPE_NAME[type]}${suffix}`
+          : `${grade} ${ENEMY_TYPE_NAMES[type]}${suffix}`
         return { grade, type, name } as Enemy
       })
     )
