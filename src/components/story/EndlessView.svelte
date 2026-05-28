@@ -472,9 +472,12 @@
   <div style="width: 36px;"></div>
 </header>
 
+<!-- Pick-phase wrapper only renders when actually picking. Previously this
+     wrapper had `min-height: 100dvh` and stayed mounted in fight phase,
+     pushing the BattleArena below the fold. -->
+{#if phase === 'pick'}
 <div class="pt-20 px-4 w-full flex flex-col" style="max-width: 560px; margin: 0 auto; min-height: 100dvh; padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 96px));">
 
-  <!-- ══ Pick phase ══════════════════════════════════════════════════════════ -->
   {#if phase === 'pick'}
     <!-- Info card -->
     <div class="rounded-xl px-4 py-4 mb-3" style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2);">
@@ -557,6 +560,7 @@
 
 
 </div>
+{/if}
 
 <!-- ══ Fight phase — unified BattleArena (shared with story mode) ═════════ -->
 <!-- Mount per sub-wave (keyed on currentWave + subWaveIdx) so the arena
