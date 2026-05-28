@@ -235,8 +235,9 @@ export function memberFromChar(
     maxHp: char.maxHp,
     stats: [
       { label: 'ATK',  value: formatHp(char.physicalDamage) },
+      { label: 'PWR',  value: formatHp(char.powerDamage) },
       { label: 'DEF',  value: Math.round(char.armorReduction * 100) + '%' },
-      { label: 'INIT', value: Math.round(char.initiative) },
+      { label: 'SPD',  value: Math.round(char.initiative) },
     ],
     spinClass,
   }

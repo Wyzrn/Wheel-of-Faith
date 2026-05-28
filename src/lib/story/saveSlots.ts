@@ -203,7 +203,12 @@ export function worldReplayCooldownMs(slot: StorySaveSlot, world: WorldGrade): n
   return Math.max(0, WORLD_REPLAY_COOLDOWN_MS - elapsed)
 }
 
-/** Stamps the replay start timestamp and resets battlesCompleted to the last battle (19 of 20). */
+/** Restarts a beaten world from battle 1 for replay. Preserves the `beaten`
+ *  flag so unlocking of subsequent worlds is never affected — once a world
+ *  is unlocked it stays unlocked. Clears `lastReplayedAt` so the replay
+ *  cooldown timer is refreshed (player can attempt freely). Roster HP and
+ *  per-character power cooldowns are battle-local and reset automatically
+ *  by the controller — nothing to clear here. */
 export function recordWorldReplayStart(slot: StorySaveSlot, world: WorldGrade): StorySaveSlot {
   const prev = slot.worldProgress[world]
   if (!prev?.beaten) return slot
@@ -211,7 +216,7 @@ export function recordWorldReplayStart(slot: StorySaveSlot, world: WorldGrade): 
     ...slot,
     worldProgress: {
       ...slot.worldProgress,
-      [world]: { ...prev, battlesCompleted: BATTLES_PER_WORLD - 1, lastReplayedAt: new Date().toISOString() },
+      [world]: { ...prev, battlesCompleted: 0, lastReplayedAt: undefined },
     },
   }
 }
@@ -831,7 +836,10 @@ export function getDailyBought(slot: StorySaveSlot, type: StatCrystalType): numb
 export function recordBattleWin(slot: StorySaveSlot, world: WorldGrade): StorySaveSlot {
   const prev = slot.worldProgress[world] ?? { battlesCompleted: 0, beaten: false }
   const battlesCompleted = Math.min(prev.battlesCompleted + 1, BATTLES_PER_WORLD)
-  const beaten = battlesCompleted >= BATTLES_PER_WORLD
+  // `beaten` is sticky — once a world is beaten it stays beaten, even
+  // during a fresh replay run where battlesCompleted has been reset to 0.
+  // Replays must NEVER relock the world above; this preserves the unlock.
+  const beaten = prev.beaten || battlesCompleted >= BATTLES_PER_WORLD
   const worldProgress = { ...slot.worldProgress, [world]: { battlesCompleted, beaten } }
 
   const beatenSet = new Set<WorldGrade>(

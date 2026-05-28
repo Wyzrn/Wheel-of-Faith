@@ -257,7 +257,10 @@
     const ev: DamageEvent = {
       id: ++dmgIdCounter,
       x: cardRect.left - wrapRect.left + cardRect.width / 2,
-      y: cardRect.top  - wrapRect.top  + cardRect.height * 0.3,
+      // Anchor at the TOP of the card so the floating number reads clearly
+      // above the character art instead of half-occluded by it. The float
+      // keyframe still drifts further up + fades while travelling.
+      y: cardRect.top  - wrapRect.top  + 8,
       value, kind,
     }
     damageEvents = [...damageEvents.slice(-29), ev]
