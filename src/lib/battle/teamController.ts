@@ -329,10 +329,31 @@ export class BattleControllerTeam {
       lines.push(`${target.char.name}'s defensive stance turns aside ${formatHp(blocked)} damage!`)
       this.defendStance[target.id] = null
     }
+
+    // Reflector enemy type — bounces 35% of damage back to the attacker
+    // before the hit resolves. The actor still takes the reduced damage,
+    // so a glass-cannon attacker can KO themselves on a tanky reflector.
+    if (damage > 0 && target.char.gimmickIds?.includes('reflectShield')) {
+      const bounced = Math.round(damage * 0.35)
+      if (bounced > 0) {
+        this.hp[actor.id] = Math.max(0, this.hp[actor.id] - bounced)
+        lines.push(`${target.char.name}'s Reflective Shell bounces ${formatHp(bounced)} damage back to ${actor.char.name}!`)
+      }
+    }
+
     this.hp[target.id] = Math.max(0, this.hp[target.id] - damage)
     this.hp[actor.id]  = Math.min(actor.char.maxHp, this.hp[actor.id] + result.heal)
     this.hp[actor.id]  = Math.max(0, this.hp[actor.id] - result.reflected)
     if (result.applyStatus) this.applyStatus(target, result.applyStatus, lines)
+
+    // Cursed enemy type — every successful hit they land applies a
+    // random status effect to the defender on top of damage. Status
+    // immunities still apply (applyStatus is a no-op when immune).
+    if (damage > 0 && actor.char.gimmickIds?.includes('curseStrike')) {
+      const cursedStatuses: StatusType[] = ['burn', 'poison', 'bleed', 'wither']
+      const pick = cursedStatuses[Math.floor(Math.random() * cursedStatuses.length)]
+      this.applyStatus(target, pick, lines)
+    }
 
     // Last Stand gimmick — once per battle, when HP drops below threshold,
     // surge back with a fraction of maxHp restored.
@@ -367,6 +388,71 @@ export class BattleControllerTeam {
 
     if (this.hp[target.id] <= 0) {
       lines.push(`${target.char.name} has been defeated!`)
+      this._handleOnDeathGimmicks(target, actor, lines)
+    }
+  }
+
+  // On-death gimmick hooks. Enemy-only Story Mode threat types apply
+  // their signature mechanic here: bombers detonate their remaining
+  // damage to a random enemy, cloners spawn weakened copies of themselves.
+  private _handleOnDeathGimmicks(
+    dead: TeamControllerMember,
+    killer: TeamControllerMember,
+    lines: string[],
+  ): void {
+    const gids = dead.char.gimmickIds ?? []
+    if (gids.includes('bomberDeath')) {
+      // Detonates for 1× the bomber's PHYSICAL damage stat to a random
+      // living enemy (i.e. someone on the killer's side). Predictable
+      // enough to play around — never one-shots a maxed-HP hero, but
+      // chunks a wounded one badly.
+      const targets = (killer.side === 'team1' ? this.team1 : this.team2)
+        .filter(m => (this.hp[m.id] ?? 0) > 0)
+      if (targets.length > 0) {
+        const t = targets[Math.floor(Math.random() * targets.length)]
+        const dmg = Math.max(1, Math.round(dead.char.physicalDamage * 1.5))
+        this.hp[t.id] = Math.max(0, this.hp[t.id] - dmg)
+        lines.push(`💥 ${dead.char.name} detonates — ${t.char.name} takes ${formatHp(dmg)} damage!`)
+        if (this.hp[t.id] <= 0) {
+          lines.push(`${t.char.name} has been defeated!`)
+          // Recurse into death-gimmicks of the new victim (rare chain).
+          this._handleOnDeathGimmicks(t, dead, lines)
+        }
+      }
+    }
+    if (gids.includes('clonerDeath')) {
+      // Spawn 3 mini-clones onto the dead enemy's side, each at 10% of
+      // its original max HP and damage. New clones get IDs derived from
+      // the parent so each gets unique controller state. Skipped if the
+      // dead enemy is itself a clone (no infinite splitting).
+      if (!dead.id.startsWith('clone-')) {
+        const COUNT = 3
+        const FRAC = 0.10
+        const team = dead.side === 'team1' ? this.team1 : this.team2
+        for (let k = 0; k < COUNT; k++) {
+          const cloneId = `clone-${dead.id}-${k}-${Date.now()}`
+          const cloneHp = Math.max(1, Math.round(dead.char.maxHp * FRAC))
+          const cloneDmg = Math.max(1, Math.round(dead.char.physicalDamage * FRAC))
+          const cloneChar = {
+            ...dead.char,
+            name: `${dead.char.name} Clone ${k + 1}`,
+            hp: cloneHp,
+            maxHp: cloneHp,
+            physicalDamage: cloneDmg,
+            powerDamage: Math.round(cloneDmg * 0.9),
+            gimmickIds: [],  // clones don't re-split
+            moves: dead.char.moves,
+          }
+          team.push({ id: cloneId, side: dead.side, char: cloneChar })
+          this.hp[cloneId] = cloneHp
+          this.statuses[cloneId] = {}
+          this.defendStance[cloneId] = null
+          this.powerCooldowns[cloneId] = {}
+          this.firedGimmicks[cloneId] = new Set()
+          this.actorQueue.push({ id: cloneId, side: dead.side, char: cloneChar })
+        }
+        lines.push(`🧬 ${dead.char.name} splits into ${COUNT} weakened clones!`)
+      }
     }
   }
 

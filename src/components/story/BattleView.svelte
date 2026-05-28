@@ -82,13 +82,35 @@
     Transcendent: 114_000_000, Infinite: 250_000_000,
   }
 
+  // Per-type stat shape. HP/damage multipliers + armor/dodge tweaks +
+  // gimmickIds give each enemy type its own mechanical identity. Shared
+  // by BattleView + EndlessView (any divergence is a bug).
+  // hp:  HP multiplier vs. baseline
+  // dmg: damage multiplier vs. baseline
+  // armorCap: max armor reduction (0..0.80)
+  // dodgeCap: max dodge chance (0..0.70)
+  // gimmicks: gimmickIds applied to this enemy
+  const _TYPE_STATS: Record<string, { hp: number; dmg: number; armorCap: number; dodgeCap: number; gimmicks: string[]; archetypeLabel: string }> = {
+    normal:       { hp: 1.00, dmg: 1.00, armorCap: 0.50, dodgeCap: 0.50, gimmicks: [],                       archetypeLabel: 'Warrior'    },
+    elite:        { hp: 1.50, dmg: 1.30, armorCap: 0.55, dodgeCap: 0.50, gimmicks: [],                       archetypeLabel: 'Champion'   },
+    boss:         { hp: 2.50, dmg: 1.60, armorCap: 0.60, dodgeCap: 0.50, gimmicks: ['leader'],               archetypeLabel: 'Overlord'   },
+    phaseShifter: { hp: 0.65, dmg: 1.10, armorCap: 0.25, dodgeCap: 0.62, gimmicks: ['firstStrike'],          archetypeLabel: 'Phaseling'  },
+    shielder:     { hp: 1.70, dmg: 0.70, armorCap: 0.65, dodgeCap: 0.20, gimmicks: ['ironSkin'],             archetypeLabel: 'Bulwark'    },
+    leech:        { hp: 1.20, dmg: 1.00, armorCap: 0.50, dodgeCap: 0.30, gimmicks: ['lifesteal'],            archetypeLabel: 'Bloodleech' },
+    cursed:       { hp: 1.10, dmg: 1.05, armorCap: 0.40, dodgeCap: 0.35, gimmicks: ['curseStrike'],          archetypeLabel: 'Hexbringer' },
+    bomber:       { hp: 0.60, dmg: 0.80, armorCap: 0.20, dodgeCap: 0.35, gimmicks: ['bomberDeath'],          archetypeLabel: 'Detonator'  },
+    cloner:       { hp: 1.10, dmg: 0.95, armorCap: 0.40, dodgeCap: 0.40, gimmicks: ['clonerDeath'],          archetypeLabel: 'Cloner'     },
+    reflector:    { hp: 1.00, dmg: 0.85, armorCap: 0.55, dodgeCap: 0.30, gimmicks: ['reflectShield'],        archetypeLabel: 'Mirrorblade'},
+    berserker:    { hp: 0.85, dmg: 1.80, armorCap: 0.30, dodgeCap: 0.40, gimmicks: ['berserkerRage'],        archetypeLabel: 'Berserker'  },
+  }
+
   function buildEnemyChar(enemy: Enemy): BattleCharacter {
     const [minR, maxR] = WORLD_STAT_RANGE[enemy.grade] ?? [0, 12]
     const idx     = WORLD_GRADES.indexOf(enemy.grade)
     const baseHp  = ENEMY_BASE_HP[enemy.grade] ?? 100
-    const mult    = enemy.type === 'boss' ? 2.5 : enemy.type === 'elite' ? 1.5 : 1.0
+    const ts      = _TYPE_STATS[enemy.type] ?? _TYPE_STATS.normal
     const plusScale = plusMode ? 1 + absolutePlusLevel * 0.3 : 1
-    const hp      = Math.round(baseHp * mult * plusScale)
+    const hp      = Math.round(baseHp * ts.hp * plusScale)
     const agilityRank       = randRank(minR, maxR)
     const speedRank         = randRank(minR, maxR)
     const fightingSkillRank = randRank(minR, maxR)
@@ -97,15 +119,15 @@
     const iqRank            = randRank(minR, maxR)
     const charismaRank      = randRank(minR, maxR)
     const avgRank = (agilityRank + speedRank + fightingSkillRank) / 3
-    const dmg = Math.round(hp / 2 * (1 + avgRank / 82))
+    const dmg = Math.round(hp / 2 * (1 + avgRank / 82) * ts.dmg)
     return {
       name: enemy.name,
       raceLabel: enemy.grade + ' Entity',
-      archetypeLabel: enemy.type === 'boss' ? 'Overlord' : enemy.type === 'elite' ? 'Champion' : 'Warrior',
+      archetypeLabel: ts.archetypeLabel,
       hp, maxHp: hp,
       physicalDamage: dmg,
       powerDamage: Math.round(dmg * 0.9),
-      armorReduction: Math.min(0.50, 0.05 + idx * 0.03),
+      armorReduction: Math.min(ts.armorCap, 0.05 + idx * 0.03),
       armorType: 'Full-Suit',
       weaponType: 'Melee',
       agilityRank, speedRank, charismaRank, iqRank, potentialRank, energyRank, fightingSkillRank,
@@ -113,12 +135,12 @@
       weaponEnchantTags: [], armorEnchantTags: [],
       critChance: Math.min(0.35, 0.08 + idx * 0.018),
       critMultiplier: Math.min(2.5, 1.5 + idx * 0.07),
-      dodgeChance: Math.min(0.50, 0.05 + idx * 0.03),
+      dodgeChance: Math.min(ts.dodgeCap, 0.05 + idx * 0.03),
       initiative: avgRank,
       elementWeaknesses: [], statusImmunities: [],
       passiveHealPerRound: 0, powerDamageReduction: 0, physicalDamageReduction: 0,
       damageReductionCap: 0.80, summons: [], buffMultiplier: 1.0, buffRoundsLeft: 0,
-      gimmickIds: [],
+      gimmickIds: ts.gimmicks,
       moves: [
         { name: `${enemy.grade} Strike`, type: 'physical', effectTag: null, behavior: 'attack', attackType: 'attack' as const },
         { name: enemy.type === 'boss' ? 'Overwhelming Destruction' : `${enemy.grade} Blast`, type: 'power', effectTag: null, behavior: 'attack', attackType: 'attack' as const },

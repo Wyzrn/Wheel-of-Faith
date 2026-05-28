@@ -26,56 +26,174 @@ export const BATTLES_PER_WORLD = 20
 /** Maximum number of Absolute+ difficulty tiers available beyond the base Absolute world. */
 export const MAX_ABSOLUTE_PLUS = 20
 
-export type EnemyType = 'normal' | 'elite' | 'boss'
+// Enemy taxonomy. Each type has a distinct combat identity that the
+// BattleView + EndlessView readers translate into stat / move / gimmick
+// differences when building the BattleCharacter. New types unlock per
+// world bracket — see BATTLE_SPECS_BY_BRACKET below.
+//
+//  normal       — baseline humanoid grunt (1× HP, 1× damage)
+//  elite        — beefier mid-tier (1.5× HP, 1.3× damage)
+//  boss         — battle finale (2.5× HP, 1.6× damage)
+//  phaseShifter — fast, dodgy, low HP (0.65× HP, 55% dodge)
+//  shielder     — heavy armor, low damage, slow (1.7× HP, 0.7× dmg, 0.55 armor)
+//  leech        — heals from damage dealt (1.2× HP, lifesteal gimmick)
+//  cursed       — applies status on every hit (poison/burn/wither)
+//  bomber       — explodes on death for damage = current HP (0.6× HP, fast)
+//  cloner       — on death spawns 3 mini-clones at 10% stats (1.0× HP)
+//  reflector    — reflects 35% damage taken back to attacker
+//  berserker    — +60% damage but takes +30% damage (glass-cannon variant)
+export type EnemyType =
+  | 'normal' | 'elite' | 'boss'
+  | 'phaseShifter' | 'shielder' | 'leech'
+  | 'cursed' | 'bomber' | 'cloner'
+  | 'reflector' | 'berserker'
 
 /** A group of enemies of one type within a wave. */
 export interface WaveEnemySpec { type: EnemyType; count: number }
 /** One battle = array of waves, each wave = array of enemy groups. */
 export type BattleSpec = WaveEnemySpec[][]
 
-/** 20-battle wave spec. Battle N = BATTLE_SPECS[N-1]. */
-export const BATTLE_SPECS: BattleSpec[] = [
-  // Battle 1
+// ─── World brackets ──────────────────────────────────────────────────────
+// Worlds group into 5 difficulty brackets. Each bracket has its own
+// 20-battle progression that introduces the bracket's signature enemy
+// types. Higher brackets layer in the more mechanically dangerous types.
+
+/** F → D worlds: only normal / elite / boss. Pure intro progression. */
+const SPEC_BRACKET_INTRO: BattleSpec[] = [
   [[{ type: 'normal', count: 1 }]],
-  // Battle 2
   [[{ type: 'normal', count: 1 }]],
-  // Battle 3
   [[{ type: 'normal', count: 2 }]],
-  // Battle 4
   [[{ type: 'normal', count: 2 }]],
-  // Battle 5
   [[{ type: 'elite', count: 1 }]],
-  // Battle 6
   [[{ type: 'normal', count: 2 }], [{ type: 'normal', count: 2 }]],
-  // Battle 7
   [[{ type: 'normal', count: 2 }], [{ type: 'normal', count: 3 }]],
-  // Battle 8
   [[{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }]],
-  // Battle 9
   [[{ type: 'normal', count: 3 }], [{ type: 'normal', count: 2 }, { type: 'elite', count: 1 }]],
-  // Battle 10
   [[{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }], [{ type: 'normal', count: 2 }, { type: 'elite', count: 1 }]],
-  // Battle 11
   [[{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }]],
-  // Battle 12
   [[{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }], [{ type: 'normal', count: 3 }]],
-  // Battle 13
   [[{ type: 'normal', count: 2 }, { type: 'elite', count: 1 }], [{ type: 'normal', count: 3 }], [{ type: 'normal', count: 4 }]],
-  // Battle 14
   [[{ type: 'elite', count: 2 }], [{ type: 'elite', count: 2 }], [{ type: 'normal', count: 4 }]],
-  // Battle 15
   [[{ type: 'elite', count: 1 }], [{ type: 'elite', count: 2 }], [{ type: 'elite', count: 3 }]],
-  // Battle 16
   [[{ type: 'normal', count: 5 }], [{ type: 'normal', count: 5 }], [{ type: 'elite', count: 1 }]],
-  // Battle 17
   [[{ type: 'normal', count: 3 }], [{ type: 'elite', count: 3 }], [{ type: 'normal', count: 5 }]],
-  // Battle 18
   [[{ type: 'normal', count: 5 }], [{ type: 'normal', count: 5 }], [{ type: 'elite', count: 2 }]],
-  // Battle 19
   [[{ type: 'normal', count: 5 }], [{ type: 'elite', count: 3 }], [{ type: 'elite', count: 3 }]],
-  // Battle 20
   [[{ type: 'elite', count: 3 }], [{ type: 'elite', count: 3 }], [{ type: 'boss', count: 1 }]],
 ]
+
+/** C → A worlds: introduces phaseShifter (dodgy) + shielder (tanks). */
+const SPEC_BRACKET_RISING: BattleSpec[] = [
+  [[{ type: 'normal', count: 2 }]],
+  [[{ type: 'phaseShifter', count: 1 }]],
+  [[{ type: 'normal', count: 2 }, { type: 'phaseShifter', count: 1 }]],
+  [[{ type: 'shielder', count: 1 }]],
+  [[{ type: 'normal', count: 2 }], [{ type: 'phaseShifter', count: 2 }]],
+  [[{ type: 'normal', count: 3 }], [{ type: 'shielder', count: 1 }]],
+  [[{ type: 'elite', count: 1 }, { type: 'phaseShifter', count: 1 }]],
+  [[{ type: 'normal', count: 3 }], [{ type: 'shielder', count: 1 }, { type: 'phaseShifter', count: 1 }]],
+  [[{ type: 'phaseShifter', count: 3 }]],
+  [[{ type: 'normal', count: 2 }, { type: 'shielder', count: 1 }], [{ type: 'phaseShifter', count: 2 }, { type: 'elite', count: 1 }]],
+  [[{ type: 'shielder', count: 2 }], [{ type: 'phaseShifter', count: 2 }]],
+  [[{ type: 'normal', count: 3 }, { type: 'phaseShifter', count: 1 }], [{ type: 'elite', count: 2 }]],
+  [[{ type: 'shielder', count: 1 }, { type: 'phaseShifter', count: 2 }], [{ type: 'normal', count: 4 }]],
+  [[{ type: 'elite', count: 2 }], [{ type: 'shielder', count: 2 }, { type: 'phaseShifter', count: 1 }]],
+  [[{ type: 'shielder', count: 3 }]],
+  [[{ type: 'phaseShifter', count: 4 }]],
+  [[{ type: 'elite', count: 2 }, { type: 'phaseShifter', count: 2 }], [{ type: 'shielder', count: 2 }]],
+  [[{ type: 'normal', count: 4 }], [{ type: 'shielder', count: 2 }, { type: 'phaseShifter', count: 2 }]],
+  [[{ type: 'elite', count: 3 }], [{ type: 'shielder', count: 2 }], [{ type: 'phaseShifter', count: 3 }]],
+  [[{ type: 'elite', count: 2 }, { type: 'shielder', count: 1 }], [{ type: 'phaseShifter', count: 3 }], [{ type: 'boss', count: 1 }]],
+]
+
+/** S → SSS worlds: introduces leech (heals from damage) + cursed (status on hit). */
+const SPEC_BRACKET_ELITE: BattleSpec[] = [
+  [[{ type: 'leech', count: 1 }]],
+  [[{ type: 'cursed', count: 1 }]],
+  [[{ type: 'leech', count: 1 }, { type: 'normal', count: 2 }]],
+  [[{ type: 'cursed', count: 2 }]],
+  [[{ type: 'phaseShifter', count: 2 }, { type: 'leech', count: 1 }]],
+  [[{ type: 'shielder', count: 1 }, { type: 'cursed', count: 1 }]],
+  [[{ type: 'leech', count: 2 }], [{ type: 'cursed', count: 2 }]],
+  [[{ type: 'elite', count: 2 }], [{ type: 'leech', count: 2 }]],
+  [[{ type: 'cursed', count: 3 }]],
+  [[{ type: 'shielder', count: 2 }, { type: 'leech', count: 1 }], [{ type: 'cursed', count: 2 }]],
+  [[{ type: 'phaseShifter', count: 2 }, { type: 'cursed', count: 1 }], [{ type: 'elite', count: 2 }]],
+  [[{ type: 'leech', count: 3 }], [{ type: 'shielder', count: 2 }]],
+  [[{ type: 'cursed', count: 2 }, { type: 'phaseShifter', count: 2 }], [{ type: 'leech', count: 2 }]],
+  [[{ type: 'shielder', count: 3 }], [{ type: 'leech', count: 2 }, { type: 'cursed', count: 1 }]],
+  [[{ type: 'elite', count: 3 }, { type: 'cursed', count: 1 }]],
+  [[{ type: 'cursed', count: 4 }]],
+  [[{ type: 'leech', count: 2 }, { type: 'cursed', count: 2 }], [{ type: 'phaseShifter', count: 3 }]],
+  [[{ type: 'shielder', count: 2 }, { type: 'leech', count: 2 }], [{ type: 'cursed', count: 2 }, { type: 'phaseShifter', count: 1 }]],
+  [[{ type: 'elite', count: 2 }, { type: 'leech', count: 2 }], [{ type: 'cursed', count: 3 }], [{ type: 'shielder', count: 3 }]],
+  [[{ type: 'leech', count: 3 }, { type: 'cursed', count: 2 }], [{ type: 'shielder', count: 2 }, { type: 'phaseShifter', count: 2 }], [{ type: 'boss', count: 1 }]],
+]
+
+/** Z → ZZZ worlds: introduces bomber (explodes on death) + reflector (returns damage). */
+const SPEC_BRACKET_APEX: BattleSpec[] = [
+  [[{ type: 'bomber', count: 1 }]],
+  [[{ type: 'reflector', count: 1 }]],
+  [[{ type: 'bomber', count: 2 }]],
+  [[{ type: 'reflector', count: 1 }, { type: 'cursed', count: 1 }]],
+  [[{ type: 'bomber', count: 1 }, { type: 'leech', count: 1 }]],
+  [[{ type: 'reflector', count: 2 }, { type: 'shielder', count: 1 }]],
+  [[{ type: 'bomber', count: 2 }, { type: 'phaseShifter', count: 2 }]],
+  [[{ type: 'reflector', count: 2 }], [{ type: 'cursed', count: 2 }]],
+  [[{ type: 'bomber', count: 3 }], [{ type: 'leech', count: 2 }]],
+  [[{ type: 'reflector', count: 2 }, { type: 'bomber', count: 1 }], [{ type: 'shielder', count: 2 }]],
+  [[{ type: 'bomber', count: 2 }, { type: 'reflector', count: 1 }], [{ type: 'cursed', count: 2 }, { type: 'phaseShifter', count: 2 }]],
+  [[{ type: 'leech', count: 3 }, { type: 'reflector', count: 1 }], [{ type: 'bomber', count: 2 }]],
+  [[{ type: 'reflector', count: 3 }], [{ type: 'bomber', count: 3 }]],
+  [[{ type: 'shielder', count: 2 }, { type: 'reflector', count: 2 }], [{ type: 'bomber', count: 2 }, { type: 'cursed', count: 1 }]],
+  [[{ type: 'bomber', count: 4 }]],
+  [[{ type: 'reflector', count: 3 }, { type: 'leech', count: 2 }]],
+  [[{ type: 'elite', count: 3 }, { type: 'reflector', count: 1 }], [{ type: 'bomber', count: 3 }]],
+  [[{ type: 'shielder', count: 3 }, { type: 'cursed', count: 2 }], [{ type: 'reflector', count: 3 }]],
+  [[{ type: 'bomber', count: 3 }, { type: 'reflector', count: 2 }], [{ type: 'cursed', count: 3 }], [{ type: 'leech', count: 3 }]],
+  [[{ type: 'reflector', count: 3 }, { type: 'shielder', count: 2 }], [{ type: 'bomber', count: 4 }], [{ type: 'boss', count: 1 }]],
+]
+
+/** Cosmic → Infinite worlds: introduces cloner (multiplies on death) + berserker.
+ *  Maximum chaos — every existing type can show up alongside cloners and berserkers. */
+const SPEC_BRACKET_COSMIC: BattleSpec[] = [
+  [[{ type: 'cloner', count: 1 }]],
+  [[{ type: 'berserker', count: 2 }]],
+  [[{ type: 'cloner', count: 1 }, { type: 'bomber', count: 1 }]],
+  [[{ type: 'berserker', count: 2 }, { type: 'leech', count: 1 }]],
+  [[{ type: 'cloner', count: 2 }]],
+  [[{ type: 'berserker', count: 3 }, { type: 'reflector', count: 1 }]],
+  [[{ type: 'cloner', count: 1 }, { type: 'cursed', count: 2 }, { type: 'bomber', count: 1 }]],
+  [[{ type: 'berserker', count: 2 }, { type: 'shielder', count: 2 }], [{ type: 'cloner', count: 1 }]],
+  [[{ type: 'cloner', count: 2 }, { type: 'bomber', count: 2 }]],
+  [[{ type: 'berserker', count: 3 }], [{ type: 'cloner', count: 1 }, { type: 'reflector', count: 2 }]],
+  [[{ type: 'cloner', count: 2 }, { type: 'leech', count: 2 }], [{ type: 'berserker', count: 3 }]],
+  [[{ type: 'bomber', count: 3 }, { type: 'cloner', count: 1 }], [{ type: 'berserker', count: 2 }, { type: 'shielder', count: 2 }]],
+  [[{ type: 'cloner', count: 3 }]],
+  [[{ type: 'berserker', count: 4 }, { type: 'reflector', count: 2 }]],
+  [[{ type: 'cloner', count: 2 }, { type: 'cursed', count: 3 }, { type: 'leech', count: 2 }]],
+  [[{ type: 'berserker', count: 3 }, { type: 'shielder', count: 2 }], [{ type: 'cloner', count: 2 }, { type: 'bomber', count: 2 }]],
+  [[{ type: 'cloner', count: 2 }, { type: 'reflector', count: 2 }], [{ type: 'berserker', count: 3 }, { type: 'cursed', count: 2 }]],
+  [[{ type: 'elite', count: 3 }, { type: 'cloner', count: 1 }], [{ type: 'berserker', count: 3 }, { type: 'leech', count: 2 }], [{ type: 'shielder', count: 3 }]],
+  [[{ type: 'cloner', count: 3 }, { type: 'bomber', count: 3 }], [{ type: 'berserker', count: 4 }, { type: 'reflector', count: 2 }], [{ type: 'cursed', count: 4 }]],
+  [[{ type: 'cloner', count: 3 }, { type: 'berserker', count: 3 }], [{ type: 'bomber', count: 4 }, { type: 'reflector', count: 3 }, { type: 'leech', count: 2 }], [{ type: 'boss', count: 1 }]],
+]
+
+/** Picks the BattleSpec[] used for a given world. Higher world brackets
+ *  introduce more mechanically dangerous enemy types. */
+function _specBracketFor(worldGrade: WorldGrade): BattleSpec[] {
+  const idx = WORLD_GRADES.indexOf(worldGrade)
+  if (idx <= 2)  return SPEC_BRACKET_INTRO    // F E D
+  if (idx <= 5)  return SPEC_BRACKET_RISING   // C B A
+  if (idx <= 8)  return SPEC_BRACKET_ELITE    // S SS SSS
+  if (idx <= 11) return SPEC_BRACKET_APEX     // Z ZZ ZZZ
+  return SPEC_BRACKET_COSMIC                  // Cosmic / Immortal / Celestial / Godly / Primordial / Absolute / Transcendent / Infinite
+}
+
+/** Back-compat export — points at the intro bracket so anything still
+ *  importing BATTLE_SPECS gets a sensible default. Prefer
+ *  getBattleWaves() / specForWorldAndBattle() in new code. */
+export const BATTLE_SPECS: BattleSpec[] = SPEC_BRACKET_INTRO
 
 /** Player level thresholds — which world must be beaten to reach each level. */
 export const PLAYER_LEVEL_WORLDS: Record<number, WorldGrade> = {
@@ -170,11 +288,22 @@ export function rollCrystalGrade(worldGrade: WorldGrade): CrystalDropGrade {
   return CRYSTAL_GRADE_ORDER[minIdx + Math.floor(Math.random() * (maxIdx - minIdx + 1))]
 }
 
-/** Maps enemy type to the stat crystal rarity they drop. */
+/** Maps enemy type to the stat crystal rarity they drop. Mid-tier
+ *  mechanical variants (shielder, leech, cursed, phaseShifter, reflector,
+ *  berserker) drop elite crystals. The two on-death threat types (bomber,
+ *  cloner) drop legendary crystals — they're the hardest to handle. */
 export const TYPE_TO_STAT_RARITY: Record<EnemyType, StatCrystalRarity> = {
-  normal: 'common',
-  elite:  'elite',
-  boss:   'legendary',
+  normal:       'common',
+  elite:        'elite',
+  boss:         'legendary',
+  phaseShifter: 'elite',
+  shielder:     'elite',
+  leech:        'elite',
+  cursed:       'elite',
+  bomber:       'legendary',
+  cloner:       'legendary',
+  reflector:    'elite',
+  berserker:    'elite',
 }
 
 /** Chance drops per kill (roll independently). */
@@ -224,28 +353,61 @@ export interface Enemy {
  * All enemy types use the world grade. Difficulty difference comes from HP/damage
  * multipliers in buildEnemyChar (normal=1×, elite=1.5×, boss=2.5×), not grade offsets.
  */
+/** Display-name prefixes per enemy type. Used by getBattleWaves when
+ *  generating the per-enemy name shown on battle cards. */
+const _TYPE_NAME: Record<EnemyType, string> = {
+  normal:       'Warrior',
+  elite:        'Champion',
+  boss:         'Overlord',
+  phaseShifter: 'Phaseling',
+  shielder:     'Bulwark',
+  leech:        'Bloodleech',
+  cursed:       'Hexbringer',
+  bomber:       'Detonator',
+  cloner:       'Cloner',
+  reflector:    'Mirrorblade',
+  berserker:    'Berserker',
+}
+
 export function getBattleWaves(worldGrade: WorldGrade, battleNumber: number): Enemy[][] {
   const idx = worldIndex(worldGrade)
-  const spec = BATTLE_SPECS[Math.min(battleNumber - 1, BATTLES_PER_WORLD - 1)]
+  const spec = _specBracketFor(worldGrade)[Math.min(battleNumber - 1, BATTLES_PER_WORLD - 1)]
   return spec.map(wave =>
     wave.flatMap(({ type, count }) =>
       Array.from({ length: count }, (_, i) => {
         const gradeIdx = idx
         const grade = WORLD_GRADES[gradeIdx]
         const suffix = count > 1 ? ` ${i + 1}` : ''
-        const name = type === 'boss' ? `${worldGrade} Overlord`
-          : type === 'elite' ? `${grade} Champion${suffix}`
-          : `${grade} Warrior${suffix}`
+        const name = type === 'boss'
+          ? `${worldGrade} Overlord`
+          : `${grade} ${_TYPE_NAME[type]}${suffix}`
         return { grade, type, name } as Enemy
       })
     )
   )
 }
 
-/** Rolls actual gem/XP drops for an enemy (includes elite/boss multiplier). */
+/** Drop multipliers per enemy type. Mid-tier mechanical variants give
+ *  the elite multiplier; bomber + cloner give the boss multiplier
+ *  because their on-death effects make them genuinely dangerous. */
+const _TYPE_DROP_MULT: Record<EnemyType, number> = {
+  normal:       1,
+  elite:        ELITE_DROP_MULT,
+  boss:         BOSS_DROP_MULT,
+  phaseShifter: ELITE_DROP_MULT,
+  shielder:     ELITE_DROP_MULT,
+  leech:        ELITE_DROP_MULT,
+  cursed:       ELITE_DROP_MULT,
+  reflector:    ELITE_DROP_MULT,
+  berserker:    ELITE_DROP_MULT,
+  bomber:       BOSS_DROP_MULT,
+  cloner:       BOSS_DROP_MULT,
+}
+
+/** Rolls actual gem/XP drops for an enemy (includes per-type multiplier). */
 export function rollDrops(enemy: Enemy): { gems: number; xp: number; chanceDrops: ChanceDrop[] } {
   const table = GRADE_DROPS[enemy.grade]
-  const mult = enemy.type === 'boss' ? BOSS_DROP_MULT : enemy.type === 'elite' ? ELITE_DROP_MULT : 1
+  const mult = _TYPE_DROP_MULT[enemy.type] ?? 1
   const roll = (r: DropRange) => Math.floor((r.min + Math.random() * (r.max - r.min + 1)) * mult)
 
   const sr = TYPE_TO_STAT_RARITY[enemy.type]

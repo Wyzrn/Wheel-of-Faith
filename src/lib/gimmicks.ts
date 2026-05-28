@@ -115,6 +115,50 @@ export const GIMMICKS: Record<string, Gimmick> = {
     description: '+30% damage against rival races.',
     params: { dmgMult: 1.30 },
   },
+
+  // ── Enemy-only on-death hooks (Story Mode unique enemy types) ───────
+  // These fire from teamController's resolveTurn when an enemy with the
+  // gimmick drops to 0 HP. They make the threat-tier enemy types feel
+  // genuinely different — not just stat-padded normal mobs.
+
+  /** On death, the bomber takes its CURRENT HP (pre-killing-blow if it
+   *  survived the hit) worth of damage to a random living party member. */
+  bomberDeath: {
+    id: 'bomberDeath',
+    name: 'Detonation',
+    icon: 'explosion',
+    description: 'Explodes on death — its remaining HP becomes damage to a random ally of the player.',
+    params: { dmgMult: 1.0 },
+  },
+
+  /** On death, the cloner spawns 3 mini-clones with 10% of its original
+   *  HP and damage. Clones spawn on the same side, attached to the
+   *  controller team mid-round so the next round picks them up. */
+  clonerDeath: {
+    id: 'clonerDeath',
+    name: 'Cellular Division',
+    icon: 'biotech',
+    description: 'On death, splits into 3 weakened clones (each at 10% original stats).',
+    params: { count: 3, fraction: 0.10 },
+  },
+
+  /** Reflects 35% of damage taken back to the attacker. */
+  reflectShield: {
+    id: 'reflectShield',
+    name: 'Reflective Shell',
+    icon: 'reply',
+    description: 'Reflects 35% of damage taken back to the attacker.',
+    params: { fraction: 0.35 },
+  },
+
+  /** Applies a random status (burn/poison/wither/bleed) on every hit
+   *  the enemy lands. Replaces the move's effectTag if it had one. */
+  curseStrike: {
+    id: 'curseStrike',
+    name: 'Cursed Touch',
+    icon: 'auto_awesome',
+    description: 'Every hit inflicts a random status (burn / poison / bleed / wither).',
+  },
 }
 
 // ── Race → gimmick IDs ───────────────────────────────────────────────────

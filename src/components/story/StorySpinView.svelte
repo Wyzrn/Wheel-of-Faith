@@ -670,6 +670,12 @@
         }
       }
       results.push(spinResult)
+      // Point the reveal modal at THIS statBonus result. Without this,
+      // primarySpinResultIndex would still point at whatever earlier
+      // spin set it (often the title or backstory result that triggered
+      // the splice), so the reveal would render that earlier card's
+      // label instead of the bonus shift the player just rolled.
+      primarySpinResultIndex = results.length - 1
       const isBonus = currentDef.category === 'statBonus'
       const shiftSign = isBonus ? '+' : ''
       const resultingInfo = resultingLabel && resultingTier ? ` → ${resultingTier} · ${resultingLabel}` : ''
