@@ -1395,28 +1395,53 @@
   {/if}
 </div>
 
-<!-- ── Wildcard flash overlay — phase 1: full-screen WILDCARD flash ───────────── -->
+<!-- ── Wildcard flash overlay — cinematic layered animation ─────────────────── -->
 {#if wildcardPhase === 'flashing'}
-  <div class="fixed inset-0 z-50 flex items-center justify-center"
-    style="background: rgba(0,0,0,0.85); animation: wildcardFlashBg 0.25s ease-in-out infinite alternate;">
-    <p style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 6rem); font-weight: 900; color: #f0c040; letter-spacing: 0.15em; text-shadow: 0 0 40px rgba(240,192,64,0.9), 0 0 80px rgba(240,192,64,0.5); animation: wildcardFlashText 0.2s ease-in-out infinite alternate;">⚡ WILDCARD ⚡</p>
+  <div class="fixed inset-0 z-50 flex items-center justify-center overflow-hidden wc-overlay" aria-hidden="true">
+    <svg class="absolute inset-0 m-auto wc-vortex-cw" style="width: min(95vw, 720px); height: min(95vw, 720px); opacity: 0.45;" viewBox="0 0 200 200" fill="none">
+      <circle cx="100" cy="100" r="92" stroke="#f0c040" stroke-width="1.2" stroke-dasharray="6 8" opacity="0.7"/>
+      <circle cx="100" cy="100" r="80" stroke="#f0c040" stroke-width="0.8" stroke-dasharray="2 6" opacity="0.5"/>
+      <polygon points="100,16 142,72 178,98 142,128 100,184 58,128 22,98 58,72" stroke="#f0c040" stroke-width="1.3" opacity="0.55"/>
+    </svg>
+    <svg class="absolute inset-0 m-auto wc-vortex-ccw" style="width: min(70vw, 540px); height: min(70vw, 540px); opacity: 0.55;" viewBox="0 0 200 200" fill="none">
+      <circle cx="100" cy="100" r="84" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="3 5"/>
+      <polygon points="100,30 60,80 80,140 120,140 140,80" stroke="#a78bfa" stroke-width="1.5" opacity="0.7"/>
+    </svg>
+    {#each [0, 45, 90, 135, 180, 225, 270, 315] as deg, i}
+      <div class="absolute wc-bolt"
+           style="--rot:{deg}deg; left: 50%; top: 50%; width: 3px; height: min(40vw, 320px);
+                  margin-left: -1.5px; background: linear-gradient(to bottom, #fff 0%, #f0c040 40%, transparent 100%);
+                  box-shadow: 0 0 18px #f0c040; animation-delay: {i * 0.05}s;"></div>
+    {/each}
+    <div class="absolute wc-ring" style="left: 50%; top: 50%; width: min(60vw, 460px); height: min(60vw, 460px); border-radius: 50%; border: 4px solid #fde047; box-shadow: 0 0 40px #fde047;"></div>
+    <div class="absolute wc-ring" style="left: 50%; top: 50%; width: min(60vw, 460px); height: min(60vw, 460px); border-radius: 50%; border: 4px solid #a78bfa; animation-delay: 0.25s !important; box-shadow: 0 0 40px #a78bfa;"></div>
+    <div class="absolute wc-ring" style="left: 50%; top: 50%; width: min(60vw, 460px); height: min(60vw, 460px); border-radius: 50%; border: 4px solid #ec4899; animation-delay: 0.5s !important; box-shadow: 0 0 40px #ec4899;"></div>
+    <div class="absolute wc-pulse" style="width: min(20vw, 160px); height: min(20vw, 160px); border-radius: 50%; background: radial-gradient(circle, #fff 0%, #fde047 40%, transparent 70%); filter: blur(8px);"></div>
+    <p class="relative wc-text"
+       style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 6.5rem); font-weight: 900; color: #fffaf0; text-shadow: 0 0 30px rgba(240,192,64,0.9);">
+      ⚡ WILDCARD ⚡
+    </p>
   </div>
 {/if}
 
-<!-- ── Wildcard reveal overlay — phase 2: show outcome ────────────────────────── -->
+<!-- ── Wildcard reveal overlay — dramatic outcome reveal ───────────────────── -->
 {#if wildcardPhase === 'reveal'}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center px-4"
-    style="background: rgba(7,7,13,0.92); backdrop-filter: blur(14px);"
-  >
+  <div class="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-hidden"
+       style="background: radial-gradient(circle at 50% 50%, rgba(40,12,80,0.85) 0%, rgba(7,7,13,0.95) 70%); backdrop-filter: blur(14px);">
+    <svg class="absolute inset-0 m-auto wc-vortex-cw" style="width: min(80vw, 600px); height: min(80vw, 600px); opacity: 0.18; pointer-events: none;" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+      <circle cx="100" cy="100" r="92" stroke="#f0c040" stroke-width="1" stroke-dasharray="4 6"/>
+      <polygon points="100,16 142,72 178,98 142,128 100,184 58,128 22,98 58,72" stroke="#f0c040" stroke-width="1"/>
+    </svg>
     <div
-      class="relative flex flex-col items-center gap-5 rounded-2xl px-8 py-8 max-w-sm w-full text-center"
-      style="border: 1px solid #f59e0b66; box-shadow: 0 0 100px rgba(0,0,0,0.98), 0 0 60px rgba(245,158,11,0.22), 0 0 20px rgba(245,158,11,0.08), inset 0 1px 0 rgba(255,255,255,0.04); animation: resultReveal 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;"
+      class="relative flex flex-col items-center gap-5 rounded-2xl px-8 py-8 max-w-sm w-full text-center wc-reveal-in"
+      style="background: linear-gradient(135deg, #1f1830 0%, #12111e 70%);
+             border: 2px solid rgba(240,192,64,0.55);
+             box-shadow: 0 0 100px rgba(240,192,64,0.3), inset 0 1px 0 rgba(255,255,255,0.06);"
     >
       <div class="text-5xl">{wildcardOutcomeType === 'item_bonus' ? '🎁' : '⚡'}</div>
       <div>
         <p class="text-xs tracking-[0.3em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #f0c040;">⚡ Wildcard Activated</p>
-        <p class="font-bold text-xl tracking-widest uppercase" style="font-family: var(--font-cinzel,'Cinzel',serif); color: #ffdf96; letter-spacing: 0.12em;">{wildcardOutcomeLabel}</p>
+        <p class="font-bold text-xl tracking-widest uppercase" style="font-family: var(--font-cinzel,'Cinzel',serif); color: #ffdf96; letter-spacing: 0.12em; text-shadow: 0 0 20px rgba(240,192,64,0.5);">{wildcardOutcomeLabel}</p>
       </div>
       <p class="text-sm leading-relaxed" style="font-family: 'JetBrains Mono', monospace; color: #9a907b; max-width: 240px;">{wildcardOutcomeDesc}</p>
       <button

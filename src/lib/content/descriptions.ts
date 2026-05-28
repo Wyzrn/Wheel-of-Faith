@@ -10,6 +10,8 @@
 // and a God-tier item reads reality-bending without us writing a unique
 // string for every one of the 1,200+ entries.
 
+import { racesByLabel as _racesByLabel } from './races'
+
 export type AbilityType = 'Attack' | 'Heal' | 'Defense' | 'Dodge' | 'Nullification' | 'Passive' | 'Buff' | 'Debuff' | 'Summon'
 
 const ABILITY_TYPE_COLOR: Record<AbilityType, string> = {
@@ -341,8 +343,108 @@ export function generateAbilityDescription(label: string, element?: string, grad
   }
 }
 
+// Friendly stat names — used for "favors X / Y" copy on race result labels.
+const _RACE_STAT_NAMES: Record<string, string> = {
+  strength: 'Strength', speed: 'Speed', agility: 'Agility',
+  durability: 'Durability', iq: 'IQ', charisma: 'Charisma',
+  fightingSkill: 'Fighting Skill', powerMastery: 'Power Mastery',
+  weaponMastery: 'Weapon Mastery', armorStrength: 'Armor Strength',
+  potential: 'Potential', energyLevel: 'Energy Level',
+}
+
+// SpinIdentity → one-line "what this means" copy. Keeps the race
+// description honest about the mechanical hooks the identity unlocks.
+const _RACE_IDENTITY_NOTES: Record<string, string> = {
+  FateManipulator:  'fate-manipulator (better wildcard odds)',
+  Evolution:        'evolution (unlocks transformation tiers)',
+  Corruption:       'corruption (segments can re-roll mid-spin)',
+  Combo:            'combo (synergises with matching archetypes)',
+  Scaling:          'scaling (post-spin stat growth multipliers)',
+  RuleBreaker:      'rule-breaker (can bypass standard caps)',
+  Summoner:         'summoner (extra ally units in battle)',
+  HighVariance:     'high-variance (extreme highs and lows)',
+}
+
+// Race-data-aware description generator. Pulls the live Race entry from
+// the registry so the line reflects what's actually wired up (favored
+// wheels, stat shifts, ability count, weaknesses, limit-break odds,
+// secret-event bias, spin identities). Falls back to a generic line if
+// the label isn't a known race (defensive — should never hit in prod).
 export function generateRaceDescription(label: string): string {
-  return `${label} — a distinct ancestry with characteristic stat tendencies, racial techniques, and signature weaknesses.`
+  const race = _racesByLabel.get(label)
+  if (!race) {
+    return `${label} — a distinct ancestry with characteristic stat tendencies, racial techniques, and signature weaknesses.`
+  }
+  const r = race as {
+    statModifiers?: Record<string, number>
+    minStatTier?: string
+    extraPowerSpins?: number
+    extraWeaponSpins?: number
+    abilitySpinCount?: number
+    weaknessCount?: number
+    limitBreakOdds?: number
+    spinIdentity?: string[]
+    injectedWheels?: { displayName: string }[]
+    secretEventBias?: number
+  }
+  const parts: string[] = []
+
+  // Lead sentence — the existing flavor line stays.
+  parts.push(`${label} — a distinct ancestry with characteristic stat tendencies and signature weaknesses.`)
+
+  // Favoured stats (statModifiers > 1) and dragged-down stats (< 1)
+  const favored: string[] = []
+  const penalised: string[] = []
+  for (const [stat, mult] of Object.entries(r.statModifiers ?? {})) {
+    const n = _RACE_STAT_NAMES[stat] ?? stat
+    if (mult > 1.0) favored.push(n)
+    else if (mult < 1.0) penalised.push(n)
+  }
+  if (favored.length || penalised.length) {
+    const f = favored.length ? `favors ${favored.join(' / ')}` : ''
+    const p = penalised.length ? `pushes ${penalised.join(' / ')} lower` : ''
+    parts.push([f, p].filter(Boolean).join(' · '))
+  }
+
+  // Tier floor (minStatTier) — meaningful because it raises the bottom
+  // of every stat roll regardless of luck.
+  if (r.minStatTier) {
+    parts.push(`Minimum stat tier: ${r.minStatTier} (no roll drops below this).`)
+  }
+
+  // Bonus spin counts — extra powers, weapons, abilities, weaknesses.
+  const bonusBits: string[] = []
+  if ((r.abilitySpinCount ?? 0) > 1) bonusBits.push(`${r.abilitySpinCount}× racial abilities`)
+  if (r.extraPowerSpins)  bonusBits.push(`+${r.extraPowerSpins} power spin${r.extraPowerSpins > 1 ? 's' : ''}`)
+  if (r.extraWeaponSpins) bonusBits.push(`+${r.extraWeaponSpins} weapon spin${r.extraWeaponSpins > 1 ? 's' : ''}`)
+  if (r.weaknessCount)    bonusBits.push(`${r.weaknessCount} weakness slot${r.weaknessCount > 1 ? 's' : ''}`)
+  if (bonusBits.length) parts.push(`Spin bonuses: ${bonusBits.join(' · ')}.`)
+
+  // Race-injected wheels (the new "every race feels different" hook)
+  if (r.injectedWheels && r.injectedWheels.length > 0) {
+    const names = r.injectedWheels.map(w => w.displayName).join(', ')
+    parts.push(`Injects ${r.injectedWheels.length} extra spin wheel${r.injectedWheels.length > 1 ? 's' : ''}: ${names}.`)
+  }
+
+  // Limit Break odds (the rare jackpot-on-a-jackpot)
+  if (r.limitBreakOdds && r.limitBreakOdds > 0) {
+    parts.push(`Limit Break chance: 1 in ${r.limitBreakOdds} (raises every stat cap if it fires).`)
+  }
+
+  // Spin identities — the mechanical taxonomy
+  if (r.spinIdentity && r.spinIdentity.length > 0) {
+    const notes = r.spinIdentity.map(id => _RACE_IDENTITY_NOTES[id] ?? id).join('; ')
+    parts.push(`Identity: ${notes}.`)
+  }
+
+  // Secret event bias — only mention when it's notably above/below 1
+  if (r.secretEventBias && r.secretEventBias !== 1) {
+    if (r.secretEventBias > 1.4) parts.push('Secret events are MUCH more likely with this race.')
+    else if (r.secretEventBias > 1.0) parts.push('Secret events fire slightly more often.')
+    else if (r.secretEventBias < 0.7) parts.push('Secret events are rare for this lineage.')
+  }
+
+  return parts.join(' ')
 }
 
 export function generateArchetypeDescription(label: string): string {
