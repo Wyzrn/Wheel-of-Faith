@@ -668,16 +668,6 @@
                 <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: {epColor}88; transition: transform 0.15s; transform: rotate({epExpanded ? 180 : 0}deg);">expand_more</span>
               </span>
             </button>
-            {#if onRemoveItem}
-              <button
-                onclick={(e) => { e.stopPropagation(); onRemoveItem!(ep.id, 'power') }}
-                class="mt-1 ml-2 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1"
-                title="Permanently destroy this power and refund gems"
-                style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.32); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
-                <span class="material-symbols-outlined" style="font-size: 11px;">delete</span>
-                Remove
-              </button>
-            {/if}
             {#if epExpanded}
               <div class="mt-1 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {epColor}0d; border: 1px solid {epColor}22; border-left: 2px solid {epColor}66;">
                 <div class="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -689,6 +679,16 @@
                 </div>
                 <p style="color: #b8b0a0; line-height: 1.5;">{generatePowerDescription(ep.name, epInfo?.element, ep.grade as import('$lib/content/types').ItemGrade)}</p>
                 <p class="mt-1" style="color: #6b6358; font-style: italic;">{ABILITY_BATTLE_EFFECT[epType]}</p>
+                {#if onRemoveItem}
+                  <button
+                    onclick={(e) => { e.stopPropagation(); onRemoveItem!(ep.id, 'power') }}
+                    class="mt-2 w-full text-[11px] py-1.5 rounded-lg flex items-center justify-center gap-1.5"
+                    title="Permanently destroy this power and refund gems"
+                    style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                    <span class="material-symbols-outlined" style="font-size: 13px;">delete</span>
+                    Remove This Power
+                  </button>
+                {/if}
               </div>
             {/if}
           </div>
@@ -785,16 +785,6 @@
                 <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #4e4635; transform: rotate({ewExpanded ? 180 : 0}deg); transition: transform 0.15s;">expand_more</span>
               </div>
             </button>
-            {#if onRemoveItem}
-              <button
-                onclick={(e) => { e.stopPropagation(); onRemoveItem!(ew.id, 'weapon') }}
-                class="mt-1 ml-2 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1"
-                title="Permanently destroy this weapon and refund gems"
-                style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.32); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
-                <span class="material-symbols-outlined" style="font-size: 11px;">delete</span>
-                Remove
-              </button>
-            {/if}
             {#if ewExpanded}
               <div class="mt-1 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {ewBorderColor}0a; border: 1px solid {ewBorderColor}22; border-left: 2px solid {ewBorderColor}66;">
                 <div class="flex items-center gap-2 mb-1.5">
@@ -805,6 +795,16 @@
                   <span class="ml-auto text-[10px]" style="color: {ewGradeInfo.color};">Grade {ew.grade} · +{ewGradeInfo.battleBonus} Physical DMG</span>
                 </div>
                 <p style="color: #b8b0a0; line-height: 1.5;">{generateWeaponDescription(ew.name, ewElement, ew.grade as import('$lib/content/types').ItemGrade)}</p>
+                {#if onRemoveItem}
+                  <button
+                    onclick={(e) => { e.stopPropagation(); onRemoveItem!(ew.id, 'weapon') }}
+                    class="mt-2 w-full text-[11px] py-1.5 rounded-lg flex items-center justify-center gap-1.5"
+                    title="Permanently destroy this weapon and refund gems"
+                    style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                    <span class="material-symbols-outlined" style="font-size: 13px;">delete</span>
+                    Remove This Weapon
+                  </button>
+                {/if}
               </div>
             {/if}
           </div>
@@ -895,16 +895,6 @@
                 <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #4e4635; transform: rotate({eaExpanded ? 180 : 0}deg); transition: transform 0.15s;">expand_more</span>
               </div>
             </button>
-            {#if onRemoveItem}
-              <button
-                onclick={(e) => { e.stopPropagation(); onRemoveItem!(ea.id, 'armor') }}
-                class="mt-1 ml-2 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1"
-                title="Permanently destroy this armor and refund gems"
-                style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.32); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
-                <span class="material-symbols-outlined" style="font-size: 11px;">delete</span>
-                Remove
-              </button>
-            {/if}
             {#if eaExpanded}
               <div class="mt-1 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {eaBorderColor}0a; border: 1px solid {eaBorderColor}22; border-left: 2px solid {eaBorderColor}66;">
                 <div class="flex items-center gap-2 mb-1.5">
@@ -915,6 +905,16 @@
                   <span class="ml-auto text-[10px]" style="color: {eaGradeInfo.color};">Grade {ea.grade} · Reduces Incoming Damage</span>
                 </div>
                 <p style="color: #b8b0a0; line-height: 1.5;">{generateArmorDescription(ea.name, eaElement, ea.grade as import('$lib/content/types').ItemGrade)}</p>
+                {#if onRemoveItem}
+                  <button
+                    onclick={(e) => { e.stopPropagation(); onRemoveItem!(ea.id, 'armor') }}
+                    class="mt-2 w-full text-[11px] py-1.5 rounded-lg flex items-center justify-center gap-1.5"
+                    title="Permanently destroy this armor and refund gems"
+                    style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                    <span class="material-symbols-outlined" style="font-size: 13px;">delete</span>
+                    Remove This Armor
+                  </button>
+                {/if}
               </div>
             {/if}
           </div>

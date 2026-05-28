@@ -1948,6 +1948,13 @@
         currentSpinIndex: currentSpinIndex + 1,
         pendingStatBonuses: $state.snapshot(pendingStatBonuses),
       } as SessionState)
+      // Force an IMMEDIATE write — saveSession is debounced 200ms, which
+      // opened a refresh-exploit window: land on a bad result, hard-reload
+      // within 200ms before the debounced write fired, and the stale
+      // localStorage still pointed at the just-spun index → free re-roll.
+      // Flushing synchronously here commits the advance the instant a spin
+      // lands, so a refresh can never rewind to re-spin the same wheel.
+      flushSession()
     } catch (e) {
       console.error('Failed to save session to localStorage:', e)
     }
