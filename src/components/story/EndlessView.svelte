@@ -558,11 +558,23 @@
     // Team HP persists between endless waves — no full restore
     // On very first wave build t1Chars from roster, otherwise reuse existing with current HP
     if (phase === 'intro') {
-      t1Chars  = teamMembers.map(m => buildBattleCharacter(m.spins, m.name, {
-        weapons: m.equippedWeapons ?? [],
-        armors:  m.equippedArmors  ?? [],
-        powers:  m.equippedPowers  ?? [],
-      }))
+      t1Chars  = teamMembers.map(m => {
+        // Apply the same spin-class + character-level multipliers that
+        // Story Mode applies (BattleView.svelte). Endless was previously
+        // omitting the 4th statMultiplier argument, so Hero / Legend /
+        // Paragon spins all got built at their flat 1× stats — making
+        // characters feel ~50% weaker than they should in Endless.
+        const spinMult  = m.spinClass === 'paragon' ? 8
+                        : m.spinClass === 'legend'  ? 4
+                        : m.spinClass === 'hero'    ? 2
+                        : 1
+        const levelMult = 1 + Math.max(0, (m.level ?? 1) - 1) * 0.01
+        return buildBattleCharacter(m.spins, m.name, {
+          weapons: m.equippedWeapons ?? [],
+          armors:  m.equippedArmors  ?? [],
+          powers:  m.equippedPowers  ?? [],
+        }, spinMult * levelMult)
+      })
       t1DispHp = t1Chars.map(c => c.hp)
       accDrops = { gems: 0, xp: 0, chanceDrops: [] }
     }
