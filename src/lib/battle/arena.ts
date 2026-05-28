@@ -154,10 +154,20 @@ export interface DamageHit { targetName: string; value: number; kind: DamageKind
 // returns the implied damage / heal / miss / shield event (if any). Caller
 // converts to a DamageEvent (adds id & screen coords).
 export function damageHitFromLine(line: string, allNames: string[]): DamageHit | null {
-  const dmgMatch = line.match(/for\s+([\d.,]+[KMB]?)\s+damage!?/i)
+  // Matches "<number> damage" — the canonical damage log line ends with
+  // "<formatHp(damage)> damage!" (no "for" preposition). The optional
+  // "for " prefix kept the old log format compatible if it ever returns.
+  const dmgMatch = line.match(/(?:for\s+)?([\d.,]+[KMB]?)\s+(?:bonus\s+|burn\s+|poison\s+)?damage!?/i)
   if (dmgMatch) {
-    const preBoundary = line.lastIndexOf(' for ')
-    const head = preBoundary > 0 ? line.slice(0, preBoundary) : line
+    // Find the damage number's position, then look at the substring BEFORE
+    // it. The target is the most recent character name in that substring.
+    // (Attack lines read "<attacker> verb <move> <damage> damage!" — the
+    // target is implied by the FX context, not the line text, so we fall
+    // back to the LAST name appearing before the number which is usually
+    // the move name or attacker; callers can pass the explicit target
+    // via emitDamage() instead when ambiguous.)
+    const numIdx = line.indexOf(dmgMatch[1])
+    const head = numIdx > 0 ? line.slice(0, numIdx) : line
     let target: string | null = null
     let lastIdx = -1
     for (const n of allNames) {

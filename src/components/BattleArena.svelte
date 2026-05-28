@@ -387,6 +387,24 @@
     if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
   }
 
+  // Resolve the TRUE target name for a damage line. Direct attack lines
+  // read "<attacker> verb <move> <X> damage!" — the only name in the text
+  // is the attacker. The actual victim lives in fx.targetIdxs[0]. Status
+  // / DoT / heal lines DO carry the victim's name (e.g. "Alice takes 5K
+  // burn damage!"), so we prefer that when it disagrees with the attacker.
+  function resolveDamageTargetName(line: string, fx?: RoundFxEvent): string | null {
+    const hit = damageHitFromLine(line, allNames)
+    // Try fxEvent target first — most reliable for direct attacks.
+    if (fx) {
+      const enemySide = oppositeSide(fx.attackerSide)
+      const tgt = (fx.targetIdxs ?? [0])
+        .map(i => memberFromFxIndex(enemySide, i))
+        .filter((m): m is ArenaMember => !!m)[0]
+      if (tgt) return tgt.name
+    }
+    return hit?.targetName ?? null
+  }
+
   // Status-effect → FX mapping. Fires an in-place burst on the target
   // when the controller (or simulator) logs an "X is afflicted by Y" line
   // or one of the flavorful STATUS_APPLY_LINES variants.
@@ -544,6 +562,7 @@
                        ?? wrapperOrigin('center')
           showAnim('holy', color, 'center', grade, origin, 'heal')
           const hit = damageHitFromLine(head, allNames)
+          // Heal lines DO have the target name in text — use it directly.
           if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
           deferDamageEmit = true
         } else if (isInPlace) {
@@ -555,7 +574,8 @@
           showAnim(type, color, direction, grade, targetOrigin, fxAttackType)
           triggerShake(shakeStrengthFor(fxAttackType, type, grade))
           const hit = damageHitFromLine(head, allNames)
-          if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
+          const targetName = resolveDamageTargetName(head, fx) ?? hit?.targetName
+          if (hit && targetName) emitDamage(targetName, hit.value, hit.kind)
           deferDamageEmit = true
         } else if (isBeam && fx) {
           // Beam path — line from attacker anchor to target anchor.
@@ -563,6 +583,7 @@
           const targetOrigin = resolveTargetOrigin()
           if (startOrigin && targetOrigin) {
             const hit = damageHitFromLine(head, allNames)
+            const targetName = resolveDamageTargetName(head, fx) ?? hit?.targetName
             spawnBeam(
               startOrigin.x, startOrigin.y, targetOrigin.x, targetOrigin.y,
               color, grade,
@@ -575,7 +596,7 @@
                 // were firing both directions at once.
                 showAnim(type, color, 'center', grade, targetOrigin, fxAttackType)
                 triggerShake(shakeStrengthFor(fxAttackType, type, grade))
-                if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
+                if (hit && targetName) emitDamage(targetName, hit.value, hit.kind)
               },
               type,
             )
