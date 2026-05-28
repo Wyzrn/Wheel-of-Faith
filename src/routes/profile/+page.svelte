@@ -143,16 +143,30 @@
   let eliteRolls  = $derived(spinHistory.filter(e => ELITE_TIERS.has(e.overallTier)).length)
   let mythicRolls = $derived(spinHistory.filter(e => MYTHIC_TIERS.has(e.overallTier)).length)
 
+  // Canonical tier palette — mirrors gallery + characters page + app.css
+  // (--tier-*). Cosmic+ entries surface the gradient mid-stop here; chips
+  // and badges can fall back to var(--tier-*-grad) for the gradient look.
   const TIER_COLORS: Record<string, string> = {
-    'F-':'#555','F':'#666','F+':'#777','E-':'#6b7280','E':'#9ca3af','E+':'#d1d5db',
-    'D-':'#92400e','D':'#b45309','D+':'#d97706','C-':'#1d4ed8','C':'#2563eb','C+':'#3b82f6',
-    'B-':'#15803d','B':'#16a34a','B+':'#22c55e','A-':'#7c3aed','A':'#8b5cf6','A+':'#a78bfa',
-    'S-':'#b91c1c','S':'#dc2626','S+':'#ef4444','SS-':'#c2410c','SS':'#ea580c','SS+':'#f97316',
-    'SSS-':'#a16207','SSS':'#ca8a04','SSS+':'#eab308','Z-':'#0e7490','Z':'#0891b2','Z+':'#06b6d4',
-    'ZZ-':'#1d4ed8','ZZ':'#2563eb','ZZ+':'#60a5fa','ZZZ-':'#6d28d9','ZZZ':'#7c3aed','ZZZ+':'#a855f7',
-    'Celestial-':'#be185d','Celestial':'#db2777','Celestial+':'#ec4899',
-    'Godly-':'#c026d3','Godly':'#e879f9',
-    'Primordial':'#ffffff','Primordial+':'#ccffff','Absolute-':'#99ffff','Absolute':'#00ffff','Absolute+':'#00ddff',
+    'F-':'#2c2c2c','F':'#404040','F+':'#525252',
+    'E-':'#4b5563','E':'#64748b','E+':'#94a3b8',
+    'D-':'#14532d','D':'#166534','D+':'#22c55e',
+    'C-':'#047857','C':'#059669','C+':'#10b981',
+    'B-':'#115e59','B':'#0d9488','B+':'#14b8a6',
+    'A-':'#155e75','A':'#0e7490','A+':'#06b6d4',
+    'S-':'#0c4a6e','S':'#0369a1','S+':'#0ea5e9',
+    'SS-':'#1e3a8a','SS':'#2563eb','SS+':'#3b82f6',
+    'SSS-':'#4338ca','SSS':'#4f46e5','SSS+':'#6366f1',
+    'Z-':'#5b21b6','Z':'#7c3aed','Z+':'#8b5cf6',
+    'ZZ-':'#86198f','ZZ':'#a21caf','ZZ+':'#c026d3',
+    'ZZZ-':'#be185d','ZZZ':'#db2777','ZZZ+':'#ec4899',
+    'Cosmic-':'#0e6b8a','Cosmic':'#0891b2','Cosmic+':'#06b6d4',
+    'Immortal-':'#d946ef','Immortal':'#ec4899','Immortal+':'#f472b6',
+    'Celestial-':'#831843','Celestial':'#9d174d','Celestial+':'#be185d',
+    'Godly-':'#f9a8d4','Godly':'#f472b6','Godly+':'#ec4899',
+    'Primordial-':'#d4d4d8','Primordial':'#e4e4e7','Primordial+':'#fafafa',
+    'Absolute-':'#7dd3fc','Absolute':'#38bdf8','Absolute+':'#0ea5e9',
+    'Transcendent-':'#84cc16','Transcendent':'#65a30d','Transcendent+':'#4d7c0f',
+    'Infinite-':'#525252','Infinite':'#262626','Infinite+':'#000000',
   }
 </script>
 

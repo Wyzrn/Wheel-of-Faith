@@ -378,12 +378,10 @@
     if (!playerWon || !lastDrops) return
     const updated = buildUpdatedSlot()
     onNextBattle?.(updated)
-    // Mark which chars died this run so they stay dead on the next battle.
-    const deadIds = new Set<string>()
-    teamMembers.forEach((m, i) => {
-      if ((t1Chars[i]?.hp ?? 1) <= 0) deadIds.add(m.id)
-    })
-    carryOverDeadIds = deadIds
+    // Story mode revives all characters between battles — only Endless
+    // mode keeps fallen members dead across runs (see EndlessView). So
+    // we explicitly clear carryOverDeadIds here regardless of who died.
+    carryOverDeadIds = new Set()
     resetBattleState()
     timeoutId = setTimeout(() => { if (selectedTeam) startFight() }, 50)
   }

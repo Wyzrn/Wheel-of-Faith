@@ -18,11 +18,16 @@
   // The plus level the player is currently on (1-based; e.g. 1 = "Absolute +1")
   let currentPlusLevel = $derived(absCompleted + 1)
 
+  // Mirrors the canonical tier palette from src/app.css (--tier-*).
+  // Covers all 20 worlds (F → Infinite) so worlds visualise with the same
+  // colors as character cards, gallery chips, and spin-wheel segments.
   const GRADE_COLORS: Record<string, string> = {
-    F: '#6b7280', E: '#78716c', D: '#a3a3a3', C: '#4ade80',
-    B: '#60a5fa', A: '#a78bfa', S: '#f59e0b', SS: '#f97316',
-    SSS: '#ef4444', Z: '#ec4899', ZZ: '#d946ef', ZZZ: '#8b5cf6',
-    Celestial: '#67e8f9', Godly: '#fbbf24', Primordial: '#f87171', Absolute: '#ffffff',
+    F: '#404040', E: '#64748b', D: '#166534', C: '#059669',
+    B: '#0d9488', A: '#0e7490', S: '#0369a1', SS: '#2563eb',
+    SSS: '#4f46e5', Z: '#7c3aed', ZZ: '#a21caf', ZZZ: '#db2777',
+    Cosmic: '#0891b2', Immortal: '#ec4899',
+    Celestial: '#9d174d', Godly: '#f472b6', Primordial: '#e4e4e7', Absolute: '#38bdf8',
+    Transcendent: '#65a30d', Infinite: '#262626',
   }
 
   const LEVEL_WORLD: Record<number, WorldGrade> = PLAYER_LEVEL_WORLDS as Record<number, WorldGrade>

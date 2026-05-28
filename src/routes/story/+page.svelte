@@ -29,7 +29,7 @@
   import { auth } from '$lib/stores/auth.svelte'
   import { getEffectiveMaxSpins, getEffectiveRosterCapacity } from '$lib/story/saveSlots'
   import { getStageTierLabel } from '$lib/story/raceTiers'
-  import type { WorldGrade } from '$lib/story/worlds'
+  import { WORLD_GRADES, type WorldGrade } from '$lib/story/worlds'
   import type { StoryRosterEntry } from '$lib/story/types'
   import { extendedTierFromScore, boostedTier, scoreTier, TIER_THRESHOLDS } from '$lib/game/scoreTier'
   import { getArchetype } from '$lib/content/archetypes'
@@ -1295,7 +1295,7 @@
           <div class="flex-1 text-left">
             <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Worlds</div>
             <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              {Object.values(currentSlot?.worldProgress ?? {}).filter(w => w.beaten).length} / 16 worlds cleared
+              {Object.values(currentSlot?.worldProgress ?? {}).filter(w => w.beaten).length} / {WORLD_GRADES.length} worlds cleared
             </div>
           </div>
           <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
