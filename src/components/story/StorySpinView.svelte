@@ -20,6 +20,7 @@
   import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_SHIFT, type SpinCategory } from '$lib/game/spinQueue'
   import { getRaceWheelSegments, getRaceWheelSegmentDescription } from '$lib/game/raceWheelRegistry'
   import { generateStatDescription, STAT_DESCRIPTION_CATEGORIES } from '$lib/content/statDescriptions'
+  import { generateExtraDescription, EXTRA_DESCRIPTION_CATEGORIES } from '$lib/content/extraDescriptions'
   import { resolveMutatedSegments, getMutation } from '$lib/game/archetypeMutations'
   import { rollSecretEvent, applyEventToResults, type SecretEventId } from '$lib/game/secretEvents'
   import SecretEventOverlay from '../SecretEventOverlay.svelte'
@@ -286,7 +287,10 @@
     if (category === 'armor')     return { description: generateArmorDescription(label, element, grade), statEffect: 'Reduces incoming damage (Armor Reduction)' }
     if (category === 'race')      return { description: generateRaceDescription(label), statEffect: 'Determines racial abilities, stat tendencies, and weaknesses' }
     if (category === 'archetype') return { description: generateArchetypeDescription(label), statEffect: 'Defines combat role, ability pool, and power orientation' }
-    if (category === 'raceSubType' || category === 'raceClass') return { statEffect: 'May grant stat bonus spins based on variant' }
+    if (category === 'raceSubType' || category === 'raceClass' || category === 'raceTransformation') {
+      const desc = generateExtraDescription(category, label, element, grade)
+      return { description: desc, statEffect: 'May grant stat bonus spins based on variant' }
+    }
     if (category === 'raceWheel') {
       // Pull the segment's authored description from the registry. Falls
       // back to a generic line so the reveal panel still has copy when an
@@ -305,6 +309,10 @@
         ? generateStatDescription(category, tier, label)
         : ''
       return statDesc ? { description: statDesc, statEffect } : { statEffect }
+    }
+    if (EXTRA_DESCRIPTION_CATEGORIES.has(category)) {
+      const desc = generateExtraDescription(category, label, element, grade)
+      return desc ? { description: desc } : {}
     }
     return {}
   }

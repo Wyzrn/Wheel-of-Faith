@@ -18,6 +18,7 @@
   import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_LEVEL_POOL, LIMIT_BREAK_SHIFT } from '$lib/game/spinQueue'
   import { getRaceWheelSegments, getRaceWheelSegmentDescription } from '$lib/game/raceWheelRegistry'
   import { generateStatDescription, STAT_DESCRIPTION_CATEGORIES } from '$lib/content/statDescriptions'
+  import { generateExtraDescription, EXTRA_DESCRIPTION_CATEGORIES } from '$lib/content/extraDescriptions'
   import { resolveMutatedSegments, getMutation } from '$lib/game/archetypeMutations'
   import { rollSecretEvent, getEventDef, applyEventToResults, type SecretEventId } from '$lib/game/secretEvents'
   import type { SpinDefinition, SpinCategory } from '$lib/game/spinQueue'
@@ -3036,10 +3037,16 @@
               {@const statDesc = STAT_DESCRIPTION_CATEGORIES.has(last.category)
                 ? generateStatDescription(last.category, last.tier, last.resultLabel ?? '')
                 : ''}
+              {@const extraDesc = EXTRA_DESCRIPTION_CATEGORIES.has(last.category)
+                ? generateExtraDescription(last.category, last.resultLabel ?? '',
+                    itemMeta?.element as any, itemMeta?.grade as any)
+                : ''}
               {@const resolvedMeta = {
                 ...(itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}),
                 ...(identityCard ? { identityCard } : {}),
-                ...(raceWheelDesc ? { description: raceWheelDesc } : (statDesc ? { description: statDesc } : {})),
+                ...(raceWheelDesc ? { description: raceWheelDesc }
+                    : (statDesc ? { description: statDesc }
+                    : (extraDesc ? { description: extraDesc } : {}))),
               } as ResolvedMeta}
               <SpinResultReveal
                 result={last}

@@ -284,18 +284,19 @@ export class BattleControllerTeam {
       return
     }
 
-    // Target resolution. action.targetId wins; otherwise lowest-HP living enemy.
+    // Target resolution. action.targetId wins; otherwise a RANDOM living enemy.
+    // Random targeting (rather than always picking the lowest-HP or first
+    // member) means enemy AI in story mode spreads damage across the party
+    // instead of focus-firing the same hero every round, which used to make
+    // battles feel like "the AI hates this one character." Player attacks
+    // still honor an explicit action.targetId picked from the UI.
     const enemies = this.livingEnemies(actor.side)
     if (enemies.length === 0) return
 
     let target: TeamControllerMember | undefined
     if (action?.targetId) target = this.member(action.targetId)
     if (!target || (this.hp[target.id] ?? 0) <= 0 || target.side === actor.side) {
-      // Default targeting: lowest-HP enemy (for AOE we still pick a primary
-      // anchor, the engine handles spread).
-      target = enemies.reduce((acc, e) =>
-        (this.hp[e.id] ?? 0) < (this.hp[acc.id] ?? Infinity) ? e : acc,
-        enemies[0])
+      target = enemies[Math.floor(Math.random() * enemies.length)]
     }
 
     // Decrement this actor's power cooldowns at the start of their turn.
