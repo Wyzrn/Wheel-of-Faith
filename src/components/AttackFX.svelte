@@ -1287,51 +1287,108 @@
     {/if}
 
   {:else if type === 'time'}
-    <!-- Time — concentric clock face with rotating gears, ticking minute
-         and hour hands, hourglass ghosts trailing behind, and chrono-rune
-         ticks at the cardinal positions. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.14" style="filter:blur(12px)"/>
-      <!-- Outer clock-face ring with tick marks -->
-      <g class="time-face">
-        <circle cx="50" cy="50" r="42" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.85"/>
-        <circle cx="50" cy="50" r="36" stroke="var(--c)" stroke-width="1"   fill="none" opacity="0.45" stroke-dasharray="2 4"/>
-        <!-- 12 cardinal tick marks -->
-        <line x1="50" y1="10" x2="50" y2="16" stroke="var(--c)" stroke-width="2.5"/>
-        <line x1="90" y1="50" x2="84" y2="50" stroke="var(--c)" stroke-width="2.5"/>
-        <line x1="50" y1="90" x2="50" y2="84" stroke="var(--c)" stroke-width="2.5"/>
-        <line x1="10" y1="50" x2="16" y2="50" stroke="var(--c)" stroke-width="2.5"/>
-        <line x1="78" y1="22" x2="74" y2="26" stroke="var(--c)" stroke-width="1.8"/>
-        <line x1="78" y1="78" x2="74" y2="74" stroke="var(--c)" stroke-width="1.8"/>
-        <line x1="22" y1="22" x2="26" y2="26" stroke="var(--c)" stroke-width="1.8"/>
-        <line x1="22" y1="78" x2="26" y2="74" stroke="var(--c)" stroke-width="1.8"/>
-      </g>
-      <!-- Concentric middle + inner rings (counter-rotating) -->
-      <g class="time-mid">
-        <circle cx="50" cy="50" r="27" stroke="var(--c)" stroke-width="2"   fill="none" opacity="0.75"/>
-        <line x1="50" y1="23" x2="50" y2="29" stroke="var(--c)" stroke-width="1.8"/>
-        <line x1="77" y1="50" x2="71" y2="50" stroke="var(--c)" stroke-width="1.8"/>
-        <line x1="50" y1="77" x2="50" y2="71" stroke="var(--c)" stroke-width="1.8"/>
-        <line x1="23" y1="50" x2="29" y2="50" stroke="var(--c)" stroke-width="1.8"/>
-      </g>
-      <g class="time-inner">
-        <circle cx="50" cy="50" r="16" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.55"/>
-      </g>
-      <!-- Echo hands — trailing ghost copies of the clock hands -->
-      <line class="th-echo th-e1" x1="50" y1="50" x2="50" y2="22" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
-      <line class="th-echo th-e2" x1="50" y1="50" x2="68" y2="50" stroke="var(--c)" stroke-width="1.2" stroke-linecap="round" opacity="0.30"/>
-      <!-- Primary clock hands -->
-      <line class="time-hand th1" x1="50" y1="50" x2="50" y2="20" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
-      <line class="time-hand th2" x1="50" y1="50" x2="72" y2="50" stroke="var(--c)" stroke-width="2.2" stroke-linecap="round"/>
-      <!-- Center hub -->
-      <circle cx="50" cy="50" r="4.5" fill="var(--c)"/>
-      <circle cx="50" cy="50" r="2"   fill="white" opacity="0.85"/>
-      <!-- Sand particles falling through (hourglass feel) -->
-      <circle class="sand-grain sg1" cx="46" cy="32" r="1.3" fill="var(--c)"/>
-      <circle class="sand-grain sg2" cx="54" cy="34" r="1.0" fill="var(--c)" opacity="0.85"/>
-      <circle class="sand-grain sg3" cx="50" cy="38" r="1.2" fill="var(--c)" opacity="0.7"/>
-      <circle class="sand-grain sg4" cx="48" cy="62" r="1.3" fill="var(--c)" opacity="0.8"/>
-      <circle class="sand-grain sg5" cx="52" cy="66" r="1.0" fill="var(--c)" opacity="0.65"/>
+    <!-- Time — temporal instability. Each band escalates from a brief
+         time-stutter to overlapping-timeline catastrophe. -->
+    <svg viewBox="0 0 100 100" class="fx-svg tm-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: time briefly slows around the enemy before snapping
+             violently forward -->
+        <circle class="tm-s-ring" cx="50" cy="50" r="32" stroke="var(--c)" stroke-width="1.6" fill="none" opacity="0.7" stroke-dasharray="3 4"/>
+        <!-- Hands stuttering -->
+        <line class="tm-s-hand" x1="50" y1="50" x2="50" y2="22" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+        <line class="tm-s-hand-2" x1="50" y1="50" x2="72" y2="50" stroke="var(--c)" stroke-width="2" stroke-linecap="round"/>
+        <!-- Snap impact -->
+        <circle class="tm-s-snap" cx="50" cy="50" r="22" fill="url(#fi-core)" opacity="0"/>
+        <!-- 4 forward time-streaks -->
+        {#each [0, 90, 180, 270] as deg, i}
+          <line class="tm-s-streak" style="--rot:{deg}deg; animation-delay:{0.20 + i * 0.02}s;"
+                x1="50" y1="50" x2="50" y2="20" stroke="var(--c)"
+                stroke-width="2" stroke-linecap="round" opacity="0"/>
+        {/each}
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: clock fractures appear as repeated afterimages strike
+             simultaneously -->
+        <!-- 3 fracturing clock-face shards -->
+        {#each [{r:-20},{r:0},{r:20}] as f, i}
+          <g class="tm-m-clock" style="--rot:{f.r}deg; animation-delay:{i * 0.05}s;">
+            <circle cx="50" cy="50" r="32" stroke="var(--c)" stroke-width="1.6" fill="none" opacity="0.75" stroke-dasharray="3 4"/>
+            <line x1="50" y1="22" x2="50" y2="28" stroke="var(--c)" stroke-width="2"/>
+            <line x1="78" y1="50" x2="72" y2="50" stroke="var(--c)" stroke-width="2"/>
+            <line x1="50" y1="78" x2="50" y2="72" stroke="var(--c)" stroke-width="2"/>
+            <line x1="22" y1="50" x2="28" y2="50" stroke="var(--c)" stroke-width="2"/>
+            <line x1="50" y1="50" x2="50" y2="24" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="50" y1="50" x2="70" y2="50" stroke="var(--c)" stroke-width="2" stroke-linecap="round"/>
+          </g>
+        {/each}
+        <!-- 5 staggered afterimage strikes (vertical slashes at different x) -->
+        {#each [{x:30,d:0.18},{x:42,d:0.22},{x:50,d:0.20},{x:58,d:0.24},{x:70,d:0.26}] as a, i}
+          <line class="tm-m-strike" style="animation-delay:{a.d}s;"
+                x1={a.x} y1="14" x2={a.x} y2="86" stroke="var(--c)"
+                stroke-width="2" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Central detonation -->
+        <circle class="tm-m-deton" cx="50" cy="50" r="18" fill="url(#fi-core)" opacity="0"/>
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: the battlefield FREEZES entirely before multiple
+             timelines collide into one attack -->
+        <!-- Time-freeze screen wash -->
+        <rect class="tm-l-freeze" x="-100" y="-100" width="300" height="300" fill="var(--c)" opacity="0" style="filter:blur(30px)"/>
+        <!-- Giant clock face filling viewport -->
+        <g class="tm-l-clock">
+          <circle cx="50" cy="50" r="80" stroke="var(--c)" stroke-width="3" fill="none" opacity="0.9"/>
+          <circle cx="50" cy="50" r="70" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.55" stroke-dasharray="3 5"/>
+          <!-- 12 hour ticks -->
+          {#each [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] as deg, i}
+            {@const a = (deg * Math.PI) / 180}
+            <line x1={50 + Math.cos(a) * 72} y1={50 + Math.sin(a) * 72}
+                  x2={50 + Math.cos(a) * 78} y2={50 + Math.sin(a) * 78}
+                  stroke="var(--c)" stroke-width="2.4"/>
+          {/each}
+          <line x1="50" y1="50" x2="50" y2="-20" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
+          <line x1="50" y1="50" x2="90" y2="50" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+        </g>
+        <!-- 7 timeline ghosts colliding into one strike -->
+        {#each [{r:-30},{r:-20},{r:-10},{r:0},{r:10},{r:20},{r:30}] as t, i}
+          <line class="tm-l-tl" style="--rot:{t.r}deg; animation-delay:{0.20 + i * 0.025}s;"
+                x1="50" y1="50" x2="50" y2="-30" stroke="var(--c)"
+                stroke-width="2.4" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Convergence detonation -->
+        <circle class="tm-l-deton" cx="50" cy="50" r="40" fill="url(#fi-core)" opacity="0"/>
+        <circle class="tm-l-deton-c" cx="50" cy="50" r="20" fill="#fff" opacity="0"/>
+
+      {:else}
+        <!-- GOD: time itself COLLAPSES as the enemy rapidly ages, rewinds,
+             fractures, and explodes across overlapping timelines -->
+        <rect class="tm-g-freeze" x="-300" y="-300" width="700" height="700" fill="var(--c)" opacity="0"/>
+        <!-- 5 colossal overlapping clock faces, each at different rotation -->
+        {#each [{r:-40, s:1.6},{r:-20, s:1.4},{r:0, s:1.8},{r:20, s:1.4},{r:40, s:1.6}] as cl, i}
+          <g class="tm-g-clock" style="--rot:{cl.r}deg; --scale:{cl.s}; animation-delay:{i * 0.06}s;">
+            <circle cx="50" cy="50" r="80" stroke="var(--c)" stroke-width="3" fill="none" opacity="0.85"/>
+            <circle cx="50" cy="50" r="65" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="3 5"/>
+            <line x1="50" y1="50" x2="50" y2="-30" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>
+            <line x1="50" y1="50" x2="120" y2="50" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+          </g>
+        {/each}
+        <!-- Reality fracture lines (timeline tears) -->
+        {#each Array.from({length: 16}) as _, i}
+          {@const a = (i * Math.PI * 2) / 16}
+          <line class="tm-g-tear" style="--rot:{(a * 180) / Math.PI}deg; animation-delay:{0.30 + i * 0.014}s;"
+                x1="50" y1="50" x2="50" y2="-150" stroke="var(--c)"
+                stroke-width="2.4" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Sand storm — particles streaming everywhere -->
+        {#each Array.from({length: 28}) as _, i}
+          {@const a = (i * Math.PI * 2) / 28}
+          {@const r = 130 + (i % 4) * 28}
+          <circle class="tm-g-sand" style="--dx:{Math.cos(a) * r}px; --dy:{Math.sin(a) * r * 0.8 - 10}px; animation-delay:{0.55 + i * 0.01}s;"
+                  cx="50" cy="50" r="1.6" fill="var(--c)"/>
+        {/each}
+        <!-- Final explosion across timelines -->
+        <circle class="tm-g-deton" cx="50" cy="50" r="200" fill="url(#fi-core)" opacity="0"/>
+      {/if}
     </svg>
 
   {:else if type === 'psychic'}
@@ -1406,45 +1463,108 @@
     </svg>
 
   {:else if type === 'gravity'}
-    <!-- Gravity — spacetime imploding into a singularity. Bloom backdrop,
-         warped-space concentric rings collapsing inward, 8 streak lines
-         shooting INTO the core (instead of outward), heavy debris flying
-         in from the perimeter, dense compressed core with white-hot center. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.30" class="gv-bloom" style="filter:blur(20px)"/>
-      <!-- Warped-space concentric rings -->
-      <g class="gv-rings">
-        <ellipse cx="50" cy="50" rx="40" ry="38" stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.5"  class="gv-ring gv-r1"/>
-        <ellipse cx="50" cy="50" rx="30" ry="28" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.7"  class="gv-ring gv-r2"/>
-        <ellipse cx="50" cy="50" rx="20" ry="18" stroke="var(--c)" stroke-width="1.2" fill="none" opacity="0.85" class="gv-ring gv-r3"/>
-      </g>
-      <!-- 8 implosion streak lines pointing INTO center (with arrowheads at the inner end) -->
-      <g class="gv-streaks">
-        <line class="gv-st" x1="14" y1="50" x2="38" y2="50" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-        <path d="M38 50 L33 47 M38 50 L33 53" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-        <line class="gv-st" x1="86" y1="50" x2="62" y2="50" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-        <path d="M62 50 L67 47 M62 50 L67 53" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-        <line class="gv-st" x1="50" y1="14" x2="50" y2="38" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-        <path d="M50 38 L47 33 M50 38 L53 33" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-        <line class="gv-st" x1="50" y1="86" x2="50" y2="62" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round"/>
-        <path d="M50 62 L47 67 M50 62 L53 67" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-        <line class="gv-st" x1="18" y1="18" x2="38" y2="38" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-        <line class="gv-st" x1="82" y1="18" x2="62" y2="38" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-        <line class="gv-st" x1="82" y1="82" x2="62" y2="62" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-        <line class="gv-st" x1="18" y1="82" x2="38" y2="62" stroke="var(--c)" stroke-width="2.5" stroke-linecap="round"/>
-      </g>
-      <!-- Debris being pulled in from the perimeter -->
-      <circle class="gv-debris gd1" cx="14" cy="22" r="2.4" fill="var(--c)"/>
-      <circle class="gv-debris gd2" cx="86" cy="22" r="2.0" fill="var(--c)" opacity="0.85"/>
-      <circle class="gv-debris gd3" cx="14" cy="78" r="2.2" fill="var(--c)" opacity="0.9"/>
-      <circle class="gv-debris gd4" cx="86" cy="78" r="2.0" fill="var(--c)" opacity="0.85"/>
-      <circle class="gv-debris gd5" cx="50" cy="8"  r="1.8" fill="var(--c)" opacity="0.75"/>
-      <circle class="gv-debris gd6" cx="92" cy="50" r="1.8" fill="var(--c)" opacity="0.75"/>
-      <!-- Compressed core -->
-      <g class="gv-core">
-        <circle cx="50" cy="50" r="10" fill="var(--c)"/>
-        <circle cx="50" cy="50" r="5"  fill="white" opacity="0.95"/>
-      </g>
+    <!-- Gravity — pressure, collapse, crushing. From spot compression to
+         a battlefield-tearing black hole. -->
+    <svg viewBox="0 0 100 100" class="fx-svg gv-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: gravity intensifies suddenly around the target -->
+        <!-- Compression rings collapsing inward -->
+        {#each [{r:36,d:0},{r:28,d:0.06},{r:20,d:0.12}] as ring, i}
+          <circle class="gv-s-ring" style="animation-delay:{ring.d}s;"
+                  cx="50" cy="50" r={ring.r} stroke="var(--c)" stroke-width="2" fill="none" opacity="0"/>
+        {/each}
+        <!-- 4 inward streak indicators -->
+        {#each [{x1:14,y1:50,x2:38,y2:50},{x1:86,y1:50,x2:62,y2:50},{x1:50,y1:14,x2:50,y2:38},{x1:50,y1:86,x2:50,y2:62}] as s, i}
+          <line class="gv-s-streak" style="animation-delay:{0.08 + i * 0.025}s;"
+                x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke="var(--c)"
+                stroke-width="3" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Compressed core -->
+        <circle class="gv-s-core" cx="50" cy="50" r="10" fill="var(--c)" opacity="0"/>
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: orbiting debris crushes inward violently -->
+        <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.25" class="gv-m-bloom" style="filter:blur(14px)"/>
+        <!-- 10 debris pieces orbiting then crushing inward -->
+        {#each Array.from({length: 10}) as _, i}
+          {@const a = (i * Math.PI * 2) / 10}
+          {@const ox = 50 + Math.cos(a) * 55}
+          {@const oy = 50 + Math.sin(a) * 45}
+          <polygon class="gv-m-debris" style="--ox:{ox - 50}px; --oy:{oy - 50}px; animation-delay:{i * 0.03}s;"
+                   points="50,50 53,48 55,52 51,54" fill="var(--c)" opacity="0"/>
+        {/each}
+        <!-- Inward orbital ring -->
+        <ellipse class="gv-m-orbit" cx="50" cy="50" rx="42" ry="32" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0" stroke-dasharray="4 5"/>
+        <!-- Crush impact -->
+        <circle class="gv-m-crush" cx="50" cy="50" r="20" fill="url(#fi-core)" opacity="0"/>
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: a miniature singularity forms and drags everything inward -->
+        <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.35" class="gv-l-bloom" style="filter:blur(18px)"/>
+        <!-- Lens-warp rings around the singularity -->
+        {#each [{r:60,d:0},{r:50,d:0.04},{r:40,d:0.08},{r:30,d:0.12},{r:22,d:0.16}] as ring, i}
+          <circle class="gv-l-ring" style="animation-delay:{ring.d}s;"
+                  cx="50" cy="50" r={ring.r} stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0" stroke-dasharray="3 4"/>
+        {/each}
+        <!-- 16 inward debris streams (extend from edges of viewport) -->
+        {#each Array.from({length: 16}) as _, i}
+          {@const a = (i * Math.PI * 2) / 16}
+          {@const sx = 50 + Math.cos(a) * 90}
+          {@const sy = 50 + Math.sin(a) * 80}
+          <line class="gv-l-pull" style="animation-delay:{0.10 + i * 0.018}s;"
+                x1={sx} y1={sy} x2={50 + Math.cos(a) * 18} y2={50 + Math.sin(a) * 18}
+                stroke="var(--c)" stroke-width="2.4" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Black core with white-hot center -->
+        <g class="gv-l-core">
+          <circle cx="50" cy="50" r="22" fill="#000"/>
+          <circle cx="50" cy="50" r="14" fill="var(--c)"/>
+          <circle cx="50" cy="50" r="7" fill="#fff"/>
+        </g>
+        <!-- Inward debris swarm -->
+        {#each Array.from({length: 16}) as _, i}
+          {@const a = (i * Math.PI * 2) / 16}
+          {@const ox = 50 + Math.cos(a) * 80}
+          {@const oy = 50 + Math.sin(a) * 70}
+          <polygon class="gv-l-debris" style="--ox:{ox - 50}px; --oy:{oy - 50}px; animation-delay:{0.20 + i * 0.015}s;"
+                   points="50,50 53,48 55,52 51,54" fill="var(--c)" opacity="0"/>
+        {/each}
+
+      {:else}
+        <!-- GOD: a BLACK HOLE tears open at the center of the battlefield,
+             crushing reality beneath impossible gravity -->
+        <rect class="gv-g-darken" x="-300" y="-300" width="700" height="700" fill="#000" opacity="0"/>
+        <!-- Massive black hole -->
+        <g class="gv-g-hole">
+          <circle cx="50" cy="50" r="200" fill="var(--c)" opacity="0.55" style="filter:blur(40px)"/>
+          <circle cx="50" cy="50" r="120" fill="var(--c)" opacity="0.85"/>
+          <circle cx="50" cy="50" r="80" fill="#000"/>
+          <!-- Accretion disk -->
+          <ellipse cx="50" cy="50" rx="180" ry="20" stroke="var(--c)" stroke-width="3" fill="none" opacity="0.9"/>
+          <ellipse cx="50" cy="50" rx="160" ry="14" stroke="#fff" stroke-width="2" fill="none" opacity="0.85"/>
+          <ellipse cx="50" cy="50" rx="140" ry="8" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.7"/>
+        </g>
+        <!-- Reality fractures around the hole -->
+        {#each Array.from({length: 20}) as _, i}
+          {@const a = (i * Math.PI * 2) / 20}
+          <line class="gv-g-fracture" style="--rot:{(a * 180) / Math.PI}deg; animation-delay:{0.30 + i * 0.012}s;"
+                x1="50" y1="50" x2="50" y2="-100" stroke="var(--c)"
+                stroke-width="2" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Screen-wide inward pull lines (everything being sucked in) -->
+        {#each Array.from({length: 32}) as _, i}
+          {@const a = (i * Math.PI * 2) / 32}
+          {@const sx = 50 + Math.cos(a) * 280}
+          {@const sy = 50 + Math.sin(a) * 280}
+          {@const ex = 50 + Math.cos(a) * 100}
+          {@const ey = 50 + Math.sin(a) * 100}
+          <line class="gv-g-pull" style="animation-delay:{0.10 + i * 0.01}s;"
+                x1={sx} y1={sy} x2={ex} y2={ey} stroke="var(--c)"
+                stroke-width="1.6" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Final crush detonation -->
+        <circle class="gv-g-crush" cx="50" cy="50" r="60" fill="#fff" opacity="0"/>
+      {/if}
     </svg>
 
   {:else if type === 'combo'}
@@ -1859,42 +1979,125 @@
     </svg>
 
   {:else if type === 'void'}
-    <!-- Void — annihilating rift. Bloom backdrop, 4 concentric event-horizon
-         rings collapsing inward, jagged tear-cracks fracturing space, twin
-         shadow tentacles emerging from the void mouth, pure-black core
-         devouring light, debris dissolving into nothing. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.28" class="vd-bloom" style="filter:blur(20px)"/>
-      <!-- 4 collapsing event horizon rings -->
-      <g class="vd-rings">
-        <circle cx="50" cy="50" r="42" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.35" class="vd-ring vr1"/>
-        <circle cx="50" cy="50" r="32" stroke="var(--c)" stroke-width="2"   fill="none" opacity="0.55" class="vd-ring vr2"/>
-        <circle cx="50" cy="50" r="22" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.75" class="vd-ring vr3"/>
-        <circle cx="50" cy="50" r="13" stroke="var(--c)" stroke-width="3"   fill="none" opacity="0.95" class="vd-ring vr4"/>
-      </g>
-      <!-- Jagged reality cracks emanating from rift -->
-      <g class="vd-cracks">
-        <polyline class="vd-cr" points="50,50 38,32 32,28 18,12"  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <polyline class="vd-cr" points="50,50 62,32 68,28 82,12"  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <polyline class="vd-cr" points="50,50 62,68 68,72 82,88"  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <polyline class="vd-cr" points="50,50 38,68 32,72 18,88"  stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      </g>
-      <!-- Twin tentacles slithering out of the rift -->
-      <path class="vd-tnd vt1" d="M50 50 Q40 38 30 40 Q22 44 14 38"
-            stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.85"/>
-      <path class="vd-tnd vt2" d="M50 50 Q60 38 70 40 Q78 44 86 38"
-            stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.85"/>
-      <!-- Pure-black void mouth -->
-      <g class="vd-core">
-        <circle cx="50" cy="50" r="10" fill="#0a0210" opacity="0.95"/>
-        <circle cx="50" cy="50" r="6"  fill="var(--c)" opacity="0.7"/>
-        <circle cx="50" cy="50" r="3"  fill="white" opacity="0.85"/>
-      </g>
-      <!-- Dissolving debris being pulled toward the rift -->
-      <circle class="vd-deb vd1" cx="18" cy="22" r="1.8" fill="var(--c)" opacity="0.7"/>
-      <circle class="vd-deb vd2" cx="82" cy="22" r="1.5" fill="var(--c)" opacity="0.65"/>
-      <circle class="vd-deb vd3" cx="82" cy="78" r="1.8" fill="var(--c)" opacity="0.7"/>
-      <circle class="vd-deb vd4" cx="18" cy="78" r="1.5" fill="var(--c)" opacity="0.65"/>
+    <!-- Void — deletion, collapse, silence. From a small tear in reality to
+         a battlefield-erasing implosion. -->
+    <svg viewBox="0 0 100 100" class="fx-svg vd-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: a small tear in reality opens briefly, pulls in light,
+             collapses violently -->
+        <ellipse class="vd-s-tear" cx="50" cy="50" rx="22" ry="3" fill="#000" opacity="0"/>
+        <!-- Inward pull lines (light being consumed) -->
+        {#each [{a:0},{a:60},{a:120},{a:180},{a:240},{a:300}] as p, i}
+          {@const ang = (p.a * Math.PI) / 180}
+          <line class="vd-s-pull" style="animation-delay:{0.08 + i * 0.02}s;"
+                x1={50 + Math.cos(ang) * 40} y1={50 + Math.sin(ang) * 40}
+                x2={50 + Math.cos(ang) * 14} y2={50 + Math.sin(ang) * 14}
+                stroke="var(--c)" stroke-width="2" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Collapse implosion -->
+        <circle class="vd-s-collapse" cx="50" cy="50" r="18" fill="var(--c)" opacity="0"/>
+        <circle class="vd-s-collapse-c" cx="50" cy="50" r="8" fill="#000" opacity="0"/>
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: dark void FRACTURES spread across battlefield as
+             collapsing singularities appear around the enemy -->
+        <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.18" class="vd-m-haze" style="filter:blur(14px)"/>
+        <!-- 4 reality fracture cracks zigzagging across -->
+        {#each [
+          'M2 30 L20 22 L26 32 L42 24 L50 50',
+          'M98 30 L80 22 L74 32 L58 24 L50 50',
+          'M2 70 L20 78 L26 68 L42 76 L50 50',
+          'M98 70 L80 78 L74 68 L58 76 L50 50',
+        ] as p, i}
+          <path class="vd-m-frac" style="animation-delay:{0.06 + i * 0.04}s;"
+                d={p} stroke="var(--c)" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- 6 collapsing singularities (small black orbs) -->
+        {#each Array.from({length: 6}) as _, i}
+          {@const a = (i * Math.PI * 2) / 6}
+          {@const x = 50 + Math.cos(a) * 30}
+          {@const y = 50 + Math.sin(a) * 24}
+          <g class="vd-m-sing" style="animation-delay:{0.20 + i * 0.04}s;">
+            <circle cx={x} cy={y} r="7" fill="var(--c)"/>
+            <circle cx={x} cy={y} r="4" fill="#000"/>
+          </g>
+        {/each}
+        <!-- Central rift -->
+        <g class="vd-m-core">
+          <ellipse cx="50" cy="50" rx="14" ry="22" fill="#000"/>
+          <ellipse cx="50" cy="50" rx="8" ry="14" fill="var(--c)" opacity="0.7"/>
+        </g>
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: a MASSIVE rift opens behind the target, dragging debris
+             and energy into absolute nothingness -->
+        <circle cx="50" cy="50" r="60" fill="var(--c)" opacity="0.3" class="vd-l-bloom" style="filter:blur(20px)"/>
+        <!-- Vertical mega-rift -->
+        <g class="vd-l-rift">
+          <ellipse cx="50" cy="50" rx="30" ry="60" fill="#000"/>
+          <ellipse cx="50" cy="50" rx="20" ry="48" fill="var(--c)" opacity="0.7"/>
+          <ellipse cx="50" cy="50" rx="10" ry="32" fill="#000"/>
+        </g>
+        <!-- 16 inward pull streams -->
+        {#each Array.from({length: 16}) as _, i}
+          {@const a = (i * Math.PI * 2) / 16}
+          {@const sx = 50 + Math.cos(a) * 90}
+          {@const sy = 50 + Math.sin(a) * 80}
+          <line class="vd-l-pull" style="animation-delay:{0.10 + i * 0.018}s;"
+                x1={sx} y1={sy} x2={50 + Math.cos(a) * 24} y2={50 + Math.sin(a) * 24}
+                stroke="var(--c)" stroke-width="2" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Reality cracks emanating from rift -->
+        {#each [
+          'M50 50 L38 32 L32 28 L18 12',
+          'M50 50 L62 32 L68 28 L82 12',
+          'M50 50 L62 68 L68 72 L82 88',
+          'M50 50 L38 68 L32 72 L18 88',
+        ] as p, i}
+          <path class="vd-l-crack" style="animation-delay:{0.15 + i * 0.03}s;"
+                d={p} stroke="var(--c)" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Debris being pulled in -->
+        {#each Array.from({length: 12}) as _, i}
+          {@const a = (i * Math.PI * 2) / 12}
+          {@const ox = 50 + Math.cos(a) * 70}
+          {@const oy = 50 + Math.sin(a) * 60}
+          <polygon class="vd-l-deb" style="--ox:{ox - 50}px; --oy:{oy - 50}px; animation-delay:{0.20 + i * 0.02}s;"
+                   points="50,50 53,48 55,52 51,54" fill="var(--c)" opacity="0"/>
+        {/each}
+
+      {:else}
+        <!-- GOD: REALITY ITSELF tears apart as a colossal void consumes the
+             battlefield, erasing matter, sound, and light before imploding
+             silently. (Inverted colors via filter:invert.) -->
+        <rect class="vd-g-darken" x="-300" y="-300" width="700" height="700" fill="#000" opacity="0"/>
+        <!-- Massive void mouth (covers screen) -->
+        <g class="vd-g-mouth">
+          <circle cx="50" cy="50" r="240" fill="var(--c)" opacity="0.4" style="filter:blur(40px)"/>
+          <circle cx="50" cy="50" r="180" fill="#000"/>
+          <circle cx="50" cy="50" r="120" fill="var(--c)" opacity="0.6"/>
+          <circle cx="50" cy="50" r="80" fill="#000"/>
+        </g>
+        <!-- Screen-wide reality cracks (fracturing in all directions) -->
+        {#each Array.from({length: 18}) as _, i}
+          {@const a = (i * Math.PI * 2) / 18}
+          <path class="vd-g-tear" style="--rot:{(a * 180) / Math.PI}deg; animation-delay:{0.20 + i * 0.012}s;"
+                d="M50 50 L50 -150" stroke="var(--c)" stroke-width="3" fill="none"
+                stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Everything-being-consumed streams (from screen edges to center) -->
+        {#each Array.from({length: 32}) as _, i}
+          {@const a = (i * Math.PI * 2) / 32}
+          {@const sx = 50 + Math.cos(a) * 300}
+          {@const sy = 50 + Math.sin(a) * 300}
+          <line class="vd-g-consume" style="animation-delay:{0.05 + i * 0.008}s;"
+                x1={sx} y1={sy} x2={50 + Math.cos(a) * 80} y2={50 + Math.sin(a) * 80}
+                stroke="var(--c)" stroke-width="1.6" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Silent implosion (final pulse, white core then black) -->
+        <circle class="vd-g-implode" cx="50" cy="50" r="80" fill="#fff" opacity="0"/>
+        <circle class="vd-g-implode-c" cx="50" cy="50" r="40" fill="#000" opacity="0"/>
+      {/if}
     </svg>
 
   {:else if type === 'energy'}
@@ -2323,53 +2526,107 @@
     </svg>
 
   {:else if type === 'cosmic'}
-    <!-- Cosmic — galactic supernova. Massive bloom, four spiral arms
-         sweeping around the core, supernova flash at center, exploding
-         star points at the corners, scattered stardust + comet streak
-         tails radiating outward from the explosion. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.34" class="cs-bloom" style="filter:blur(22px)"/>
-      <!-- Four spiral arms sweeping around the core -->
-      <g class="cs-spiral">
-        <path d="M50 50 Q40 30 20 28 Q8 38 12 56 Q24 70 50 50" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.8"/>
-        <path d="M50 50 Q60 70 80 72 Q92 62 88 44 Q76 30 50 50" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.8"/>
-        <path d="M50 50 Q70 40 72 20 Q60 8 42 12 Q28 24 50 50" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.7"/>
-        <path d="M50 50 Q30 60 28 80 Q40 92 58 88 Q72 76 50 50" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.7"/>
-        <!-- Thin secondary arms -->
-        <path d="M50 50 Q34 44 28 18" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.5"/>
-        <path d="M50 50 Q66 56 72 82" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.5"/>
-        <path d="M50 50 Q66 44 88 36" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.5"/>
-        <path d="M50 50 Q34 56 12 64" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.5"/>
-      </g>
-      <!-- Comet streak tails radiating outward -->
-      <g class="cs-comets">
-        <line class="cs-ct" x1="50" y1="50" x2="14" y2="14" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        <line class="cs-ct" x1="50" y1="50" x2="86" y2="14" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        <line class="cs-ct" x1="50" y1="50" x2="86" y2="86" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        <line class="cs-ct" x1="50" y1="50" x2="14" y2="86" stroke="var(--c)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-      </g>
-      <!-- Supernova core flash -->
-      <g class="cs-core">
-        <circle cx="50" cy="50" r="18" fill="var(--c)" opacity="0.6" style="filter:blur(4px)"/>
-        <circle cx="50" cy="50" r="11" fill="var(--c)"/>
-        <circle cx="50" cy="50" r="6"  fill="white" opacity="0.95"/>
-      </g>
-      <!-- Exploding star points at the corners -->
-      <g class="cs-stars">
-        <polygon class="cs-star csA" points="22,14 24,20 30,20 25,24 27,30 22,26 17,30 19,24 14,20 20,20" fill="var(--c)"/>
-        <polygon class="cs-star csB" points="78,12 80,18 86,18 81,22 83,28 78,24 73,28 75,22 70,18 76,18" fill="var(--c)" opacity="0.95"/>
-        <polygon class="cs-star csC" points="80,82 82,88 88,88 83,92 85,98 80,94 75,98 77,92 72,88 78,88" fill="var(--c)" opacity="0.9"/>
-        <polygon class="cs-star csD" points="20,84 22,90 28,90 23,94 25,100 20,96 15,100 17,94 12,90 18,90" fill="var(--c)" opacity="0.9"/>
-        <circle class="cs-dot" cx="90" cy="50" r="2" fill="var(--c)"/>
-        <circle class="cs-dot" cx="10" cy="50" r="2" fill="var(--c)"/>
-        <circle class="cs-dot" cx="50" cy="6"  r="1.8" fill="var(--c)" opacity="0.85"/>
-        <circle class="cs-dot" cx="50" cy="94" r="1.8" fill="var(--c)" opacity="0.85"/>
-        <!-- Stardust scatter -->
-        <circle class="cs-dust" cx="34" cy="34" r="1.2" fill="var(--c)" opacity="0.7"/>
-        <circle class="cs-dust" cx="66" cy="34" r="1.2" fill="var(--c)" opacity="0.7"/>
-        <circle class="cs-dust" cx="34" cy="66" r="1.2" fill="var(--c)" opacity="0.7"/>
-        <circle class="cs-dust" cx="66" cy="66" r="1.2" fill="var(--c)" opacity="0.7"/>
-      </g>
+    <!-- Cosmic — astronomical scale. From a single shooting star to
+         universe-shattering descent of constellations. -->
+    <svg viewBox="0 0 100 100" class="fx-svg cs-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: a shooting star crashes into the target -->
+        <line class="cs-s-trail" x1="-10" y1="14" x2="50" y2="50"
+              stroke="var(--c)" stroke-width="6" stroke-linecap="round" opacity="0"/>
+        <line class="cs-s-trail-c" x1="-10" y1="14" x2="50" y2="50"
+              stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity="0"/>
+        <polygon class="cs-s-star"
+                 points="50,30 56,46 72,46 60,56 66,72 50,62 34,72 40,56 28,46 44,46"
+                 fill="var(--c)" opacity="0"/>
+        <circle class="cs-s-burst" cx="50" cy="50" r="20" fill="url(#fi-core)" opacity="0"/>
+        <!-- Small star scatter -->
+        {#each [{x:30,y:30},{x:70,y:30},{x:30,y:70},{x:70,y:70}] as s, i}
+          <polygon class="cs-s-spark" style="animation-delay:{0.22 + i * 0.025}s;"
+                   points="{s.x},{s.y-3} {s.x+2},{s.y} {s.x},{s.y+3} {s.x-2},{s.y}" fill="#fff"/>
+        {/each}
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: orbiting stars spiral together before exploding into
+             cosmic energy -->
+        <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.22" class="cs-m-bloom" style="filter:blur(16px)"/>
+        <!-- 8 stars spiraling toward center -->
+        {#each Array.from({length: 8}) as _, i}
+          {@const a = (i * Math.PI * 2) / 8}
+          {@const ox = 50 + Math.cos(a) * 48}
+          {@const oy = 50 + Math.sin(a) * 40}
+          <polygon class="cs-m-star" style="--ox:{ox - 50}px; --oy:{oy - 50}px; animation-delay:{i * 0.03}s;"
+                   points="50,46 54,50 50,54 46,50" fill="var(--c)" opacity="0"/>
+        {/each}
+        <!-- Cosmic energy detonation -->
+        <circle class="cs-m-deton" cx="50" cy="50" r="36" fill="url(#fi-core)" opacity="0"/>
+        <!-- Burst star points -->
+        {#each [0, 45, 90, 135, 180, 225, 270, 315] as deg, i}
+          {@const a = (deg * Math.PI) / 180}
+          <polygon class="cs-m-burst-star" style="animation-delay:{0.32 + i * 0.018}s;"
+                   points="{50 + Math.cos(a) * 36 - 2},{50 + Math.sin(a) * 36}
+                           {50 + Math.cos(a) * 36},{50 + Math.sin(a) * 36 - 4}
+                           {50 + Math.cos(a) * 36 + 2},{50 + Math.sin(a) * 36}
+                           {50 + Math.cos(a) * 36},{50 + Math.sin(a) * 36 + 4}" fill="var(--c)"/>
+        {/each}
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: a miniature GALAXY forms overhead and collapses into a
+             stellar detonation -->
+        <circle cx="50" cy="50" r="60" fill="var(--c)" opacity="0.35" class="cs-l-bloom" style="filter:blur(22px)"/>
+        <!-- Galaxy with spiral arms -->
+        <g class="cs-l-galaxy">
+          <path d="M50 50 Q40 30 20 28 Q8 38 12 56 Q24 70 50 50" stroke="var(--c)" stroke-width="3" fill="none" opacity="0.9"/>
+          <path d="M50 50 Q60 70 80 72 Q92 62 88 44 Q76 30 50 50" stroke="var(--c)" stroke-width="3" fill="none" opacity="0.9"/>
+          <path d="M50 50 Q70 40 72 20 Q60 8 42 12 Q28 24 50 50" stroke="var(--c)" stroke-width="2.4" fill="none" opacity="0.8"/>
+          <path d="M50 50 Q30 60 28 80 Q40 92 58 88 Q72 76 50 50" stroke="var(--c)" stroke-width="2.4" fill="none" opacity="0.8"/>
+        </g>
+        <!-- Stellar collapse flash -->
+        <circle class="cs-l-collapse" cx="50" cy="50" r="40" fill="#fff" opacity="0"/>
+        <!-- Detonation rings -->
+        <circle class="cs-l-det1" cx="50" cy="50" r="20" fill="none" stroke="var(--c)" stroke-width="4" opacity="0"/>
+        <circle class="cs-l-det2" cx="50" cy="50" r="20" fill="none" stroke="#fff" stroke-width="2.4" opacity="0"/>
+        <!-- 12 comet trails outward -->
+        {#each [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] as deg, i}
+          {@const a = (deg * Math.PI) / 180}
+          <line class="cs-l-comet" style="animation-delay:{0.45 + i * 0.018}s;"
+                x1="50" y1="50" x2={50 + Math.cos(a) * 60} y2={50 + Math.sin(a) * 60}
+                stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" opacity="0"/>
+        {/each}
+
+      {:else}
+        <!-- GOD: entire CONSTELLATIONS awaken as planets, stars, and
+             galaxies descend in a universe-shattering cosmic event -->
+        <rect class="cs-g-cosmos" x="-300" y="-300" width="700" height="700"
+              fill="#03031f" opacity="0"/>
+        <!-- Massive screen-spanning galaxy spirals -->
+        <g class="cs-g-galaxy">
+          <path d="M50 50 Q-50 -30 -180 30 Q-280 130 -180 250 Q-30 250 50 50"
+                stroke="var(--c)" stroke-width="6" fill="none" opacity="0"/>
+          <path d="M50 50 Q150 130 280 70 Q380 -30 280 -150 Q130 -150 50 50"
+                stroke="var(--c)" stroke-width="6" fill="none" opacity="0"/>
+          <path d="M50 50 Q-50 130 -180 70 Q-280 -30 -180 -150 Q-30 -150 50 50"
+                stroke="var(--c)" stroke-width="5" fill="none" opacity="0"/>
+          <path d="M50 50 Q150 -30 280 30 Q380 130 280 250 Q130 250 50 50"
+                stroke="var(--c)" stroke-width="5" fill="none" opacity="0"/>
+        </g>
+        <!-- Constellation stars scattered across screen -->
+        {#each Array.from({length: 32}) as _, i}
+          {@const a = (i * Math.PI * 2) / 32}
+          {@const r = 120 + (i % 5) * 30}
+          {@const x = 50 + Math.cos(a) * r}
+          {@const y = 50 + Math.sin(a) * r * 0.7}
+          <polygon class="cs-g-cstar" style="animation-delay:{0.25 + i * 0.011}s;"
+                   points="{x},{y-4} {x+4},{y} {x},{y+4} {x-4},{y}" fill="var(--c)"/>
+        {/each}
+        <!-- Descending planets -->
+        {#each [{x:-40,y:-30,r:14,d:0.30},{x:120,y:-20,r:18,d:0.35},{x:-30,y:120,r:12,d:0.40},{x:130,y:100,r:16,d:0.45},{x:50,y:-80,r:20,d:0.50}] as p, i}
+          <circle class="cs-g-planet" style="animation-delay:{p.d}s;"
+                  cx={p.x} cy={p.y} r={p.r} fill="var(--c)" opacity="0"/>
+        {/each}
+        <!-- Universe-shattering core detonation -->
+        <circle class="cs-g-deton" cx="50" cy="50" r="220" fill="url(#fi-core)" opacity="0"/>
+        <circle class="cs-g-deton-c" cx="50" cy="50" r="120" fill="#fff" opacity="0"/>
+      {/if}
     </svg>
 
   {:else if type === 'metal'}
@@ -4176,11 +4433,163 @@
 @keyframes nt-g-leaf      { 0% { transform: translate(0,0) rotate(0deg) scale(0); opacity: 0; } 30% { transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) rotate(90deg) scale(1.4); opacity: 1; filter: brightness(1.6); } 100% { transform: translate(var(--dx), var(--dy)) rotate(360deg) scale(0.6); opacity: 0; } }
 @keyframes nt-g-quake     { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-2px, 2px); } 50% { transform: translate(2px, -2px); } 75% { transform: translate(-1px, -1px); } }
 
+/* ─── TIME (4-band revamp) ─────────────────────────────────────── */
+.tm-s-ring   { transform-origin: 50% 50%; animation: tm-s-ring 0.55s ease-out forwards; opacity: 0; }
+.tm-s-hand   { transform-origin: 50% 50%; animation: tm-s-hand 0.55s ease-in-out forwards; }
+.tm-s-hand-2 { transform-origin: 50% 50%; animation: tm-s-hand-2 0.55s ease-in-out forwards; }
+.tm-s-snap   { transform-origin: 50% 50%; animation: tm-s-snap 0.45s 0.18s ease-out forwards; }
+.tm-s-streak { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: tm-s-streak 0.40s ease-out forwards; }
+@keyframes tm-s-ring   { 0% { transform: rotate(0deg) scale(0.6); opacity: 0; } 50% { transform: rotate(180deg) scale(1.1); opacity: 1; filter: brightness(1.6); } 100% { transform: rotate(360deg) scale(1.3); opacity: 0; } }
+@keyframes tm-s-hand   { 0%, 40% { transform: rotate(0deg); opacity: 1; } 60% { transform: rotate(0deg); opacity: 0.5; } 80% { transform: rotate(180deg); opacity: 1; filter: brightness(2); } 100% { transform: rotate(180deg); opacity: 0; } }
+@keyframes tm-s-hand-2 { 0%, 40% { transform: rotate(0deg); opacity: 1; } 60% { transform: rotate(0deg); opacity: 0.5; } 80% { transform: rotate(-180deg); opacity: 1; filter: brightness(2); } 100% { transform: rotate(-180deg); opacity: 0; } }
+@keyframes tm-s-snap   { 0% { transform: scale(0); opacity: 0; filter: brightness(5); } 30% { transform: scale(1.4); opacity: 1; filter: brightness(3) drop-shadow(0 0 18px var(--c)); } 100% { transform: scale(1.8); opacity: 0; } }
+@keyframes tm-s-streak { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 50% { transform: rotate(var(--rot)) scaleY(1.4); opacity: 1; filter: brightness(2.5); } 100% { transform: rotate(var(--rot)) scaleY(0.8); opacity: 0; } }
+
+.tm-m-clock  { transform-origin: 50% 50%; transform: rotate(var(--rot)); animation: tm-m-clock 0.85s ease-in-out forwards; opacity: 0; }
+.tm-m-strike { animation: tm-m-strike 0.30s ease-out forwards; }
+.tm-m-deton  { transform-origin: 50% 50%; animation: tm-s-snap 0.55s 0.30s ease-out forwards; }
+@keyframes tm-m-clock  { 0% { transform: rotate(var(--rot)) scale(0.5); opacity: 0; } 50% { transform: rotate(calc(var(--rot) + 180deg)) scale(1.1); opacity: 1; filter: brightness(1.8); } 100% { transform: rotate(calc(var(--rot) + 360deg)) scale(1.3); opacity: 0; } }
+@keyframes tm-m-strike { 0% { transform: scaleY(0); opacity: 0; } 50% { transform: scaleY(1); opacity: 1; filter: brightness(2.5); } 100% { transform: scaleY(1); opacity: 0; } }
+
+.tm-l-freeze   { animation: tm-l-freeze 0.85s ease-out forwards; }
+.tm-l-clock    { transform-origin: 50% 50%; animation: tm-l-clock 0.85s ease-in-out forwards; opacity: 0; }
+.tm-l-tl       { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: tm-l-tl 0.50s ease-out forwards; }
+.tm-l-deton    { transform-origin: 50% 50%; animation: tm-s-snap 0.55s 0.45s ease-out forwards; }
+.tm-l-deton-c  { transform-origin: 50% 50%; animation: tm-s-snap 0.55s 0.47s ease-out forwards; }
+@keyframes tm-l-freeze { 0% { opacity: 0; } 40% { opacity: 0.45; } 100% { opacity: 0; } }
+@keyframes tm-l-clock  { 0% { transform: scale(0.5) rotate(0deg); opacity: 0; } 50% { transform: scale(1) rotate(180deg); opacity: 1; filter: brightness(2) drop-shadow(0 0 30px var(--c)); } 100% { transform: scale(1.1) rotate(360deg); opacity: 0; } }
+@keyframes tm-l-tl     { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 50% { transform: rotate(var(--rot)) scaleY(1.4); opacity: 1; filter: brightness(2.5); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+
+.tm-g-freeze    { animation: tm-g-freeze 0.95s ease-out forwards; }
+.tm-g-clock     { transform-origin: 50% 50%; transform: rotate(var(--rot)) scale(var(--scale)); animation: tm-g-clock 0.85s ease-in-out forwards; opacity: 0; }
+.tm-g-tear      { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: tm-g-tear 0.55s ease-out forwards; }
+.tm-g-sand      { transform-origin: center; transform-box: fill-box; animation: tm-g-sand 0.85s ease-out forwards; opacity: 0; }
+.tm-g-deton     { transform-origin: 50% 50%; animation: tm-s-snap 0.65s 0.65s ease-out forwards; }
+.tm-band-epic   { animation: tm-g-shake 0.55s 0.40s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes tm-g-freeze { 0% { opacity: 0; } 35% { opacity: 0.45; } 80% { opacity: 0.25; } 100% { opacity: 0; } }
+@keyframes tm-g-clock  { 0% { transform: rotate(var(--rot)) scale(0); opacity: 0; } 50% { transform: rotate(calc(var(--rot) + 180deg)) scale(var(--scale)); opacity: 1; filter: brightness(2) drop-shadow(0 0 36px var(--c)); } 100% { transform: rotate(calc(var(--rot) + 360deg)) scale(calc(var(--scale) + 0.3)); opacity: 0; } }
+@keyframes tm-g-tear   { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 45% { transform: rotate(var(--rot)) scaleY(1.4); opacity: 1; filter: brightness(2.5); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+@keyframes tm-g-sand   { 0% { transform: translate(0,0) scale(0); opacity: 0; } 30% { transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) scale(1.4); opacity: 1; filter: brightness(2); } 100% { transform: translate(var(--dx), var(--dy)) scale(0.4); opacity: 0; } }
+@keyframes tm-g-shake  { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-2px, 1px); } 50% { transform: translate(2px, -2px); } 75% { transform: translate(-1px, 2px); } }
+
+/* ─── GRAVITY (4-band revamp) ──────────────────────────────────── */
+.gv-s-ring    { transform-origin: 50% 50%; animation: gv-s-ring 0.50s ease-in forwards; }
+.gv-s-streak  { animation: gv-s-streak 0.40s ease-in forwards; }
+.gv-s-core    { transform-origin: 50% 50%; animation: gv-s-core 0.45s 0.22s ease-out forwards; }
+@keyframes gv-s-ring   { 0% { transform: scale(1.2); opacity: 0; } 40% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.3); opacity: 0; } }
+@keyframes gv-s-streak { 0% { transform: scaleX(0); opacity: 0; } 50% { transform: scaleX(1); opacity: 1; filter: brightness(2); } 100% { transform: scaleX(1); opacity: 0; } }
+@keyframes gv-s-core   { 0% { transform: scale(0); opacity: 0; filter: brightness(4); } 50% { transform: scale(1.3); opacity: 1; filter: brightness(3) drop-shadow(0 0 14px var(--c)); } 100% { transform: scale(0.6); opacity: 0; } }
+
+.gv-m-bloom  { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.gv-m-debris { transform-origin: 50% 50%; animation: gv-m-debris 0.55s ease-in forwards; }
+.gv-m-orbit  { transform-origin: 50% 50%; animation: gv-m-orbit 0.65s ease-in-out forwards; }
+.gv-m-crush  { transform-origin: 50% 50%; animation: tm-s-snap 0.45s 0.40s ease-out forwards; }
+@keyframes gv-m-debris { 0% { transform: translate(var(--ox), var(--oy)) rotate(0deg); opacity: 0; } 30% { transform: translate(calc(var(--ox) * 0.6), calc(var(--oy) * 0.6)) rotate(180deg); opacity: 1; } 100% { transform: translate(0, 0) rotate(720deg); opacity: 0; } }
+@keyframes gv-m-orbit  { 0% { transform: scale(1.4) rotate(0deg); opacity: 0; } 50% { transform: scale(1) rotate(360deg); opacity: 1; filter: brightness(1.6); } 100% { transform: scale(0.2) rotate(720deg); opacity: 0; } }
+
+.gv-l-bloom  { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.gv-l-ring   { transform-origin: 50% 50%; animation: gv-l-ring 0.65s ease-in forwards; }
+.gv-l-pull   { stroke-dasharray: 120; stroke-dashoffset: 120; animation: gv-l-pull 0.55s ease-in forwards; }
+.gv-l-core   { transform-origin: 50% 50%; animation: gv-l-core 0.55s 0.30s ease-out forwards; opacity: 0; }
+.gv-l-debris { transform-origin: 50% 50%; animation: gv-l-debris 0.65s ease-in forwards; }
+@keyframes gv-l-ring   { 0% { transform: scale(1.2); opacity: 0; } 30% { transform: scale(1); opacity: 1; filter: brightness(1.6); } 100% { transform: scale(0.2); opacity: 0; } }
+@keyframes gv-l-pull   { 0% { stroke-dashoffset: 120; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes gv-l-core   { 0% { transform: scale(0); opacity: 0; filter: brightness(5); } 40% { transform: scale(1.3); opacity: 1; filter: brightness(3) drop-shadow(0 0 30px var(--c)); } 100% { transform: scale(0.4); opacity: 0; } }
+@keyframes gv-l-debris { 0% { transform: translate(var(--ox), var(--oy)) rotate(0deg); opacity: 0; } 30% { transform: translate(calc(var(--ox) * 0.5), calc(var(--oy) * 0.5)) rotate(360deg); opacity: 1; filter: brightness(1.6); } 100% { transform: translate(0, 0) rotate(900deg); opacity: 0; } }
+
+.gv-g-darken    { animation: er-g-darken 1.0s ease-out forwards; }
+.gv-g-hole      { transform-origin: 50% 50%; animation: gv-g-hole 0.85s ease-in-out forwards; opacity: 0; }
+.gv-g-fracture  { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: gv-g-fracture 0.55s ease-out forwards; }
+.gv-g-pull      { stroke-dasharray: 220; stroke-dashoffset: 220; animation: gv-g-pull 0.65s ease-in forwards; }
+.gv-g-crush     { transform-origin: 50% 50%; animation: tm-s-snap 0.55s 0.65s ease-out forwards; }
+.gv-band-epic   { animation: gv-g-warp 0.55s 0.40s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes gv-g-hole     { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 60px var(--c)); } 100% { transform: scale(0.3); opacity: 0; } }
+@keyframes gv-g-fracture { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 45% { transform: rotate(var(--rot)) scaleY(1.3); opacity: 1; filter: brightness(2.5); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+@keyframes gv-g-pull     { 0% { stroke-dashoffset: 220; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes gv-g-warp     { 0%, 100% { transform: scale(1) translate(0,0); } 25% { transform: scale(0.98) translate(-2px, 1px); } 50% { transform: scale(1.02) translate(2px, -2px); } 75% { transform: scale(0.99) translate(-1px, 2px); } }
+
+/* ─── VOID (4-band revamp) ─────────────────────────────────────── */
+.vd-s-tear       { transform-origin: 50% 50%; animation: vd-s-tear 0.65s ease-out forwards; }
+.vd-s-pull       { animation: vd-s-pull 0.40s ease-in forwards; }
+.vd-s-collapse   { transform-origin: 50% 50%; animation: vd-s-collapse 0.40s 0.30s ease-in forwards; }
+.vd-s-collapse-c { transform-origin: 50% 50%; animation: vd-s-collapse 0.40s 0.33s ease-in forwards; }
+@keyframes vd-s-tear     { 0% { transform: scaleX(0); opacity: 0; } 40% { transform: scaleX(1.2); opacity: 1; filter: brightness(2); } 100% { transform: scaleX(0); opacity: 0; } }
+@keyframes vd-s-pull     { 0% { transform: scaleX(0); opacity: 0; } 50% { transform: scaleX(1); opacity: 1; filter: brightness(2); } 100% { transform: scaleX(0.5); opacity: 0; } }
+@keyframes vd-s-collapse { 0% { transform: scale(1.2); opacity: 0; } 40% { transform: scale(1); opacity: 1; filter: brightness(2); } 100% { transform: scale(0); opacity: 0; } }
+
+.vd-m-haze  { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.vd-m-frac  { stroke-dasharray: 100; stroke-dashoffset: 100; animation: vd-m-frac 0.55s ease-out forwards; }
+.vd-m-sing  { transform-origin: 50% 50%; animation: vd-m-sing 0.55s ease-in-out forwards; opacity: 0; }
+.vd-m-core  { transform-origin: 50% 50%; animation: vd-m-core 0.65s 0.20s ease-in-out forwards; }
+@keyframes vd-m-frac { 0% { stroke-dashoffset: 100; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes vd-m-sing { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(0); opacity: 0; } }
+@keyframes vd-m-core { 0% { transform: scaleY(0); opacity: 0; } 50% { transform: scaleY(1.2); opacity: 1; filter: drop-shadow(0 0 16px var(--c)); } 100% { transform: scaleY(0.3); opacity: 0; } }
+
+.vd-l-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.vd-l-rift  { transform-origin: 50% 50%; animation: vd-l-rift 0.85s ease-in-out forwards; opacity: 0; }
+.vd-l-pull  { stroke-dasharray: 100; stroke-dashoffset: 100; animation: vd-l-pull 0.55s ease-in forwards; }
+.vd-l-crack { stroke-dasharray: 100; stroke-dashoffset: 100; animation: vd-m-frac 0.55s ease-out forwards; }
+.vd-l-deb   { transform-origin: 50% 50%; animation: gv-m-debris 0.55s ease-in forwards; }
+@keyframes vd-l-rift { 0% { transform: scaleY(0); opacity: 0; } 50% { transform: scaleY(1.1); opacity: 1; filter: drop-shadow(0 0 30px var(--c)); } 100% { transform: scaleY(0.3); opacity: 0; } }
+@keyframes vd-l-pull { 0% { stroke-dashoffset: 100; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+
+.vd-g-darken    { animation: er-g-darken 1.0s ease-out forwards; }
+.vd-g-mouth     { transform-origin: 50% 50%; animation: vd-g-mouth 0.85s ease-in-out forwards; opacity: 0; }
+.vd-g-tear      { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: gv-g-fracture 0.65s ease-out forwards; }
+.vd-g-consume   { stroke-dasharray: 220; stroke-dashoffset: 220; animation: gv-g-pull 0.65s ease-in forwards; }
+.vd-g-implode   { transform-origin: 50% 50%; animation: vd-g-implode 0.45s 0.60s ease-out forwards; }
+.vd-g-implode-c { transform-origin: 50% 50%; animation: vd-g-implode 0.45s 0.62s ease-out forwards; }
+.vd-band-epic   { animation: vd-g-silence 0.95s 0.40s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes vd-g-mouth   { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 80px var(--c)); } 100% { transform: scale(0.2); opacity: 0; } }
+@keyframes vd-g-implode { 0% { transform: scale(0); opacity: 0; filter: brightness(8); } 30% { transform: scale(1.5); opacity: 1; filter: brightness(5) drop-shadow(0 0 60px #fff); } 100% { transform: scale(0); opacity: 0; } }
+@keyframes vd-g-silence { 0% { opacity: 1; } 50% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ─── COSMIC (4-band revamp) ───────────────────────────────────── */
+.cs-s-trail   { stroke-dasharray: 80; stroke-dashoffset: 80; animation: cs-s-trail 0.30s ease-out forwards; }
+.cs-s-trail-c { stroke-dasharray: 80; stroke-dashoffset: 80; animation: cs-s-trail 0.30s 0.02s ease-out forwards; }
+.cs-s-star    { transform-origin: 50% 50%; animation: cs-s-star 0.45s 0.22s ease-out forwards; }
+.cs-s-burst   { transform-origin: 50% 50%; animation: tm-s-snap 0.45s 0.22s ease-out forwards; }
+.cs-s-spark   { transform-origin: center; transform-box: fill-box; animation: cs-s-spark 0.45s ease-out forwards; opacity: 0; }
+@keyframes cs-s-trail { 0% { stroke-dashoffset: 80; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(3); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes cs-s-star  { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 40% { transform: scale(1.4) rotate(180deg); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 14px var(--c)); } 100% { transform: scale(1) rotate(360deg); opacity: 0; } }
+@keyframes cs-s-spark { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.4); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(0.4); opacity: 0; } }
+
+.cs-m-bloom    { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.cs-m-star     { transform-origin: 50% 50%; animation: gv-m-debris 0.55s ease-in forwards; }
+.cs-m-deton    { transform-origin: 50% 50%; animation: tm-s-snap 0.55s 0.30s ease-out forwards; }
+.cs-m-burst-star { transform-origin: 50% 50%; transform-box: fill-box; animation: cs-m-burst-star 0.55s ease-out forwards; opacity: 0; }
+@keyframes cs-m-burst-star { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 40% { transform: scale(1.4) rotate(180deg); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(1) rotate(360deg); opacity: 0; } }
+
+.cs-l-bloom    { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.cs-l-galaxy   { transform-origin: 50% 50%; animation: cs-l-galaxy 0.85s ease-in-out forwards; opacity: 0; }
+.cs-l-collapse { transform-origin: 50% 50%; animation: cs-l-collapse 0.40s 0.45s ease-out forwards; }
+.cs-l-det1     { transform-origin: 50% 50%; animation: cs-l-det 0.65s 0.50s ease-out forwards; }
+.cs-l-det2     { transform-origin: 50% 50%; animation: cs-l-det 0.65s 0.55s ease-out forwards; }
+.cs-l-comet    { stroke-dasharray: 70; stroke-dashoffset: 70; animation: cs-l-comet 0.55s ease-out forwards; }
+@keyframes cs-l-galaxy   { 0% { transform: scale(0.4) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(180deg); opacity: 1; filter: brightness(2) drop-shadow(0 0 30px var(--c)); } 100% { transform: scale(1.2) rotate(360deg); opacity: 0; } }
+@keyframes cs-l-collapse { 0% { transform: scale(0); opacity: 0; filter: brightness(8); } 30% { transform: scale(1.5); opacity: 1; filter: brightness(5); } 100% { transform: scale(0); opacity: 0; } }
+@keyframes cs-l-det      { 0% { transform: scale(0.3); opacity: 0; } 25% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(5); opacity: 0; } }
+@keyframes cs-l-comet    { 0% { stroke-dashoffset: 70; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(2.5); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+
+.cs-g-cosmos    { animation: cs-g-cosmos 1.0s ease-out forwards; }
+.cs-g-galaxy    { transform-origin: 50% 50%; animation: cs-g-galaxy 0.85s ease-in-out forwards; opacity: 0; }
+.cs-g-cstar     { transform-origin: 50% 50%; transform-box: fill-box; animation: cs-g-cstar 0.55s ease-out forwards; opacity: 0; }
+.cs-g-planet    { transform-origin: 50% 50%; animation: cs-g-planet 0.85s ease-in forwards; opacity: 0; }
+.cs-g-deton     { transform-origin: 50% 50%; animation: tm-s-snap 0.65s 0.55s ease-out forwards; }
+.cs-g-deton-c   { transform-origin: 50% 50%; animation: tm-s-snap 0.65s 0.57s ease-out forwards; }
+.cs-band-epic   { animation: lt-g-shake 0.55s 0.40s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes cs-g-cosmos { 0% { opacity: 0; } 30% { opacity: 0.7; } 80% { opacity: 0.4; } 100% { opacity: 0; } }
+@keyframes cs-g-galaxy { 0% { transform: scale(0.3) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(180deg); opacity: 1; filter: brightness(2) drop-shadow(0 0 40px var(--c)); } 100% { transform: scale(1.3) rotate(360deg); opacity: 0; } }
+@keyframes cs-g-cstar  { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 50% { transform: scale(1.4) rotate(180deg); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(1) rotate(360deg); opacity: 0; } }
+@keyframes cs-g-planet { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.2); opacity: 1; filter: brightness(1.6) drop-shadow(0 0 16px var(--c)); } 100% { transform: scale(0.5); opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
   .fire-band-epic, .ice-band-epic, .lit-band-epic, .wn-band-epic, .er-band-epic,
-  .sh-band-epic, .lt-band-epic, .arc-band-epic, .nt-band-epic { animation: none; }
+  .sh-band-epic, .lt-band-epic, .arc-band-epic, .nt-band-epic,
+  .tm-band-epic, .gv-band-epic, .vd-band-epic, .cs-band-epic { animation: none; }
   .fi-g-darken, .ic-g-pallor, .lit-g-strobe, .er-g-darken, .wn-g-warp,
-  .sh-g-darken, .lt-g-flash, .arc-g-flash, .nt-g-darken { animation: none; opacity: 0; }
+  .sh-g-darken, .lt-g-flash, .arc-g-flash, .nt-g-darken,
+  .tm-g-freeze, .gv-g-darken, .vd-g-darken, .cs-g-cosmos { animation: none; opacity: 0; }
 }
 
 /* ─── NATURE (revamp) ────────────────────────────────────────────── */
