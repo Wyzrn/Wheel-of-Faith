@@ -1392,42 +1392,100 @@
     </svg>
 
   {:else if type === 'psychic'}
-    <!-- Psychic — concentric mental-wave rings + third eye + radiating
-         thought spokes + neural sparks scattering outward. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.15" style="filter:blur(14px)"/>
-      <!-- Brainwave rings — staggered expansion -->
-      <circle cx="50" cy="50" r="10" stroke="var(--c)" stroke-width="3"   fill="none" class="psy-ring pr1"/>
-      <circle cx="50" cy="50" r="22" stroke="var(--c)" stroke-width="2.5" fill="none" class="psy-ring pr2" opacity="0.8"/>
-      <circle cx="50" cy="50" r="34" stroke="var(--c)" stroke-width="2"   fill="none" class="psy-ring pr3" opacity="0.6"/>
-      <circle cx="50" cy="50" r="44" stroke="var(--c)" stroke-width="1.5" fill="none" class="psy-ring pr4" opacity="0.35"/>
-      <!-- Third-eye almond shape -->
-      <g class="psy-eye">
-        <ellipse cx="50" cy="50" rx="20" ry="11" fill="var(--c)" opacity="0.18"/>
-        <ellipse cx="50" cy="50" rx="20" ry="11" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.9"/>
-        <!-- Iris -->
-        <circle cx="50" cy="50" r="7"  fill="var(--c)"/>
-        <!-- Pupil -->
-        <circle cx="50" cy="50" r="3.5" fill="#0d0d16"/>
-        <!-- Highlight -->
-        <circle cx="48" cy="48" r="1.5" fill="white" opacity="0.85"/>
-      </g>
-      <!-- Radiating thought-spokes (8 rays) -->
-      <g class="psy-spokes">
-        <line x1="50" y1="50" x2="50" y2="6"  stroke="var(--c)" stroke-width="1.6" opacity="0.55" stroke-linecap="round"/>
-        <line x1="50" y1="50" x2="50" y2="94" stroke="var(--c)" stroke-width="1.6" opacity="0.55" stroke-linecap="round"/>
-        <line x1="50" y1="50" x2="6"  y2="50" stroke="var(--c)" stroke-width="1.6" opacity="0.55" stroke-linecap="round"/>
-        <line x1="50" y1="50" x2="94" y2="50" stroke="var(--c)" stroke-width="1.6" opacity="0.55" stroke-linecap="round"/>
-        <line x1="50" y1="50" x2="20" y2="20" stroke="var(--c)" stroke-width="1.2" opacity="0.45" stroke-linecap="round"/>
-        <line x1="50" y1="50" x2="80" y2="20" stroke="var(--c)" stroke-width="1.2" opacity="0.45" stroke-linecap="round"/>
-        <line x1="50" y1="50" x2="20" y2="80" stroke="var(--c)" stroke-width="1.2" opacity="0.45" stroke-linecap="round"/>
-        <line x1="50" y1="50" x2="80" y2="80" stroke="var(--c)" stroke-width="1.2" opacity="0.45" stroke-linecap="round"/>
-      </g>
-      <!-- Mind-sparks at the spoke tips -->
-      <circle class="psy-spark ps1" cx="50" cy="6"  r="2" fill="var(--c)"/>
-      <circle class="psy-spark ps2" cx="94" cy="50" r="2" fill="var(--c)"/>
-      <circle class="psy-spark ps3" cx="50" cy="94" r="2" fill="var(--c)"/>
-      <circle class="psy-spark ps4" cx="6"  cy="50" r="2" fill="var(--c)"/>
+    <!-- Psychic — distortion, mental rupture. From a single mental pulse
+         to nightmare reality-bending. -->
+    <svg viewBox="0 0 100 100" class="fx-svg psy-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: psychic pulse ruptures enemy's mind -->
+        {#each [{r:14,d:0.00},{r:24,d:0.06},{r:34,d:0.12}] as ring, i}
+          <circle class="psy-s-ring" style="animation-delay:{ring.d}s;"
+                  cx="50" cy="50" r={ring.r} stroke="var(--c)" stroke-width="2.4" fill="none" opacity="0"/>
+        {/each}
+        <!-- Single eye -->
+        <g class="psy-s-eye">
+          <ellipse cx="50" cy="50" rx="18" ry="10" stroke="var(--c)" stroke-width="2" fill="none"/>
+          <circle cx="50" cy="50" r="6" fill="var(--c)"/>
+          <circle cx="50" cy="50" r="3" fill="#0d0d16"/>
+        </g>
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: distorted psychic waves twist the battlefield visually -->
+        <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.18" class="psy-m-warp" style="filter:blur(14px)"/>
+        <!-- Counter-spinning mind rings -->
+        {#each [{r:20,sp:1},{r:32,sp:-1},{r:44,sp:1}] as ring, i}
+          <circle class="psy-m-ring" style="--sp:{ring.sp}; animation-delay:{i * 0.04}s;"
+                  cx="50" cy="50" r={ring.r} stroke="var(--c)" stroke-width="2" fill="none"
+                  stroke-dasharray="4 4" opacity="0"/>
+        {/each}
+        <!-- Distortion waves (sine paths warping) -->
+        {#each [{y:25},{y:50},{y:75}] as w, i}
+          <path class="psy-m-wave" style="animation-delay:{0.15 + i * 0.04}s;"
+                d={`M-10 ${w.y} Q25 ${w.y - 8} 50 ${w.y} Q75 ${w.y + 8} 110 ${w.y}`}
+                stroke="var(--c)" stroke-width="2" fill="none" opacity="0"/>
+        {/each}
+        <!-- Pulsing eye -->
+        <g class="psy-m-eye">
+          <ellipse cx="50" cy="50" rx="20" ry="11" stroke="var(--c)" stroke-width="2.4" fill="var(--c)" fill-opacity="0.2"/>
+          <circle cx="50" cy="50" r="7" fill="var(--c)"/>
+          <circle cx="50" cy="50" r="3.5" fill="#0d0d16"/>
+        </g>
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: massive spectral eyes appear as psychic energy crushes
+             the target mentally -->
+        <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.30" class="psy-l-warp" style="filter:blur(18px)"/>
+        <!-- 4 massive spectral eyes around the target -->
+        {#each [{x:20,y:20,d:0},{x:80,y:20,d:0.06},{x:20,y:80,d:0.12},{x:80,y:80,d:0.18}] as eye, i}
+          <g class="psy-l-eye" style="animation-delay:{eye.d}s;">
+            <ellipse cx={eye.x} cy={eye.y} rx="20" ry="14" stroke="var(--c)" stroke-width="2.5" fill="var(--c)" fill-opacity="0.3"/>
+            <circle cx={eye.x} cy={eye.y} r="8" fill="var(--c)"/>
+            <circle cx={eye.x} cy={eye.y} r="4" fill="#0d0d16"/>
+            <circle cx={eye.x - 2} cy={eye.y - 2} r="1.5" fill="#fff"/>
+          </g>
+        {/each}
+        <!-- Crushing radial wave pattern -->
+        {#each Array.from({length: 12}) as _, i}
+          {@const a = (i * Math.PI * 2) / 12}
+          <line class="psy-l-ray" style="--rot:{(a * 180) / Math.PI}deg; animation-delay:{0.30 + i * 0.018}s;"
+                x1="50" y1="50" x2="50" y2="6" stroke="var(--c)"
+                stroke-width="2" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Central crushing eye -->
+        <g class="psy-l-center">
+          <ellipse cx="50" cy="50" rx="22" ry="12" stroke="var(--c)" stroke-width="3" fill="var(--c)" fill-opacity="0.4"/>
+          <circle cx="50" cy="50" r="9" fill="var(--c)"/>
+          <circle cx="50" cy="50" r="5" fill="#0d0d16"/>
+        </g>
+
+      {:else}
+        <!-- GOD: reality BENDS into a nightmare illusion as overwhelming
+             psychic force tears apart perception itself -->
+        <rect class="psy-g-nightmare" x="-300" y="-300" width="700" height="700"
+              fill="var(--c)" opacity="0" style="filter:blur(40px)"/>
+        <!-- Distortion waves rippling across screen -->
+        {#each [{y:-30},{y:-10},{y:10},{y:30},{y:50},{y:70},{y:90},{y:110},{y:130}] as w, i}
+          <path class="psy-g-wave" style="animation-delay:{0.10 + i * 0.025}s;"
+                d={`M-200 ${w.y} Q-50 ${w.y - 20} 50 ${w.y} Q150 ${w.y + 20} 300 ${w.y}`}
+                stroke="var(--c)" stroke-width="2.4" fill="none" opacity="0"/>
+        {/each}
+        <!-- Massive screen-spanning eye opening -->
+        <g class="psy-g-eye">
+          <ellipse cx="50" cy="50" rx="200" ry="60" stroke="var(--c)" stroke-width="4" fill="var(--c)" fill-opacity="0.3"/>
+          <circle cx="50" cy="50" r="40" fill="var(--c)"/>
+          <circle cx="50" cy="50" r="22" fill="#0d0d16"/>
+          <circle cx="50" cy="50" r="10" fill="var(--c)" opacity="0.8"/>
+        </g>
+        <!-- 8 lesser haunting eyes scattered -->
+        {#each [{x:-20,y:-30},{x:120,y:-20},{x:-30,y:120},{x:130,y:130},{x:50,y:-50},{x:50,y:150},{x:160,y:50},{x:-60,y:50}] as e, i}
+          <g class="psy-g-eyelet" style="animation-delay:{0.45 + i * 0.025}s;">
+            <ellipse cx={e.x} cy={e.y} rx="20" ry="12" stroke="var(--c)" stroke-width="2" fill="var(--c)" fill-opacity="0.3" opacity="0"/>
+            <circle cx={e.x} cy={e.y} r="6" fill="var(--c)" opacity="0"/>
+            <circle cx={e.x} cy={e.y} r="3" fill="#0d0d16" opacity="0"/>
+          </g>
+        {/each}
+        <!-- Final mental detonation -->
+        <circle class="psy-g-deton" cx="50" cy="50" r="180" fill="var(--c)" opacity="0"/>
+      {/if}
     </svg>
 
   {:else if type === 'poison'}
@@ -2233,38 +2291,84 @@
     </svg>
 
   {:else if type === 'energy'}
-    <!-- Energy — crackling plasma core with branching forks. Bloom backdrop,
-         pulsing central orb, 6 jagged fork-lightning branches reaching out,
-         double containment ring, plasma sparks at the fork tips. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.28" class="en-bloom" style="filter:blur(18px)"/>
-      <!-- Containment rings — counter-rotating -->
-      <circle cx="50" cy="50" r="38" stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.55"
-              stroke-dasharray="6 4" class="en-ring en-rA"/>
-      <circle cx="50" cy="50" r="30" stroke="var(--c)" stroke-width="1.3" fill="none" opacity="0.4"
-              stroke-dasharray="4 2" class="en-ring en-rB"/>
-      <!-- Six branching fork-lightning paths -->
-      <g class="en-forks">
-        <polyline class="en-fork ef1" points="50,50 42,32 48,28 38,10"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <polyline class="en-fork ef2" points="50,50 60,34 54,30 66,12"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <polyline class="en-fork ef3" points="50,50 68,42 72,48 90,40"  stroke="var(--c)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <polyline class="en-fork ef4" points="50,50 62,62 58,68 70,86"  stroke="var(--c)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <polyline class="en-fork ef5" points="50,50 38,62 42,68 30,86"  stroke="var(--c)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <polyline class="en-fork ef6" points="50,50 32,42 28,48 10,40"  stroke="var(--c)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      </g>
-      <!-- Core orb (pulses) -->
-      <g class="en-core">
-        <circle cx="50" cy="50" r="14" fill="var(--c)"/>
-        <circle cx="50" cy="50" r="9"  fill="white" opacity="0.65"/>
-        <circle cx="50" cy="50" r="4"  fill="white"/>
-      </g>
-      <!-- Plasma sparks at fork tips -->
-      <circle class="en-spark es1" cx="38" cy="10" r="2.2" fill="var(--c)"/>
-      <circle class="en-spark es2" cx="66" cy="12" r="2.2" fill="var(--c)"/>
-      <circle class="en-spark es3" cx="90" cy="40" r="2"   fill="var(--c)" opacity="0.9"/>
-      <circle class="en-spark es4" cx="70" cy="86" r="2"   fill="var(--c)" opacity="0.9"/>
-      <circle class="en-spark es5" cx="30" cy="86" r="2"   fill="var(--c)" opacity="0.85"/>
-      <circle class="en-spark es6" cx="10" cy="40" r="2"   fill="var(--c)" opacity="0.85"/>
+    <!-- Energy / Neutral — raw kinetic force. From a single energy blast to
+         an overwhelming wave of pure destructive force. -->
+    <svg viewBox="0 0 100 100" class="fx-svg en-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: concentrated energy blast fires forward -->
+        <line class="en-s-blast" x1="-10" y1="50" x2="50" y2="50" stroke="var(--c)" stroke-width="8" stroke-linecap="round" opacity="0"/>
+        <line class="en-s-blast-c" x1="-10" y1="50" x2="50" y2="50" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0"/>
+        <circle class="en-s-impact" cx="50" cy="50" r="20" fill="url(#fi-core)" opacity="0"/>
+        {#each [0, 60, 120, 180, 240, 300] as deg, i}
+          <line class="en-s-spark" style="--rot:{deg}deg; animation-delay:{0.16 + i * 0.02}s;"
+                x1="50" y1="50" x2="50" y2="28" stroke="var(--c)"
+                stroke-width="2" stroke-linecap="round" opacity="0"/>
+        {/each}
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: rapid impact strikes explode against the target -->
+        <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.28" class="en-m-bloom" style="filter:blur(14px)"/>
+        <!-- 5 staggered impact bursts at slightly different positions -->
+        {#each [{x:42,y:42,d:0.04},{x:58,y:42,d:0.08},{x:50,y:58,d:0.12},{x:38,y:58,d:0.16},{x:62,y:50,d:0.20}] as h, i}
+          <circle class="en-m-hit" style="--cx:{h.x}px; --cy:{h.y}px; animation-delay:{h.d}s;"
+                  cx={h.x} cy={h.y} r="14" fill="var(--c)" opacity="0"/>
+        {/each}
+        <!-- Central detonation -->
+        <circle class="en-m-deton" cx="50" cy="50" r="22" fill="url(#fi-core)" opacity="0"/>
+        <!-- Containment ring -->
+        <circle class="en-m-ring" cx="50" cy="50" r="20" fill="none" stroke="var(--c)" stroke-width="2.5" opacity="0"/>
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: massive compressed energy erupts outward violently -->
+        <circle cx="50" cy="50" r="54" fill="var(--c)" opacity="0.35" class="en-l-bloom" style="filter:blur(18px)"/>
+        <!-- Compression rings collapsing then exploding -->
+        {#each [{r:50,d:0,m:0},{r:36,d:0.06,m:0},{r:22,d:0.12,m:0}] as r, i}
+          <circle class="en-l-compress" style="animation-delay:{r.d}s;"
+                  cx="50" cy="50" r={r.r} stroke="var(--c)" stroke-width="2.4" fill="none" opacity="0"/>
+        {/each}
+        <!-- Main eruption -->
+        <circle class="en-l-erupt" cx="50" cy="50" r="40" fill="url(#fi-core)" opacity="0"/>
+        <!-- 12 outward energy spikes -->
+        {#each [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] as deg, i}
+          <line class="en-l-spike" style="--rot:{deg}deg; animation-delay:{0.32 + i * 0.014}s;"
+                x1="50" y1="50" x2="50" y2="-10" stroke="var(--c)"
+                stroke-width="3" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Energy shockwave -->
+        <circle class="en-l-shock" cx="50" cy="50" r="20" fill="none" stroke="var(--c)" stroke-width="3" opacity="0"/>
+
+      {:else}
+        <!-- GOD: an OVERWHELMING WAVE of pure destructive force detonates
+             across the battlefield -->
+        <rect class="en-g-charge" x="-300" y="-300" width="700" height="700"
+              fill="var(--c)" opacity="0" style="filter:blur(40px)"/>
+        <!-- Charging compression rings -->
+        {#each [{r:120,d:0},{r:90,d:0.05},{r:60,d:0.10},{r:30,d:0.15}] as r, i}
+          <circle class="en-g-charge-ring" style="animation-delay:{r.d}s;"
+                  cx="50" cy="50" r={r.r} stroke="var(--c)" stroke-width="3" fill="none" opacity="0"/>
+        {/each}
+        <!-- Massive screen-spanning detonation -->
+        <circle class="en-g-deton" cx="50" cy="50" r="240" fill="url(#fi-core)" opacity="0"/>
+        <circle class="en-g-deton-c" cx="50" cy="50" r="120" fill="#fff" opacity="0"/>
+        <!-- Multiple shockwave rings -->
+        <circle class="en-g-shock en-g-sh1" cx="50" cy="50" r="20" fill="none" stroke="#fff" stroke-width="6" opacity="0"/>
+        <circle class="en-g-shock en-g-sh2" cx="50" cy="50" r="20" fill="none" stroke="var(--c)" stroke-width="5" opacity="0"/>
+        <circle class="en-g-shock en-g-sh3" cx="50" cy="50" r="20" fill="none" stroke="var(--c)" stroke-width="4" opacity="0"/>
+        <!-- 18 outward energy spikes (extend beyond viewBox) -->
+        {#each Array.from({length: 18}) as _, i}
+          {@const a = (i * Math.PI * 2) / 18}
+          <line class="en-g-spike" style="--rot:{(a * 180) / Math.PI}deg; animation-delay:{0.50 + i * 0.012}s;"
+                x1="50" y1="50" x2="50" y2="-150" stroke="var(--c)"
+                stroke-width="3" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Energy particle storm -->
+        {#each Array.from({length: 26}) as _, i}
+          {@const a = (i * Math.PI * 2) / 26}
+          {@const r = 130 + (i % 4) * 28}
+          <circle class="en-g-mote" style="--dx:{Math.cos(a) * r}px; --dy:{Math.sin(a) * r * 0.7 - 20}px; animation-delay:{0.55 + i * 0.012}s;"
+                  cx="50" cy="50" r="2" fill="var(--c)"/>
+        {/each}
+      {/if}
     </svg>
 
   {:else if type === 'cursed'}
@@ -2351,50 +2455,103 @@
     </svg>
 
   {:else if type === 'water'}
-    <!-- Water — TIDAL WAVE crashing in. A wide curved wave swells from the
-         attacker's side and breaks across the target's card with foam crest
-         and splash. No more single droplet. Direction (isRtl) flips the
-         wave so it always sweeps in from the attacker. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <!-- Approach bloom — the rising water mass before it crashes -->
-      <ellipse cx={isRtl ? 78 : 22} cy="60" rx="58" ry="32"
-               fill="var(--c)" opacity="0.32" class="wt-bloom" style="filter:blur(16px)"/>
-      <!-- Main wave body — a wide curved swell crashing across the target.
-           Path drawn to face the attacker's side; isRtl mirrors it. -->
-      <g class="wt-wave" style="transform-origin: {isRtl ? '100% 60%' : '0 60%'};">
-        {#if isRtl}
-          <path d="M120 96 L120 60 C110 40 95 28 80 30 C70 32 65 38 60 52 C55 64 48 70 40 70 C32 70 25 64 18 56 C12 50 6 50 -8 56 L-8 96 Z"
-                fill="var(--c)"/>
-          <!-- Foam crest along the top edge -->
-          <path d="M-8 56 C6 48 14 52 22 58 C30 64 38 66 46 64 C56 60 62 54 70 38 C78 24 92 32 110 50"
-                stroke="white" stroke-width="2.5" fill="none" opacity="0.85"/>
-          <!-- Inner highlight -->
-          <ellipse cx="40" cy="78" rx="46" ry="9" fill="white" opacity="0.22"/>
-        {:else}
-          <path d="M-20 96 L-20 60 C-10 40 5 28 20 30 C30 32 35 38 40 52 C45 64 52 70 60 70 C68 70 75 64 82 56 C88 50 94 50 108 56 L108 96 Z"
-                fill="var(--c)"/>
-          <path d="M108 56 C94 48 86 52 78 58 C70 64 62 66 54 64 C44 60 38 54 30 38 C22 24 8 32 -10 50"
-                stroke="white" stroke-width="2.5" fill="none" opacity="0.85"/>
-          <ellipse cx="60" cy="78" rx="46" ry="9" fill="white" opacity="0.22"/>
-        {/if}
-      </g>
-      <!-- Splash droplets flying upward as the wave crashes -->
-      <ellipse class="wt-drop wd1" cx="44" cy="44" rx="3.5" ry="6" fill="var(--c)" opacity="0.85"/>
-      <ellipse class="wt-drop wd2" cx="56" cy="38" rx="3"   ry="5" fill="var(--c)" opacity="0.85"/>
-      <ellipse class="wt-drop wd3" cx="62" cy="30" rx="2.5" ry="4" fill="var(--c)" opacity="0.8"/>
-      <ellipse class="wt-drop wd4" cx="36" cy="34" rx="2.5" ry="4" fill="var(--c)" opacity="0.8"/>
-      <ellipse class="wt-drop wd5" cx="50" cy="22" rx="3"   ry="5" fill="var(--c)" opacity="0.75"/>
-      <!-- Foam spray dots -->
-      <circle class="wt-foam" cx="40" cy="50" r="1.5" fill="white" opacity="0.85"/>
-      <circle class="wt-foam" cx="62" cy="48" r="1.5" fill="white" opacity="0.85"/>
-      <circle class="wt-foam" cx="50" cy="42" r="1.2" fill="white" opacity="0.85"/>
-      <circle class="wt-foam" cx="32" cy="60" r="1.5" fill="white" opacity="0.8"/>
-      <circle class="wt-foam" cx="68" cy="60" r="1.5" fill="white" opacity="0.8"/>
-      <!-- Final crash ripples on the target's ground -->
-      <ellipse class="wt-rip wr1" cx="50" cy="86" rx="20" ry="6"
-               stroke="var(--c)" stroke-width="2.5" fill="none"/>
-      <ellipse class="wt-rip wr2" cx="50" cy="86" rx="32" ry="9"
-               stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.7"/>
+    <!-- Water — flowing pressure, overwhelming force. From a pressurized
+         burst to an apocalyptic ocean. -->
+    <svg viewBox="0 0 100 100" class="fx-svg wt-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: pressurized burst of water slams into target -->
+        <path class="wt-s-jet" d="M-10 50 Q20 48 50 50" stroke="var(--c)" stroke-width="8" fill="none" stroke-linecap="round" opacity="0"/>
+        <path class="wt-s-jet-c" d="M-10 50 Q20 48 50 50" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0"/>
+        <!-- Impact burst -->
+        <circle class="wt-s-burst" cx="50" cy="50" r="20" fill="var(--c)" opacity="0"/>
+        <!-- Splash droplets -->
+        {#each [{x:60,y:30,d:0.16},{x:70,y:50,d:0.18},{x:60,y:70,d:0.20},{x:50,y:30,d:0.22},{x:50,y:70,d:0.24}] as d, i}
+          <ellipse class="wt-s-drop" style="animation-delay:{d.d}s;"
+                   cx={d.x} cy={d.y} rx="2" ry="3.5" fill="var(--c)"/>
+        {/each}
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: violent waves spiral around the battlefield before crashing
+             inward -->
+        <ellipse cx="50" cy="55" rx="50" ry="36" fill="var(--c)" opacity="0.25"
+                 class="wt-m-bloom" style="filter:blur(14px)"/>
+        <!-- 4 spiral wave arcs -->
+        {#each [{r:0},{r:90},{r:180},{r:270}] as w, i}
+          <path class="wt-m-arc" style="--rot:{w.r}deg; animation-delay:{i * 0.04}s;"
+                d="M50 50 Q70 30 90 30 Q80 50 70 60" stroke="var(--c)"
+                stroke-width="3" fill="none" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Inward crash impact -->
+        <circle class="wt-m-crash" cx="50" cy="55" r="22" fill="var(--c)" opacity="0"/>
+        <!-- Foam crest -->
+        {#each Array.from({length: 8}) as _, i}
+          {@const a = (i * Math.PI * 2) / 8}
+          <circle class="wt-m-foam" style="--dx:{Math.cos(a) * 28}px; --dy:{Math.sin(a) * 22}px; animation-delay:{0.30 + i * 0.02}s;"
+                  cx="50" cy="55" r="2" fill="#fff"/>
+        {/each}
+        <!-- Crash ripples -->
+        <ellipse class="wt-m-rip" cx="50" cy="86" rx="30" ry="8" fill="none"
+                 stroke="var(--c)" stroke-width="2.5" opacity="0"/>
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: a massive TIDAL SURGE consumes the battlefield entirely -->
+        <ellipse cx={isRtl ? 78 : 22} cy="60" rx="70" ry="40"
+                 fill="var(--c)" opacity="0.5" class="wt-l-bloom" style="filter:blur(20px)"/>
+        <!-- Giant tidal wave body crossing screen -->
+        <g class="wt-l-wave">
+          {#if isRtl}
+            <path d="M140 100 L140 50 C120 25 95 10 70 18 C50 26 40 38 30 60 C20 80 10 85 -20 80 L-20 100 Z"
+                  fill="var(--c)"/>
+            <path d="M-20 80 C5 70 20 75 35 65 C50 50 60 30 75 24 C95 12 110 18 130 40"
+                  stroke="#fff" stroke-width="3" fill="none" opacity="0.9"/>
+          {:else}
+            <path d="M-40 100 L-40 50 C-20 25 5 10 30 18 C50 26 60 38 70 60 C80 80 90 85 120 80 L120 100 Z"
+                  fill="var(--c)"/>
+            <path d="M120 80 C95 70 80 75 65 65 C50 50 40 30 25 24 C5 12 -10 18 -30 40"
+                  stroke="#fff" stroke-width="3" fill="none" opacity="0.9"/>
+          {/if}
+        </g>
+        <!-- 12 spray droplets flung up -->
+        {#each Array.from({length: 12}) as _, i}
+          {@const a = -Math.PI + (i / 12) * Math.PI}
+          <ellipse class="wt-l-spray" style="--dx:{Math.cos(a) * 50}px; --dy:{Math.sin(a) * 40 - 10}px; animation-delay:{0.30 + i * 0.018}s;"
+                   cx="50" cy="60" rx="2.5" ry="5" fill="var(--c)"/>
+        {/each}
+        <!-- Ground shock ring -->
+        <ellipse class="wt-l-shock" cx="50" cy="92" rx="50" ry="9" fill="none"
+                 stroke="var(--c)" stroke-width="3" opacity="0"/>
+
+      {:else}
+        <!-- GOD: an OCEAN materializes overhead before collapsing downward
+             in an apocalyptic flood -->
+        <rect class="wt-g-flood" x="-300" y="-300" width="700" height="700"
+              fill="var(--c)" opacity="0" style="filter:blur(40px)"/>
+        <!-- Overhead ocean mass -->
+        <g class="wt-g-ocean">
+          <ellipse cx="50" cy="-80" rx="260" ry="60" fill="var(--c)" opacity="0.95"/>
+          <ellipse cx="50" cy="-80" rx="220" ry="40" fill="#fff" opacity="0.35"/>
+        </g>
+        <!-- Collapsing water curtain (extends down to ground) -->
+        <g class="wt-g-curtain">
+          <path d="M-200 100 L-200 -20 Q-100 -10 0 -20 Q100 -30 200 -20 Q300 -10 300 -20 L300 100 Z"
+                fill="var(--c)" opacity="0.9"/>
+          <path d="M-200 -20 Q-100 -10 0 -20 Q100 -30 200 -20 Q300 -10 300 -20"
+                stroke="#fff" stroke-width="4" fill="none" opacity="0.8"/>
+        </g>
+        <!-- Apocalyptic ground flood pool -->
+        <ellipse class="wt-g-pool" cx="50" cy="96" rx="280" ry="20"
+                 fill="var(--c)" opacity="0" style="filter:blur(8px)"/>
+        <!-- 24 splash droplets across screen -->
+        {#each Array.from({length: 24}) as _, i}
+          {@const a = (i * Math.PI * 2) / 24}
+          {@const r = 130 + (i % 4) * 28}
+          <ellipse class="wt-g-drop" style="--dx:{Math.cos(a) * r}px; --dy:{Math.sin(a) * r * 0.7 - 30}px; animation-delay:{0.40 + i * 0.012}s;"
+                   cx="50" cy="50" rx="2.5" ry="5" fill="var(--c)"/>
+        {/each}
+        <!-- Massive ground shockwave -->
+        <ellipse class="wt-g-shock" cx="50" cy="96" rx="20" ry="6" fill="none"
+                 stroke="#fff" stroke-width="4" opacity="0"/>
+      {/if}
     </svg>
 
   {:else if type === 'arcane'}
@@ -2965,55 +3122,168 @@
     </svg>
 
   {:else if type === 'sound'}
-    <!-- Sound — concentric sonic ripples expanding outward + speaker
-         cones on both sides + pulsing core. Big audio-bloom backdrop. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="48" fill="var(--c)" opacity="0.28" class="snd-bloom" style="filter:blur(18px)"/>
-      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.14" style="filter:blur(10px)"/>
-      <!-- Three expanding rings — staggered to create a pulsing sonic feel -->
-      <circle class="sonic-ring snr1" cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="3"   fill="none"/>
-      <circle class="sonic-ring snr2" cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="2.5" fill="none"/>
-      <circle class="sonic-ring snr3" cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="2"   fill="none"/>
-      <circle class="sonic-ring snr4" cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="1.5" fill="none"/>
-      <!-- Speaker-cone arcs to one side (direction-agnostic) -->
-      <g class="sonic-cone">
-        <path d="M62 30 Q78 50 62 70"   stroke="var(--c)" stroke-width="3"   fill="none" opacity="0.85" stroke-linecap="round"/>
-        <path d="M68 22 Q88 50 68 78"   stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.7" stroke-linecap="round"/>
-        <path d="M38 30 Q22 50 38 70"   stroke="var(--c)" stroke-width="3"   fill="none" opacity="0.85" stroke-linecap="round"/>
-        <path d="M32 22 Q12 50 32 78"   stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0.7" stroke-linecap="round"/>
-      </g>
-      <!-- Center pulse -->
-      <circle cx="50" cy="50" r="6" fill="var(--c)" class="sonic-core"/>
-      <circle cx="50" cy="50" r="3" fill="white" opacity="0.85"/>
+    <!-- Sound — shockwaves, rhythm distortion. From a single pulse to a
+         reality-rippling scream. -->
+    <svg viewBox="0 0 100 100" class="fx-svg snd-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: concentrated sound pulse blasts forward -->
+        {#each [{r:12,d:0},{r:24,d:0.06},{r:36,d:0.12}] as ring, i}
+          <circle class="snd-s-ring" style="animation-delay:{ring.d}s;"
+                  cx="50" cy="50" r={ring.r} stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0"/>
+        {/each}
+        <!-- Speaker cone -->
+        <path class="snd-s-cone" d="M62 36 Q78 50 62 64" stroke="var(--c)" stroke-width="3" fill="none" stroke-linecap="round" opacity="0"/>
+        <!-- Center pulse -->
+        <circle class="snd-s-core" cx="50" cy="50" r="6" fill="var(--c)" opacity="0"/>
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: rapid sonic shockwaves ripple outward repeatedly -->
+        <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.22" class="snd-m-bloom" style="filter:blur(14px)"/>
+        <!-- 5 staggered concentric shockwaves -->
+        {#each Array.from({length: 5}) as _, i}
+          <circle class="snd-m-ring" style="animation-delay:{i * 0.08}s;"
+                  cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="3" fill="none" opacity="0"/>
+        {/each}
+        <!-- Speaker cones on both sides (rhythm pulse) -->
+        <path class="snd-m-cone" d="M64 30 Q82 50 64 70" stroke="var(--c)" stroke-width="3" fill="none" stroke-linecap="round" opacity="0"/>
+        <path class="snd-m-cone" d="M36 30 Q18 50 36 70" stroke="var(--c)" stroke-width="3" fill="none" stroke-linecap="round" opacity="0" style="animation-delay:0.05s;"/>
+        <!-- Pulsing core -->
+        <circle class="snd-m-core" cx="50" cy="50" r="8" fill="var(--c)" opacity="0"/>
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: MASSIVE vibrating rings distort the battlefield violently -->
+        <circle cx="50" cy="50" r="60" fill="var(--c)" opacity="0.32" class="snd-l-bloom" style="filter:blur(18px)"/>
+        <!-- 4 huge expanding rings with vibration warble -->
+        {#each Array.from({length: 4}) as _, i}
+          <circle class="snd-l-ring" style="animation-delay:{i * 0.10}s;"
+                  cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="4" fill="none" opacity="0"/>
+        {/each}
+        <!-- Distortion shockwave pattern -->
+        {#each [-25, 0, 25, 50, 75, 100, 125] as y, i}
+          <path class="snd-l-wave" style="animation-delay:{0.15 + i * 0.05}s;"
+                d={`M-20 ${y} Q15 ${y - 6} 50 ${y} Q85 ${y + 6} 120 ${y}`}
+                stroke="var(--c)" stroke-width="2.4" fill="none" opacity="0"/>
+        {/each}
+        <!-- Bombing core -->
+        <circle class="snd-l-core" cx="50" cy="50" r="14" fill="var(--c)" opacity="0"/>
+
+      {:else}
+        <!-- GOD: a catastrophic SONIC SCREAM shatters the battlefield as
+             reality ripples from pure vibration -->
+        <rect class="snd-g-vibrate" x="-300" y="-300" width="700" height="700"
+              fill="var(--c)" opacity="0" style="filter:blur(30px)"/>
+        <!-- 6 enormous shockwave rings (screen-spanning) -->
+        {#each Array.from({length: 6}) as _, i}
+          <circle class="snd-g-ring" style="animation-delay:{i * 0.10}s;"
+                  cx="50" cy="50" r="14" stroke="var(--c)" stroke-width="6" fill="none" opacity="0"/>
+        {/each}
+        <!-- Distortion wave grid across full screen -->
+        {#each Array.from({length: 12}) as _, i}
+          {@const y = -50 + i * 18}
+          <path class="snd-g-wave" style="animation-delay:{0.10 + i * 0.03}s;"
+                d={`M-200 ${y} Q-50 ${y - 16} 50 ${y} Q150 ${y + 16} 300 ${y}`}
+                stroke="var(--c)" stroke-width="2.4" fill="none" opacity="0"/>
+        {/each}
+        <!-- Reality-shatter cracks emanating -->
+        {#each Array.from({length: 16}) as _, i}
+          {@const a = (i * Math.PI * 2) / 16}
+          <line class="snd-g-crack" style="--rot:{(a * 180) / Math.PI}deg; animation-delay:{0.45 + i * 0.014}s;"
+                x1="50" y1="50" x2="50" y2="-100" stroke="var(--c)"
+                stroke-width="2.4" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Scream core detonation -->
+        <circle class="snd-g-scream" cx="50" cy="50" r="180" fill="var(--c)" opacity="0"/>
+      {/if}
     </svg>
 
   {:else if type === 'chaos'}
-    <!-- Chaos — fractured reality glitch, jagged shards, color-shift +
-         permanent jitter wobble. Big reality-warp bloom backdrop. -->
-    <svg viewBox="0 0 100 100" class="fx-svg chaos-glitch" overflow="visible">
-      <circle cx="50" cy="50" r="48" fill="var(--c)" opacity="0.32" class="chaos-bloom" style="filter:blur(20px)"/>
-      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.20" style="filter:blur(12px)"/>
-      <!-- Reality fracture lines — irregular, branching -->
-      <g class="chaos-frac">
-        <polyline points="20,18 32,30 28,42 42,46 38,60 54,58" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.85"/>
-        <polyline points="82,18 70,28 76,40 62,46 68,58 54,58" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.85"/>
-        <polyline points="82,82 70,72 76,60 62,54" stroke="var(--c)" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.75"/>
-        <polyline points="20,82 32,72 28,60 42,54" stroke="var(--c)" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.75"/>
-      </g>
-      <!-- Reality fragments — irregular geometric shapes -->
-      <g class="chaos-frags">
-        <polygon class="cfrag cf1" points="30,32 38,28 42,38 34,42" fill="var(--c)" opacity="0.7"/>
-        <polygon class="cfrag cf2" points="70,28 78,34 72,42 64,38" fill="var(--c)" opacity="0.7"/>
-        <polygon class="cfrag cf3" points="28,68 38,66 34,76 26,74" fill="var(--c)" opacity="0.65"/>
-        <polygon class="cfrag cf4" points="68,72 76,68 74,78 64,76" fill="var(--c)" opacity="0.65"/>
-      </g>
-      <!-- Glitched core: stacked offset rings to suggest dimensional misalignment -->
-      <g class="chaos-core">
-        <rect class="chaos-glitch-a" x="40" y="40" width="20" height="20" fill="var(--c)" opacity="0.9"/>
-        <rect class="chaos-glitch-b" x="38" y="42" width="20" height="20" fill="var(--c)" opacity="0.6"/>
-        <rect class="chaos-glitch-c" x="42" y="38" width="20" height="20" fill="var(--c)" opacity="0.4"/>
-        <circle cx="50" cy="50" r="5" fill="white" opacity="0.9"/>
-      </g>
+    <!-- Chaos — unpredictable destruction. From a single unstable burst to
+         total reality destabilization. -->
+    <svg viewBox="0 0 100 100" class="fx-svg cha-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: random unstable burst explodes unpredictably -->
+        <polygon class="cha-s-shard" points="50,50 38,30 46,42 30,46" fill="var(--c)" opacity="0"/>
+        <polygon class="cha-s-shard-b" points="50,50 64,32 56,44 70,50" fill="var(--c)" opacity="0" style="animation-delay:0.04s;"/>
+        <polygon class="cha-s-shard-c" points="50,50 42,68 50,58 38,72" fill="var(--c)" opacity="0" style="animation-delay:0.08s;"/>
+        <circle class="cha-s-glitch" cx="50" cy="50" r="20" fill="var(--c)" opacity="0"/>
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: elements begin mutating mid-attack chaotically -->
+        <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.25" class="cha-m-bloom" style="filter:blur(14px)"/>
+        <!-- 4 different element-shapes mixed (fire, ice, lightning, slash) -->
+        <g class="cha-m-mut1"><path d="M50 50 C44 40 44 30 50 18 C56 30 56 40 50 50Z" fill="var(--c)" opacity="0"/></g>
+        <g class="cha-m-mut2"><polygon points="50,50 60,40 50,30 40,40" fill="var(--c)" opacity="0"/></g>
+        <g class="cha-m-mut3"><polyline points="20,30 32,40 24,52 38,60" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0"/></g>
+        <g class="cha-m-mut4"><line x1="68" y1="32" x2="82" y2="46" stroke="var(--c)" stroke-width="3" stroke-linecap="round" opacity="0"/></g>
+        <!-- Reality fragments -->
+        {#each [{x:30,y:30,r:0},{x:70,y:30,r:45},{x:30,y:70,r:-45},{x:70,y:70,r:90}] as f, i}
+          <polygon class="cha-m-frag" style="--rot:{f.r}deg; --cx:{f.x}px; --cy:{f.y}px; animation-delay:{0.15 + i * 0.03}s;"
+                   points="{f.x-4},{f.y} {f.x},{f.y-4} {f.x+4},{f.y} {f.x},{f.y+4}" fill="var(--c)" opacity="0"/>
+        {/each}
+        <!-- Glitched core -->
+        <g class="cha-m-core">
+          <rect x="40" y="40" width="20" height="20" fill="var(--c)" opacity="0"/>
+          <rect x="38" y="42" width="20" height="20" fill="var(--c)" opacity="0"/>
+        </g>
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: reality FLICKERS rapidly between multiple attacks
+             simultaneously -->
+        <circle cx="50" cy="50" r="56" fill="var(--c)" opacity="0.32" class="cha-l-bloom" style="filter:blur(18px)"/>
+        <!-- Flickering element overlays (each is a mini ghost-attack) -->
+        <g class="cha-l-flick-fire">
+          <path d="M50 90 C36 60 30 50 40 20 C50 40 50 40 50 0 C50 40 50 40 60 20 C70 50 64 60 50 90Z" fill="var(--c)" opacity="0"/>
+        </g>
+        <g class="cha-l-flick-ice">
+          <polygon points="50,30 56,40 50,50 44,40" fill="var(--c)" opacity="0"/>
+          <line x1="50" y1="20" x2="50" y2="80" stroke="var(--c)" stroke-width="3" opacity="0"/>
+          <line x1="20" y1="50" x2="80" y2="50" stroke="var(--c)" stroke-width="3" opacity="0"/>
+        </g>
+        <g class="cha-l-flick-lit">
+          <polyline points="48,10 56,30 42,50 56,70 50,90" stroke="var(--c)" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0"/>
+        </g>
+        <!-- 8 reality fracture polygons -->
+        {#each Array.from({length: 8}) as _, i}
+          {@const a = (i * Math.PI * 2) / 8}
+          {@const x = 50 + Math.cos(a) * 38}
+          {@const y = 50 + Math.sin(a) * 30}
+          <polygon class="cha-l-frag" style="--rot:{(a * 180) / Math.PI}deg; animation-delay:{0.30 + i * 0.025}s;"
+                   points="{x-5},{y} {x},{y-5} {x+5},{y} {x},{y+5}" fill="var(--c)" opacity="0"/>
+        {/each}
+        <!-- Glitched core -->
+        <circle class="cha-l-deton" cx="50" cy="50" r="28" fill="var(--c)" opacity="0"/>
+
+      {:else}
+        <!-- GOD: the battlefield completely DESTABILIZES as impossible
+             attacks overlap, mutate, and collapse uncontrollably -->
+        <rect class="cha-g-warp" x="-300" y="-300" width="700" height="700"
+              fill="var(--c)" opacity="0" style="filter:blur(40px)"/>
+        <!-- 9 layered impossible attacks overlapping -->
+        <g class="cha-g-layer cgl1">
+          <path d="M50 100 C30 60 20 30 40 0 C50 30 50 30 50 0 C50 30 50 30 60 0 C80 30 70 60 50 100Z" fill="var(--c)" opacity="0"/>
+        </g>
+        <g class="cha-g-layer cgl2">
+          <circle cx="50" cy="50" r="40" stroke="var(--c)" stroke-width="3" fill="none" stroke-dasharray="4 4" opacity="0"/>
+        </g>
+        <g class="cha-g-layer cgl3">
+          <polyline points="20,0 40,30 20,60 50,80 30,100" stroke="var(--c)" stroke-width="3" stroke-linecap="round" fill="none" opacity="0"/>
+        </g>
+        <g class="cha-g-layer cgl4">
+          <polyline points="80,0 60,30 80,60 50,80 70,100" stroke="var(--c)" stroke-width="3" stroke-linecap="round" fill="none" opacity="0"/>
+        </g>
+        <g class="cha-g-layer cgl5">
+          <polygon points="50,20 64,42 88,42 68,58 76,84 50,68 24,84 32,58 12,42 36,42" fill="var(--c)" opacity="0"/>
+        </g>
+        <!-- Screen-wide reality fragments storm -->
+        {#each Array.from({length: 24}) as _, i}
+          {@const a = (i * Math.PI * 2) / 24}
+          {@const r = 130 + (i % 4) * 30}
+          <polygon class="cha-g-frag" style="--dx:{Math.cos(a) * r}px; --dy:{Math.sin(a) * r * 0.7 - 20}px; --rot:{i * 23}deg; animation-delay:{0.40 + i * 0.012}s;"
+                   points="50,46 54,50 50,54 46,50" fill="var(--c)" opacity="0"/>
+        {/each}
+        <!-- Final unstable collapse -->
+        <circle class="cha-g-collapse" cx="50" cy="50" r="180" fill="var(--c)" opacity="0"/>
+      {/if}
     </svg>
 
   {:else}
@@ -4983,15 +5253,199 @@
 @keyframes sl-g-pillar  { 0% { transform: scaleY(0); opacity: 0; } 40% { transform: scaleY(1.2); opacity: 0.8; filter: brightness(2); } 100% { transform: scaleY(1); opacity: 0; } }
 @keyframes sl-g-eye     { 0%, 30% { opacity: 0; transform: scale(0); } 60% { opacity: 1; transform: scale(1.3); filter: brightness(2) drop-shadow(0 0 10px var(--c)); } 100% { opacity: 0; transform: scale(1); } }
 
+/* ─── WATER (4-band revamp) ────────────────────────────────────── */
+.wt-s-jet   { stroke-dasharray: 80; stroke-dashoffset: 80; animation: wt-s-jet 0.30s ease-out forwards; }
+.wt-s-jet-c { stroke-dasharray: 80; stroke-dashoffset: 80; animation: wt-s-jet 0.30s 0.02s ease-out forwards; }
+.wt-s-burst { transform-origin: 50% 50%; animation: tm-s-snap 0.45s 0.20s ease-out forwards; }
+.wt-s-drop  { transform-origin: center; transform-box: fill-box; animation: wt-s-drop 0.45s ease-out forwards; opacity: 0; }
+@keyframes wt-s-jet  { 0% { stroke-dashoffset: 80; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(1.6); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes wt-s-drop { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.3) translateY(-8px); opacity: 1; } 100% { transform: scale(0.5) translateY(-20px); opacity: 0; } }
+
+.wt-m-bloom { transform-origin: 50% 55%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.wt-m-arc   { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scale(0); animation: wt-m-arc 0.55s ease-out forwards; }
+.wt-m-crash { transform-origin: 50% 55%; animation: tm-s-snap 0.45s 0.30s ease-out forwards; }
+.wt-m-foam  { transform-origin: center; transform-box: fill-box; animation: wt-m-foam 0.45s ease-out forwards; opacity: 0; }
+.wt-m-rip   { transform-origin: 50% 86%; animation: met-l-shock 0.55s 0.30s ease-out forwards; }
+@keyframes wt-m-arc  { 0% { transform: rotate(var(--rot)) scale(0); opacity: 0; } 50% { transform: rotate(calc(var(--rot) + 60deg)) scale(1.1); opacity: 1; filter: brightness(1.6); } 100% { transform: rotate(calc(var(--rot) + 120deg)) scale(0.8); opacity: 0; } }
+@keyframes wt-m-foam { 0% { transform: translate(0,0) scale(0); opacity: 0; } 40% { transform: translate(calc(var(--dx) * 0.4), calc(var(--dy) * 0.4)) scale(1.4); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.4); opacity: 0; } }
+
+.wt-l-bloom  { transform-origin: 50% 60%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.wt-l-wave   { transform-origin: 50% 60%; animation: wt-l-wave 0.65s ease-out forwards; opacity: 0; }
+.wt-l-spray  { transform-origin: center; transform-box: fill-box; animation: wt-l-spray 0.55s ease-out forwards; opacity: 0; }
+.wt-l-shock  { transform-origin: 50% 92%; animation: met-l-shock 0.55s 0.30s ease-out forwards; }
+@keyframes wt-l-wave { 0% { transform: scaleX(0.4) scaleY(0.6); opacity: 0; } 50% { transform: scaleX(1.1) scaleY(1.1); opacity: 1; filter: brightness(1.6) drop-shadow(0 0 18px var(--c)); } 100% { transform: scaleX(1) scaleY(1); opacity: 0; } }
+@keyframes wt-l-spray{ 0% { transform: translate(0,0) scale(0); opacity: 0; } 35% { transform: translate(calc(var(--dx) * 0.4), calc(var(--dy) * 0.4)) scale(1.3); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.5); opacity: 0; } }
+
+.wt-g-flood   { animation: er-g-darken 1.0s ease-out forwards; }
+.wt-g-ocean   { transform-origin: 50% -80%; animation: wt-g-ocean 0.55s ease-out forwards; opacity: 0; }
+.wt-g-curtain { transform-origin: 50% 0%; animation: wt-g-curtain 0.85s 0.30s ease-in forwards; opacity: 0; }
+.wt-g-pool    { transform-origin: 50% 96%; animation: ps-g-ocean 0.85s 0.50s ease-out forwards; }
+.wt-g-drop    { transform-origin: center; transform-box: fill-box; animation: wt-g-drop 0.85s ease-out forwards; opacity: 0; }
+.wt-g-shock   { transform-origin: 50% 96%; animation: er-g-shock 0.85s 0.60s ease-out forwards; }
+.wt-band-epic { animation: ps-g-shake 0.55s 0.35s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes wt-g-ocean   { 0% { transform: scale(0.4); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 36px var(--c)); } 100% { transform: scale(1.3); opacity: 0; } }
+@keyframes wt-g-curtain { 0% { transform: scaleY(0); opacity: 0; } 60% { transform: scaleY(1.1); opacity: 0.95; filter: drop-shadow(0 0 20px var(--c)); } 100% { transform: scaleY(1); opacity: 0; } }
+@keyframes wt-g-drop    { 0% { transform: translate(0,0) scale(0); opacity: 0; } 30% { transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) scale(1.3); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.5); opacity: 0; } }
+
+/* ─── PSYCHIC (4-band revamp) ──────────────────────────────────── */
+.psy-s-ring { transform-origin: 50% 50%; animation: psy-s-ring 0.55s ease-out forwards; }
+.psy-s-eye  { transform-origin: 50% 50%; animation: psy-s-eye 0.55s 0.10s ease-in-out forwards; opacity: 0; }
+@keyframes psy-s-ring { 0% { transform: scale(0.3); opacity: 0; } 30% { transform: scale(1.2); opacity: 1; filter: brightness(1.6); } 100% { transform: scale(2.5); opacity: 0; } }
+@keyframes psy-s-eye  { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 12px var(--c)); } 100% { transform: scale(0.9); opacity: 0; } }
+
+.psy-m-warp { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.psy-m-ring { transform-origin: 50% 50%; animation: psy-m-ring 0.85s ease-in-out forwards; }
+.psy-m-wave { animation: psy-m-wave 0.65s ease-out forwards; }
+.psy-m-eye  { transform-origin: 50% 50%; animation: psy-m-eye 0.65s 0.30s ease-in-out forwards; opacity: 0; }
+@keyframes psy-m-ring { 0% { transform: scale(0.4) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(calc(180deg * var(--sp))); opacity: 1; filter: brightness(1.6); } 100% { transform: scale(1.3) rotate(calc(360deg * var(--sp))); opacity: 0; } }
+@keyframes psy-m-wave { 0% { transform: translateY(0) scaleY(1); opacity: 0; } 50% { transform: translateY(0) scaleY(1.4); opacity: 1; filter: brightness(1.6); } 100% { transform: translateY(0) scaleY(1); opacity: 0; } }
+@keyframes psy-m-eye  { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 16px var(--c)); } 100% { transform: scale(0.9); opacity: 0; } }
+
+.psy-l-warp   { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.psy-l-eye    { transform-origin: 50% 50%; animation: psy-l-eye 0.85s ease-in-out forwards; opacity: 0; }
+.psy-l-ray    { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: psy-l-ray 0.50s ease-out forwards; }
+.psy-l-center { transform-origin: 50% 50%; animation: psy-l-center 0.85s 0.35s ease-in-out forwards; opacity: 0; }
+@keyframes psy-l-eye    { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 20px var(--c)); } 100% { transform: scale(1); opacity: 0; } }
+@keyframes psy-l-ray    { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 50% { transform: rotate(var(--rot)) scaleY(1.3); opacity: 1; filter: brightness(2); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+@keyframes psy-l-center { 0% { transform: scale(0); opacity: 0; filter: brightness(4); } 50% { transform: scale(1.3); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 30px var(--c)); } 100% { transform: scale(1); opacity: 0; } }
+
+.psy-g-nightmare { animation: psy-g-nightmare 1.0s ease-out forwards; }
+.psy-g-wave      { animation: psy-g-wave 0.65s ease-out forwards; }
+.psy-g-eye       { transform-origin: 50% 50%; animation: psy-g-eye 0.85s 0.30s ease-in-out forwards; opacity: 0; }
+.psy-g-eyelet    { animation: psy-g-eyelet 0.85s ease-in-out forwards; }
+.psy-g-deton     { transform-origin: 50% 50%; animation: tm-s-snap 0.65s 0.65s ease-out forwards; }
+.psy-band-epic   { animation: psy-g-warp-shake 0.85s 0.30s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes psy-g-nightmare { 0% { opacity: 0; } 35% { opacity: 0.55; } 80% { opacity: 0.3; } 100% { opacity: 0; } }
+@keyframes psy-g-wave      { 0% { transform: scaleY(0.6) translateY(20px); opacity: 0; } 50% { transform: scaleY(1.4) translateY(0); opacity: 1; filter: brightness(1.6); } 100% { transform: scaleY(1) translateY(-20px); opacity: 0; } }
+@keyframes psy-g-eye       { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 50px var(--c)); } 100% { transform: scale(1.3); opacity: 0; } }
+@keyframes psy-g-eyelet    { 0%, 30% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+@keyframes psy-g-eyelet-children { 0%, 30% { opacity: 0; } 60% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes psy-g-warp-shake{ 0%, 100% { transform: skew(0deg, 0deg); } 25% { transform: skew(-2deg, 1deg); } 50% { transform: skew(2deg, -1deg); } 75% { transform: skew(-1deg, 2deg); } }
+.psy-g-eyelet ellipse, .psy-g-eyelet circle { animation: psy-g-eyelet-children 0.85s ease-in-out forwards; animation-delay: inherit; }
+
+/* ─── SOUND (4-band revamp) ────────────────────────────────────── */
+.snd-s-ring { transform-origin: 50% 50%; animation: snd-s-ring 0.55s ease-out forwards; }
+.snd-s-cone { animation: snd-s-cone 0.55s 0.10s ease-out forwards; }
+.snd-s-core { transform-origin: 50% 50%; animation: snd-s-core 0.55s ease-in-out forwards; }
+@keyframes snd-s-ring { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; filter: brightness(1.6); } 100% { transform: scale(3); opacity: 0; } }
+@keyframes snd-s-cone { 0% { opacity: 0; } 50% { opacity: 1; filter: brightness(2); } 100% { opacity: 0; } }
+@keyframes snd-s-core { 0% { transform: scale(0); opacity: 0; } 30%, 60% { transform: scale(1.4); opacity: 1; filter: brightness(2); } 100% { transform: scale(0.8); opacity: 0; } }
+
+.snd-m-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.snd-m-ring  { transform-origin: 50% 50%; animation: snd-m-ring 0.65s ease-out forwards; }
+.snd-m-cone  { animation: snd-m-cone 0.65s ease-out forwards; }
+.snd-m-core  { transform-origin: 50% 50%; animation: snd-m-core 0.85s ease-in-out forwards; }
+@keyframes snd-m-ring { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(2); opacity: 1; filter: brightness(1.6); } 100% { transform: scale(4); opacity: 0; } }
+@keyframes snd-m-cone { 0% { opacity: 0; transform: scaleX(0.6); } 50% { opacity: 1; transform: scaleX(1.2); filter: brightness(2); } 100% { opacity: 0; transform: scaleX(1); } }
+@keyframes snd-m-core { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.4); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 18px var(--c)); } 100% { transform: scale(1); opacity: 0; } }
+
+.snd-l-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.snd-l-ring  { transform-origin: 50% 50%; animation: snd-l-ring 0.85s ease-out forwards; }
+.snd-l-wave  { animation: snd-l-wave 0.55s ease-out forwards; }
+.snd-l-core  { transform-origin: 50% 50%; animation: snd-l-core 0.85s ease-in-out forwards; opacity: 0; }
+@keyframes snd-l-ring { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(2.5); opacity: 1; filter: brightness(1.6); } 100% { transform: scale(6); opacity: 0; } }
+@keyframes snd-l-wave { 0% { transform: scaleY(0.6); opacity: 0; } 50% { transform: scaleY(1.4); opacity: 1; filter: brightness(1.6); } 100% { transform: scaleY(1); opacity: 0; } }
+@keyframes snd-l-core { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.4); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 24px var(--c)); } 100% { transform: scale(1); opacity: 0; } }
+
+.snd-g-vibrate { animation: snd-g-vibrate 1.0s ease-out forwards; }
+.snd-g-ring    { transform-origin: 50% 50%; animation: snd-g-ring 0.85s ease-out forwards; }
+.snd-g-wave    { animation: psy-g-wave 0.65s ease-out forwards; }
+.snd-g-crack   { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: gv-g-fracture 0.55s ease-out forwards; }
+.snd-g-scream  { transform-origin: 50% 50%; animation: tm-s-snap 0.65s 0.60s ease-out forwards; }
+.snd-band-epic { animation: snd-g-shake 0.65s 0.30s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes snd-g-vibrate { 0% { opacity: 0; } 40% { opacity: 0.5; } 100% { opacity: 0; } }
+@keyframes snd-g-ring    { 0% { transform: scale(0.3); opacity: 0; } 40% { transform: scale(3); opacity: 1; filter: brightness(1.6); } 100% { transform: scale(12); opacity: 0; } }
+@keyframes snd-g-shake   { 0%, 100% { transform: translate(0,0); } 15% { transform: translate(-2px, 1px); } 30% { transform: translate(2px, -2px); } 45% { transform: translate(-2px, -1px); } 60% { transform: translate(2px, 1px); } 75% { transform: translate(-1px, 2px); } }
+
+/* ─── CHAOS (4-band revamp) ────────────────────────────────────── */
+.cha-s-shard   { transform-origin: 50% 50%; animation: cha-s-shard 0.45s ease-out forwards; }
+.cha-s-shard-b { transform-origin: 50% 50%; animation: cha-s-shard 0.45s ease-out forwards; }
+.cha-s-shard-c { transform-origin: 50% 50%; animation: cha-s-shard 0.45s ease-out forwards; }
+.cha-s-glitch  { transform-origin: 50% 50%; animation: cha-s-glitch 0.55s 0.10s ease-out forwards; }
+@keyframes cha-s-shard  { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.4); opacity: 1; filter: brightness(2); } 100% { transform: scale(0.6); opacity: 0; } }
+@keyframes cha-s-glitch { 0% { transform: scale(0) skew(0deg); opacity: 0; } 30% { transform: scale(1.3) skew(8deg); opacity: 1; filter: brightness(2.5) hue-rotate(60deg); } 60% { transform: scale(1.1) skew(-8deg); opacity: 1; filter: brightness(2) hue-rotate(-60deg); } 100% { transform: scale(0.8) skew(0deg); opacity: 0; } }
+
+.cha-m-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.cha-m-mut1  { animation: cha-m-mut 0.55s ease-out forwards; }
+.cha-m-mut2  { animation: cha-m-mut 0.55s 0.06s ease-out forwards; }
+.cha-m-mut3  { animation: cha-m-mut 0.55s 0.12s ease-out forwards; }
+.cha-m-mut4  { animation: cha-m-mut 0.55s 0.18s ease-out forwards; }
+.cha-m-frag  { transform-origin: var(--cx) var(--cy); transform-box: fill-box; transform: rotate(var(--rot)) scale(0); animation: cha-m-frag 0.55s ease-out forwards; }
+.cha-m-core  { animation: cha-m-core 0.55s 0.30s ease-in-out forwards; }
+@keyframes cha-m-mut  { 0% { transform: scale(0) skew(0deg); opacity: 0; } 40% { transform: scale(1.2) skew(15deg); opacity: 1; filter: brightness(2) hue-rotate(45deg); } 70% { transform: scale(1.1) skew(-15deg); opacity: 1; filter: brightness(2) hue-rotate(-45deg); } 100% { transform: scale(0.5); opacity: 0; } }
+@keyframes cha-m-frag { 0% { transform: rotate(var(--rot)) scale(0); opacity: 0; } 50% { transform: rotate(calc(var(--rot) + 360deg)) scale(1.5); opacity: 1; filter: brightness(2); } 100% { transform: rotate(calc(var(--rot) + 720deg)) scale(0.5); opacity: 0; } }
+@keyframes cha-m-core { 0% { opacity: 0; } 50% { opacity: 1; filter: brightness(2) hue-rotate(180deg); } 100% { opacity: 0; } }
+
+.cha-l-bloom    { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.cha-l-flick-fire { animation: cha-l-flick 0.85s ease-in-out forwards; }
+.cha-l-flick-ice  { animation: cha-l-flick 0.85s 0.10s ease-in-out forwards; }
+.cha-l-flick-lit  { animation: cha-l-flick 0.85s 0.20s ease-in-out forwards; }
+.cha-l-frag     { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scale(0); animation: cha-m-frag 0.55s ease-out forwards; }
+.cha-l-deton    { transform-origin: 50% 50%; animation: cha-l-deton 0.55s 0.40s ease-out forwards; }
+@keyframes cha-l-flick { 0%, 30% { opacity: 0; transform: scale(0); } 35% { opacity: 1; transform: scale(1.2); filter: brightness(3) hue-rotate(0deg); } 40% { opacity: 0; } 45% { opacity: 1; transform: scale(1.1); filter: brightness(3) hue-rotate(120deg); } 50% { opacity: 0; } 55% { opacity: 1; filter: brightness(3) hue-rotate(240deg); } 100% { opacity: 0; } }
+@keyframes cha-l-deton { 0% { transform: scale(0); opacity: 0; filter: brightness(5); } 30% { transform: scale(1.5); opacity: 1; filter: brightness(3) hue-rotate(180deg) drop-shadow(0 0 24px var(--c)); } 100% { transform: scale(2); opacity: 0; } }
+
+.cha-g-warp     { animation: cha-g-warp 1.0s ease-out forwards; }
+.cha-g-layer.cgl1, .cha-g-layer.cgl2, .cha-g-layer.cgl3, .cha-g-layer.cgl4, .cha-g-layer.cgl5 {
+  animation: cha-g-flick 0.95s ease-in-out forwards;
+}
+.cgl1 { animation-delay: 0.05s; }
+.cgl2 { animation-delay: 0.15s; }
+.cgl3 { animation-delay: 0.25s; }
+.cgl4 { animation-delay: 0.35s; }
+.cgl5 { animation-delay: 0.45s; }
+.cha-g-frag     { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) translate(0,0) scale(0); animation: cha-g-frag 0.85s ease-out forwards; }
+.cha-g-collapse { transform-origin: 50% 50%; animation: cha-l-deton 0.65s 0.65s ease-out forwards; }
+.cha-band-epic  { animation: cha-g-glitch-shake 0.65s 0.20s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes cha-g-warp  { 0% { opacity: 0; } 30% { opacity: 0.5; filter: hue-rotate(60deg); } 60% { opacity: 0.3; filter: hue-rotate(-60deg); } 100% { opacity: 0; } }
+@keyframes cha-g-flick { 0% { opacity: 0; transform: scale(0); } 35% { opacity: 1; transform: scale(1.2) skew(-12deg); filter: brightness(2) hue-rotate(0deg); } 55% { opacity: 1; transform: scale(1.1) skew(12deg); filter: brightness(2.5) hue-rotate(180deg); } 100% { opacity: 0; transform: scale(0.8); } }
+@keyframes cha-g-frag  { 0% { transform: rotate(var(--rot)) translate(0,0) scale(0); opacity: 0; } 30% { transform: rotate(calc(var(--rot) + 360deg)) translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) scale(1.4); opacity: 1; filter: brightness(2); } 100% { transform: rotate(calc(var(--rot) + 720deg)) translate(var(--dx), var(--dy)) scale(0.4); opacity: 0; } }
+@keyframes cha-g-glitch-shake { 0%, 100% { transform: translate(0,0) skew(0deg); } 15% { transform: translate(-3px, 2px) skew(-2deg); } 30% { transform: translate(3px, -2px) skew(2deg); } 45% { transform: translate(-2px, -2px) skew(-1deg); } 60% { transform: translate(2px, 3px) skew(2deg); } 75% { transform: translate(-3px, 1px) skew(-2deg); } }
+
+/* ─── ENERGY / NEUTRAL (4-band revamp) ─────────────────────────── */
+.en-s-blast   { stroke-dasharray: 80; stroke-dashoffset: 80; animation: wt-s-jet 0.30s ease-out forwards; }
+.en-s-blast-c { stroke-dasharray: 80; stroke-dashoffset: 80; animation: wt-s-jet 0.30s 0.03s ease-out forwards; }
+.en-s-impact  { transform-origin: 50% 50%; animation: tm-s-snap 0.45s 0.18s ease-out forwards; }
+.en-s-spark   { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: lt-s-ray 0.40s ease-out forwards; }
+
+.en-m-bloom { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.en-m-hit   { transform-origin: var(--cx) var(--cy); animation: en-m-hit 0.45s ease-out forwards; opacity: 0; }
+.en-m-deton { transform-origin: 50% 50%; animation: tm-s-snap 0.55s 0.30s ease-out forwards; }
+.en-m-ring  { transform-origin: 50% 50%; animation: met-l-shock 0.55s 0.32s ease-out forwards; }
+@keyframes en-m-hit { 0% { transform: scale(0); opacity: 0; filter: brightness(4); } 40% { transform: scale(1.3); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 12px var(--c)); } 100% { transform: scale(1.6); opacity: 0; } }
+
+.en-l-bloom    { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.en-l-compress { transform-origin: 50% 50%; animation: gv-l-ring 0.55s ease-in forwards; }
+.en-l-erupt    { transform-origin: 50% 50%; animation: tm-s-snap 0.55s 0.25s ease-out forwards; }
+.en-l-spike    { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: lt-l-gray 0.55s ease-out forwards; }
+.en-l-shock    { transform-origin: 50% 50%; animation: met-l-shock 0.65s 0.30s ease-out forwards; }
+
+.en-g-charge      { animation: en-g-charge 0.85s ease-out forwards; }
+.en-g-charge-ring { transform-origin: 50% 50%; animation: en-g-charge-ring 0.55s ease-in forwards; }
+.en-g-deton       { transform-origin: 50% 50%; animation: tm-s-snap 0.65s 0.55s ease-out forwards; }
+.en-g-deton-c     { transform-origin: 50% 50%; animation: tm-s-snap 0.65s 0.57s ease-out forwards; }
+.en-g-shock       { transform-origin: 50% 50%; animation: en-g-shock 0.85s ease-out forwards; }
+.en-g-sh1 { animation-delay: 0.55s; }
+.en-g-sh2 { animation-delay: 0.62s; }
+.en-g-sh3 { animation-delay: 0.69s; }
+.en-g-spike       { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: lt-l-gray 0.65s ease-out forwards; }
+.en-g-mote        { transform-origin: center; transform-box: fill-box; animation: bl-g-drop 0.85s ease-out forwards; opacity: 0; }
+.en-band-epic     { animation: ps-g-shake 0.55s 0.40s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes en-g-charge      { 0% { opacity: 0; } 35% { opacity: 0.55; } 80% { opacity: 0.3; } 100% { opacity: 0; } }
+@keyframes en-g-charge-ring { 0% { transform: scale(1.2); opacity: 0; } 50% { transform: scale(0.8); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 14px var(--c)); } 100% { transform: scale(0.2); opacity: 0; } }
+@keyframes en-g-shock       { 0% { transform: scale(0.2); opacity: 0; } 20% { transform: scale(1.5); opacity: 1; filter: brightness(3); } 100% { transform: scale(14); opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
   .fire-band-epic, .ice-band-epic, .lit-band-epic, .wn-band-epic, .er-band-epic,
   .sh-band-epic, .lt-band-epic, .arc-band-epic, .nt-band-epic,
   .tm-band-epic, .gv-band-epic, .vd-band-epic, .cs-band-epic,
-  .ps-band-epic, .bl-band-epic, .met-band-epic, .sl-band-epic { animation: none; }
+  .ps-band-epic, .bl-band-epic, .met-band-epic, .sl-band-epic,
+  .wt-band-epic, .psy-band-epic, .snd-band-epic, .cha-band-epic, .en-band-epic { animation: none; }
   .fi-g-darken, .ic-g-pallor, .lit-g-strobe, .er-g-darken, .wn-g-warp,
   .sh-g-darken, .lt-g-flash, .arc-g-flash, .nt-g-darken,
   .tm-g-freeze, .gv-g-darken, .vd-g-darken, .cs-g-cosmos,
-  .ps-g-plague, .bl-g-flood, .met-g-darken, .sl-g-veil { animation: none; opacity: 0; }
+  .ps-g-plague, .bl-g-flood, .met-g-darken, .sl-g-veil,
+  .wt-g-flood, .psy-g-nightmare, .snd-g-vibrate, .cha-g-warp, .en-g-charge { animation: none; opacity: 0; }
 }
 
 /* ─── NATURE (revamp) ────────────────────────────────────────────── */
