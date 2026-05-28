@@ -1006,36 +1006,130 @@
     </svg>
 
   {:else if type === 'shadow'}
-    <!-- Shadow — devouring umbral void. Bloom backdrop, churning dark core
-         that pulses, six writhing tendrils reaching outward with stagger,
-         drip droplets falling away, twin glowing eyes peering from the core. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="44" fill="var(--c)" opacity="0.28" class="sh-bloom" style="filter:blur(18px)"/>
-      <!-- Dark inner halo -->
-      <circle cx="50" cy="50" r="34" fill="var(--c)" opacity="0.20" style="filter:blur(8px)"/>
-      <!-- Core void mass -->
-      <g class="sh-core">
-        <circle cx="50" cy="50" r="20" fill="var(--c)" opacity="0.95"/>
-        <circle cx="50" cy="50" r="13" fill="#0d0d16" opacity="0.55"/>
-        <!-- Glowing eyes peering through -->
-        <ellipse cx="44" cy="48" rx="2.5" ry="3.5" fill="var(--c)" class="sh-eye"/>
-        <ellipse cx="56" cy="48" rx="2.5" ry="3.5" fill="var(--c)" class="sh-eye"/>
-        <circle cx="44" cy="48" r="0.9" fill="white" opacity="0.85"/>
-        <circle cx="56" cy="48" r="0.9" fill="white" opacity="0.85"/>
-      </g>
-      <!-- Six writhing tendrils — staggered reach outward -->
-      <g class="sh-tendrils">
-        <path class="sh-tnd st1" d="M50 50 Q34 30 18 12" stroke="var(--c)" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path class="sh-tnd st2" d="M50 50 Q66 30 82 12" stroke="var(--c)" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path class="sh-tnd st3" d="M50 50 Q70 60 92 64" stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <path class="sh-tnd st4" d="M50 50 Q30 60 8 64"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <path class="sh-tnd st5" d="M50 50 Q60 70 70 92" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path class="sh-tnd st6" d="M50 50 Q40 70 30 92" stroke="var(--c)" stroke-width="2" fill="none" stroke-linecap="round"/>
-      </g>
-      <!-- Drip droplets falling from underside -->
-      <ellipse class="sh-drip sd1" cx="38" cy="74" rx="2.5" ry="4" fill="var(--c)"/>
-      <ellipse class="sh-drip sd2" cx="50" cy="80" rx="2"   ry="3.5" fill="var(--c)" opacity="0.85"/>
-      <ellipse class="sh-drip sd3" cx="62" cy="76" rx="2.5" ry="4" fill="var(--c)" opacity="0.9"/>
+    <!-- Shadow — consumption, distortion, swallowing. Each band escalates
+         from a single tendril burst to a living abyss. -->
+    <svg viewBox="0 0 100 100" class="fx-svg sh-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: swirling orb of darkness flies forward, bursts into tendrils -->
+        <g class="sh-s-orb">
+          <circle cx="50" cy="50" r="16" fill="var(--c)" opacity="0.95"/>
+          <circle cx="50" cy="50" r="10" fill="#0d0d16" opacity="0.7"/>
+        </g>
+        <!-- 4 tendrils lashing outward -->
+        {#each [{p:'M50 50 Q30 30 14 14', d:0.15},{p:'M50 50 Q70 30 86 14', d:0.18},{p:'M50 50 Q70 70 86 86', d:0.21},{p:'M50 50 Q30 70 14 86', d:0.24}] as t, i}
+          <path class="sh-s-tend" style="animation-delay:{t.d}s;"
+                d={t.p} stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        {/each}
+        <!-- Drip droplets -->
+        {#each [{x:38,y:74,d:0.30},{x:50,y:80,d:0.34},{x:62,y:76,d:0.32}] as d, i}
+          <ellipse class="sh-s-drip" style="animation-delay:{d.d}s;"
+                   cx={d.x} cy={d.y} rx="2" ry="3.5" fill="var(--c)"/>
+        {/each}
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: shadows beneath target expand violently, spinning void
+             spheres emerge around them -->
+        <ellipse cx="50" cy="80" rx="42" ry="14" fill="var(--c)" opacity="0.55"
+                 class="sh-m-pool" style="filter:blur(8px)"/>
+        <!-- 6 spinning void spheres in orbit -->
+        {#each Array.from({length: 6}) as _, i}
+          {@const a = (i * Math.PI * 2) / 6}
+          {@const x = 50 + Math.cos(a) * 32}
+          {@const y = 50 + Math.sin(a) * 24}
+          <g class="sh-m-sphere" style="animation-delay:{i * 0.04}s;">
+            <circle cx={x} cy={y} r="9" fill="var(--c)" opacity="0.9"/>
+            <circle cx={x} cy={y} r="5" fill="#0d0d16" opacity="0.7"/>
+          </g>
+        {/each}
+        <!-- Central writhing core -->
+        <g class="sh-m-core">
+          <circle cx="50" cy="50" r="18" fill="var(--c)" opacity="0.95"/>
+          <circle cx="50" cy="50" r="12" fill="#0d0d16" opacity="0.6"/>
+        </g>
+        <!-- 8 writhing tendrils lashing outward -->
+        {#each [0, 45, 90, 135, 180, 225, 270, 315] as deg, i}
+          <line class="sh-m-tend" style="--rot:{deg}deg; animation-delay:{0.28 + i * 0.022}s;"
+                x1="50" y1="50" x2="50" y2="10" stroke="var(--c)"
+                stroke-width="2.2" stroke-linecap="round" opacity="0"/>
+        {/each}
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: multiple shadow masses orbit the enemy before collapsing
+             inward simultaneously -->
+        <circle cx="50" cy="50" r="56" fill="var(--c)" opacity="0.3" class="sh-bloom" style="filter:blur(22px)"/>
+        <circle cx="50" cy="50" r="44" fill="#0d0d16" opacity="0.3" style="filter:blur(10px)"/>
+        <!-- 8 orbiting shadow masses that collapse inward -->
+        {#each Array.from({length: 8}) as _, i}
+          {@const a = (i * Math.PI * 2) / 8}
+          {@const ox = 50 + Math.cos(a) * 60
+          }
+          {@const oy = 50 + Math.sin(a) * 50}
+          <g class="sh-l-mass" style="--ox:{ox - 50}px; --oy:{oy - 50}px; animation-delay:{i * 0.025}s;">
+            <circle cx="50" cy="50" r="10" fill="var(--c)" opacity="0.95"/>
+            <circle cx="50" cy="50" r="6" fill="#0d0d16" opacity="0.7"/>
+          </g>
+        {/each}
+        <!-- Collapsed core after implosion -->
+        <g class="sh-l-collapse">
+          <circle cx="50" cy="50" r="24" fill="var(--c)" opacity="0.95"/>
+          <circle cx="50" cy="50" r="15" fill="#0d0d16" opacity="0.7"/>
+        </g>
+        <!-- Massive tendril burst from collapse -->
+        {#each [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] as deg, i}
+          <line class="sh-l-tend" style="--rot:{deg}deg; animation-delay:{0.45 + i * 0.015}s;"
+                x1="50" y1="50" x2="50" y2="-30" stroke="var(--c)"
+                stroke-width="3" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Drip storm -->
+        {#each Array.from({length: 8}) as _, i}
+          {@const x = 14 + i * 11}
+          <ellipse class="sh-l-drip" style="animation-delay:{0.55 + i * 0.025}s;"
+                   cx={x} cy="92" rx="3" ry="5" fill="var(--c)"/>
+        {/each}
+
+      {:else}
+        <!-- GOD: battlefield darkens COMPLETELY as a massive living abyss
+             forms at the center, swallowing light before detonating into
+             pure darkness -->
+        <!-- Screen-wide darkness -->
+        <rect class="sh-g-darken" x="-300" y="-300" width="700" height="700" fill="#000" opacity="0"/>
+        <!-- Massive abyss forming at center -->
+        <g class="sh-g-abyss">
+          <circle cx="50" cy="50" r="180" fill="var(--c)" opacity="0.9"/>
+          <circle cx="50" cy="50" r="120" fill="#0d0d16" opacity="0.95"/>
+          <circle cx="50" cy="50" r="70" fill="#000"/>
+          <!-- Twin enormous void eyes -->
+          <ellipse class="sh-g-eye" cx="36" cy="44" rx="6" ry="10" fill="var(--c)"/>
+          <ellipse class="sh-g-eye" cx="64" cy="44" rx="6" ry="10" fill="var(--c)"/>
+          <circle cx="36" cy="44" r="2" fill="#fff"/>
+          <circle cx="64" cy="44" r="2" fill="#fff"/>
+        </g>
+        <!-- Inward swallowing pull lines (light being consumed) -->
+        {#each Array.from({length: 24}) as _, i}
+          {@const a = (i * Math.PI * 2) / 24}
+          {@const sx = 50 + Math.cos(a) * 280}
+          {@const sy = 50 + Math.sin(a) * 280}
+          {@const ex = 50 + Math.cos(a) * 80}
+          {@const ey = 50 + Math.sin(a) * 80}
+          <line class="sh-g-pull" style="animation-delay:{0.15 + i * 0.008}s;"
+                x1={sx} y1={sy} x2={ex} y2={ey} stroke="#fff"
+                stroke-width="1.6" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- DETONATION — pure darkness exploding outward (inverse shockwave) -->
+        <circle class="sh-g-detonate sh-g-d1" cx="50" cy="50" r="20" fill="none"
+                stroke="#000" stroke-width="8" opacity="0"/>
+        <circle class="sh-g-detonate sh-g-d2" cx="50" cy="50" r="20" fill="none"
+                stroke="var(--c)" stroke-width="5" opacity="0"/>
+        <circle class="sh-g-detonate sh-g-d3" cx="50" cy="50" r="20" fill="none"
+                stroke="#0d0d16" stroke-width="4" opacity="0"/>
+        <!-- Hundreds of writhing tendrils erupting in all directions -->
+        {#each Array.from({length: 20}) as _, i}
+          {@const a = (i * Math.PI * 2) / 20}
+          <line class="sh-g-tend" style="--rot:{(a * 180) / Math.PI}deg; animation-delay:{0.55 + i * 0.012}s;"
+                x1="50" y1="50" x2="50" y2="-100" stroke="var(--c)"
+                stroke-width="3" stroke-linecap="round" opacity="0"/>
+        {/each}
+      {/if}
     </svg>
 
   {:else if type === 'holy'}
@@ -1080,32 +1174,115 @@
         <circle class="hh-sparkle hs4" cx="14" cy="50" r="2"   fill="white"/>
       </svg>
     {:else}
-      <!-- Attack mode: star charges up → fires light beam trailing behind -->
-      <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-        <!-- Charge-up bloom glow -->
-        <circle cx="50" cy="50" r="38" fill="var(--c)" opacity="0.28" class="beam-bloom" style="filter:blur(18px)"/>
-        <!-- Star that charges, then collapses into beam source -->
-        <g class="star-charge">
-          <polygon class="star-body" points="50,20 56,42 78,42 61,56 68,78 50,64 32,78 39,56 22,42 44,42" fill="var(--c)"/>
-          <polygon points="50,28 54,43 67,43 57,51 61,64 50,56 39,64 43,51 33,43 46,43" fill="white" opacity="0.55"/>
-          <circle cx="50" cy="50" r="7" fill="white" opacity="0.95"/>
-        </g>
-        <!-- Beam extending behind travel direction (trail) -->
-        <line class="beam-line bl-glow"
-          x1="50" y1="50"
-          x2={isRtl ? 550 : -450} y2="50"
-          stroke="var(--c)" stroke-width="22" stroke-linecap="round"/>
-        <line class="beam-line bl-main"
-          x1="50" y1="50"
-          x2={isRtl ? 550 : -450} y2="50"
-          stroke="var(--c)" stroke-width="8" stroke-linecap="round"/>
-        <line class="beam-line bl-core"
-          x1="50" y1="50"
-          x2={isRtl ? 550 : -450} y2="50"
-          stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
-        <!-- Beam source sparkles -->
-        <circle class="beam-spark bsp1" cx="50" cy="50" r="6" fill="var(--c)"/>
-        <circle class="beam-spark bsp2" cx="50" cy="50" r="3.5" fill="white" opacity="0.9"/>
+      <!-- Light (attack mode) — purification, beams, explosive radiance.
+           Four tier-band variants escalate from a concentrated flash to a
+           sky-piercing celestial ray. -->
+      <svg viewBox="0 0 100 100" class="fx-svg lt-band-{tierBand}" overflow="visible">
+        {#if tierBand === 'small'}
+          <!-- F-D: concentrated FLASH erupts forward in a radiant burst -->
+          <circle class="lt-s-flash" cx="50" cy="50" r="28" fill="var(--c)"/>
+          <circle class="lt-s-core" cx="50" cy="50" r="14" fill="#fff"/>
+          <!-- 6 outward rays -->
+          {#each [0, 60, 120, 180, 240, 300] as deg, i}
+            <line class="lt-s-ray" style="--rot:{deg}deg; animation-delay:{0.06 + i * 0.018}s;"
+                  x1="50" y1="50" x2="50" y2="10" stroke="var(--c)"
+                  stroke-width="2.4" stroke-linecap="round" opacity="0"/>
+          {/each}
+          <!-- Small sparkles -->
+          {#each [{x:30,y:30},{x:70,y:30},{x:30,y:70},{x:70,y:70}] as s, i}
+            <circle class="lt-s-spark" style="animation-delay:{0.18 + i * 0.025}s;"
+                    cx={s.x} cy={s.y} r="2" fill="#fff"/>
+          {/each}
+
+        {:else if tierBand === 'medium'}
+          <!-- C-A: a PILLAR of holy light crashes down, explodes in a
+               blinding shockwave -->
+          <!-- Pillar of light (column from above) -->
+          <rect class="lt-m-pillar" x="36" y="-50" width="28" height="150"
+                fill="var(--c)" opacity="0.85"/>
+          <rect class="lt-m-pillar-core" x="44" y="-50" width="12" height="150"
+                fill="#fff" opacity="0.95"/>
+          <!-- Blinding flash at impact -->
+          <circle class="lt-m-flash" cx="50" cy="60" r="36" fill="var(--c)"/>
+          <circle class="lt-m-flash-c" cx="50" cy="60" r="18" fill="#fff"/>
+          <!-- Shockwave rings -->
+          <circle class="lt-m-shock-a" cx="50" cy="60" r="20" fill="none" stroke="var(--c)" stroke-width="3" opacity="0"/>
+          <circle class="lt-m-shock-b" cx="50" cy="60" r="20" fill="none" stroke="#fff" stroke-width="2" opacity="0"/>
+          <!-- 12 outward divine rays -->
+          {#each [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] as deg, i}
+            <line class="lt-m-ray" style="--rot:{deg}deg; animation-delay:{0.35 + i * 0.014}s;"
+                  x1="50" y1="60" x2="50" y2="0" stroke="var(--c)"
+                  stroke-width="2.5" stroke-linecap="round" opacity="0"/>
+          {/each}
+          <!-- Feather/light motes drifting up -->
+          {#each [{x:34,d:0.45},{x:50,d:0.42},{x:66,d:0.48}] as m, i}
+            <circle class="lt-m-mote" style="animation-delay:{m.d}s;"
+                    cx={m.x} cy="74" r="1.8" fill="var(--c)"/>
+          {/each}
+
+        {:else if tierBand === 'large'}
+          <!-- S-SSS: a MASSIVE beam of divine energy pierces downward from
+               the heavens -->
+          <!-- Sky source bloom -->
+          <ellipse cx="50" cy="-100" rx="48" ry="20" fill="var(--c)" opacity="0.7"
+                   class="lt-l-sky" style="filter:blur(18px)"/>
+          <!-- Beam stack: glow → main → core (extends far above viewBox) -->
+          <rect class="lt-l-beam-glow" x="22" y="-200" width="56" height="300" fill="var(--c)" opacity="0.5"/>
+          <rect class="lt-l-beam" x="32" y="-200" width="36" height="300" fill="var(--c)"/>
+          <rect class="lt-l-beam-core" x="42" y="-200" width="16" height="300" fill="#fff"/>
+          <!-- Impact bloom -->
+          <circle class="lt-l-impact" cx="50" cy="80" r="40" fill="var(--c)" opacity="0"/>
+          <circle class="lt-l-impact-c" cx="50" cy="80" r="22" fill="#fff" opacity="0"/>
+          <!-- Massive ground shockwave -->
+          <ellipse class="lt-l-shock" cx="50" cy="80" rx="50" ry="12" fill="none"
+                   stroke="var(--c)" stroke-width="4" opacity="0"/>
+          <!-- Ground rays splaying outward -->
+          {#each [-60, -40, -20, 20, 40, 60] as deg, i}
+            <line class="lt-l-gray" style="--rot:{deg}deg; animation-delay:{0.45 + i * 0.018}s;"
+                  x1="50" y1="80" x2="50" y2="100" stroke="var(--c)"
+                  stroke-width="3" stroke-linecap="round" opacity="0"/>
+          {/each}
+          <!-- Holy feather/spark scatter -->
+          {#each Array.from({length: 10}) as _, i}
+            {@const a = (i * Math.PI * 2) / 10}
+            <circle class="lt-l-feather" style="--dx:{Math.cos(a) * 50}px; --dy:{Math.sin(a) * 32 - 5}px; animation-delay:{0.55 + i * 0.018}s;"
+                    cx="50" cy="80" r="2.2" fill="#fff"/>
+          {/each}
+
+        {:else}
+          <!-- GOD: the sky SPLITS OPEN as an enormous celestial ray
+               vaporizes everything beneath it in a sun-bright detonation -->
+          <!-- Pure white screen flash -->
+          <rect class="lt-g-flash" x="-300" y="-300" width="700" height="700" fill="#fff" opacity="0"/>
+          <!-- Sky tear (slit of pure light across the top) -->
+          <ellipse class="lt-g-tear" cx="50" cy="-150" rx="240" ry="14"
+                   fill="#fff" opacity="0" style="filter:blur(6px)"/>
+          <ellipse class="lt-g-tear-bloom" cx="50" cy="-150" rx="280" ry="32"
+                   fill="var(--c)" opacity="0" style="filter:blur(22px)"/>
+          <!-- Colossal celestial ray (extends viewport-tall + wide) -->
+          <rect class="lt-g-ray-glow" x="-30" y="-200" width="160" height="400" fill="var(--c)" opacity="0"/>
+          <rect class="lt-g-ray" x="10" y="-200" width="80" height="400" fill="var(--c)" opacity="0"/>
+          <rect class="lt-g-ray-core" x="30" y="-200" width="40" height="400" fill="#fff" opacity="0"/>
+          <!-- Sun-bright detonation at impact -->
+          <circle class="lt-g-deton" cx="50" cy="80" r="200" fill="url(#fi-core)" opacity="0"/>
+          <circle class="lt-g-deton-c" cx="50" cy="80" r="100" fill="#fff" opacity="0"/>
+          <!-- Battlefield-wide shockwaves -->
+          <circle class="lt-g-shock lt-g-sh1" cx="50" cy="80" r="20" fill="none" stroke="#fff" stroke-width="6" opacity="0"/>
+          <circle class="lt-g-shock lt-g-sh2" cx="50" cy="80" r="20" fill="none" stroke="var(--c)" stroke-width="4" opacity="0"/>
+          <circle class="lt-g-shock lt-g-sh3" cx="50" cy="80" r="20" fill="none" stroke="var(--c)" stroke-width="3" opacity="0"/>
+          <!-- Holy circles inscribed around the impact -->
+          <circle class="lt-g-circle" cx="50" cy="80" r="60" fill="none" stroke="#fff"
+                  stroke-width="1.2" opacity="0" stroke-dasharray="4 5"/>
+          <circle class="lt-g-circle" cx="50" cy="80" r="80" fill="none" stroke="#fff"
+                  stroke-width="1" opacity="0" stroke-dasharray="2 6" style="animation-delay:0.7s;"/>
+          <!-- Feather rain across screen -->
+          {#each Array.from({length: 22}) as _, i}
+            {@const a = (i * Math.PI * 2) / 22}
+            {@const r = 130 + (i % 4) * 30}
+            <ellipse class="lt-g-feather" style="--dx:{Math.cos(a) * r}px; --dy:{Math.sin(a) * r * 0.7 - 20}px; animation-delay:{0.70 + i * 0.01}s;"
+                     cx="50" cy="50" rx="2" ry="4" fill="#fff"/>
+          {/each}
+        {/if}
       </svg>
     {/if}
 
@@ -1886,90 +2063,263 @@
     </svg>
 
   {:else if type === 'arcane'}
-    <!-- Arcane — counter-rotating sigil rings, runic glyphs, mystic core.
-         Massive mana bloom backdrop pulses behind the channel. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="48" fill="var(--c)" opacity="0.30" class="arc-bloom" style="filter:blur(20px)"/>
-      <circle cx="50" cy="50" r="42" fill="var(--c)" opacity="0.20" style="filter:blur(14px)"/>
-      <!-- Outer rotating ring with runic marks -->
-      <g class="arc-ring-out">
-        <circle cx="50" cy="50" r="40" stroke="var(--c)" stroke-width="1.5" fill="none" opacity="0.55"
-                stroke-dasharray="3 5"/>
-        <circle cx="50" cy="50" r="36" stroke="var(--c)" stroke-width="1"   fill="none" opacity="0.35"
-                stroke-dasharray="6 3"/>
-      </g>
-      <!-- Inner pentagram sigil — counter-rotating -->
-      <g class="arc-pent">
-        <polygon points="50,14 60,42 90,42 65,60 76,88 50,70 24,88 35,60 10,42 40,42"
-                 stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.85"/>
-        <polygon points="50,28 56,44 72,44 58,55 64,72 50,62 36,72 42,55 28,44 44,44"
-                 stroke="var(--c)" stroke-width="1.2" fill="var(--c)" fill-opacity="0.08" opacity="0.7"/>
-      </g>
-      <!-- Hex glyphs around perimeter -->
-      <g class="arc-glyph">
-        <polygon points="50,4 53,10 50,14 47,10"   fill="var(--c)" opacity="0.85"/>
-        <polygon points="96,50 90,53 86,50 90,47"  fill="var(--c)" opacity="0.85"/>
-        <polygon points="50,96 47,90 50,86 53,90"  fill="var(--c)" opacity="0.85"/>
-        <polygon points="4,50 10,47 14,50 10,53"   fill="var(--c)" opacity="0.85"/>
-      </g>
-      <!-- Crackling lines between glyphs -->
-      <line class="arc-bolt arc-b1" x1="50" y1="10" x2="50" y2="38" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
-      <line class="arc-bolt arc-b2" x1="90" y1="50" x2="62" y2="50" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
-      <line class="arc-bolt arc-b3" x1="50" y1="90" x2="50" y2="62" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
-      <line class="arc-bolt arc-b4" x1="10" y1="50" x2="38" y2="50" stroke="var(--c)" stroke-width="1.5" opacity="0.7"/>
-      <!-- Core orb -->
-      <circle cx="50" cy="50" r="9" fill="var(--c)" class="arc-core"/>
-      <circle cx="50" cy="50" r="4" fill="white" opacity="0.85"/>
+    <!-- Arcane — complex magic, impossible geometry, layered sigils.
+         Each band adds more rotating glyphs and more reality fracture. -->
+    <svg viewBox="0 0 100 100" class="fx-svg arc-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: glowing rune forms briefly, fires a burst of magic -->
+        <g class="arc-s-rune">
+          <circle cx="50" cy="50" r="22" stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.9" stroke-dasharray="3 4"/>
+          <polygon points="50,30 58,46 50,62 42,46" stroke="var(--c)" stroke-width="1.5" fill="var(--c)" fill-opacity="0.18"/>
+        </g>
+        <circle class="arc-s-burst" cx="50" cy="50" r="20" fill="url(#fi-core)" opacity="0"/>
+        <!-- 4 forward magic darts -->
+        {#each [0, 90, 180, 270] as deg, i}
+          <line class="arc-s-dart" style="--rot:{deg}deg; animation-delay:{0.16 + i * 0.025}s;"
+                x1="50" y1="50" x2="50" y2="12" stroke="var(--c)"
+                stroke-width="2" stroke-linecap="round" opacity="0"/>
+        {/each}
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: layered arcane circles rotate rapidly, magical sigils
+             unleash explosive pulses -->
+        <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.28" class="arc-m-bloom" style="filter:blur(18px)"/>
+        <!-- 3 counter-rotating concentric rings -->
+        <g class="arc-m-ring-1">
+          <circle cx="50" cy="50" r="42" stroke="var(--c)" stroke-width="1.6" fill="none" opacity="0.7" stroke-dasharray="3 5"/>
+        </g>
+        <g class="arc-m-ring-2">
+          <circle cx="50" cy="50" r="34" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.85" stroke-dasharray="5 3"/>
+        </g>
+        <g class="arc-m-ring-3">
+          <circle cx="50" cy="50" r="26" stroke="var(--c)" stroke-width="1.2" fill="none" opacity="0.8" stroke-dasharray="2 4"/>
+        </g>
+        <!-- Pentagram sigil -->
+        <g class="arc-m-pent">
+          <polygon points="50,14 60,42 90,42 65,60 76,88 50,70 24,88 35,60 10,42 40,42"
+                   stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.85"/>
+        </g>
+        <!-- 8 glyphs at perimeter -->
+        {#each [0, 45, 90, 135, 180, 225, 270, 315] as deg, i}
+          {@const a = (deg * Math.PI) / 180}
+          {@const x = 50 + Math.cos(a) * 46}
+          {@const y = 50 + Math.sin(a) * 46}
+          <polygon class="arc-m-glyph" style="animation-delay:{i * 0.03}s;"
+                   points="{x},{y-3} {x+3},{y} {x},{y+3} {x-3},{y}" fill="var(--c)"/>
+        {/each}
+        <!-- Pulse detonation -->
+        <circle class="arc-m-pulse" cx="50" cy="50" r="20" fill="url(#fi-core)" opacity="0"/>
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: MASSIVE rotating glyphs cover the battlefield while
+             arcane energy fractures reality itself -->
+        <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.35" class="arc-l-bloom" style="filter:blur(22px)"/>
+        <!-- Outer reality-fracture ring (giant) -->
+        <g class="arc-l-mega">
+          <circle cx="50" cy="50" r="80" stroke="var(--c)" stroke-width="2" fill="none" opacity="0.7" stroke-dasharray="6 4"/>
+          <circle cx="50" cy="50" r="68" stroke="var(--c)" stroke-width="1.6" fill="none" opacity="0.5" stroke-dasharray="3 6"/>
+        </g>
+        <g class="arc-l-mid">
+          <circle cx="50" cy="50" r="54" stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.8" stroke-dasharray="4 4"/>
+          <circle cx="50" cy="50" r="46" stroke="var(--c)" stroke-width="1.4" fill="none" opacity="0.65" stroke-dasharray="2 5"/>
+        </g>
+        <!-- Large pentagram + hexagram -->
+        <g class="arc-l-sigil-a">
+          <polygon points="50,6 64,42 96,42 70,62 82,98 50,76 18,98 30,62 4,42 36,42"
+                   stroke="var(--c)" stroke-width="2.2" fill="var(--c)" fill-opacity="0.10" opacity="0.85"/>
+        </g>
+        <g class="arc-l-sigil-b">
+          <polygon points="50,18 76,32 76,68 50,82 24,68 24,32"
+                   stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0.75"/>
+        </g>
+        <!-- Reality fracture lines (chromatic aberration / glitch) -->
+        {#each [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] as deg, i}
+          <line class="arc-l-fracture" style="--rot:{deg}deg; animation-delay:{0.35 + i * 0.014}s;"
+                x1="50" y1="50" x2="50" y2="-30" stroke="var(--c)"
+                stroke-width="2" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Central detonation -->
+        <circle class="arc-l-deton" cx="50" cy="50" r="22" fill="url(#fi-core)" opacity="0"/>
+
+      {:else}
+        <!-- GOD: an ENORMOUS multi-layered magical construct appears across
+             the screen, unleashing overwhelming waves of ancient magic -->
+        <rect class="arc-g-flash" x="-300" y="-300" width="700" height="700" fill="#fff" opacity="0"/>
+        <!-- Mega arcane construct (5 concentric rings, screen-wide) -->
+        <g class="arc-g-mega">
+          <circle cx="50" cy="50" r="220" stroke="var(--c)" stroke-width="2.5" fill="none" opacity="0" stroke-dasharray="10 6"/>
+          <circle cx="50" cy="50" r="180" stroke="var(--c)" stroke-width="2.2" fill="none" opacity="0" stroke-dasharray="6 6"/>
+        </g>
+        <g class="arc-g-mid">
+          <circle cx="50" cy="50" r="140" stroke="var(--c)" stroke-width="2" fill="none" opacity="0" stroke-dasharray="8 4"/>
+          <circle cx="50" cy="50" r="100" stroke="var(--c)" stroke-width="1.8" fill="none" opacity="0" stroke-dasharray="4 4"/>
+        </g>
+        <g class="arc-g-inner">
+          <circle cx="50" cy="50" r="60" stroke="var(--c)" stroke-width="1.6" fill="none" opacity="0" stroke-dasharray="2 6"/>
+        </g>
+        <!-- Triple-layered pentagram (screen-spanning) -->
+        <g class="arc-g-sigil-a">
+          <polygon points="50,-50 80,30 160,30 95,80 120,160 50,110 -20,160 5,80 -60,30 20,30"
+                   stroke="var(--c)" stroke-width="3" fill="var(--c)" fill-opacity="0.08" opacity="0"/>
+        </g>
+        <g class="arc-g-sigil-b">
+          <polygon points="50,0 70,30 110,30 80,55 95,90 50,72 5,90 20,55 -10,30 30,30"
+                   stroke="var(--c)" stroke-width="2.4" fill="none" opacity="0"/>
+        </g>
+        <!-- Reality fractures radiating outward -->
+        {#each Array.from({length: 18}) as _, i}
+          {@const a = (i * Math.PI * 2) / 18}
+          <line class="arc-g-fracture" style="--rot:{(a * 180) / Math.PI}deg; animation-delay:{0.45 + i * 0.012}s;"
+                x1="50" y1="50" x2="50" y2="-150" stroke="var(--c)"
+                stroke-width="2.4" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Floating runic motes scattered across screen -->
+        {#each Array.from({length: 24}) as _, i}
+          {@const a = (i * Math.PI * 2) / 24}
+          {@const r = 120 + (i % 5) * 26}
+          <polygon class="arc-g-mote" style="--dx:{Math.cos(a) * r}px; --dy:{Math.sin(a) * r * 0.85 - 20}px; animation-delay:{0.65 + i * 0.012}s;"
+                   points="50,46 54,50 50,54 46,50" fill="var(--c)"/>
+        {/each}
+        <!-- Final detonation -->
+        <circle class="arc-g-deton" cx="50" cy="50" r="200" fill="url(#fi-core)" opacity="0"/>
+      {/if}
     </svg>
 
   {:else if type === 'nature'}
-    <!-- Nature — overgrowing wildgrowth burst. Bloom backdrop, 8 vine arms
-         drawing outward from center, ferns at each vine tip, layered
-         flower bloom in the middle with 6 petals + pollen-bearing
-         stamens, dancing pollen motes, falling leaves drifting away. -->
-    <svg viewBox="0 0 100 100" class="fx-svg" overflow="visible">
-      <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.28" class="nt-bloom" style="filter:blur(16px)"/>
-      <!-- 8 vine arms drawing outward (4 cardinal + 4 diagonal, two thicknesses) -->
-      <g class="nt-vines">
-        <path class="nt-vn nv1" d="M50 50 Q40 32 28 18"  stroke="var(--c)" stroke-width="2.8" fill="none" stroke-linecap="round"/>
-        <path class="nt-vn nv2" d="M50 50 Q60 32 72 18"  stroke="var(--c)" stroke-width="2.8" fill="none" stroke-linecap="round"/>
-        <path class="nt-vn nv3" d="M50 50 Q40 68 28 82"  stroke="var(--c)" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-        <path class="nt-vn nv4" d="M50 50 Q60 68 72 82"  stroke="var(--c)" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-        <path class="nt-vn nv5" d="M50 50 Q32 48 14 44"  stroke="var(--c)" stroke-width="2.3" fill="none" stroke-linecap="round"/>
-        <path class="nt-vn nv6" d="M50 50 Q68 48 86 44"  stroke="var(--c)" stroke-width="2.3" fill="none" stroke-linecap="round"/>
-        <path class="nt-vn nv7" d="M50 50 Q50 32 50 12"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <path class="nt-vn nv8" d="M50 50 Q50 68 50 88"  stroke="var(--c)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      </g>
-      <!-- Fern fronds at vine tips -->
-      <g class="nt-ferns">
-        <ellipse class="leaf nt-l nl1" cx="28" cy="18" rx="5" ry="3" fill="var(--c)" transform="rotate(-40 28 18)"/>
-        <ellipse class="leaf nt-l nl2" cx="72" cy="18" rx="5" ry="3" fill="var(--c)" transform="rotate(40 72 18)"/>
-        <ellipse class="leaf nt-l nl3" cx="28" cy="82" rx="5" ry="3" fill="var(--c)" opacity="0.92" transform="rotate(40 28 82)"/>
-        <ellipse class="leaf nt-l nl4" cx="72" cy="82" rx="5" ry="3" fill="var(--c)" opacity="0.92" transform="rotate(-40 72 82)"/>
-        <ellipse class="leaf nt-l nl5" cx="14" cy="44" rx="5" ry="2.5" fill="var(--c)" opacity="0.85"/>
-        <ellipse class="leaf nt-l nl6" cx="86" cy="44" rx="5" ry="2.5" fill="var(--c)" opacity="0.85"/>
-        <ellipse class="leaf nt-l nl7" cx="50" cy="12" rx="3" ry="5" fill="var(--c)" opacity="0.9"/>
-        <ellipse class="leaf nt-l nl8" cx="50" cy="88" rx="3" ry="5" fill="var(--c)" opacity="0.9"/>
-      </g>
-      <!-- 6-petal flower bloom in the center -->
-      <g class="nt-bloom-flower">
-        <ellipse cx="50" cy="36" rx="6" ry="11" fill="var(--c)" opacity="0.92"/>
-        <ellipse cx="62" cy="43" rx="6" ry="11" fill="var(--c)" opacity="0.92" transform="rotate(60 62 43)"/>
-        <ellipse cx="62" cy="57" rx="6" ry="11" fill="var(--c)" opacity="0.92" transform="rotate(120 62 57)"/>
-        <ellipse cx="50" cy="64" rx="6" ry="11" fill="var(--c)" opacity="0.92" transform="rotate(180 50 64)"/>
-        <ellipse cx="38" cy="57" rx="6" ry="11" fill="var(--c)" opacity="0.92" transform="rotate(-120 38 57)"/>
-        <ellipse cx="38" cy="43" rx="6" ry="11" fill="var(--c)" opacity="0.92" transform="rotate(-60 38 43)"/>
-        <!-- Stamens (yellow center dots) -->
-        <circle cx="50" cy="50" r="7" fill="var(--c)"/>
-        <circle cx="50" cy="50" r="3.5" fill="white" opacity="0.95"/>
-      </g>
-      <!-- Pollen motes -->
-      <circle class="nt-pol p1" cx="32" cy="38" r="1.6" fill="var(--c)"/>
-      <circle class="nt-pol p2" cx="68" cy="38" r="1.6" fill="var(--c)"/>
-      <circle class="nt-pol p3" cx="32" cy="62" r="1.4" fill="var(--c)" opacity="0.85"/>
-      <circle class="nt-pol p4" cx="68" cy="62" r="1.4" fill="var(--c)" opacity="0.85"/>
-      <circle class="nt-pol p5" cx="50" cy="28" r="1.3" fill="var(--c)" opacity="0.8"/>
-      <circle class="nt-pol p6" cx="50" cy="72" r="1.3" fill="var(--c)" opacity="0.8"/>
+    <!-- Nature — overgrowth, entangling, blooming. From a single vine to
+         a battlefield-consuming jungle. -->
+    <svg viewBox="0 0 100 100" class="fx-svg nt-band-{tierBand}" overflow="visible">
+      {#if tierBand === 'small'}
+        <!-- F-D: thorny vines burst from ground, lash at enemy -->
+        {#each [{p:'M50 90 Q44 70 38 50 Q42 32 32 18', d:0.04, w:2.4},
+                {p:'M50 90 Q56 70 62 50 Q58 32 68 18', d:0.07, w:2.4},
+                {p:'M50 90 Q50 70 50 50 Q52 32 50 12', d:0.10, w:2.2}] as v, i}
+          <path class="nt-s-vine" style="animation-delay:{v.d}s;"
+                d={v.p} stroke="var(--c)" stroke-width={v.w} fill="none" stroke-linecap="round"/>
+        {/each}
+        <!-- Thorn spikes along the vines -->
+        {#each [{x:42,y:62},{x:58,y:62},{x:50,y:46},{x:38,y:34},{x:62,y:34}] as t, i}
+          <polygon class="nt-s-thorn" style="animation-delay:{0.20 + i * 0.025}s;"
+                   points="{t.x},{t.y} {t.x-2},{t.y-5} {t.x+2},{t.y-5}" fill="var(--c)"/>
+        {/each}
+        <!-- Small leaves at tips -->
+        {#each [{x:32,y:18},{x:68,y:18},{x:50,y:12}] as l, i}
+          <ellipse class="nt-s-leaf" style="animation-delay:{0.28 + i * 0.025}s;"
+                   cx={l.x} cy={l.y} rx="4" ry="2.5" fill="var(--c)"/>
+        {/each}
+
+      {:else if tierBand === 'medium'}
+        <!-- C-A: massive roots erupt upward while carnivorous plants bloom -->
+        <ellipse cx="50" cy="86" rx="42" ry="10" fill="var(--c)" opacity="0.35" class="nt-m-bloom" style="filter:blur(8px)"/>
+        <!-- 6 massive roots erupting up -->
+        {#each [{p:'M50 90 Q30 60 20 20', d:0.05, w:3.5},
+                {p:'M50 90 Q70 60 80 20', d:0.05, w:3.5},
+                {p:'M50 90 Q40 60 38 6',  d:0.10, w:3},
+                {p:'M50 90 Q60 60 62 6',  d:0.10, w:3},
+                {p:'M50 90 Q50 60 50 -2', d:0.15, w:3.5},
+                {p:'M50 90 Q10 70 -10 40',d:0.18, w:2.8}] as v, i}
+          <path class="nt-m-root" style="animation-delay:{v.d}s;"
+                d={v.p} stroke="var(--c)" stroke-width={v.w} fill="none" stroke-linecap="round"/>
+        {/each}
+        <!-- Carnivorous flowers blooming around the battlefield -->
+        {#each [{cx:30,cy:42,d:0.30},{cx:70,cy:42,d:0.33},{cx:50,cy:30,d:0.36},{cx:25,cy:62,d:0.39},{cx:75,cy:62,d:0.42}] as f, i}
+          <g class="nt-m-flower" style="--cx:{f.cx}px; --cy:{f.cy}px; animation-delay:{f.d}s;">
+            <ellipse cx={f.cx}     cy={f.cy - 5} rx="4" ry="6" fill="var(--c)"/>
+            <ellipse cx={f.cx + 5} cy={f.cy}     rx="4" ry="6" fill="var(--c)" transform="rotate(72 {f.cx + 5} {f.cy})"/>
+            <ellipse cx={f.cx + 3} cy={f.cy + 5} rx="4" ry="6" fill="var(--c)" transform="rotate(144 {f.cx + 3} {f.cy + 5})"/>
+            <ellipse cx={f.cx - 3} cy={f.cy + 5} rx="4" ry="6" fill="var(--c)" transform="rotate(216 {f.cx - 3} {f.cy + 5})"/>
+            <ellipse cx={f.cx - 5} cy={f.cy}     rx="4" ry="6" fill="var(--c)" transform="rotate(288 {f.cx - 5} {f.cy})"/>
+            <circle cx={f.cx} cy={f.cy} r="2.5" fill="#fff"/>
+          </g>
+        {/each}
+        <!-- Pollen scatter -->
+        {#each Array.from({length: 10}) as _, i}
+          {@const a = (i * Math.PI * 2) / 10}
+          <circle class="nt-m-pollen" style="--dx:{Math.cos(a) * 38}px; --dy:{Math.sin(a) * 32}px; animation-delay:{0.40 + i * 0.018}s;"
+                  cx="50" cy="50" r="1.6" fill="var(--c)"/>
+        {/each}
+
+      {:else if tierBand === 'large'}
+        <!-- S-SSS: gigantic vines coil around the target as an ancient tree
+             erupts beneath them -->
+        <ellipse cx="50" cy="92" rx="56" ry="12" fill="var(--c)" opacity="0.4" class="nt-l-bloom" style="filter:blur(10px)"/>
+        <!-- Ancient tree trunk erupting (extends above viewBox) -->
+        <g class="nt-l-tree">
+          <path d="M44 100 Q40 60 38 20 Q36 -20 50 -40 Q64 -20 62 20 Q60 60 56 100 Z" fill="var(--c)" opacity="0.95"/>
+          <path d="M46 100 Q42 60 42 20 Q40 -10 50 -30 Q60 -10 58 20 Q58 60 54 100 Z" fill="#fff" opacity="0.15"/>
+          <!-- Branches off the trunk -->
+          {#each [{x1:50,y1:0, x2:14,y2:-30},{x1:50,y1:0, x2:86,y2:-30},{x1:50,y1:30,x2:-10,y2:10},{x1:50,y1:30,x2:110,y2:10},{x1:50,y1:-20,x2:30,y2:-80},{x1:50,y1:-20,x2:70,y2:-80}] as b, i}
+            <line class="nt-l-branch" style="animation-delay:{0.20 + i * 0.025}s;"
+                  x1={b.x1} y1={b.y1} x2={b.x2} y2={b.y2}
+                  stroke="var(--c)" stroke-width="3" stroke-linecap="round" opacity="0"/>
+          {/each}
+        </g>
+        <!-- 8 gigantic coiling vines around the target -->
+        {#each Array.from({length: 8}) as _, i}
+          {@const a = (i * Math.PI * 2) / 8}
+          {@const sx = 50 + Math.cos(a) * 60}
+          {@const sy = 50 + Math.sin(a) * 50}
+          <path class="nt-l-coil" style="animation-delay:{0.30 + i * 0.025}s;"
+                d={`M${sx} ${sy} Q${(sx + 50) / 2} ${(sy + 50) / 2 - 8} 50 50`}
+                stroke="var(--c)" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Big leaves at branch tips -->
+        {#each [{x:14,y:-30},{x:86,y:-30},{x:30,y:-80},{x:70,y:-80},{x:-10,y:10},{x:110,y:10}] as l, i}
+          <ellipse class="nt-l-leaf" style="animation-delay:{0.50 + i * 0.025}s;"
+                   cx={l.x} cy={l.y} rx="10" ry="6" fill="var(--c)" opacity="0"/>
+        {/each}
+
+      {:else}
+        <!-- GOD: the battlefield becomes a living JUNGLE as colossal vines,
+             roots, and towering world-trees consume everything in sight -->
+        <rect class="nt-g-darken" x="-300" y="-300" width="700" height="700" fill="#02110b" opacity="0"/>
+        <!-- WORLD-TREE (massive, fills viewport) -->
+        <g class="nt-g-worldtree">
+          <path d="M36 200 Q26 60 28 -40 Q20 -120 50 -180 Q80 -120 72 -40 Q74 60 64 200 Z"
+                fill="var(--c)" opacity="0.95"/>
+          <path d="M40 200 Q34 60 36 -30 Q30 -100 50 -150 Q70 -100 64 -30 Q66 60 60 200 Z"
+                fill="#001a08" opacity="0.5"/>
+          <!-- Massive branches reaching off-screen -->
+          {#each [
+            {x1:50,y1:-80, x2:-120,y2:-200},
+            {x1:50,y1:-80, x2:220,y2:-200},
+            {x1:50,y1:0,   x2:-150,y2:-50},
+            {x1:50,y1:0,   x2:250,y2:-50},
+            {x1:50,y1:80,  x2:-130,y2:80},
+            {x1:50,y1:80,  x2:230,y2:80},
+            {x1:50,y1:-150,x2:-50,y2:-250},
+            {x1:50,y1:-150,x2:150,y2:-250},
+          ] as b, i}
+            <line class="nt-g-branch" style="animation-delay:{0.30 + i * 0.025}s;"
+                  x1={b.x1} y1={b.y1} x2={b.x2} y2={b.y2}
+                  stroke="var(--c)" stroke-width="6" stroke-linecap="round" opacity="0"/>
+          {/each}
+        </g>
+        <!-- 12 colossal roots erupting from below across full width -->
+        {#each Array.from({length: 12}) as _, i}
+          {@const tx = -120 + i * 30}
+          <path class="nt-g-root" style="animation-delay:{0.10 + i * 0.025}s;"
+                d={`M${tx + 60} 200 Q${tx + 70} 100 ${tx + 50} 0 Q${tx + 60} -100 ${tx + 40} -200`}
+                stroke="var(--c)" stroke-width="5" fill="none" stroke-linecap="round" opacity="0"/>
+        {/each}
+        <!-- Giant flower canopy blossoms -->
+        {#each Array.from({length: 8}) as _, i}
+          {@const a = (i * Math.PI * 2) / 8}
+          {@const cx = 50 + Math.cos(a) * 110}
+          {@const cy = 50 + Math.sin(a) * 90}
+          <g class="nt-g-flower" style="animation-delay:{0.55 + i * 0.025}s;">
+            <circle cx={cx} cy={cy} r="22" fill="var(--c)"/>
+            <circle cx={cx} cy={cy} r="10" fill="#fff" opacity="0.85"/>
+          </g>
+        {/each}
+        <!-- Falling leaves storm -->
+        {#each Array.from({length: 30}) as _, i}
+          {@const a = (i * Math.PI * 2) / 30}
+          {@const r = 130 + (i % 5) * 28}
+          <ellipse class="nt-g-leaf" style="--dx:{Math.cos(a) * r}px; --dy:{Math.sin(a) * r * 0.9 + 40}px; animation-delay:{0.70 + i * 0.012}s;"
+                   cx="50" cy="50" rx="3" ry="6" fill="var(--c)"/>
+        {/each}
+      {/if}
     </svg>
 
   {:else if type === 'cosmic'}
@@ -3630,9 +3980,207 @@
 @keyframes er-g-rock     { 0% { transform: translate(0,0) rotate(0deg) scale(0); opacity: 0; } 25% { transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) rotate(180deg) scale(1.4); opacity: 1; filter: brightness(1.6); } 100% { transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(0.5); opacity: 0; } }
 @keyframes er-g-quake    { 0%, 100% { transform: translate(0,0); } 12% { transform: translate(-5px, 3px); } 24% { transform: translate(5px, -4px); } 36% { transform: translate(-4px, -3px); } 48% { transform: translate(4px, 4px); } 60% { transform: translate(-5px, 2px); } 72% { transform: translate(3px, -2px); } 84% { transform: translate(-2px, 3px); } }
 
+/* ─── SHADOW (4-band revamp) ───────────────────────────────────── */
+.sh-s-orb   { transform-origin: 50% 50%; animation: sh-s-orb 0.55s ease-out forwards; opacity: 0; }
+.sh-s-tend  { stroke-dasharray: 80; stroke-dashoffset: 80; animation: sh-s-tend 0.45s ease-out forwards; }
+.sh-s-drip  { transform-origin: center; transform-box: fill-box; animation: sh-s-drip 0.55s ease-out forwards; opacity: 0; }
+@keyframes sh-s-orb  { 0% { transform: translateX(-80%) scale(0.5); opacity: 0; } 60% { transform: translateX(0) scale(1.2); opacity: 1; filter: drop-shadow(0 0 14px var(--c)); } 100% { transform: translateX(0) scale(0.7); opacity: 0; } }
+@keyframes sh-s-tend { 0% { stroke-dashoffset: 80; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(1.6); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes sh-s-drip { 0% { transform: translateY(0) scale(0); opacity: 0; } 40% { transform: translateY(0) scale(1.3); opacity: 1; } 100% { transform: translateY(12px) scale(0.6); opacity: 0; } }
+
+.sh-m-pool   { transform-origin: 50% 80%; animation: sh-m-pool 0.85s ease-out forwards; opacity: 0; }
+.sh-m-sphere { transform-origin: 50% 50%; animation: sh-m-sphere 0.85s ease-in-out forwards; opacity: 0; }
+.sh-m-core   { transform-origin: 50% 50%; animation: sh-m-core 0.55s 0.20s ease-out forwards; opacity: 0; }
+.sh-m-tend   { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: sh-m-tend 0.40s ease-out forwards; }
+@keyframes sh-m-pool   { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.2); opacity: 0.85; } 100% { transform: scale(1.4); opacity: 0; } }
+@keyframes sh-m-sphere { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 40% { transform: scale(1.2) rotate(360deg); opacity: 1; } 80% { transform: scale(0.8) rotate(720deg); opacity: 0.8; } 100% { transform: scale(0) rotate(900deg); opacity: 0; } }
+@keyframes sh-m-core   { 0% { transform: scale(0); opacity: 0; filter: brightness(3); } 40% { transform: scale(1.3); opacity: 1; filter: brightness(2) drop-shadow(0 0 18px var(--c)); } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes sh-m-tend   { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 50% { transform: rotate(var(--rot)) scaleY(1.3); opacity: 1; filter: brightness(1.8); } 100% { transform: rotate(var(--rot)) scaleY(0.8); opacity: 0; } }
+
+.sh-bloom    { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.sh-l-mass   { transform-origin: 50% 50%; animation: sh-l-mass 0.50s ease-in forwards; opacity: 0; }
+.sh-l-collapse { transform-origin: 50% 50%; animation: sh-l-collapse 0.40s 0.35s ease-out forwards; opacity: 0; }
+.sh-l-tend   { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: sh-l-tend 0.50s ease-out forwards; }
+.sh-l-drip   { transform-origin: 50% 92%; animation: sh-l-drip 0.55s ease-out forwards; opacity: 0; }
+@keyframes sh-l-mass    { 0% { transform: translate(var(--ox), var(--oy)) scale(0.5); opacity: 0; } 40% { transform: translate(calc(var(--ox) * 0.5), calc(var(--oy) * 0.5)) scale(1); opacity: 1; } 100% { transform: translate(0, 0) scale(0.6); opacity: 0; } }
+@keyframes sh-l-collapse{ 0% { transform: scale(0); opacity: 0; filter: brightness(3); } 30% { transform: scale(1.4); opacity: 1; filter: brightness(1.8) drop-shadow(0 0 22px var(--c)); } 100% { transform: scale(1.8); opacity: 0; } }
+@keyframes sh-l-tend    { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 45% { transform: rotate(var(--rot)) scaleY(1.3); opacity: 1; filter: brightness(1.8); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+@keyframes sh-l-drip    { 0% { transform: scale(0) translateY(-12px); opacity: 0; } 50% { transform: scale(1.2) translateY(0); opacity: 1; } 100% { transform: scale(0.5) translateY(8px); opacity: 0; } }
+
+.sh-g-darken { animation: sh-g-darken 1.0s ease-out forwards; }
+.sh-g-abyss  { transform-origin: 50% 50%; animation: sh-g-abyss 0.55s ease-out forwards; opacity: 0; }
+.sh-g-eye    { animation: sh-g-eye 0.85s 0.20s ease-in-out forwards; opacity: 0; }
+.sh-g-pull   { stroke-dasharray: 220; stroke-dashoffset: 220; animation: sh-g-pull 0.55s ease-in forwards; }
+.sh-g-detonate { transform-origin: 50% 50%; animation: sh-g-detonate 0.85s 0.50s ease-out forwards; }
+.sh-g-d1 { animation-delay: 0.50s; }
+.sh-g-d2 { animation-delay: 0.58s; }
+.sh-g-d3 { animation-delay: 0.66s; }
+.sh-g-tend   { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: sh-g-tend 0.65s ease-out forwards; }
+.sh-band-epic { animation: sh-g-shake 0.55s 0.40s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes sh-g-darken   { 0% { opacity: 0; } 40% { opacity: 0.7; } 80% { opacity: 0.5; } 100% { opacity: 0; } }
+@keyframes sh-g-abyss    { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 50px var(--c)); } 100% { transform: scale(1.2); opacity: 0; } }
+@keyframes sh-g-eye      { 0%, 30% { opacity: 0; } 50% { opacity: 1; transform: scale(1.2); filter: brightness(2.5) drop-shadow(0 0 14px var(--c)); } 100% { opacity: 0; transform: scale(1); } }
+@keyframes sh-g-pull     { 0% { stroke-dashoffset: 220; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 0.8; filter: brightness(2); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes sh-g-detonate { 0% { transform: scale(0); opacity: 0; } 20% { transform: scale(1.4); opacity: 1; filter: brightness(2); } 100% { transform: scale(14); opacity: 0; } }
+@keyframes sh-g-tend     { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 45% { transform: rotate(var(--rot)) scaleY(1.3); opacity: 1; filter: brightness(1.8); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+@keyframes sh-g-shake    { 0%, 100% { transform: translate(0,0); } 20% { transform: translate(-3px, 2px); } 40% { transform: translate(3px, -2px); } 60% { transform: translate(-2px, -2px); } 80% { transform: translate(2px, 3px); } }
+
+/* ─── LIGHT (4-band revamp) ────────────────────────────────────── */
+.lt-s-flash { transform-origin: 50% 50%; animation: lt-s-flash 0.55s ease-out forwards; opacity: 0; }
+.lt-s-core  { transform-origin: 50% 50%; animation: lt-s-flash 0.55s 0.02s ease-out forwards; opacity: 0; }
+.lt-s-ray   { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: lt-s-ray 0.40s ease-out forwards; }
+.lt-s-spark { transform-origin: center; transform-box: fill-box; animation: lt-s-spark 0.45s ease-out forwards; opacity: 0; }
+@keyframes lt-s-flash { 0% { transform: scale(0); opacity: 0; filter: brightness(5); } 35% { transform: scale(1.2); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 18px var(--c)); } 100% { transform: scale(1.5); opacity: 0; } }
+@keyframes lt-s-ray   { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 50% { transform: rotate(var(--rot)) scaleY(1.3); opacity: 1; filter: brightness(2); } 100% { transform: rotate(var(--rot)) scaleY(0.8); opacity: 0; } }
+@keyframes lt-s-spark { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.4); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(0.5); opacity: 0; } }
+
+.lt-m-pillar      { transform-origin: 50% 0%; animation: lt-m-pillar 0.45s ease-in forwards; opacity: 0; }
+.lt-m-pillar-core { transform-origin: 50% 0%; animation: lt-m-pillar 0.45s 0.04s ease-in forwards; opacity: 0; }
+.lt-m-flash       { transform-origin: 50% 60%; animation: lt-m-flash 0.55s 0.30s ease-out forwards; opacity: 0; }
+.lt-m-flash-c     { transform-origin: 50% 60%; animation: lt-m-flash 0.55s 0.32s ease-out forwards; opacity: 0; }
+.lt-m-shock-a     { transform-origin: 50% 60%; animation: lt-m-shock 0.55s 0.30s ease-out forwards; }
+.lt-m-shock-b     { transform-origin: 50% 60%; animation: lt-m-shock 0.55s 0.34s ease-out forwards; }
+.lt-m-ray         { transform-origin: 50% 60%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: lt-m-ray 0.50s ease-out forwards; }
+.lt-m-mote        { transform-origin: center; transform-box: fill-box; animation: lt-m-mote 0.55s ease-out forwards; opacity: 0; }
+@keyframes lt-m-pillar { 0% { transform: translateY(-100%) scaleX(0.4); opacity: 0; } 60% { transform: translateY(0) scaleX(1.1); opacity: 1; filter: brightness(2.5); } 100% { transform: translateY(0) scaleX(1); opacity: 0; } }
+@keyframes lt-m-flash  { 0% { transform: scale(0); opacity: 0; filter: brightness(6); } 30% { transform: scale(1.5); opacity: 1; filter: brightness(3) drop-shadow(0 0 28px var(--c)); } 100% { transform: scale(2); opacity: 0; } }
+@keyframes lt-m-shock  { 0% { transform: scale(0.3); opacity: 0; } 30% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(4); opacity: 0; } }
+@keyframes lt-m-ray    { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 50% { transform: rotate(var(--rot)) scaleY(1.3); opacity: 1; filter: brightness(2.5); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+@keyframes lt-m-mote   { 0% { transform: translateY(0) scale(0); opacity: 0; } 40% { transform: translateY(-12px) scale(1.4); opacity: 1; } 100% { transform: translateY(-36px) scale(0.5); opacity: 0; } }
+
+.lt-l-sky         { transform-origin: 50% -100%; animation: lt-l-sky 0.40s ease-out forwards; opacity: 0; }
+.lt-l-beam-glow   { transform-origin: 50% 0%; animation: lt-l-beam 0.55s 0.10s ease-out forwards; opacity: 0; }
+.lt-l-beam        { transform-origin: 50% 0%; animation: lt-l-beam 0.55s 0.13s ease-out forwards; opacity: 0; }
+.lt-l-beam-core   { transform-origin: 50% 0%; animation: lt-l-beam 0.55s 0.16s ease-out forwards; opacity: 0; }
+.lt-l-impact      { transform-origin: 50% 80%; animation: lt-l-impact 0.55s 0.35s ease-out forwards; }
+.lt-l-impact-c    { transform-origin: 50% 80%; animation: lt-l-impact 0.55s 0.37s ease-out forwards; }
+.lt-l-shock       { transform-origin: 50% 80%; animation: lt-l-shock 0.65s 0.35s ease-out forwards; }
+.lt-l-gray        { transform-origin: 50% 80%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: lt-l-gray 0.45s ease-out forwards; }
+.lt-l-feather     { transform-origin: center; transform-box: fill-box; animation: lt-l-feather 0.65s ease-out forwards; opacity: 0; }
+@keyframes lt-l-sky     { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+@keyframes lt-l-beam    { 0% { transform: scaleX(0.2) scaleY(0.3); opacity: 0; } 50% { transform: scaleX(1.1) scaleY(1); opacity: 1; filter: brightness(3) drop-shadow(0 0 28px var(--c)); } 100% { transform: scaleX(1) scaleY(1); opacity: 0; } }
+@keyframes lt-l-impact  { 0% { transform: scale(0); opacity: 0; filter: brightness(6); } 35% { transform: scale(1.6); opacity: 1; filter: brightness(3) drop-shadow(0 0 34px var(--c)); } 100% { transform: scale(2); opacity: 0; } }
+@keyframes lt-l-shock   { 0% { transform: scale(0.3); opacity: 0; } 30% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(5); opacity: 0; } }
+@keyframes lt-l-gray    { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 50% { transform: rotate(var(--rot)) scaleY(1.4); opacity: 1; filter: brightness(2.5); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+@keyframes lt-l-feather { 0% { transform: translate(0,0) scale(0); opacity: 0; } 30% { transform: translate(calc(var(--dx) * 0.4), calc(var(--dy) * 0.4)) scale(1.4); opacity: 1; filter: brightness(2); } 100% { transform: translate(var(--dx), var(--dy)) scale(0.5); opacity: 0; } }
+
+.lt-g-flash      { animation: lt-g-flash 0.95s ease-out forwards; }
+.lt-g-tear       { transform-origin: 50% -150%; animation: lt-g-tear 0.45s ease-out forwards; opacity: 0; }
+.lt-g-tear-bloom { transform-origin: 50% -150%; animation: lt-g-tear 0.45s 0.04s ease-out forwards; opacity: 0; }
+.lt-g-ray-glow   { transform-origin: 50% 0%; animation: lt-g-ray 0.65s 0.25s ease-out forwards; opacity: 0; }
+.lt-g-ray        { transform-origin: 50% 0%; animation: lt-g-ray 0.65s 0.28s ease-out forwards; opacity: 0; }
+.lt-g-ray-core   { transform-origin: 50% 0%; animation: lt-g-ray 0.65s 0.31s ease-out forwards; opacity: 0; }
+.lt-g-deton      { transform-origin: 50% 80%; animation: lt-g-deton 0.55s 0.55s ease-out forwards; opacity: 0; }
+.lt-g-deton-c    { transform-origin: 50% 80%; animation: lt-g-deton 0.55s 0.57s ease-out forwards; opacity: 0; }
+.lt-g-shock      { transform-origin: 50% 80%; animation: lt-g-shock 0.75s ease-out forwards; }
+.lt-g-sh1 { animation-delay: 0.55s; }
+.lt-g-sh2 { animation-delay: 0.62s; }
+.lt-g-sh3 { animation-delay: 0.69s; }
+.lt-g-circle     { transform-origin: 50% 80%; animation: lt-g-circle 0.85s 0.55s ease-out forwards; }
+.lt-g-feather    { transform-origin: center; transform-box: fill-box; animation: lt-g-feather 0.85s ease-out forwards; opacity: 0; }
+.lt-band-epic    { animation: lt-g-shake 0.55s 0.30s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes lt-g-flash   { 0% { opacity: 0; } 25% { opacity: 0.9; } 60% { opacity: 0.3; } 100% { opacity: 0; } }
+@keyframes lt-g-tear    { 0% { transform: scaleX(0); opacity: 0; } 50% { transform: scaleX(1.2); opacity: 1; filter: brightness(4); } 100% { transform: scaleX(1.4); opacity: 0; } }
+@keyframes lt-g-ray     { 0% { transform: scaleX(0.2) scaleY(0.3); opacity: 0; } 40% { transform: scaleX(1.1) scaleY(1); opacity: 1; filter: brightness(4) drop-shadow(0 0 50px var(--c)); } 100% { transform: scaleX(1) scaleY(1); opacity: 0; } }
+@keyframes lt-g-deton   { 0% { transform: scale(0); opacity: 0; filter: brightness(8); } 30% { transform: scale(1.4); opacity: 1; filter: brightness(4) drop-shadow(0 0 60px var(--c)); } 100% { transform: scale(2); opacity: 0; } }
+@keyframes lt-g-shock   { 0% { transform: scale(0.2); opacity: 0; } 20% { transform: scale(1.5); opacity: 1; filter: brightness(3); } 100% { transform: scale(14); opacity: 0; } }
+@keyframes lt-g-circle  { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+@keyframes lt-g-feather { 0% { transform: translate(0,0) rotate(0deg) scale(0); opacity: 0; } 30% { transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) rotate(180deg) scale(1.4); opacity: 1; filter: brightness(2.5); } 100% { transform: translate(var(--dx), var(--dy)) rotate(360deg) scale(0.5); opacity: 0; } }
+@keyframes lt-g-shake   { 0%, 100% { transform: translate(0,0); } 20% { transform: translate(-2px, 1px); } 40% { transform: translate(2px, -2px); } 60% { transform: translate(-2px, -1px); } 80% { transform: translate(1px, 2px); } }
+
+/* ─── ARCANE (4-band revamp) ───────────────────────────────────── */
+.arc-s-rune  { transform-origin: 50% 50%; animation: arc-s-rune 0.50s ease-out forwards; opacity: 0; }
+.arc-s-burst { transform-origin: 50% 50%; animation: arc-s-burst 0.45s 0.16s ease-out forwards; }
+.arc-s-dart  { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: arc-s-dart 0.40s ease-out forwards; }
+@keyframes arc-s-rune  { 0% { transform: scale(0.5) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(180deg); opacity: 1; filter: brightness(2); } 100% { transform: scale(1.3) rotate(360deg); opacity: 0; } }
+@keyframes arc-s-burst { 0% { transform: scale(0); opacity: 0; filter: brightness(4); } 40% { transform: scale(1.4); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 16px var(--c)); } 100% { transform: scale(1.8); opacity: 0; } }
+@keyframes arc-s-dart  { 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 50% { transform: rotate(var(--rot)) scaleY(1.3); opacity: 1; filter: brightness(2); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+
+.arc-m-bloom   { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.arc-m-ring-1  { transform-origin: 50% 50%; animation: arc-m-spin-cw 0.85s ease-in-out forwards; }
+.arc-m-ring-2  { transform-origin: 50% 50%; animation: arc-m-spin-ccw 0.85s ease-in-out forwards; }
+.arc-m-ring-3  { transform-origin: 50% 50%; animation: arc-m-spin-cw 0.85s 0.05s ease-in-out forwards; }
+.arc-m-pent    { transform-origin: 50% 50%; animation: arc-m-pent 0.85s ease-in-out forwards; }
+.arc-m-glyph   { transform-origin: 50% 50%; transform-box: fill-box; animation: arc-m-glyph 0.55s ease-out forwards; opacity: 0; }
+.arc-m-pulse   { transform-origin: 50% 50%; animation: arc-m-pulse 0.55s 0.35s ease-out forwards; }
+@keyframes arc-m-spin-cw  { 0% { transform: rotate(0deg); opacity: 0; } 30% { opacity: 1; } 100% { transform: rotate(720deg); opacity: 0; } }
+@keyframes arc-m-spin-ccw { 0% { transform: rotate(0deg); opacity: 0; } 30% { opacity: 1; } 100% { transform: rotate(-720deg); opacity: 0; } }
+@keyframes arc-m-pent     { 0% { transform: rotate(0deg) scale(0.5); opacity: 0; } 50% { transform: rotate(72deg) scale(1.1); opacity: 1; filter: brightness(1.8); } 100% { transform: rotate(144deg) scale(1.2); opacity: 0; } }
+@keyframes arc-m-glyph    { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.4); opacity: 1; filter: brightness(2); } 100% { transform: scale(1); opacity: 0; } }
+@keyframes arc-m-pulse    { 0% { transform: scale(0); opacity: 0; filter: brightness(5); } 30% { transform: scale(1.5); opacity: 1; filter: brightness(3) drop-shadow(0 0 24px var(--c)); } 100% { transform: scale(2.2); opacity: 0; } }
+
+.arc-l-bloom    { transform-origin: 50% 50%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.arc-l-mega     { transform-origin: 50% 50%; animation: arc-m-spin-cw 0.85s ease-in-out forwards; }
+.arc-l-mid      { transform-origin: 50% 50%; animation: arc-m-spin-ccw 0.85s ease-in-out forwards; }
+.arc-l-sigil-a  { transform-origin: 50% 50%; animation: arc-l-sigil-a 0.85s ease-in-out forwards; opacity: 0; }
+.arc-l-sigil-b  { transform-origin: 50% 50%; animation: arc-l-sigil-b 0.85s 0.10s ease-in-out forwards; opacity: 0; }
+.arc-l-fracture { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: arc-l-fracture 0.50s ease-out forwards; }
+.arc-l-deton    { transform-origin: 50% 50%; animation: arc-m-pulse 0.55s 0.40s ease-out forwards; }
+@keyframes arc-l-sigil-a { 0% { transform: scale(0.4) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(72deg); opacity: 1; filter: brightness(2); } 100% { transform: scale(1.3) rotate(144deg); opacity: 0; } }
+@keyframes arc-l-sigil-b { 0% { transform: scale(0.4) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(-60deg); opacity: 1; filter: brightness(2); } 100% { transform: scale(1.4) rotate(-120deg); opacity: 0; } }
+@keyframes arc-l-fracture{ 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 45% { transform: rotate(var(--rot)) scaleY(1.4); opacity: 1; filter: brightness(2.5); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+
+.arc-g-flash    { animation: lt-g-flash 0.95s ease-out forwards; }
+.arc-g-mega     { transform-origin: 50% 50%; animation: arc-g-mega 0.85s ease-out forwards; }
+.arc-g-mid      { transform-origin: 50% 50%; animation: arc-g-mid 0.85s 0.10s ease-out forwards; }
+.arc-g-inner    { transform-origin: 50% 50%; animation: arc-g-inner 0.85s 0.20s ease-out forwards; }
+.arc-g-sigil-a  { transform-origin: 50% 50%; animation: arc-g-sigil-a 0.85s ease-out forwards; }
+.arc-g-sigil-b  { transform-origin: 50% 50%; animation: arc-g-sigil-b 0.85s 0.15s ease-out forwards; }
+.arc-g-fracture { transform-origin: 50% 50%; transform-box: fill-box; transform: rotate(var(--rot)) scaleY(0); animation: arc-g-fracture 0.55s ease-out forwards; }
+.arc-g-mote     { transform-origin: center; transform-box: fill-box; animation: arc-g-mote 0.85s ease-out forwards; opacity: 0; }
+.arc-g-deton    { transform-origin: 50% 50%; animation: arc-g-deton 0.55s 0.60s ease-out forwards; }
+.arc-band-epic  { animation: lt-g-shake 0.55s 0.40s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes arc-g-mega   { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(180deg); opacity: 1; filter: brightness(2); } 100% { transform: scale(1.3) rotate(360deg); opacity: 0; } }
+@keyframes arc-g-mid    { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(-240deg); opacity: 1; filter: brightness(2); } 100% { transform: scale(1.2) rotate(-480deg); opacity: 0; } }
+@keyframes arc-g-inner  { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(360deg); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(1.4) rotate(720deg); opacity: 0; } }
+@keyframes arc-g-sigil-a{ 0% { transform: scale(0.3) rotate(0deg); opacity: 0; } 50% { transform: scale(1.05) rotate(72deg); opacity: 1; filter: brightness(2) drop-shadow(0 0 32px var(--c)); } 100% { transform: scale(1.15) rotate(144deg); opacity: 0; } }
+@keyframes arc-g-sigil-b{ 0% { transform: scale(0.3) rotate(0deg); opacity: 0; } 50% { transform: scale(1.05) rotate(-72deg); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(1.2) rotate(-144deg); opacity: 0; } }
+@keyframes arc-g-fracture{ 0% { transform: rotate(var(--rot)) scaleY(0); opacity: 0; } 45% { transform: rotate(var(--rot)) scaleY(1.3); opacity: 1; filter: brightness(2.5); } 100% { transform: rotate(var(--rot)) scaleY(1); opacity: 0; } }
+@keyframes arc-g-mote   { 0% { transform: translate(0,0) rotate(0deg) scale(0); opacity: 0; } 30% { transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) rotate(180deg) scale(1.4); opacity: 1; filter: brightness(2); } 100% { transform: translate(var(--dx), var(--dy)) rotate(540deg) scale(0.5); opacity: 0; } }
+@keyframes arc-g-deton  { 0% { transform: scale(0); opacity: 0; filter: brightness(8); } 30% { transform: scale(1.4); opacity: 1; filter: brightness(3) drop-shadow(0 0 60px var(--c)); } 100% { transform: scale(1.8); opacity: 0; } }
+
+/* ─── NATURE (4-band revamp) ───────────────────────────────────── */
+.nt-s-vine  { stroke-dasharray: 120; stroke-dashoffset: 120; animation: nt-s-vine 0.50s ease-out forwards; }
+.nt-s-thorn { transform-origin: center; transform-box: fill-box; transform: scale(0); opacity: 0; animation: nt-s-thorn 0.40s ease-out forwards; }
+.nt-s-leaf  { transform-origin: center; transform-box: fill-box; animation: nt-s-leaf 0.55s ease-out forwards; opacity: 0; }
+@keyframes nt-s-vine  { 0% { stroke-dashoffset: 120; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(1.6); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes nt-s-thorn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+@keyframes nt-s-leaf  { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 50% { transform: scale(1.3) rotate(20deg); opacity: 1; filter: brightness(1.6); } 100% { transform: scale(1) rotate(40deg); opacity: 0; } }
+
+.nt-m-bloom  { transform-origin: 50% 86%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.nt-m-root   { stroke-dasharray: 200; stroke-dashoffset: 200; animation: nt-m-root 0.55s ease-out forwards; }
+.nt-m-flower { transform-origin: var(--cx) var(--cy); animation: nt-m-flower 0.55s ease-out forwards; opacity: 0; }
+.nt-m-pollen { transform-origin: center; transform-box: fill-box; animation: nt-m-pollen 0.55s ease-out forwards; opacity: 0; }
+@keyframes nt-m-root   { 0% { stroke-dashoffset: 200; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(1.6); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes nt-m-flower { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 50% { transform: scale(1.3) rotate(45deg); opacity: 1; filter: brightness(1.8); } 100% { transform: scale(1.1) rotate(90deg); opacity: 0; } }
+@keyframes nt-m-pollen { 0% { transform: translate(0,0) scale(0); opacity: 0; } 40% { transform: translate(calc(var(--dx) * 0.4), calc(var(--dy) * 0.4)) scale(1.3); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.5); opacity: 0; } }
+
+.nt-l-bloom  { transform-origin: 50% 92%; animation: sh-bloom 0.85s ease-out forwards; opacity: 0; }
+.nt-l-tree   { transform-origin: 50% 100%; animation: nt-l-tree 0.65s ease-out forwards; opacity: 0; }
+.nt-l-branch { stroke-dasharray: 200; stroke-dashoffset: 200; animation: nt-m-root 0.55s ease-out forwards; }
+.nt-l-coil   { stroke-dasharray: 100; stroke-dashoffset: 100; animation: nt-m-root 0.50s ease-out forwards; }
+.nt-l-leaf   { transform-origin: center; transform-box: fill-box; animation: nt-l-leaf 0.65s ease-out forwards; opacity: 0; }
+@keyframes nt-l-tree { 0% { transform: scaleY(0.1) scaleX(0.5); opacity: 0; } 50% { transform: scaleY(1.1) scaleX(1.05); opacity: 1; filter: brightness(1.5) drop-shadow(0 0 18px var(--c)); } 100% { transform: scaleY(1) scaleX(1); opacity: 0; } }
+@keyframes nt-l-leaf { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 50% { transform: scale(1.2) rotate(40deg); opacity: 1; filter: brightness(1.6); } 100% { transform: scale(1) rotate(80deg); opacity: 0; } }
+
+.nt-g-darken    { animation: er-g-darken 1.0s ease-out forwards; }
+.nt-g-worldtree { transform-origin: 50% 100%; animation: nt-g-worldtree 0.75s ease-out forwards; opacity: 0; }
+.nt-g-branch    { stroke-dasharray: 400; stroke-dashoffset: 400; animation: nt-g-branch 0.65s ease-out forwards; }
+.nt-g-root      { stroke-dasharray: 600; stroke-dashoffset: 600; animation: nt-g-branch 0.65s ease-out forwards; }
+.nt-g-flower    { transform-origin: 50% 50%; animation: nt-g-flower 0.65s ease-out forwards; opacity: 0; }
+.nt-g-leaf      { transform-origin: center; transform-box: fill-box; animation: nt-g-leaf 0.85s ease-out forwards; opacity: 0; }
+.nt-band-epic   { animation: nt-g-quake 0.45s 0.40s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes nt-g-worldtree { 0% { transform: scaleY(0.1) scaleX(0.4); opacity: 0; } 60% { transform: scaleY(1.1) scaleX(1.05); opacity: 1; filter: brightness(1.5) drop-shadow(0 0 28px var(--c)); } 100% { transform: scaleY(1) scaleX(1); opacity: 0; } }
+@keyframes nt-g-branch    { 0% { stroke-dashoffset: 600; opacity: 0; } 50% { stroke-dashoffset: 0; opacity: 1; filter: brightness(1.6) drop-shadow(0 0 12px var(--c)); } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes nt-g-flower    { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 50% { transform: scale(1.3) rotate(60deg); opacity: 1; filter: brightness(1.8) drop-shadow(0 0 14px var(--c)); } 100% { transform: scale(1.1) rotate(120deg); opacity: 0; } }
+@keyframes nt-g-leaf      { 0% { transform: translate(0,0) rotate(0deg) scale(0); opacity: 0; } 30% { transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) rotate(90deg) scale(1.4); opacity: 1; filter: brightness(1.6); } 100% { transform: translate(var(--dx), var(--dy)) rotate(360deg) scale(0.6); opacity: 0; } }
+@keyframes nt-g-quake     { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-2px, 2px); } 50% { transform: translate(2px, -2px); } 75% { transform: translate(-1px, -1px); } }
+
 @media (prefers-reduced-motion: reduce) {
-  .fire-band-epic, .ice-band-epic, .lit-band-epic, .wn-band-epic, .er-band-epic { animation: none; }
-  .fi-g-darken, .ic-g-pallor, .lit-g-strobe, .er-g-darken, .wn-g-warp { animation: none; opacity: 0; }
+  .fire-band-epic, .ice-band-epic, .lit-band-epic, .wn-band-epic, .er-band-epic,
+  .sh-band-epic, .lt-band-epic, .arc-band-epic, .nt-band-epic { animation: none; }
+  .fi-g-darken, .ic-g-pallor, .lit-g-strobe, .er-g-darken, .wn-g-warp,
+  .sh-g-darken, .lt-g-flash, .arc-g-flash, .nt-g-darken { animation: none; opacity: 0; }
 }
 
 /* ─── NATURE (revamp) ────────────────────────────────────────────── */
