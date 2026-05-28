@@ -913,16 +913,25 @@
 {#if phase === 'wave_result'}
   <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
     style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(88px, calc(env(safe-area-inset-bottom,0px) + 88px));">
-    <div class="w-full max-w-md rounded-2xl overflow-hidden"
-      style="background: linear-gradient(135deg, rgba(167,139,250,0.16), rgba(8,7,16,0.95) 75%); border: 1px solid rgba(167,139,250,0.45); box-shadow: 0 0 32px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.06); animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
-      <div class="px-5 py-5 text-center">
+    <!-- Modal: capped at 80% viewport height with flex layout so the
+         header + footer are pinned and the drops section scrolls when
+         the accumulated chance-drop list grows long across many waves. -->
+    <div class="w-full max-w-md rounded-2xl overflow-hidden flex flex-col"
+      style="background: linear-gradient(135deg, rgba(167,139,250,0.16), rgba(8,7,16,0.95) 75%); border: 1px solid rgba(167,139,250,0.45); box-shadow: 0 0 32px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.06); animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; max-height: 80vh;">
+      <!-- Pinned header -->
+      <div class="px-5 pt-5 pb-3 text-center" style="flex-shrink: 0;">
         <span class="material-symbols-outlined" style="font-size: 32px; color: #a78bfa; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 12px rgba(167,139,250,0.6));">military_tech</span>
         <p class="text-xs tracking-[0.32em] uppercase mt-1 mb-1.5" style="font-family: 'JetBrains Mono', monospace; color: #a78bfa; font-weight: 700;">Wave Cleared!</p>
         <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 1.8rem); font-weight: 900; color: #a78bfa; letter-spacing: 0.1em; filter: drop-shadow(0 0 16px rgba(167,139,250,0.55));">
           Wave {wavesCleared} — {currentGrade}
         </p>
-        {#if waveDrops}
-          <div class="mt-3 text-left mx-auto px-3 py-2.5 rounded-xl" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(167,139,250,0.12);">
+      </div>
+      <!-- Scrollable drops section — grows to fill available space; if
+           the chance-drops list explodes (many waves cleared), this is
+           where the overflow goes instead of pushing the modal off-screen. -->
+      {#if waveDrops}
+        <div class="px-5" style="flex: 1 1 auto; overflow-y: auto; min-height: 0;">
+          <div class="text-left mx-auto px-3 py-2.5 rounded-xl" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(167,139,250,0.12);">
             <p class="font-mono text-xs mb-2 tracking-widest uppercase" style="color: var(--color-outline);">Drops This Run</p>
             <div class="flex items-center gap-4 mb-2">
               <div class="flex items-center gap-1.5">
@@ -945,20 +954,21 @@
               </div>
             {/if}
           </div>
-        {/if}
-        <div class="mt-4 flex flex-col gap-2">
-          <button onclick={() => { cancelAutoplayTimer(); advanceToNextWave() }}
-            data-fx="big"
-            class="w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest"
-            style="background: rgba(167,139,250,0.15); border: 1.5px solid rgba(167,139,250,0.5); color: #a78bfa; cursor: pointer;">
-            ⚔ Wave {currentWave + 1}{autoplay && autoplayCountdown > 0 ? ` · auto in ${Math.ceil(autoplayCountdown / 1000)}s` : ''}
-          </button>
-          <button onclick={() => { cancelAutoplayTimer(); handleQuit() }}
-            class="w-full obsidian-slab py-2.5 rounded-xl font-mono text-sm tracking-widest"
-            style="border: 1px solid rgba(167,139,250,0.2); color: var(--color-outline);">
-            ↩ Quit & Save
-          </button>
         </div>
+      {/if}
+      <!-- Pinned footer buttons (always visible regardless of drop count) -->
+      <div class="px-5 pb-5 pt-3 flex flex-col gap-2" style="flex-shrink: 0;">
+        <button onclick={() => { cancelAutoplayTimer(); advanceToNextWave() }}
+          data-fx="big"
+          class="w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest"
+          style="background: rgba(167,139,250,0.15); border: 1.5px solid rgba(167,139,250,0.5); color: #a78bfa; cursor: pointer;">
+          ⚔ Wave {currentWave + 1}{autoplay && autoplayCountdown > 0 ? ` · auto in ${Math.ceil(autoplayCountdown / 1000)}s` : ''}
+        </button>
+        <button onclick={() => { cancelAutoplayTimer(); handleQuit() }}
+          class="w-full obsidian-slab py-2.5 rounded-xl font-mono text-sm tracking-widest"
+          style="border: 1px solid rgba(167,139,250,0.2); color: var(--color-outline);">
+          ↩ Quit & Save
+        </button>
       </div>
     </div>
   </div>
@@ -968,8 +978,11 @@
 {#if phase === 'gameover'}
   <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
     style="background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); padding-bottom: max(88px, calc(env(safe-area-inset-bottom,0px) + 88px));">
-    <div class="w-full max-w-md bv-result-banner bv-result-loss" style="padding: 18px 20px;">
-      <div class="text-center">
+    <!-- Capped + scrollable to handle deep endless runs with huge drop lists. -->
+    <div class="w-full max-w-md bv-result-banner bv-result-loss flex flex-col"
+         style="max-height: 80vh;">
+      <!-- Pinned header -->
+      <div class="text-center px-5 pt-4 pb-2" style="flex-shrink: 0;">
         <span class="material-symbols-outlined" style="font-size: 36px; color: #ef4444; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 12px rgba(239,68,68,0.5));">sentiment_dissatisfied</span>
         <p class="text-xs tracking-[0.32em] uppercase mt-1 mb-1.5" style="font-family: 'JetBrains Mono', monospace; color: #ef4444; font-weight: 700;">Game Over</p>
         <p style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: #ef4444; letter-spacing: 0.12em;">
@@ -980,8 +993,11 @@
         {:else if (slot.endlessHighestWave ?? 0) > 0}
           <p class="mt-1 font-mono text-xs" style="color: #9a907b;">Best: Wave {slot.endlessHighestWave}</p>
         {/if}
-        {#if accDrops.gems > 0 || accDrops.xp > 0}
-          <div class="mt-4 text-left mx-auto px-3 py-2.5 rounded-xl" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(239,68,68,0.12);">
+      </div>
+      <!-- Scrollable drops -->
+      {#if accDrops.gems > 0 || accDrops.xp > 0}
+        <div class="px-5" style="flex: 1 1 auto; overflow-y: auto; min-height: 0;">
+          <div class="text-left mx-auto px-3 py-2.5 rounded-xl" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(239,68,68,0.12);">
             <p class="font-mono text-xs mb-2 tracking-widest uppercase" style="color: var(--color-outline);">Drops Collected</p>
             <div class="flex items-center gap-4">
               <div class="flex items-center gap-1.5">
@@ -1004,9 +1020,12 @@
               </div>
             {/if}
           </div>
-        {/if}
+        </div>
+      {/if}
+      <!-- Pinned footer button -->
+      <div class="px-5 pb-5 pt-3" style="flex-shrink: 0;">
         <button onclick={handleGameOver}
-          class="mt-5 w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest"
+          class="w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest"
           style="background: rgba(239,68,68,0.1); border: 1.5px solid rgba(239,68,68,0.35); color: #ef4444; cursor: pointer;">
           ↩ Back to Hub
         </button>
