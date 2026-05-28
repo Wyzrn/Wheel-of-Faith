@@ -19,7 +19,7 @@
 
   interface EquippedItemProp { id: string; grade: string; name: string }
 
-  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, equippedItems, onNewCharacter, onBackToMenu, onSaved }: {
+  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, equippedItems, onNewCharacter, onBackToMenu, onSaved, onRemoveItem }: {
     results: SpinResult[]
     name?: string
     startedAt: string
@@ -32,6 +32,11 @@
     // Used by the parent (main page) to mark the matching history entry with
     // the returned shareId so the "Save to profile" CTA disappears.
     onSaved?: (shareId: string, startedAt: string) => void
+    // Story-mode hook for permanently destroying an equipped item and
+    // refunding gems. When provided, each equipped-item chip renders a
+    // small ✕ button that triggers this callback. Parent handles the
+    // confirmation modal + saveSlots.removeEquippedItem call.
+    onRemoveItem?: (itemId: string, type: 'weapon' | 'armor' | 'power') => void
   } = $props()
 
   function get(category: string) {
@@ -663,6 +668,16 @@
                 <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: {epColor}88; transition: transform 0.15s; transform: rotate({epExpanded ? 180 : 0}deg);">expand_more</span>
               </span>
             </button>
+            {#if onRemoveItem}
+              <button
+                onclick={(e) => { e.stopPropagation(); onRemoveItem!(ep.id, 'power') }}
+                class="mt-1 ml-2 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1"
+                title="Permanently destroy this power and refund gems"
+                style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.32); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                <span class="material-symbols-outlined" style="font-size: 11px;">delete</span>
+                Remove
+              </button>
+            {/if}
             {#if epExpanded}
               <div class="mt-1 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {epColor}0d; border: 1px solid {epColor}22; border-left: 2px solid {epColor}66;">
                 <div class="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -770,6 +785,16 @@
                 <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #4e4635; transform: rotate({ewExpanded ? 180 : 0}deg); transition: transform 0.15s;">expand_more</span>
               </div>
             </button>
+            {#if onRemoveItem}
+              <button
+                onclick={(e) => { e.stopPropagation(); onRemoveItem!(ew.id, 'weapon') }}
+                class="mt-1 ml-2 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1"
+                title="Permanently destroy this weapon and refund gems"
+                style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.32); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                <span class="material-symbols-outlined" style="font-size: 11px;">delete</span>
+                Remove
+              </button>
+            {/if}
             {#if ewExpanded}
               <div class="mt-1 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {ewBorderColor}0a; border: 1px solid {ewBorderColor}22; border-left: 2px solid {ewBorderColor}66;">
                 <div class="flex items-center gap-2 mb-1.5">
@@ -870,6 +895,16 @@
                 <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #4e4635; transform: rotate({eaExpanded ? 180 : 0}deg); transition: transform 0.15s;">expand_more</span>
               </div>
             </button>
+            {#if onRemoveItem}
+              <button
+                onclick={(e) => { e.stopPropagation(); onRemoveItem!(ea.id, 'armor') }}
+                class="mt-1 ml-2 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1"
+                title="Permanently destroy this armor and refund gems"
+                style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.32); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                <span class="material-symbols-outlined" style="font-size: 11px;">delete</span>
+                Remove
+              </button>
+            {/if}
             {#if eaExpanded}
               <div class="mt-1 ml-2 px-3 py-2 rounded-lg text-xs" style="background: {eaBorderColor}0a; border: 1px solid {eaBorderColor}22; border-left: 2px solid {eaBorderColor}66;">
                 <div class="flex items-center gap-2 mb-1.5">

@@ -10,7 +10,7 @@
     buyHeroSpin, buyLegendSpin, buyParagonSpin, consumeHeroSpin, consumeLegendSpin, consumeParagonSpin,
     recordWorldReplayStart, worldReplayCooldownMs, WORLD_REPLAY_COOLDOWN_MS,
     createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
-    openCrystal, equipOpenedItem, useStatCrystal,
+    openCrystal, equipOpenedItem, useStatCrystal, removeEquippedItem, getItemRemovalRefund,
     dismantleCharacterFromSlot, getDismantleCost, DISMANTLE_PLAYER_LEVEL_REQUIRED,
     type DismantleResult,
     fuseCharactersInSlot, previewFuse, getFuseCost, FUSE_PLAYER_LEVEL_REQUIRED,
@@ -82,6 +82,44 @@
   let expandedId = $state<string | null>(null)
   let sellTarget = $state<StoryRosterEntry | null>(null)
   let rosterCapAlert = $state(false)
+  // Item-removal confirmation state. When set, a modal asks the player to
+  // confirm permanently destroying an equipped item in exchange for gems.
+  let removeItemTarget = $state<{
+    characterId: string
+    itemId: string
+    type: 'weapon' | 'armor' | 'power'
+    name: string
+    grade: string
+    refund: number
+  } | null>(null)
+
+  function handleRemoveEquippedItem(characterId: string, itemId: string, type: 'weapon' | 'armor' | 'power') {
+    if (!currentSlot) return
+    const char = currentSlot.roster.find(r => r.id === characterId)
+    if (!char) return
+    const field = type === 'weapon' ? 'equippedWeapons' : type === 'armor' ? 'equippedArmors' : 'equippedPowers'
+    const item = (char[field] ?? []).find((i: { id: string }) => i.id === itemId)
+    if (!item) return
+    removeItemTarget = {
+      characterId, itemId, type,
+      name: item.name,
+      grade: item.grade,
+      refund: getItemRemovalRefund(item.grade),
+    }
+  }
+
+  function confirmRemoveItem() {
+    if (!removeItemTarget || !currentSlot) return
+    const result = removeEquippedItem(
+      $state.snapshot(currentSlot) as StorySaveSlot,
+      removeItemTarget.characterId,
+      removeItemTarget.itemId,
+      removeItemTarget.type,
+    )
+    if (typeof result === 'string') { removeItemTarget = null; return }
+    currentSlot = result.slot
+    removeItemTarget = null
+  }
 
   // ── Spin refresh timer ─────────────────────────────────────────────────────
   let refreshMs = $state(0)
@@ -1959,6 +1997,7 @@
           readonly={true}
           equippedItems={{ weapons: expandedEntry.equippedWeapons, armors: expandedEntry.equippedArmors, powers: expandedEntry.equippedPowers }}
           onNewCharacter={() => {}}
+          onRemoveItem={(itemId, type) => handleRemoveEquippedItem(expandedEntry!.id, itemId, type)}
         />
       </div>
     </div>
@@ -2751,6 +2790,59 @@
     onConfirm={confirmSell}
     onCancel={() => sellTarget = null}
   />
+{/if}
+
+<!-- ── Remove equipped item confirmation modal ─────────────────────────── -->
+{#if removeItemTarget !== null}
+  {@const typeLabel = removeItemTarget.type === 'weapon' ? 'weapon'
+                    : removeItemTarget.type === 'armor'  ? 'armor piece'
+                    : 'power'}
+  {@const typeIcon  = removeItemTarget.type === 'weapon' ? 'swords'
+                    : removeItemTarget.type === 'armor'  ? 'shield'
+                    : 'bolt'}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    style="background: rgba(0,0,0,0.78); backdrop-filter: blur(10px);"
+    onclick={() => removeItemTarget = null}
+    onkeydown={(e) => { if (e.key === 'Escape') removeItemTarget = null }}
+    role="dialog" aria-modal="true" tabindex="-1"
+  >
+    <div
+      class="obsidian-slab w-full max-w-md rounded-xl p-5 flex flex-col gap-4"
+      style="border: 1px solid rgba(239,68,68,0.45);"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+      role="document"
+    >
+      <div class="flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined" style="font-size: 22px; color: #ef4444; font-variation-settings: 'FILL' 1;">{typeIcon}</span>
+        <p class="text-lg font-bold" style="font-family: var(--font-cinzel); color: #ef4444;">Remove {typeLabel}?</p>
+      </div>
+      <div class="text-center">
+        <p class="font-bold text-sm mb-1" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">{removeItemTarget.name}</p>
+        <p class="font-mono text-xs" style="color: var(--color-outline);">Grade {removeItemTarget.grade}</p>
+      </div>
+      <p class="text-xs text-center" style="color: var(--color-on-surface-variant); line-height: 1.5;">
+        This {typeLabel} will be <span style="color: #ef4444; font-weight: bold;">permanently destroyed</span>.
+        You'll receive
+        <span style="color: #34d399; font-weight: bold;">+{removeItemTarget.refund.toLocaleString()} gems</span>
+        in exchange. The item cannot be recovered.
+      </p>
+      <div class="flex gap-2">
+        <button onclick={() => removeItemTarget = null}
+          class="flex-1 py-2.5 rounded-xl font-mono text-sm tracking-widest"
+          style="border: 1px solid rgba(255,255,255,0.08); color: var(--color-outline); background: transparent; cursor: pointer;">
+          Cancel
+        </button>
+        <button onclick={confirmRemoveItem}
+          data-fx="big"
+          class="flex-1 py-2.5 rounded-xl font-bold font-mono text-sm tracking-widest"
+          style="background: rgba(239,68,68,0.15); border: 1.5px solid rgba(239,68,68,0.55); color: #ef4444; cursor: pointer;">
+          Destroy &amp; Refund
+        </button>
+      </div>
+    </div>
+  </div>
 {/if}
 
 <!-- ── Dismantle modal (L4+) ──────────────────────────────────────────────── -->

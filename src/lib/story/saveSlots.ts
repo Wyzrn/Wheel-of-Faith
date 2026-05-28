@@ -1385,6 +1385,54 @@ export function quickEquipBestGear(
   return { slot: next, equipped }
 }
 
+/** Gem refund for permanently removing an equipped item, keyed by the
+ *  item's ItemGrade. Roughly 2× per grade — feels appropriate next to
+ *  character sell values (1000s at low tiers, 100k+ at top tiers) and
+ *  makes high-grade gear genuinely valuable to remove for currency. */
+const ITEM_REMOVAL_GEM_REFUND: Record<string, number> = {
+  F:    50,    E:    100,   D:    200,
+  C:    400,   B:    800,   A:    1600,
+  S:    3200,  SS:   6400,  SSS:  12800,
+  God:  25600,
+}
+export function getItemRemovalRefund(grade: string | undefined): number {
+  if (!grade) return ITEM_REMOVAL_GEM_REFUND.F
+  // Strip any +/- modifiers (shouldn't appear on ItemGrade, but defensive).
+  const base = grade.replace(/[-+]/g, '')
+  return ITEM_REMOVAL_GEM_REFUND[base] ?? ITEM_REMOVAL_GEM_REFUND.F
+}
+
+/** Permanently destroys a single equipped item on a character and credits
+ *  the player gems based on the item's grade. Unlike dismantle (which
+ *  rolls a 30% chance to recover into inventory), this is a deterministic
+ *  delete — the item is gone forever. */
+export function removeEquippedItem(
+  slot: StorySaveSlot,
+  characterId: string,
+  itemId: string,
+  type: 'weapon' | 'armor' | 'power',
+): { slot: StorySaveSlot; refundedGems: number } | 'char_not_found' | 'item_not_found' {
+  const char = slot.roster.find(r => r.id === characterId)
+  if (!char) return 'char_not_found'
+  const field: 'equippedWeapons' | 'equippedArmors' | 'equippedPowers' =
+    type === 'weapon' ? 'equippedWeapons' : type === 'armor' ? 'equippedArmors' : 'equippedPowers'
+  const item = (char[field] ?? []).find(i => i.id === itemId)
+  if (!item) return 'item_not_found'
+  const refundedGems = getItemRemovalRefund(item.grade)
+  return {
+    slot: {
+      ...slot,
+      gems: slot.gems + refundedGems,
+      roster: slot.roster.map(r =>
+        r.id === characterId
+          ? { ...r, [field]: (r[field] ?? []).filter(i => i.id !== itemId) }
+          : r
+      ),
+    },
+    refundedGems,
+  }
+}
+
 export function equipOpenedItem(
   slot: StorySaveSlot,
   characterId: string,
