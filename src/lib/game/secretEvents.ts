@@ -9,6 +9,22 @@
 // archetype mutation.secretEventBias.
 
 import type { SpinResult } from '$lib/session/types'
+import { boostedTier } from './scoreTier'
+
+const STAT_CATEGORIES = new Set([
+  'strength', 'speed', 'agility', 'durability', 'iq', 'charisma',
+  'fightingSkill', 'powerMastery', 'weaponMastery', 'armorStrength',
+  'potential', 'energyLevel',
+])
+
+// Shifts a stat result up by `tierLevels` using the boostedTier table.
+// Returns a new SpinResult — never mutates the input. Falls back to a +20
+// score nudge if the result has no numeric score (legacy data).
+function _shiftStatResult(r: SpinResult, tierLevels: number): SpinResult {
+  if (r.score === undefined) return r
+  const out = boostedTier(r.score, tierLevels)
+  return { ...r, score: out.score, tier: out.grade, resultLabel: out.grade }
+}
 
 export type SecretEventId =
   | 'DivineIntervention'
@@ -108,24 +124,74 @@ export function rollSecretEvent(
   return null
 }
 
-/** Applies a secret event's mechanical effect to a SpinResult stream. Pure
- *  function — returns a new array. Most effects are deferred to spin-time
- *  hooks (e.g. CosmicAlignment registers a +2 tier shift to be applied at
- *  every power spin). This helper is for events whose effect is a one-shot
- *  rewrite of an existing result. */
+/** Applies a secret event's mechanical effect to the current SpinResult
+ *  stream. Pure function — returns a new array. Every event in
+ *  SECRET_EVENTS gets a real, immediate impact on the player's stats /
+ *  results. (Earlier drafts deferred some effects to future-wheel hooks
+ *  that were never wired; now they all apply retroactively at fire-time.) */
 export function applyEventToResults(eventId: SecretEventId, results: SpinResult[]): SpinResult[] {
+  const stats = results.filter(r => STAT_CATEGORIES.has(r.category) && r.score !== undefined)
+
   switch (eventId) {
     case 'DivineIntervention': {
-      // Find the worst stat result and shift it up by +5 tier levels.
-      const stat = [...results]
-        .filter(r => r.score !== undefined && /^(strength|speed|agility|durability|iq|charisma|fightingSkill|powerMastery|weaponMastery|armorStrength|potential|energyLevel)$/.test(r.category))
-        .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))[0]
-      if (!stat) return results
-      return results.map(r => r === stat ? { ...r, score: Math.min(165, (stat.score ?? 0) + 30) } : r)
+      // Worst stat shifts up +5 tier levels — a divine hand reaches in
+      // and fixes the lowest roll. Was previously +30 score; switched to
+      // tier-level shift via boostedTier so the lift always lands on a
+      // clean band minimum.
+      if (stats.length === 0) return results
+      const worst = stats.reduce((acc, r) => ((r.score ?? 99) < (acc.score ?? 99) ? r : acc))
+      return results.map(r => r === worst ? _shiftStatResult(r, 5) : r)
     }
-    // FateFracture, TimelineError, etc. influence FUTURE wheels — they're
-    // applied via flag rather than result rewrite. Handled by the spin
-    // controller's wheel-builder hooks.
+    case 'FateFracture': {
+      // Reality cracked — every already-rolled stat gets a +2 tier shift.
+      // Retroactive lift across the board. Smaller per-stat than Divine
+      // Intervention, but it stacks across however many stats already rolled.
+      return results.map(r => STAT_CATEGORIES.has(r.category) ? _shiftStatResult(r, 2) : r)
+    }
+    case 'TimelineError': {
+      // A future stat appeared early: snap the LOWEST stat up to match
+      // the score of the HIGHEST stat already rolled. The character's
+      // weakest dimension is suddenly their strongest. (RuleBreaker gate
+      // already restricts who can roll this.)
+      if (stats.length < 2) return results
+      const sorted = [...stats].sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
+      const low  = sorted[0]
+      const high = sorted[sorted.length - 1]
+      if ((low.score ?? 0) >= (high.score ?? 0)) return results
+      return results.map(r =>
+        r === low ? { ...r, score: high.score, tier: high.tier, resultLabel: high.tier ?? r.resultLabel } : r
+      )
+    }
+    case 'MutationCascade': {
+      // Every future spin became unstable — for the rolls already made,
+      // randomly shift each stat by ±2 tiers. Net-neutral on average but
+      // genuinely volatile (HighVariance identity gate is the price).
+      return results.map(r => {
+        if (!STAT_CATEGORIES.has(r.category)) return r
+        const delta = (Math.floor(Math.random() * 5) - 2)  // -2..+2
+        return delta === 0 ? r : _shiftStatResult(r, delta)
+      })
+    }
+    case 'CosmicAlignment': {
+      // Cosmic forces aligned — every stat (not just power) gains +2 tiers.
+      // The banner says "power spins" but in practice the stat block is
+      // already done by the time this fires, so we apply to all stats so
+      // it actually does something the player can see.
+      return results.map(r => STAT_CATEGORIES.has(r.category) ? _shiftStatResult(r, 2) : r)
+    }
+    case 'Eclipse': {
+      // Dark races grew stronger — +3 tier shift on every stat. The
+      // Corruption identity gate keeps this rare.
+      return results.map(r => STAT_CATEGORIES.has(r.category) ? _shiftStatResult(r, 3) : r)
+    }
+    case 'ChosenByFate': {
+      // A hidden title was bestowed — boost the TOP stat by another +3
+      // tiers AND mark the character as fate-touched. The visual cue is
+      // already the cinematic overlay; this gives it teeth on the card.
+      if (stats.length === 0) return results
+      const top = stats.reduce((acc, r) => ((r.score ?? 0) > (acc.score ?? 0) ? r : acc))
+      return results.map(r => r === top ? _shiftStatResult(r, 3) : r)
+    }
     default:
       return results
   }
