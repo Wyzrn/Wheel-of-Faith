@@ -620,7 +620,14 @@
   }
 
   function enterEndless() {
-    if (!currentSlot || endlessKeys <= 0) { view = 'shop'; return }
+    if (!currentSlot) { view = 'shop'; return }
+    // An in-progress run resumes for FREE — don't consume another key.
+    // Only a brand-new run spends a key.
+    if (currentSlot.endlessRun) {
+      view = 'endless'
+      return
+    }
+    if (endlessKeys <= 0) { view = 'shop'; return }
     const result = consumeEndlessKey($state.snapshot(currentSlot) as StorySaveSlot)
     if (!result) { view = 'shop'; return }
     currentSlot = result
@@ -1365,11 +1372,13 @@
 
       <!-- Endless Mode (unlocked at player level 3) -->
       {#if playerLevel >= 3}
+        {@const hasActiveRun = !!currentSlot?.endlessRun}
+        {@const canEnterEndless = hasActiveRun || endlessKeys > 0}
         <div class="obsidian-slab rounded-xl overflow-hidden" style="border: 1px solid rgba(167,139,250,0.2);">
           <button
-            class="w-full px-5 py-5 flex items-center gap-4 {endlessKeys > 0 ? '' : 'opacity-50'}"
-            style="background: none; border: none; cursor: {endlessKeys > 0 ? 'pointer' : 'default'};"
-            onclick={() => endlessKeys > 0 ? enterEndless() : view = 'shop'}
+            class="w-full px-5 py-5 flex items-center gap-4 {canEnterEndless ? '' : 'opacity-50'}"
+            style="background: none; border: none; cursor: {canEnterEndless ? 'pointer' : 'default'};"
+            onclick={() => canEnterEndless ? enterEndless() : view = 'shop'}
           >
             <div
               class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
@@ -1379,11 +1388,13 @@
             </div>
             <div class="flex-1 text-left">
               <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Endless Mode</div>
-              <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-                {endlessKeys > 0 ? `${endlessKeys} key${endlessKeys === 1 ? '' : 's'} · Ready` : 'No keys — buy one in Shop'}
+              <div class="font-mono text-xs mt-0.5" style="color: {hasActiveRun ? '#a78bfa' : 'var(--color-outline)'};">
+                {hasActiveRun
+                  ? `↩ Resume Wave ${currentSlot!.endlessRun!.currentWave}`
+                  : endlessKeys > 0 ? `${endlessKeys} key${endlessKeys === 1 ? '' : 's'} · Ready` : 'No keys — buy one in Shop'}
               </div>
             </div>
-            <span class="font-mono text-xs px-2 py-1 rounded" style="background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa;">🗝 {endlessKeys}</span>
+            <span class="font-mono text-xs px-2 py-1 rounded" style="background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa;">{hasActiveRun ? '▶' : `🗝 ${endlessKeys}`}</span>
           </button>
         </div>
       {/if}
@@ -2069,6 +2080,7 @@
   <EndlessView
     slot={currentSlot}
     onExit={handleEndlessExit}
+    onPersist={(updated) => currentSlot = updated}
     gamepasses={auth.user?.gamepasses ?? []}
   />
 {/if}

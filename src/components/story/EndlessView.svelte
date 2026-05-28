@@ -10,8 +10,8 @@
     type BattleCharacter,
   } from '$lib/game/battle'
   import {
-    recordEndlessResult, applyBattleDrops,
-    type StorySaveSlot, type BattleDrops,
+    recordEndlessResult, applyBattleDrops, saveEndlessRun, clearEndlessRun,
+    type StorySaveSlot, type BattleDrops, type EndlessRunState,
   } from '$lib/story/saveSlots'
   import type { StoryRosterEntry, StoryTeam } from '$lib/story/types'
   import BattleArena from '../BattleArena.svelte'
@@ -20,9 +20,13 @@
   import { settings } from '$lib/settings.svelte'
   import { auth } from '$lib/stores/auth.svelte'
 
-  let { slot, onExit, gamepasses = [] }: {
+  let { slot, onExit, onPersist, gamepasses = [] }: {
     slot: StorySaveSlot
     onExit: (updated: StorySaveSlot) => void
+    // Persists a slot update mid-run WITHOUT leaving Endless. Used to
+    // checkpoint the run at each wave boundary so an unexpected close
+    // (or an explicit Save & Quit) can be resumed later.
+    onPersist?: (updated: StorySaveSlot) => void
     gamepasses?: string[]
   } = $props()
 
@@ -239,6 +243,72 @@
     if (timeoutId) clearTimeout(timeoutId)
   })
 
+  // ── Run resume / checkpoint ─────────────────────────────────────────────
+  // A run is checkpointed onto the slot at every wave boundary so the
+  // player can quit mid-battle and pick it back up, or close the tab and
+  // not lose the run. The checkpoint is wave-granular: resuming re-fights
+  // the wave the player was on, with carried HP + accumulated drops.
+  let showRunResumePrompt = $state(false)
+  let pendingQuitChoice = $state(false)  // mid-battle "Save or Claim?" dialog
+
+  // Restored t1Chars HP for a resumed run (applied on first startWave).
+  let resumeTeamHp: number[] | null = null
+
+  $effect(() => {
+    // On mount, if the slot carries an in-progress run, offer to resume it.
+    // Guard with a one-shot flag via _checkedResume so it only fires once.
+    if (!_checkedResume) {
+      _checkedResume = true
+      const run = slot.endlessRun
+      if (run && (slot.teams ?? []).some(t => t.id === run.teamId)) {
+        showRunResumePrompt = true
+      }
+    }
+  })
+  let _checkedResume = false
+
+  function buildRunState(): EndlessRunState {
+    return {
+      teamId: selectedTeam?.id ?? '',
+      currentWave,
+      wavesCleared,
+      accGems: accDrops.gems,
+      accXp: accDrops.xp,
+      accChanceDrops: [...accDrops.chanceDrops],
+      teamHp: [...t1DispHp],
+      startedAt: slot.endlessRun?.startedAt ?? new Date().toISOString(),
+    }
+  }
+
+  // Persist the run at the current wave boundary (no exit). Called at the
+  // start of every wave so the latest cleared-wave checkpoint is always saved.
+  function checkpointRun() {
+    if (!selectedTeam || !onPersist) return
+    onPersist(saveEndlessRun($state.snapshot(slot) as StorySaveSlot, buildRunState()))
+  }
+
+  // Resume an in-progress run from the slot's saved checkpoint.
+  function resumeRun() {
+    const run = slot.endlessRun
+    if (!run) { showRunResumePrompt = false; return }
+    const team = (slot.teams ?? []).find(t => t.id === run.teamId) ?? null
+    if (!team) { showRunResumePrompt = false; return }
+    selectedTeam = team
+    currentWave  = run.currentWave
+    wavesCleared = run.wavesCleared
+    accDrops     = { gems: run.accGems, xp: run.accXp, chanceDrops: [...run.accChanceDrops] as BattleDrops['chanceDrops'] }
+    resumeTeamHp = run.teamHp.length > 0 ? [...run.teamHp] : null
+    showRunResumePrompt = false
+    phase = 'intro'
+    startWave()
+  }
+
+  // Discard the saved run and start fresh from the pick screen.
+  function discardSavedRun() {
+    if (onPersist) onPersist(clearEndlessRun($state.snapshot(slot) as StorySaveSlot))
+    showRunResumePrompt = false
+  }
+
   // ── Derived ────────────────────────────────────────────────────────────────
   let currentGrade = $derived(endlessGrade(currentWave))
   let ec           = $derived(gradeColor(currentGrade))
@@ -393,11 +463,22 @@
           powers:  m.equippedPowers  ?? [],
         }, spinMult * levelMult)
       })
-      t1DispHp = t1Chars.map(c => c.hp)
-      accDrops = { gems: 0, xp: 0, chanceDrops: [] }
+      // Resumed run: restore the saved per-member HP from the checkpoint.
+      // Fresh run: full HP. accDrops were already restored in resumeRun().
+      if (resumeTeamHp && resumeTeamHp.length === t1Chars.length) {
+        t1DispHp = [...resumeTeamHp]
+      } else {
+        t1DispHp = t1Chars.map(c => c.hp)
+        if (!resumeTeamHp) accDrops = { gems: 0, xp: 0, chanceDrops: [] }
+      }
+      resumeTeamHp = null  // one-shot
     }
     // Re-sync HP back onto t1Chars in case advanceToNextWave updated it.
     t1Chars = t1Chars.map((c, i) => ({ ...c, hp: t1DispHp[i] ?? c.maxHp }))
+
+    // Checkpoint the run at this wave boundary so a mid-battle quit or an
+    // unexpected close can resume from here.
+    checkpointRun()
 
     phase = 'fight'
     startSubWave()
@@ -446,8 +527,29 @@
   }
 
   function handleQuit() {
+    // Claim + clear run (recordEndlessResult sets endlessRun = null).
     const updated = buildFinalSlot(wavesCleared)
     onExit(updated)
+  }
+
+  // Mid-battle quit — saves the current wave checkpoint and exits WITHOUT
+  // claiming, so the player can resume the exact same run later. Drops
+  // stay banked in the run state (accGems/accXp/accChanceDrops) and are
+  // only applied to the slot when the run is finally claimed/ended.
+  function handleSaveAndQuit() {
+    pendingQuitChoice = false
+    const updated = saveEndlessRun($state.snapshot(slot) as StorySaveSlot, buildRunState())
+    onExit(updated)
+  }
+
+  // Mid-battle end — claims the accumulated rewards now and ends the run.
+  function handleEndAndClaim() {
+    pendingQuitChoice = false
+    const rep = teamMembers[0]
+    if (rep && wavesCleared > 0) {
+      submitEndlessScore(wavesCleared, rep.name, rep.race, rep.archetype, rep.overallTier)
+    }
+    handleQuit()
   }
 
   function handleGameOver() {
@@ -482,6 +584,10 @@
   {#if phase === 'pick'}
     <button onclick={handleQuit}
       style="background: none; border: none; cursor: pointer; color: var(--color-outline); font-size: 20px; line-height: 1; padding: 8px;">←</button>
+  {:else if phase === 'fight' || phase === 'intro'}
+    <!-- Mid-battle quit — opens the Save-or-Claim choice dialog. -->
+    <button onclick={() => pendingQuitChoice = true} aria-label="Quit run"
+      style="background: none; border: none; cursor: pointer; color: var(--color-outline); font-size: 20px; line-height: 1; padding: 8px;">←</button>
   {:else}
     <div style="width: 36px;"></div>
   {/if}
@@ -499,6 +605,71 @@
   </div>
   <div style="width: 36px;"></div>
 </header>
+
+<!-- ── Mid-battle quit choice: Save & Resume Later vs End & Claim ──────────── -->
+{#if pendingQuitChoice}
+  <div class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    style="background: rgba(0,0,0,0.78); backdrop-filter: blur(10px);"
+    onclick={() => pendingQuitChoice = false} role="presentation">
+    <div class="obsidian-slab w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4"
+      style="border: 1px solid rgba(167,139,250,0.4);"
+      onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div class="text-center">
+        <span class="material-symbols-outlined" style="font-size: 28px; color: #a78bfa; font-variation-settings: 'FILL' 1;">pause_circle</span>
+        <p class="font-bold text-lg mt-1" style="font-family: var(--font-cinzel); color: #a78bfa;">Leave Endless?</p>
+        <p class="text-xs mt-1" style="color: var(--color-outline); font-family: 'JetBrains Mono', monospace;">
+          You're on Wave {currentWave}. Choose how to leave.
+        </p>
+      </div>
+      <button onclick={handleSaveAndQuit}
+        class="w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest flex flex-col items-center gap-0.5"
+        style="background: rgba(167,139,250,0.15); border: 1.5px solid rgba(167,139,250,0.5); color: #a78bfa; cursor: pointer;">
+        💾 Save &amp; Resume Later
+        <span class="text-[10px] font-normal" style="color: #9a907b;">Keep this run — rewards stay banked until you finish</span>
+      </button>
+      <button onclick={handleEndAndClaim}
+        class="w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest flex flex-col items-center gap-0.5"
+        style="background: rgba(52,211,153,0.12); border: 1.5px solid rgba(52,211,153,0.45); color: #34d399; cursor: pointer;">
+        🏆 End &amp; Claim Rewards
+        <span class="text-[10px] font-normal" style="color: #9a907b;">Cash out now — banks +{accDrops.gems.toLocaleString()} gems, ends the run</span>
+      </button>
+      <button onclick={() => pendingQuitChoice = false}
+        class="w-full py-2 rounded-xl font-mono text-xs tracking-widest"
+        style="border: 1px solid rgba(255,255,255,0.08); color: var(--color-outline); background: transparent; cursor: pointer;">
+        Cancel — keep fighting
+      </button>
+    </div>
+  </div>
+{/if}
+
+<!-- ── Resume saved run prompt (shown on entry if a run was banked) ───────── -->
+{#if showRunResumePrompt && slot.endlessRun}
+  <div class="fixed inset-0 z-50 flex items-center justify-center px-4"
+    style="background: rgba(7,7,13,0.92); backdrop-filter: blur(12px);" role="presentation">
+    <div class="obsidian-slab w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4 text-center"
+      style="border: 1px solid rgba(167,139,250,0.4);" role="dialog" aria-modal="true">
+      <span class="material-symbols-outlined block text-4xl" style="color: #a78bfa; font-variation-settings: 'FILL' 1;">history</span>
+      <div>
+        <p class="font-bold text-lg" style="font-family: var(--font-cinzel); color: #a78bfa;">Resume Endless Run?</p>
+        <p class="text-sm mt-1" style="color: #9a907b;">
+          You have a run in progress — <span style="color: #e4e1ee;">Wave {slot.endlessRun.currentWave}</span>,
+          {slot.endlessRun.wavesCleared} wave{slot.endlessRun.wavesCleared === 1 ? '' : 's'} cleared,
+          <span style="color: #34d399;">{slot.endlessRun.accGems.toLocaleString()} gems banked</span>.
+        </p>
+      </div>
+      <button onclick={resumeRun}
+        class="w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest"
+        style="background: rgba(167,139,250,0.15); border: 1.5px solid rgba(167,139,250,0.5); color: #a78bfa; cursor: pointer;">
+        ↩ Resume Wave {slot.endlessRun.currentWave}
+      </button>
+      <button onclick={discardSavedRun}
+        class="w-full py-2.5 rounded-xl font-mono text-sm tracking-widest"
+        style="border: 1px solid rgba(239,68,68,0.3); color: #ef4444; background: transparent; cursor: pointer;">
+        Discard &amp; Start New
+      </button>
+    </div>
+  </div>
+{/if}
 
 <!-- Pick-phase wrapper only renders when actually picking. Previously this
      wrapper had `min-height: 100dvh` and stayed mounted in fight phase,

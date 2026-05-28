@@ -267,6 +267,10 @@ export interface StorySaveSlot {
   absolutePlusBattles: number
   /** Highest wave ever reached in Endless Mode. */
   endlessHighestWave: number
+  /** In-progress Endless run — set while a run is active so the player
+   *  can quit mid-battle and resume later (or exit and claim). Cleared
+   *  when the run ends (game over / final claim). null = no active run. */
+  endlessRun?: EndlessRunState | null
   /** Per-world battle milestones (5, 10, 15, 20) already awarded — prevents re-awarding on replay. */
   milestonesAwarded: Partial<Record<WorldGrade, number[]>>
   /** Absolute+ run milestones awarded in the current run — resets to [] when a run completes. */
@@ -344,6 +348,7 @@ export function createSaveSlot(id: SlotId): StorySaveSlot {
     absolutePlusCompleted: 0,
     absolutePlusBattles: 0,
     endlessHighestWave: 0,
+    endlessRun: null,
     milestonesAwarded: {},
     absolutePlusMilestonesAwarded: [],
     inventory: freshInventory(),
@@ -1065,10 +1070,39 @@ export function recordEndlessResult(
   let updated: StorySaveSlot = {
     ...slot,
     endlessHighestWave: Math.max(slot.endlessHighestWave ?? 0, wavesCleared),
+    // Any final claim / game over also clears the in-progress run so the
+    // resume prompt doesn't re-offer a run that's already been cashed out.
+    endlessRun: null,
   }
   updated = applyBattleDrops(updated, drops)
   if (teamCharIds.length > 0) updated = addTeamXp(updated, teamCharIds, drops.xp)
   return updated
+}
+
+/** Snapshot of an in-progress Endless run, persisted so the player can
+ *  quit mid-battle and resume later. The resumable checkpoint is the
+ *  START of a wave — accumulated drops + wave count + per-member HP are
+ *  captured at each wave boundary. Resuming re-fights the current wave
+ *  fresh from these values; no enemy mid-wave state is stored. */
+export interface EndlessRunState {
+  teamId: string
+  currentWave: number
+  wavesCleared: number
+  accGems: number
+  accXp: number
+  accChanceDrops: string[]
+  teamHp: number[]
+  startedAt: string
+}
+
+/** Persists the in-progress Endless run onto the slot. */
+export function saveEndlessRun(slot: StorySaveSlot, run: EndlessRunState): StorySaveSlot {
+  return { ...slot, endlessRun: run }
+}
+
+/** Clears the in-progress Endless run (run ended / abandoned / claimed). */
+export function clearEndlessRun(slot: StorySaveSlot): StorySaveSlot {
+  return { ...slot, endlessRun: null }
 }
 
 /**
