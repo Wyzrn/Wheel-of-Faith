@@ -1179,235 +1179,157 @@
 
 <!-- ── Hub Menu ─────────────────────────────────────────────────────────────── -->
 {#if view === 'hub' && currentSlot}
-  <div class="min-h-screen flex flex-col items-center justify-center px-4 pt-16 pb-24 gap-6">
+  {@const worldsCleared = Object.values(currentSlot?.worldProgress ?? {}).filter(w => w.beaten).length}
+  {@const worldPct = Math.round((worldsCleared / WORLD_GRADES.length) * 100)}
+  {@const spinPct = Math.round((Math.min(spinsRemaining, MAX_DAILY_SPINS) / MAX_DAILY_SPINS) * 100)}
+  {@const hasActiveRun = !!currentSlot?.endlessRun}
+  <div class="min-h-screen pb-28">
 
-    <!-- Header -->
-    <div class="w-full max-w-xs flex items-center gap-3">
-      <button
-        class="font-mono text-sm"
-        style="color: var(--color-outline); background: none; border: none; cursor: pointer;"
-        onclick={() => { view = 'saveSlotSelect'; currentSlot = null }}
-      >
-        ←
-      </button>
-      <div class="flex-1 text-center">
-        <h1
-          class="gold-emboss font-bold tracking-widest"
-          style="font-family: var(--font-cinzel); font-size: 20px;"
-        >
-          STORY MODE
-        </h1>
+    <!-- Top app bar: identity + currency chips + arcane (spin) gauge -->
+    <header class="sticky top-0 z-30 flex items-center justify-between gap-3 px-4 h-14 relative"
+      style="background: rgba(30,26,34,0.85); border-bottom: 2px solid rgba(240,192,82,0.45); backdrop-filter: blur(16px); box-shadow: 0 4px 20px rgba(90,214,239,0.12);">
+      <div class="flex items-center gap-3 min-w-0">
+        <button class="material-symbols-outlined" style="font-size: 20px; color: var(--color-outline); background: none; border: none; cursor: pointer;"
+          onclick={() => { view = 'saveSlotSelect'; currentSlot = null }} aria-label="Back to save slots">arrow_back</button>
+        <span class="font-bold tracking-widest truncate" style="font-family: var(--font-cinzel); font-size: 16px; color: #f0c052; text-shadow: 0 0 14px rgba(240,192,82,0.35);">STORY MODE</span>
       </div>
-      <div style="width: 24px;"></div>
-    </div>
-
-    <!-- Stats bar -->
-    <div class="obsidian-slab w-full max-w-xs rounded-xl px-5 py-3 flex flex-col gap-2">
-      <div class="flex items-center justify-between gap-4">
-        <!-- Gems -->
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined" style="font-size: 16px; color: #34d399; font-variation-settings: 'FILL' 1;">paid</span>
-          <span class="font-mono text-sm font-bold" style="color: #34d399;">{gems.toLocaleString()}</span>
-          <span class="font-mono text-xs" style="color: var(--color-outline);">gems</span>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style="background: #38333c; border: 1px solid rgba(240,192,82,0.25);">
+          <span class="material-symbols-outlined" style="font-size: 14px; color: #f0c052; font-variation-settings: 'FILL' 1;">diamond</span>
+          <span class="font-mono text-xs font-bold" style="color: #f0c052;">{shards}</span>
         </div>
-        <!-- Shards -->
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">diamond</span>
-          <span class="font-mono text-sm font-bold" style="color: var(--gold-bright);">{shards}</span>
-          <span class="font-mono text-xs" style="color: var(--color-outline);">shards</span>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style="background: #38333c; border: 1px solid rgba(52,211,153,0.25);">
+          <span class="material-symbols-outlined" style="font-size: 14px; color: #34d399; font-variation-settings: 'FILL' 1;">paid</span>
+          <span class="font-mono text-xs font-bold" style="color: #34d399;">{gems.toLocaleString()}</span>
         </div>
       </div>
-      <div class="flex items-center justify-between gap-4">
-        <!-- Chars -->
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">person</span>
-          <span class="font-mono text-sm font-bold" style="color: var(--color-on-surface);">{roster.length}</span>
-          <span class="font-mono text-xs" style="color: var(--color-outline);">chars</span>
+      <div class="rune-seam"></div>
+    </header>
+
+    <div class="max-w-2xl mx-auto px-4 pt-5 flex flex-col gap-4">
+
+      <!-- Hero — welcome banner + primary Spin CTA -->
+      <div class="obsidian-slab rounded-2xl p-5 relative overflow-hidden" style="box-shadow: var(--elev-3); border: 1px solid rgba(240,192,82,0.3);">
+        <div class="absolute top-0 right-0 p-3 opacity-20 pointer-events-none">
+          <span class="material-symbols-outlined" style="font-size: 88px; color: #f0c052;">auto_awesome</span>
         </div>
-        <!-- Player level -->
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined" style="font-size: 16px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">military_tech</span>
-          <span class="font-mono text-sm font-bold" style="color: var(--color-on-surface);">Lv {playerLevel}</span>
-          <span class="font-mono text-xs" style="color: var(--color-outline);">{getStageTierLabel(stage)}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- First-time onboarding hint — surfaces a clear next step when the roster
-         is empty (i.e. brand-new save slot). Disappears as soon as the player
-         spins their first character. -->
-    {#if roster.length === 0 && hasAnySpin}
-      <div class="w-full max-w-xs rounded-xl px-4 py-3"
-        style="background: linear-gradient(135deg, rgba(240,192,64,0.10), rgba(240,192,64,0.03)); border: 1px solid rgba(240,192,64,0.32);">
-        <div class="flex items-start gap-3">
-          <span class="material-symbols-outlined" style="font-size: 22px; color: #f0c040; font-variation-settings: 'FILL' 1;">tips_and_updates</span>
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-bold mb-1" style="font-family: 'Cinzel', serif; color: #ffdf96;">Welcome to your save slot</p>
-            <p class="text-xs" style="color: #9a907b; line-height: 1.5; font-family: 'JetBrains Mono', monospace;">
-              Tap <span style="color: #f0c040;">Wheel</span> to spin your first character. Then explore
-              <span style="color: #f0c040;">Worlds</span> to send them into battle and earn gems.
-            </p>
+        <div class="filigree-tl"></div>
+        <div class="filigree-br"></div>
+        <div class="rune-seam"></div>
+        <div class="relative z-10 flex flex-col gap-1.5">
+          <h2 class="font-bold" style="font-family: var(--font-cinzel); font-size: 22px; color: #f0c052;">Welcome back, Wayfarer</h2>
+          <p class="text-sm" style="color: var(--color-on-surface-variant); font-family: 'Inter', sans-serif;">
+            Level {playerLevel} · {getStageTierLabel(stage)} · {roster.length} champion{roster.length === 1 ? '' : 's'} in your roster.
+          </p>
+          <!-- Daily spin gauge -->
+          <div class="mt-2 flex items-center gap-2">
+            <span class="font-mono text-[10px] uppercase tracking-wider whitespace-nowrap" style="color: rgba(106,228,253,0.7);">Spins {spinsRemaining}/{MAX_DAILY_SPINS}</span>
+            <div class="arcane-gauge flex-1"><div class="arcane-gauge-fill" style="width: {spinPct}%;"></div></div>
           </div>
-        </div>
-      </div>
-    {/if}
-
-    <!-- Hub menu options -->
-    <div class="flex flex-col gap-3 w-full max-w-xs">
-
-      <!-- Wheel (primary CTA) -->
-      <div class="obsidian-slab rounded-xl overflow-hidden">
-        <button
-          class="w-full px-5 py-5 flex items-center gap-4 {hasAnySpin ? '' : 'opacity-40 cursor-not-allowed'}"
-          style="background: none; border: none; cursor: {hasAnySpin ? 'pointer' : 'not-allowed'};"
-          onclick={handleWheelClick}
-          disabled={!hasAnySpin}
-        >
-          <div
-            class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
-            style="background: rgba(240,192,64,0.12); border: 1px solid rgba(240,192,64,0.3);"
-          >
-            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">casino</span>
-          </div>
-          <div class="flex-1 text-left">
-            <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Wheel</div>
-            <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              {spinsRemaining}/{MAX_DAILY_SPINS} refresh
-              {#if bonusSpins > 0}
-                · <span style="color: #a78bfa;">{bonusSpins} bonus</span>
-              {/if}
-              {#if spinsRemaining < MAX_DAILY_SPINS && refreshMs > 0}
-                · +1 in {formatRefreshTime(refreshMs)}
-              {/if}
-            </div>
-          </div>
-          {#if hasAnySpin}
-            <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
-          {/if}
-        </button>
-      </div>
-
-      <!-- Roster -->
-      <div class="obsidian-slab rounded-xl overflow-hidden">
-        <button
-          class="w-full px-5 py-5 flex items-center gap-4"
-          style="background: none; border: none; cursor: pointer;"
-          onclick={() => view = 'roster'}
-        >
-          <div
-            class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
-            style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.15);"
-          >
-            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">group</span>
-          </div>
-          <div class="flex-1 text-left">
-            <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Roster</div>
-            <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              {roster.length} / {rosterCapacity} characters
-            </div>
-          </div>
-          <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
-        </button>
-      </div>
-
-      <!-- Shop -->
-      <div class="obsidian-slab rounded-xl overflow-hidden">
-        <button
-          class="w-full px-5 py-5 flex items-center gap-4"
-          style="background: none; border: none; cursor: pointer;"
-          onclick={() => view = 'shop'}
-        >
-          <div
-            class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
-            style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.15);"
-          >
-            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">storefront</span>
-          </div>
-          <div class="flex-1 text-left">
-            <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Shop</div>
-            <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              Spins · crystals · upgrades
-            </div>
-          </div>
-          <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
-        </button>
-      </div>
-
-      <!-- Worlds -->
-      <div class="obsidian-slab rounded-xl overflow-hidden">
-        <button
-          class="w-full px-5 py-5 flex items-center gap-4"
-          style="background: none; border: none; cursor: pointer;"
-          onclick={() => view = 'worlds'}
-        >
-          <div
-            class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
-            style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.15);"
-          >
-            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">map</span>
-          </div>
-          <div class="flex-1 text-left">
-            <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Worlds</div>
-            <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              {Object.values(currentSlot?.worldProgress ?? {}).filter(w => w.beaten).length} / {WORLD_GRADES.length} worlds cleared
-            </div>
-          </div>
-          <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
-        </button>
-      </div>
-
-      <!-- Inventory -->
-      <div class="obsidian-slab rounded-xl overflow-hidden">
-        <button
-          class="w-full px-5 py-5 flex items-center gap-4"
-          style="background: none; border: none; cursor: pointer;"
-          onclick={() => view = 'inventory'}
-        >
-          <div
-            class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
-            style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.15);"
-          >
-            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--gold-bright); font-variation-settings: 'FILL' 1;">inventory_2</span>
-          </div>
-          <div class="flex-1 text-left">
-            <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Inventory</div>
-            <div class="font-mono text-xs mt-0.5" style="color: var(--color-outline);">
-              Crystals · keys · items
-            </div>
-          </div>
-          <span class="material-symbols-outlined text-sm" style="color: var(--color-outline);">chevron_right</span>
-        </button>
-      </div>
-
-      <!-- Endless Mode (unlocked at player level 3) -->
-      {#if playerLevel >= 3}
-        {@const hasActiveRun = !!currentSlot?.endlessRun}
-        {@const canEnterEndless = hasActiveRun || endlessKeys > 0}
-        <div class="obsidian-slab rounded-xl overflow-hidden" style="border: 1px solid rgba(167,139,250,0.2);">
-          <button
-            class="w-full px-5 py-5 flex items-center gap-4 {canEnterEndless ? '' : 'opacity-50'}"
-            style="background: none; border: none; cursor: {canEnterEndless ? 'pointer' : 'default'};"
-            onclick={() => canEnterEndless ? enterEndless() : view = 'shop'}
-          >
-            <div
-              class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
-              style="background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.3);"
+          <div class="mt-3">
+            <button
+              class="metal-stamp inline-flex items-center gap-2 px-7 py-3 rounded-lg {hasAnySpin ? '' : 'opacity-40 cursor-not-allowed'}"
+              style="background: linear-gradient(162deg,#ecc868,#c89030 60%,#a87018); color: #1a0e00; font-family: var(--font-cinzel); font-weight: 800; letter-spacing: 0.12em; box-shadow: var(--elev-2);"
+              onclick={handleWheelClick} disabled={!hasAnySpin}
             >
-              <span class="material-symbols-outlined" style="font-size: 22px; color: #a78bfa; font-variation-settings: 'FILL' 1;">all_inclusive</span>
+              <span class="material-symbols-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">casino</span>
+              SPIN YOUR FATE
+              {#if bonusSpins > 0}<span class="font-mono text-xs px-1.5 rounded" style="background: rgba(167,139,250,0.25); color: #2d2831;">+{bonusSpins}</span>{/if}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- First-time onboarding hint -->
+      {#if roster.length === 0 && hasAnySpin}
+        <div class="rounded-xl px-4 py-3" style="background: linear-gradient(135deg, rgba(240,192,82,0.10), rgba(240,192,82,0.03)); border: 1px solid rgba(240,192,82,0.32);">
+          <div class="flex items-start gap-3">
+            <span class="material-symbols-outlined" style="font-size: 22px; color: #f0c052; font-variation-settings: 'FILL' 1;">tips_and_updates</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold mb-1" style="font-family: 'Cinzel', serif; color: #ffdf9f;">Welcome to your save slot</p>
+              <p class="text-xs" style="color: var(--color-on-surface-variant); line-height: 1.5; font-family: 'JetBrains Mono', monospace;">
+                Tap <span style="color: #f0c052;">Spin Your Fate</span> to roll your first champion, then enter
+                <span style="color: #6ae4fd;">Worlds</span> to battle for gems.
+              </p>
             </div>
-            <div class="flex-1 text-left">
-              <div class="font-bold text-sm" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">Endless Mode</div>
-              <div class="font-mono text-xs mt-0.5" style="color: {hasActiveRun ? '#a78bfa' : 'var(--color-outline)'};">
-                {hasActiveRun
-                  ? `↩ Resume Wave ${currentSlot!.endlessRun!.currentWave}`
-                  : endlessKeys > 0 ? `${endlessKeys} key${endlessKeys === 1 ? '' : 's'} · Ready` : 'No keys — buy one in Shop'}
-              </div>
-            </div>
-            <span class="font-mono text-xs px-2 py-1 rounded" style="background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa;">{hasActiveRun ? '▶' : `🗝 ${endlessKeys}`}</span>
-          </button>
+          </div>
         </div>
       {/if}
 
+      <!-- Bento grid -->
+      <div class="grid grid-cols-2 gap-3">
+
+        <!-- Worlds — featured (full width) -->
+        <button class="obsidian-slab lift col-span-2 rounded-xl p-5 relative overflow-hidden text-left"
+          style="box-shadow: var(--elev-2); border-left: 4px solid #5ad6ef; min-height: 120px;" onclick={() => view = 'worlds'}>
+          <div class="flex items-start justify-between">
+            <div class="p-2.5 rounded-lg" style="background: rgba(106,228,253,0.18); color: #6ae4fd;">
+              <span class="material-symbols-outlined" style="font-size: 26px; font-variation-settings: 'FILL' 1;">public</span>
+            </div>
+            <span class="font-mono text-xs" style="color: #6ae4fd;">MAP {worldPct}%</span>
+          </div>
+          <div class="mt-4">
+            <h3 class="font-bold tracking-wide" style="font-family: var(--font-cinzel); font-size: 18px; color: #6ae4fd;">WORLDS</h3>
+            <p class="text-xs mt-0.5" style="color: var(--color-on-surface-variant);">{worldsCleared} / {WORLD_GRADES.length} realms cleared</p>
+          </div>
+          <div class="arcane-gauge mt-3"><div class="arcane-gauge-fill" style="width: {worldPct}%;"></div></div>
+        </button>
+
+        <!-- Roster -->
+        <button class="obsidian-slab lift rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid var(--color-outline);" onclick={() => view = 'roster'}>
+          <div class="p-2.5 rounded-lg w-fit" style="background: rgba(134,147,150,0.18); color: var(--color-outline);">
+            <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">groups</span>
+          </div>
+          <h3 class="font-bold tracking-wide mt-3" style="font-family: var(--font-cinzel); font-size: 15px; color: var(--color-on-surface);">ROSTER</h3>
+          <p class="text-xs mt-0.5" style="color: var(--color-on-surface-variant);">{roster.length} / {rosterCapacity} champions</p>
+        </button>
+
+        <!-- Trader / Shop -->
+        <button class="obsidian-slab lift rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid #f0c052;" onclick={() => view = 'shop'}>
+          <div class="p-2.5 rounded-lg w-fit" style="background: rgba(240,192,82,0.18); color: #f0c052;">
+            <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">storefront</span>
+          </div>
+          <h3 class="font-bold tracking-wide mt-3" style="font-family: var(--font-cinzel); font-size: 15px; color: #f0c052;">TRADER</h3>
+          <p class="text-xs mt-0.5" style="color: var(--color-on-surface-variant);">Spins · crystals · upgrades</p>
+        </button>
+
+        <!-- Inventory -->
+        <button class="obsidian-slab lift rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid #ffc7be;" onclick={() => view = 'inventory'}>
+          <div class="p-2.5 rounded-lg w-fit" style="background: rgba(255,199,190,0.16); color: #ffc7be;">
+            <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">backpack</span>
+          </div>
+          <h3 class="font-bold tracking-wide mt-3" style="font-family: var(--font-cinzel); font-size: 15px; color: #ffc7be;">INVENTORY</h3>
+          <p class="text-xs mt-0.5" style="color: var(--color-on-surface-variant);">Crystals · keys · items</p>
+        </button>
+
+        <!-- Teams -->
+        <button class="obsidian-slab lift rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid #48c8e0;" onclick={() => view = 'teams'}>
+          <div class="p-2.5 rounded-lg w-fit" style="background: rgba(72,200,224,0.16); color: #48c8e0;">
+            <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">shield</span>
+          </div>
+          <h3 class="font-bold tracking-wide mt-3" style="font-family: var(--font-cinzel); font-size: 15px; color: #48c8e0;">TEAMS</h3>
+          <p class="text-xs mt-0.5" style="color: var(--color-on-surface-variant);">Build battle squads</p>
+        </button>
+
+        <!-- Endless (unlocks at level 3) -->
+        {#if playerLevel >= 3}
+          {@const canEnterEndless = hasActiveRun || endlessKeys > 0}
+          <button class="obsidian-slab lift col-span-2 rounded-xl p-4 text-left relative flex items-center gap-4 {canEnterEndless ? '' : 'opacity-60'}"
+            style="box-shadow: var(--elev-2); border-left: 4px solid #ffb4ab;" onclick={() => canEnterEndless ? enterEndless() : view = 'shop'}>
+            <div class="p-2.5 rounded-lg" style="background: rgba(255,180,171,0.16); color: #ffb4ab;">
+              <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">skull</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold tracking-wide" style="font-family: var(--font-cinzel); font-size: 15px; color: #ffb4ab;">ENDLESS</h3>
+              <p class="text-xs mt-0.5" style="color: {hasActiveRun ? '#ffb4ab' : 'var(--color-on-surface-variant)'};">
+                {hasActiveRun ? `↩ Resume Wave ${currentSlot!.endlessRun!.currentWave}` : endlessKeys > 0 ? `${endlessKeys} key${endlessKeys === 1 ? '' : 's'} · ready` : 'No keys — buy in Trader'}
+              </p>
+            </div>
+            <span class="font-mono text-xs px-2 py-1 rounded shrink-0" style="background: rgba(255,180,171,0.12); border: 1px solid rgba(255,180,171,0.25); color: #ffb4ab;">{hasActiveRun ? '▶' : `🗝 ${endlessKeys}`}</span>
+          </button>
+        {/if}
+
+      </div>
     </div>
   </div>
 {/if}
