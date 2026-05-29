@@ -50,6 +50,7 @@
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
   import { buildIdentityCard } from '$lib/identityCard'
+  import { tilt } from '$lib/actions/tilt'
   import { twistForRace, twistForArchetype, twistByKey, RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS } from '$lib/twists'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   const _powerLookup      = new Map(powersPool.map(p => [p.label, p]))
@@ -2506,7 +2507,7 @@
           <button
             onclick={() => { showMenu = false; if (tutorialStep === 0) tutorialStep = 1 }}
             data-fx="big"
-            class="metal-stamp-gold flex-1 py-3 rounded-lg relative"
+            class="metal-stamp-gold flex-1 py-3 rounded-lg relative" use:tilt={{ max: 5 }}
             style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;"
           >
             <div class="l-bracket" style="color: rgba(255,255,255,0.3);"></div>
@@ -2529,7 +2530,7 @@
         <!-- Rivals Mode -->
         <button
           onclick={() => { showMenu = false; goto('/rivals') }}
-          class="metal-stamp-crimson w-full py-3 rounded-lg relative"
+          class="metal-stamp-crimson w-full py-3 rounded-lg relative" use:tilt={{ max: 5 }}
           style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: #ffdad6;"
         >
           <div class="l-bracket" style="color: rgba(255,180,171,0.35);"></div>
@@ -2538,7 +2539,7 @@
 
         <!-- Story Mode -->
         <a href="/story" style="text-decoration: none;">
-          <div class="metal-stamp-green w-full py-3 rounded-lg relative text-center cursor-pointer"
+          <div class="metal-stamp-green w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
             style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: #052e16;">
             <div class="l-bracket" style="color: rgba(110,231,183,0.35);"></div>
             📖 Story Mode
@@ -2548,14 +2549,14 @@
         <!-- Two-col row: Gallery + Characters -->
         <div class="flex gap-2">
           <a href="/characters" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-slate w-full py-3 rounded-lg relative text-center cursor-pointer"
+            <div class="metal-stamp-slate w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #e9dfeb;">
               <div class="l-bracket" style="color: rgba(200,192,220,0.25);"></div>
               Characters
             </div>
           </a>
           <a href="/gallery" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-purple w-full py-3 rounded-lg relative text-center cursor-pointer"
+            <div class="metal-stamp-purple w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #1e0a3c;">
               <div class="l-bracket" style="color: rgba(167,139,250,0.35);"></div>
               Gallery
@@ -2566,14 +2567,14 @@
         <!-- Two-col row: Arcane Shop + Challenges -->
         <div class="flex gap-2">
           <a href="/shop" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-gold w-full py-3 rounded-lg relative text-center cursor-pointer"
+            <div class="metal-stamp-gold w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.13em; text-transform: uppercase; font-weight: 700; color: #1a0e00;">
               <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
               ◆ Shop
             </div>
           </a>
           <a href="/challenges" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-teal w-full py-3 rounded-lg relative text-center cursor-pointer"
+            <div class="metal-stamp-teal w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.13em; text-transform: uppercase; font-weight: 700; color: #042f2e;">
               <div class="l-bracket" style="color: rgba(90,214,239,0.3);"></div>
               Challenges
@@ -2584,19 +2585,19 @@
         <!-- Clan + Achievements + Replays row -->
         <div class="flex gap-2">
           <a href="/clan" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-amber w-full py-3 rounded-lg relative text-center cursor-pointer"
+            <div class="metal-stamp-amber w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: #1c0a00;">
               ⚑ Clan
             </div>
           </a>
           <a href="/achievements" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-gold w-full py-3 rounded-lg relative text-center cursor-pointer"
+            <div class="metal-stamp-gold w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: #1a0e00;">
               ★ Badges
             </div>
           </a>
           <a href="/replays" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-purple w-full py-3 rounded-lg relative text-center cursor-pointer"
+            <div class="metal-stamp-purple w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: #1e0a3c;">
               ↻ Replays
             </div>
