@@ -137,11 +137,15 @@
   }
 
   // ── Props ─────────────────────────────────────────────────────────────────────
-  const { stage = 1, spinClass, onSessionComplete, onCancel }: {
+  const { stage = 1, spinClass, onSessionComplete, onCancel, onDiscard }: {
     stage?: number
     spinClass?: 'hero' | 'legend' | 'paragon'
     onSessionComplete: (entry: StoryRosterEntry) => void
     onCancel: () => void
+    // Discard the in-progress session. The spin consumed when the session
+    // started stays spent (the parent does NOT refund), so the player can't
+    // abuse "start over" to re-roll a bad race for free.
+    onDiscard: () => void
   } = $props()
 
   // ── Internal state ────────────────────────────────────────────────────────────
@@ -545,20 +549,18 @@
     showResumePrompt = false
   }
 
-  function handleStartOver() {
+  // Discard the unfinished run. The session is wiped (it counts as "spent" —
+  // as if a character had been made) so it can't be resumed, and the parent
+  // sends the player back to the hub WITHOUT refunding the spin. This kills
+  // the old "Start Over" re-roll exploit.
+  function handleDiscard() {
     clearStorySession()
-    const fresh = createStorySession()
-    session = fresh
     results = []
-    queue = fresh.spinQueue
-    currentIndex = 0
-    usedRacialAbilities = new Set()
-    usedArchetypeAbilities = new Set()
-    pendingStatBonuses = {}
     pendingResult = null
     isSessionDone = false
     doneEntry = null
     showResumePrompt = false
+    onDiscard()
   }
 
   function formatCategory(cat: string): string {
@@ -1552,17 +1554,20 @@
         <p style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: 1.05rem; font-weight: 700; color: #ffdf96; margin-bottom: 6px; text-shadow: 0 0 12px rgba(240,192,64,0.3);">
           Resume Story Session?
         </p>
-        <p class="text-sm mb-6" style="color: #9a907b;">
+        <p class="text-sm mb-2" style="color: #9a907b;">
           {results.length} spin{results.length === 1 ? '' : 's'} done
+        </p>
+        <p class="text-xs mb-6" style="color: #6e6555; line-height: 1.5;">
+          Discarding forfeits this run — the spin is spent and you return to the hub.
         </p>
         <div class="flex gap-3">
           <button onclick={handleResume} class="metal-stamp-gold flex-1 py-2.5 rounded-lg text-sm font-bold"
             style="font-family: var(--font-cinzel, 'Cinzel', serif); letter-spacing: 0.1em;">
             Resume
           </button>
-          <button onclick={handleStartOver} class="obsidian-slab flex-1 py-2.5 rounded-lg text-sm font-bold transition-all active:scale-95"
+          <button onclick={handleDiscard} class="obsidian-slab flex-1 py-2.5 rounded-lg text-sm font-bold transition-all active:scale-95"
             style="font-family: var(--font-cinzel, 'Cinzel', serif); color: #9a907b; border: 1px solid #4e4635; letter-spacing: 0.1em;">
-            Start Over
+            Discard
           </button>
         </div>
       </div>

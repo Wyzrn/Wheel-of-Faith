@@ -557,6 +557,15 @@
     view = 'roster'
   }
 
+  // Discard an unfinished run from the resume prompt. Unlike Exit, this does
+  // NOT refund the spin — the spin consumed by startSpin() when this run began
+  // stays spent (net −1, already floored at 0 since consumeSpin can't start a
+  // run with no spins). Counting the run as spent kills the old "Start Over"
+  // re-roll exploit. The child has already wiped the saved session.
+  function handleSpinDiscard() {
+    view = 'hub'
+  }
+
   function handleSpinCancel() {
     if (!currentSlot) { view = 'hub'; return }
     const snap = $state.snapshot(currentSlot) as StorySaveSlot
@@ -1787,6 +1796,7 @@
     spinClass={lastSpinType === 'hero' ? 'hero' : lastSpinType === 'legend' ? 'legend' : lastSpinType === 'paragon' ? 'paragon' : undefined}
     onSessionComplete={handleStoryComplete}
     onCancel={handleSpinCancel}
+    onDiscard={handleSpinDiscard}
   />
 {/if}
 
