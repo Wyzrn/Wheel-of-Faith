@@ -1352,16 +1352,10 @@
     border-top: 2px solid rgba(240,192,82,0.4); box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
     padding-bottom: env(safe-area-inset-bottom);
   }
-  /* Control strip: gamemode + auto + skip (formerly the top rail) */
-  .dock-bar {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 5px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
-  }
-  .dock-bar-mode { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .dock-bar-div { width: 1px; height: 11px; background: rgba(255,255,255,0.14); flex-shrink: 0; }
   .arena-dock-inner {
     max-width: 720px; margin: 0 auto; min-height: 84px;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; padding: 8px 16px;
+    flex-wrap: wrap;
   }
   .dock-turn { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
   .dock-turn-n { display: flex; flex-direction: column; align-items: center; }
@@ -1380,6 +1374,12 @@
   .dock-idle { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(235,225,213,0.35); }
 
   /* Mobile: shrink fighters + dock so nothing collides on narrow screens. */
+  @media (max-width: 560px) {
+    /* Stack the turn counter above a full-width hotbar so the manual actions
+       never crowd or overlap the turn/roster on phones. */
+    .dock-turn { width: 100%; justify-content: center; }
+    .dock-actions { flex: 1 1 100%; justify-content: center; }
+  }
   @media (max-width: 480px) {
     .fighter { width: min(86vw, 300px); gap: 12px; padding: 10px 12px; }
     .hp-ring { width: 54px; height: 54px; }
@@ -1487,70 +1487,6 @@
     100% { transform: scale(0.7); opacity: 0; }
   }
 
-  /* Auto / Manual visible switch */
-  .ba-auto-toggle {
-    position: absolute;
-    top: 0;
-    right: 4px;
-    display: flex; align-items: center; gap: 8px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: rgba(20, 18, 30, 0.72);
-    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-    backdrop-filter: blur(6px);
-  }
-  .ba-auto-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: #9a907b;
-    line-height: 1;
-  }
-  .ba-switch {
-    position: relative;
-    width: 38px; height: 20px;
-    border-radius: 999px;
-    background: #2a2535;
-    border: 1px solid rgba(255,255,255,0.08);
-    cursor: pointer;
-    transition: background 0.18s ease-out, border-color 0.18s ease-out, box-shadow 0.18s ease-out;
-    padding: 0;
-  }
-  .ba-switch.ba-switch-on {
-    background: color-mix(in srgb, var(--accent) 70%, #1a1325);
-    border-color: var(--accent);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
-  }
-  .ba-switch-knob {
-    position: absolute;
-    top: 2px; left: 2px;
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    background: #f6efe2;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
-    transition: transform 0.20s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .ba-switch.ba-switch-on .ba-switch-knob {
-    transform: translateX(18px);
-    background: #fff;
-  }
-
-  /* Target-pick highlight: pulsing red outline on tappable enemies */
-  @keyframes ba-targetable-pulse {
-    0%, 100% { box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.6), 0 0 18px rgba(248, 113, 113, 0.35); }
-    50%      { box-shadow: 0 0 0 2px rgba(248, 113, 113, 1.0), 0 0 32px rgba(248, 113, 113, 0.55); }
-  }
-  :global(.bv-char-card.ba-targetable) {
-    border-color: rgba(248, 113, 113, 0.9) !important;
-    animation: ba-targetable-pulse 1.4s ease-in-out infinite;
-    transform: translateY(-1px);
-    transition: transform 0.18s ease-out;
-  }
-  :global(.bv-char-card.ba-targetable:hover) {
-    transform: translateY(-3px) scale(1.02);
-  }
-
   /* Target-selection prompt — sits in the hotbar slot during target pick */
   .ba-target-prompt {
     width: 100%;
@@ -1592,28 +1528,4 @@
     cursor: pointer;
   }
   .ba-target-cancel:hover { color: #e9dfeb; background: rgba(255,255,255,0.08); }
-
-  /* Instant-Battle Skip button (Skip ⏭ pill — top-left twin of the toggle) */
-  .ba-skip-btn {
-    position: absolute;
-    top: 0;
-    left: 4px;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px 4px 8px;
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgba(64, 32, 16, 0.78), rgba(40, 20, 8, 0.92));
-    border: 1px solid #f59e0b;
-    color: #fde68a;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    cursor: pointer;
-    box-shadow: 0 0 14px rgba(245, 158, 11, 0.32);
-    transition: transform 0.12s ease-out, box-shadow 0.18s ease-out;
-  }
-  .ba-skip-btn:hover { box-shadow: 0 0 22px rgba(245, 158, 11, 0.5); }
-  .ba-skip-btn:active { transform: scale(0.94); }
 </style>
