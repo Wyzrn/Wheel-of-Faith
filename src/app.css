@@ -1,54 +1,74 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Deep stone palette ── */
-  --color-background:                  #050308;
-  --color-surface:                     #100d1e;
-  --color-surface-dim:                 #0a0812;
-  --color-surface-container-lowest:    #0a0812;
-  --color-surface-container-low:       #17132a;
-  --color-surface-container:           #1e1933;
-  --color-surface-container-high:      #26213e;
-  --color-surface-container-highest:   #302b4d;
+  /* ── Obsidian + arcane palette (Story Mode baseplate) ──
+     Warmer near-black void, cool-white text, teal "primary" rune glow,
+     gold "secondary" for currency/premium. Mirrors the Story Mode design
+     mockup so every page can theme via these Tailwind tokens. */
+  --color-background:                  #16121a;
+  --color-surface:                     #16121a;
+  --color-surface-dim:                 #16121a;
+  --color-surface-bright:              #3c3740;
+  --color-surface-variant:             #38333c;
+  --color-surface-tint:                #5ad6ef;
+  --color-surface-container-lowest:    #100d14;
+  --color-surface-container-low:       #1e1a22;
+  --color-surface-container:           #221e26;
+  --color-surface-container-high:      #2d2831;
+  --color-surface-container-highest:   #38333c;
 
-  /* ── Aged parchment text ── */
-  --color-on-surface:         #ddd0b8;
-  --color-on-surface-variant: #a0906c;
-  --color-outline-variant:    #3c3020;
-  --color-outline:            #685440;
+  /* ── Text / outlines ── */
+  --color-on-surface:         #e9dfeb;
+  --color-on-surface-variant: #bcc9cc;
+  --color-outline:            #869396;
+  --color-outline-variant:    #3d494c;
 
-  /* ── Ancient bronze-gold ── */
-  --color-primary:     #e8b84b;
-  --color-primary-dim: #c0882a;
+  /* ── Primary = arcane teal (rune glow) ── */
+  --color-primary:           #6ae4fd;
+  --color-primary-dim:       #5ad6ef;
+  --color-primary-container: #48c8e0;
 
-  /* ── Arcane teal (rune glow) ── */
-  --color-secondary:   #48c8e0;
+  /* ── Secondary = bronze-gold (currency / premium) ── */
+  --color-secondary:           #f0c052;
+  --color-secondary-container: #b58a1f;
 
-  /* ── Mystic violet ── */
-  --color-tertiary:    #b47aec;
+  /* ── Tertiary = warm ember-rose ── */
+  --color-tertiary:           #ffc7be;
+  --color-tertiary-container: #ff9f90;
 
   /* ── Blood ember ── */
-  --color-error:       #e06060;
+  --color-error: #ffb4ab;
 
   --font-cinzel: "Cinzel", serif;
   --font-mono:   "JetBrains Mono", monospace;
 }
 
 :root {
-  --bg-void:         #050308;
+  --bg-void:         #16121a;
 
-  /* ── Bronze-gold spectrum ── */
-  --gold-bright:     #e8b84b;
+  /* ── Bronze-gold spectrum (secondary / currency) ── */
+  --gold-bright:     #f0c052;
   --gold-mid:        #c0882a;
   --gold-dim:        #806020;
   --gold-ancient:    #503c10;
-  --gold-glow:       rgba(200,136,42,0.50);
-  --gold-glow-soft:  rgba(200,136,42,0.16);
+  --gold-glow:       rgba(240,192,82,0.50);
+  --gold-glow-soft:  rgba(240,192,82,0.16);
 
-  /* ── Arcane rune teal ── */
-  --rune-teal:       #48c8e0;
-  --rune-teal-glow:  rgba(72,200,224,0.40);
-  --rune-teal-soft:  rgba(72,200,224,0.10);
+  /* ── Arcane rune teal (primary) ── */
+  --rune-teal:       #5ad6ef;
+  --rune-teal-glow:  rgba(90,214,239,0.45);
+  --rune-teal-soft:  rgba(90,214,239,0.12);
+
+  /* ── Elevation: composed depth stacks shared by panels/buttons/cards ── */
+  --elev-1: inset 0 -1px 2px rgba(255,255,255,0.10), 0 4px 6px -1px rgba(0,0,0,0.5);
+  --elev-2: inset 0 -2px 4px rgba(0,0,0,0.8), 0 10px 15px -3px rgba(0,0,0,0.7), 0 0 0 1px rgba(240,192,82,0.10);
+  --elev-3: inset 0 -4px 8px rgba(0,0,0,0.9), 0 20px 25px -5px rgba(0,0,0,0.8), 0 0 0 2px rgba(240,192,82,0.20);
+
+  /* ── Motion + radius scale ── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-glide:  cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 120ms; --dur-med: 220ms; --dur-slow: 420ms;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 24px;
 
   /* ── Arcane violet ── */
   --arcane:          #8a3cc8;
@@ -335,30 +355,18 @@
  * Corner gradient brightens to simulate light catching edges.
  */
 .obsidian-slab {
-  background: linear-gradient(165deg,
-    #1c1730 0%,
-    #130f24 40%,
-    #0d0a1a 75%,
-    #080610 100%);
+  background: linear-gradient(145deg, #2d2831 0%, #1e1a22 100%);
   box-shadow:
-    /* Outer border glow */
-    0 0 0 1px rgba(200,136,42,0.13),
-    /* 3D stone thickness (layered bottom shadows) */
-    0 3px 0 var(--stone-d2),
-    0 6px 0 var(--stone-d1),
-    0 9px 0 var(--stone-d0),
-    /* Ambient depth */
-    0 20px 64px rgba(0,0,0,0.96),
-    0 6px 18px rgba(0,0,0,0.72),
-    /* Inner top edge: light catching the rim */
-    inset 0 1px 0 rgba(255,225,140,0.08),
-    inset 1px 0 0 rgba(255,225,140,0.04),
-    /* Inner bottom: carved shadow */
-    inset 0 -1px 0 rgba(0,0,0,0.55);
-  border: 1px solid rgba(200,136,42,0.10);
-  border-top-color:  rgba(200,136,42,0.22);
-  border-left-color: rgba(200,136,42,0.13);
+    /* hairline rim + ambient depth + inner bottom carve + top sheen */
+    0 0 0 1px rgba(240,192,82,0.10),
+    0 14px 34px rgba(0,0,0,0.78),
+    0 4px 12px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    inset 0 -2px 6px rgba(0,0,0,0.6);
+  border: 1px solid rgba(240,192,82,0.12);
+  border-top-color:  rgba(240,192,82,0.22);
   position: relative;
+  overflow: hidden;
 }
 
 /* Stone noise texture overlay */
@@ -381,10 +389,83 @@
   pointer-events: none;
   border-radius: inherit;
   background:
-    linear-gradient(135deg, rgba(200,136,42,0.20) 0%, transparent 18px) top    left  / 18px 18px no-repeat,
-    linear-gradient(225deg, rgba(200,136,42,0.14) 0%, transparent 18px) top    right / 18px 18px no-repeat,
-    linear-gradient(315deg, rgba(200,136,42,0.14) 0%, transparent 18px) bottom right / 18px 18px no-repeat,
-    linear-gradient(45deg,  rgba(200,136,42,0.14) 0%, transparent 18px) bottom left  / 18px 18px no-repeat;
+    linear-gradient(135deg, rgba(240,192,82,0.18) 0%, transparent 18px) top    left  / 18px 18px no-repeat,
+    linear-gradient(225deg, rgba(240,192,82,0.12) 0%, transparent 18px) top    right / 18px 18px no-repeat,
+    linear-gradient(315deg, rgba(240,192,82,0.12) 0%, transparent 18px) bottom right / 18px 18px no-repeat,
+    linear-gradient(45deg,  rgba(240,192,82,0.12) 0%, transparent 18px) bottom left  / 18px 18px no-repeat;
+}
+
+/* ════════════ STORY-MODE BASEPLATE COMPONENTS (shared design system) ════════════ */
+
+/* RUNE SEAM — animated teal light-thread tracing a panel/nav edge. The
+   signature motif; drop inside any position:relative container. */
+.rune-seam {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--rune-teal), transparent);
+  filter: blur(1px);
+  animation: seam-pulse 3s infinite ease-in-out;
+  pointer-events: none;
+}
+@keyframes seam-pulse {
+  0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
+  50%      { opacity: 1;   transform: scaleX(1); }
+}
+
+/* METAL STAMP (generic) — modern pressable surface: lift on hover, sink on
+   press. Pairs with --elev-* shadows + a token bg/border. The themed
+   .metal-stamp-gold/crimson/… variants above still work for legacy callsites. */
+.metal-stamp {
+  transition: transform var(--dur-med) var(--ease-glide), filter var(--dur-fast) var(--ease-glide), box-shadow var(--dur-med) var(--ease-glide);
+  cursor: pointer;
+  border: 1px solid rgba(240,192,82,0.30);
+}
+@media (hover: hover) and (pointer: fine) {
+  .metal-stamp:hover { transform: translateY(-2px); filter: brightness(1.10); }
+}
+.metal-stamp:active { transform: translateY(2px); box-shadow: inset 0 4px 8px rgba(0,0,0,0.8) !important; }
+
+/* FILIGREE CORNERS — angular gilded corner accents on hero panels. */
+.filigree-tl, .filigree-br { position: absolute; width: 2rem; height: 2rem; pointer-events: none; }
+.filigree-tl { top: 0.5rem; left: 0.5rem;  border-top: 2px solid rgba(240,192,82,0.5); border-left: 2px solid rgba(240,192,82,0.5); }
+.filigree-br { bottom: 0.5rem; right: 0.5rem; border-bottom: 2px solid rgba(240,192,82,0.5); border-right: 2px solid rgba(240,192,82,0.5); }
+
+/* ARCANE GAUGE — glowing teal progress meter (set width on the fill). */
+.arcane-gauge {
+  height: 0.5rem; border-radius: var(--radius-pill, 999px); overflow: hidden;
+  background: var(--color-surface-container-lowest);
+  border: 1px solid rgba(61,73,76,0.4);
+}
+.arcane-gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00515d, var(--rune-teal));
+  box-shadow: 0 0 15px var(--rune-teal);
+  transition: width var(--dur-slow) var(--ease-glide);
+}
+
+/* EMBER — drifting gold mote (used by AmbientField). pointer-events:none. */
+.ember {
+  position: absolute; width: 2px; height: 2px;
+  background: var(--gold-bright); border-radius: 50%;
+  pointer-events: none; opacity: 0;
+  animation: ember-rise 10s infinite linear;
+}
+@keyframes ember-rise {
+  0%   { transform: translateY(100vh) translateX(0);     opacity: 0; }
+  10%  { opacity: 0.8; }
+  90%  { opacity: 0.8; }
+  100% { transform: translateY(-10vh)  translateX(100px); opacity: 0; }
+}
+
+/* 3D PARALLAX CARD — JS sets --rx/--ry on pointermove (desktop only). */
+.parallax-card { transition: transform var(--dur-med) var(--ease-glide); transform-style: preserve-3d; }
+@media (hover: hover) and (pointer: fine) {
+  .parallax-card:hover { transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rune-seam, .ember, .arcane-gauge-fill, .metal-stamp, .parallax-card { animation: none !important; transition: none !important; }
 }
 
 /*

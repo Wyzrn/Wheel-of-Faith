@@ -4,6 +4,7 @@
   import SettingsPanel from '../components/SettingsPanel.svelte'
   import ClickParticles from '../components/ClickParticles.svelte'
   import Toaster from '../components/Toaster.svelte'
+  import AmbientField from '../components/AmbientField.svelte'
   import IncomingChallengePopup from '../components/IncomingChallengePopup.svelte'
   import ChallengeBattleOverlay from '../components/ChallengeBattleOverlay.svelte'
   import { page } from '$app/stores'
@@ -69,6 +70,9 @@
     })
   })
 </script>
+
+<!-- Global ambient backdrop (gradient glows + drifting embers), behind all content -->
+<AmbientField />
 
 {@render children()}
 
@@ -142,20 +146,17 @@
     height: 64px;
     display: flex;
     align-items: stretch;
-    /* Deep stone slab background */
-    background: linear-gradient(180deg, #0e0b1c 0%, #070510 100%);
-    /* Stone edge glow + carved top rim */
-    border-top: 1px solid rgba(200,136,42,0.22);
+    /* Obsidian shelf rising from the void to a lighter carved rim */
+    background: linear-gradient(0deg, #16121a 0%, #38333c 100%);
+    border-top: 3px solid rgba(240,192,82,0.5);
+    border-radius: 16px 16px 0 0;
     box-shadow:
-      /* Outer top glow seam */
-      0 -1px 0 rgba(200,136,42,0.08),
-      /* Deep upward shadow */
-      0 -8px 40px rgba(0,0,0,0.85),
-      /* Inner top highlight (light on stone rim) */
-      inset 0 1px 0 rgba(255,225,140,0.10),
-      /* Inner depth */
+      0 -1px 0 rgba(240,192,82,0.10),
+      0 -10px 30px rgba(0,0,0,0.9),
+      inset 0 1px 0 rgba(255,255,255,0.06),
       inset 0 -1px 0 rgba(0,0,0,0.6);
     backdrop-filter: blur(24px);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   /* Animated rune trace running along the top edge */
@@ -167,11 +168,11 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(200,136,42,0.0) 10%,
-      rgba(200,136,42,0.7) 30%,
-      rgba(72,200,224,0.6) 50%,
-      rgba(200,136,42,0.7) 70%,
-      rgba(200,136,42,0.0) 90%,
+      rgba(240,192,82,0.0) 10%,
+      rgba(240,192,82,0.7) 30%,
+      rgba(90,214,239,0.7) 50%,
+      rgba(240,192,82,0.7) 70%,
+      rgba(240,192,82,0.0) 90%,
       transparent 100%
     );
     background-size: 300% 100%;
@@ -190,8 +191,8 @@
     text-decoration: none;
     border: none;
     background: none;
-    color: #4a3c24;
-    transition: color 0.18s, transform 0.12s;
+    color: #5b6568;
+    transition: color 0.18s, transform 0.18s ease-out, filter 0.18s;
     position: relative;
     -webkit-tap-highlight-color: transparent;
   }
@@ -204,11 +205,11 @@
     position: absolute;
     top: 0; left: 15%; right: 15%;
     height: 2px;
-    background: linear-gradient(90deg, transparent, #c0882a, #e8b84b, #c0882a, transparent);
+    background: linear-gradient(90deg, transparent, #5ad6ef, #6ae4fd, #5ad6ef, transparent);
     border-radius: 0 0 3px 3px;
     opacity: 0;
     transition: opacity 0.18s;
-    box-shadow: 0 0 8px rgba(200,136,42,0.7);
+    box-shadow: 0 0 10px rgba(90,214,239,0.9);
   }
 
   /* Active tab warm stone glow behind */
@@ -216,17 +217,21 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 60% 70% at 50% 60%, rgba(200,136,42,0.07) 0%, transparent 80%);
+    background: radial-gradient(ellipse 60% 70% at 50% 60%, rgba(90,214,239,0.12) 0%, transparent 80%);
     opacity: 0;
     transition: opacity 0.18s;
     pointer-events: none;
   }
 
-  .nav-tab.active { color: #e8b84b; }
+  .nav-tab.active {
+    color: #6ae4fd;
+    transform: translateY(-3px) scale(1.08);
+    filter: drop-shadow(0 0 10px rgba(90,214,239,0.9));
+  }
   .nav-tab.active::before { opacity: 1; }
   .nav-tab.active::after  { opacity: 1; }
 
-  .nav-tab:hover:not(.active) { color: #806020; }
+  .nav-tab:hover:not(.active) { color: #97a3a6; }
 
   :global(.nav-icon) { font-size: 24px; }
 
