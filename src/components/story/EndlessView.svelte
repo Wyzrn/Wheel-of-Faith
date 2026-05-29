@@ -604,14 +604,6 @@
   <div style="width: 36px;"></div>
 </header>
 {/if}
-{#if phase === 'fight' || phase === 'intro'}
-  <!-- Floating quit (above the full-screen arena) — opens Save-or-Claim. -->
-  <button onclick={() => pendingQuitChoice = true} aria-label="Quit run"
-    class="fixed top-3 left-3 z-[60] w-9 h-9 rounded-full flex items-center justify-center"
-    style="background: rgba(22,18,26,0.92); border: 1px solid rgba(167,139,250,0.35); color: #a78bfa; cursor: pointer; backdrop-filter: blur(8px);">
-    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
-  </button>
-{/if}
 
 <!-- ── Mid-battle quit choice: Save & Resume Later vs End & Claim ──────────── -->
 {#if pendingQuitChoice}
@@ -794,6 +786,7 @@
         effectsEnabled={settings.effectsEnabled}
         canInstant={canInstant}
         introMs={subWaveIdx === 0 ? 1100 : 350}
+        onExit={() => pendingQuitChoice = true}
         onRoundEnd={handleArenaRoundEnd}
         onBattleEnd={handleArenaEnd}/>
     {/key}

@@ -15,7 +15,10 @@
 -->
 <script lang="ts">
   import { onDestroy, tick, type Snippet } from 'svelte'
+  import { goto } from '$app/navigation'
   import { getPerfTier } from '$lib/perf'
+  import { triggerStoryHome } from '$lib/menuState.svelte'
+  import SettingsPanel from './SettingsPanel.svelte'
   import AttackFX from './AttackFX.svelte'
   import BattleHotbar from './BattleHotbar.svelte'
   import DamageIndicator from './DamageIndicator.svelte'
@@ -63,6 +66,9 @@
     // Instant Battle gamepass owners see a Skip button that fast-forwards
     // the whole fight to the result. Surfaced only when this is true.
     canInstant?: boolean
+    // Optional override for the bottom-left exit button. When omitted, the
+    // arena exits to the Story hub (Story/Endless modes) or the home menu.
+    onExit?: () => void
     // Snippets
     prebattle?: Snippet
     result?: Snippet
@@ -79,10 +85,19 @@
     modeName, modeAccent = '#f0c040', introMs = 2600, speedFactor, effectsEnabled,
     autoStart = true,
     controller, manualMode = false, playerActorId, onManualToggle,
-    canInstant = false,
+    canInstant = false, onExit,
     prebattle, result, hotbar, cardExtra,
     onPhaseChange, onRoundEnd, onLineShown, onBattleEnd,
   }: Props = $props()
+
+  // Bottom-left exit: Story/Endless → Story hub; everything else → home menu.
+  let showSettings = $state(false)
+  let exitToHub = $derived(modeName === 'Story Mode' || modeName === 'Endless')
+  function doExit() {
+    if (onExit) { onExit(); return }
+    if (exitToHub) triggerStoryHome()
+    else goto('/')
+  }
 
   // ── Atmospheric embers (perf-gated; off on touch/low + reduced-motion) ───
   let arenaEmbers = $state<{ left: number; delay: number; dur: number; op: number }[]>([])
@@ -1147,6 +1162,11 @@
   <!-- ── Action dock ─────────────────────────────────────────────────── -->
   <footer class="arena-dock">
     <div class="arena-dock-inner">
+      <!-- Bottom-left: Hub (Story/Endless) or Home (other modes) -->
+      <button class="dock-nav-btn" onclick={doExit}
+        title={exitToHub ? 'Story Hub' : 'Home'} aria-label={exitToHub ? 'Story Hub' : 'Home'}>
+        <span class="material-symbols-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">{exitToHub ? 'castle' : 'home'}</span>
+      </button>
       <!-- Turn counter + roster avatars -->
       <div class="dock-turn">
         <div class="dock-turn-n">
@@ -1187,8 +1207,16 @@
           <span class="dock-idle">{manualMode ? 'Awaiting turn…' : 'Auto-resolving…'}</span>
         {/if}
       </div>
+      <!-- Bottom-right: Settings -->
+      <button class="dock-nav-btn" onclick={() => showSettings = true} title="Settings" aria-label="Settings">
+        <span class="material-symbols-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">settings</span>
+      </button>
     </div>
   </footer>
+
+  {#if showSettings}
+    <SettingsPanel onClose={() => showSettings = false} />
+  {/if}
 
   <!-- Result overlay slot — each mode renders its own modal -->
   {#if phase === 'result' && result}
@@ -1372,13 +1400,25 @@
   .dock-avatar-dead { opacity: 0.35; filter: grayscale(1); }
   .dock-actions { flex: 1 1 auto; display: flex; align-items: center; justify-content: flex-end; min-width: 0; }
   .dock-idle { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(235,225,213,0.35); }
+  /* Hub/Home (bottom-left) + Settings (bottom-right) utility buttons */
+  .dock-nav-btn {
+    flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(45,40,49,0.9); border: 1px solid rgba(240,192,82,0.30);
+    color: #f0c052; cursor: pointer;
+    transition: transform 0.12s ease-out, filter 0.15s, border-color 0.15s;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .dock-nav-btn:hover { filter: brightness(1.15); border-color: rgba(240,192,82,0.6); }
+  }
+  .dock-nav-btn:active { transform: scale(0.92); }
 
   /* Mobile: shrink fighters + dock so nothing collides on narrow screens. */
   @media (max-width: 560px) {
-    /* Stack the turn counter above a full-width hotbar so the manual actions
-       never crowd or overlap the turn/roster on phones. */
-    .dock-turn { width: 100%; justify-content: center; }
-    .dock-actions { flex: 1 1 100%; justify-content: center; }
+    /* Row 1: hub · turn/roster · settings. The hotbar (dock-actions) wraps to
+       its own full-width row below so manual actions never crowd anything. */
+    .dock-actions { flex: 1 1 100%; justify-content: center; order: 5; }
+    .dock-turn { flex: 1 1 auto; justify-content: center; }
   }
   @media (max-width: 480px) {
     .fighter { width: min(86vw, 300px); gap: 12px; padding: 10px 12px; }
