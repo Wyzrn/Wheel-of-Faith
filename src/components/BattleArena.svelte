@@ -17,6 +17,7 @@
   import { onDestroy, tick, type Snippet } from 'svelte'
   import { goto } from '$app/navigation'
   import { getPerfTier } from '$lib/perf'
+  import { rootZoom } from '$lib/zoom'
   import { triggerStoryHome } from '$lib/menuState.svelte'
   import SettingsPanel from './SettingsPanel.svelte'
   import AttackFX from './AttackFX.svelte'
@@ -176,14 +177,8 @@
   // On mobile the layout sets CSS `zoom` on <html> to shrink the UI. Under
   // zoom, getBoundingClientRect() returns POST-zoom screen pixels, but the
   // absolutely-positioned VFX children interpret their left/top in PRE-zoom
-  // local pixels. So every rect-derived delta must be divided by the active
-  // zoom to land on-card. On PC (no zoom) this is 1 and a no-op.
-  function rootZoom(): number {
-    try {
-      const z = parseFloat(getComputedStyle(document.documentElement).zoom as string)
-      return z && isFinite(z) && z > 0 ? z : 1
-    } catch { return 1 }
-  }
+  // local pixels — so every rect-derived delta is divided by rootZoom() (from
+  // $lib/zoom) to land on-card. On PC (no zoom) that's 1 and a no-op.
   function memberOrigin(name: string | null): { x: number; y: number } | undefined {
     if (!name || !wrapperEl) return undefined
     const el = charEls.get(name)

@@ -9,6 +9,7 @@
 
   import { onMount, onDestroy } from 'svelte'
   import { getPerfTier } from '$lib/perf'
+  import { rootZoom } from '$lib/zoom'
   import { settings } from '$lib/settings.svelte'
 
   // Particle sprite pool — picked from /static/fx/k.
@@ -82,7 +83,10 @@
 
   function onPointerDown(e: PointerEvent) {
     if (isQuietTarget(e.target as Element)) return
-    burst(e.clientX, e.clientY, isBigTarget(e.target as Element))
+    // clientX/Y are post-zoom screen px; particles are position:fixed and read
+    // left/top as pre-zoom local px, so divide by zoom (no-op on PC).
+    const z = rootZoom()
+    burst(e.clientX / z, e.clientY / z, isBigTarget(e.target as Element))
   }
 
   // Cleanup expired particles every ~250ms. Cheaper than per-particle setTimeout

@@ -5,6 +5,7 @@
   import { weightedRandom } from '$lib/game/random'
   import type { WeightedSegment, SpinStatus } from '$lib/session/types'
   import { effectsMultiplier, effectiveDpr, getPerfTier } from '$lib/perf'
+  import { rootZoom } from '$lib/zoom'
   import LandingCelebration from './LandingCelebration.svelte'
 
   const SVG_SIZE = 500
@@ -646,8 +647,11 @@
         let cx: number | null = null, cy: number | null = null
         if (svgEl) {
           const r = svgEl.getBoundingClientRect()
-          cx = r.left + r.width / 2
-          cy = r.top + r.height / 2
+          // Divide by zoom: the rect is in post-zoom screen px, but the reveal
+          // modal / celebration anchor these as pre-zoom local left/top.
+          const z = rootZoom()
+          cx = (r.left + r.width / 2) / z
+          cy = (r.top + r.height / 2) / z
         }
         onLanded?.({ centerX: cx, centerY: cy })
 
