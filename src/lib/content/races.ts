@@ -2,12 +2,12 @@ import type { Race } from './types'
 import { bulkRegisterRaceWheels } from '$lib/game/raceWheelRegistry'
 
 export const races: Race[] = [
-  // ── Common (weight 30–40, abilitySpinCount 1) ──
   {
     label: 'Human',
     spinIdentity: ['FateManipulator', 'Scaling'],
     limitBreakOdds: 20,
-    weight: 15,
+    weight: 13,
+    minStatTier: 'F-',
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 1.0,
     description: 'Resilient, adaptable, and infuriatingly average.',
@@ -66,10 +66,10 @@ export const races: Race[] = [
     label: 'Orc',
     spinIdentity: ['Scaling'],
     limitBreakOdds: 24,
-    weight: 10,
+    weight: 13,
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 1.2,
-    minStatTier: 'D-',
+    minStatTier: 'E-',
     description: 'Built for war and strongly opposed to subtlety.',
     injectedWheels: [
       { id: 'rage', displayName: 'Rage', order: 1, segments: [
@@ -118,7 +118,8 @@ export const races: Race[] = [
     label: 'Halfling',
     spinIdentity: ['FateManipulator'],
     limitBreakOdds: 22,
-    weight: 15,
+    weight: 13,
+    minStatTier: 'F-',
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 0.9,
     // Tier 1 — no stat lock
@@ -166,62 +167,11 @@ export const races: Race[] = [
     ],
   },
   {
-    label: 'Dwarf',
-    spinIdentity: ['Scaling'],
-    limitBreakOdds: 26,
-    weight: 12,
-    abilitySpinCount: 1,
-    weaknessProbabilityModifier: 0.8,
-    minStatTier: 'D-',
-    description: 'Stubborn as stone, twice as dense.',
-    injectedWheels: [
-      { id: 'forge', displayName: 'Forge', order: 1, segments: [
-        { label: 'Apprentice Work', weight: 5, statBonusGrants: { weaponMastery: 'statBonus' }, description: 'Solid for a beginner. Heavy for the carrier.' },
-        { label: 'Guild Quality', weight: 5, statBonusGrants: { weaponMastery: 'statBonus', armorStrength: 'statBonus' }, description: 'Standard dwarvish craftsmanship. Excellent everywhere.' },
-        { label: 'Heirloom Weapon', weight: 3, statBonusGrants: { weaponMastery: 'statBonus', fightingSkill: 'statBonus' }, description: 'Passed down through generations.' },
-        { label: 'Mastercraft', weight: 2, statBonusGrants: { weaponMastery: 'statBonus', armorStrength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Once-in-a-lifetime piece.' },
-        { label: 'Legendary Forge', weight: 1, statBonusGrants: { armorStrength: 'statBonus', weaponMastery: 'statBonus', strength: 'statBonus' }, description: 'Forged in fire that no longer exists.' },
-      ]},
-      { id: 'rune', displayName: 'Rune', order: 2, segments: [
-        { label: 'No Rune', weight: 5, description: 'The weapon stands on its own.' },
-        { label: 'Rune of Sharpness', weight: 4, statBonusGrants: { fightingSkill: 'statBonus' }, description: 'Cuts deeper. The edge sings.' },
-        { label: 'Rune of Warding', weight: 4, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Light beneath the skin.' },
-        { label: 'Rune of Power', weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, description: 'Glowing veins along the metal.' },
-        { label: 'Rune of Doom', weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', charisma: 'statPenalty' }, description: 'Carved in a tongue no one remembers.' },
-      ]},
-    ],
-    statModifiers: { durability: 1.6, strength: 1.4, armorStrength: 1.5, speed: 0.6, agility: 0.7 },
-    weaponTypeBias: { 'Melee': 2.5, 'Ancient': 2.5, 'None': 0.1, 'Ranged': 0.4, 'Magical': 0.4, 'Cursed': 0.5 },
-    armorTypeBias:  { 'Full-Suit': 3.0, 'Half-Suit': 1.5, 'Ancient': 3.0, 'None': 0.1, 'Cursed': 0.3, 'Helmet Only': 0.5 },
-    subTypePool: [
-      { label: 'Hill Dwarf',     weight: 5, element: 'Earth', grade: 'D', abilities: [{ label: 'Hardy Constitution', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Ancestor Memory', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Hill Sense', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Community Lore', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Enduring Spirit', weight: 2, element: 'Soul', grade: 'D' }, { label: 'Ancient Grudge', weight: 1, element: 'Earth', grade: 'D' }], powerPool: [{ label: 'Stone Endurance', weight: 3 }, { label: 'Ancestor Spirit', weight: 3 }, { label: 'Ancestral Weapon', weight: 2 }, { label: 'Healing Factor', weight: 2 }, { label: 'Courage Aura', weight: 1 }] },
-      { label: 'Mountain Dwarf', weight: 4, element: 'Metal', grade: 'D', abilities: [{ label: 'Stone Fortitude', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Forge Mastery', weight: 2, element: 'Metal', grade: 'C' }, { label: 'Altitude Sense', weight: 2, element: 'Metal', grade: 'D' }, { label: 'Armor Expert', weight: 2, element: 'Metal', grade: 'D' }, { label: 'Combat Born', weight: 2, element: 'Metal', grade: 'C' }, { label: 'Rock Steady', weight: 1, element: 'Earth', grade: 'D' }], powerPool: [{ label: 'Stone Call', weight: 3 }, { label: 'Forge Blessing', weight: 3 }, { label: 'Ancestral Weapon', weight: 2 }, { label: 'Indomitable Rage', weight: 2 }, { label: 'Tremor Sense', weight: 1 }] },
-      { label: 'Deep Dwarf',     weight: 3, element: 'Shadow', grade: 'C', abilities: [{ label: 'Darkblind Immunity', weight: 2, element: 'Shadow', grade: 'C' }, { label: 'Tremor Sense (Passive)', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Stone Communion', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Deep Lore', weight: 2, element: 'Shadow', grade: 'C' }, { label: 'Silence Walk', weight: 2, element: 'Shadow', grade: 'C' }, { label: 'Underground Expert', weight: 1, element: 'Earth', grade: 'C' }], powerPool: [{ label: 'Tremor Sense', weight: 3 }, { label: 'Stone Call', weight: 3 }, { label: 'Crystal Armor', weight: 2 }, { label: 'Shadow Step', weight: 2 }, { label: 'Darkness Veil', weight: 1 }] },
-      { label: 'Runic Dwarf',    weight: 2, element: 'Arcane', grade: 'A', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Runic Memory', weight: 2, element: 'Arcane', grade: 'A' }, { label: 'Symbol Attunement', weight: 2, element: 'Arcane', grade: 'A' }, { label: 'Ancient Inscription', weight: 2, element: 'Arcane', grade: 'A' }, { label: 'Magical Seal', weight: 2, element: 'Water', grade: 'A' }, { label: 'Power Word Etching', weight: 2, element: 'Arcane', grade: 'A' }, { label: 'Rune Shield (Passive)', weight: 1, element: 'Arcane', grade: 'C' }], powerPool: [{ label: 'Runic Ward', weight: 3 }, { label: 'Forge Blessing', weight: 3 }, { label: 'Ancestor Spirit', weight: 2 }, { label: 'Arcane Infusion', weight: 2 }, { label: 'Stone Call', weight: 1 }] },
-      { label: 'Forge Dwarf',    weight: 3, element: 'Metal', grade: 'C', abilities: [{ label: 'Master Craftsman', weight: 2, element: 'Metal', grade: 'C' }, { label: 'Metal Sense', weight: 2, element: 'Metal', grade: 'C' }, { label: 'Forge Bond', weight: 2, element: 'Metal', grade: 'C' }, { label: 'Weapon Attunement', weight: 2, element: 'Metal', grade: 'C' }, { label: 'Armor Refinement', weight: 2, element: 'Metal', grade: 'C' }, { label: 'Craft Mastery', weight: 1, element: 'Metal', grade: 'C' }], powerPool: [{ label: 'Forge Blessing', weight: 3 }, { label: 'Ancestral Weapon', weight: 3 }, { label: 'Runic Ward', weight: 2 }, { label: 'Stone Call', weight: 2 }, { label: 'Crystal Armor', weight: 1 }] },
-    ],
-    customHeightPool: [
-      { label: "4'0\"", weight: 2 }, { label: "4'1\"", weight: 3 }, { label: "4'2\"", weight: 4 },
-      { label: "4'3\"", weight: 5 }, { label: "4'4\"", weight: 6 }, { label: "4'5\"", weight: 6 },
-      { label: "4'6\"", weight: 5 }, { label: "4'7\"", weight: 4 }, { label: "4'8\"", weight: 3 },
-      { label: "4'9\"", weight: 2 }, { label: "4'10\"", weight: 1 },
-      { label: 'Wider Than Tall', weight: 1 },
-    ],
-    abilities: [
-      { label: 'Stone Skin', weight: 3, element: 'Earth', grade: 'C' },
-      { label: 'Forge Mastery', weight: 2, element: 'Metal', grade: 'C' },
-      { label: 'Ancient Grudge', weight: 3, element: 'Metal', grade: 'C' },
-      { label: 'Ale Immunity', weight: 3, element: 'Metal', grade: 'C' },
-      { label: 'Trap Sense', weight: 2, element: 'Metal', grade: 'C' },
-      { label: 'Mountain Walker', weight: 2, element: 'Earth', grade: 'C' },
-      { label: 'Ancestral Stubbornness', weight: 1, element: 'Metal', grade: 'C' },
-    ],
-  },
-  {
     label: 'Goblin',
     spinIdentity: ['HighVariance'],
     limitBreakOdds: 24,
-    weight: 15,
+    weight: 13,
+    minStatTier: 'F-',
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 1.3,
     description: 'Chaos given a small, green body.',
@@ -272,10 +222,10 @@ export const races: Race[] = [
     label: 'Half-Elf',
     spinIdentity: ['FateManipulator'],
     limitBreakOdds: 26,
-    weight: 10,
+    weight: 8,
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 0.95,
-    minStatTier: 'E-',
+    minStatTier: 'D-',
     description: 'Caught between two worlds and uncomfortable in both.',
     injectedWheels: [
       { id: 'heritage', displayName: 'Heritage Pull', order: 1, segments: [
@@ -315,10 +265,10 @@ export const races: Race[] = [
     label: 'Half-Orc',
     spinIdentity: ['Scaling'],
     limitBreakOdds: 24,
-    weight: 10,
+    weight: 8,
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 1.1,
-    minStatTier: 'E-',
+    minStatTier: 'D-',
     description: 'The best parts of two species. Probably.',
     injectedWheels: [
       { id: 'temperament', displayName: 'Temperament', order: 1, segments: [
@@ -358,7 +308,8 @@ export const races: Race[] = [
     label: 'Gnome',
     spinIdentity: ['HighVariance'],
     limitBreakOdds: 22,
-    weight: 15,
+    weight: 13,
+    minStatTier: 'F-',
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 1.0,
     description: 'Tiny. Ingenious. Almost certainly up to something.',
@@ -409,7 +360,8 @@ export const races: Race[] = [
     label: 'Robot',
     spinIdentity: ['HighVariance', 'Scaling'],
     limitBreakOdds: 36,
-    weight: 12,
+    weight: 13,
+    minStatTier: 'E-',
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 1.5,
     weaknessCount: 2,
@@ -472,13 +424,11 @@ export const races: Race[] = [
       { label: 'Built-In Threat Scanner', weight: 1, element: 'Cosmic', grade: 'SSS' },
     ],
   },
-
-  // ── Uncommon / Tier 2 (weight 14–22, F tier locked → minStatTier E-) ──
   {
     label: 'Elf',
     spinIdentity: ['FateManipulator'],
     limitBreakOdds: 28,
-    weight: 10,
+    weight: 13,
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 0.8,
     minStatTier: 'E-',
@@ -528,7 +478,7 @@ export const races: Race[] = [
     label: 'Tiefling',
     spinIdentity: ['Corruption', 'Combo'],
     limitBreakOdds: 30,
-    weight: 9,
+    weight: 8,
     abilitySpinCount: 2,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 1.4,
@@ -591,7 +541,7 @@ export const races: Race[] = [
     abilitySpinCount: 2,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.9,
-    minStatTier: 'D-',
+    minStatTier: 'C-',
     description: 'Draconic bloodline, breath weapon included, no refunds.',
     injectedWheels: [
       { id: 'dragonAspect', displayName: 'Dragon Aspect', order: 1, segments: [
@@ -644,7 +594,7 @@ export const races: Race[] = [
     abilitySpinCount: 2,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.6,
-    minStatTier: 'D-',
+    minStatTier: 'C-',
     description: 'Touched by the divine. Painfully aware of it.',
     injectedWheels: [
       { id: 'halo', displayName: 'Halo', order: 1, segments: [
@@ -695,10 +645,10 @@ export const races: Race[] = [
     label: 'Lizardfolk',
     spinIdentity: ['Evolution', 'Scaling'],
     limitBreakOdds: 30,
-    weight: 9,
+    weight: 8,
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 1.0,
-    minStatTier: 'E-',
+    minStatTier: 'D-',
     description: 'Cold-blooded in every sense of the phrase.',
     injectedWheels: [
       { id: 'instinct', displayName: 'Instinct', order: 1, segments: [
@@ -747,10 +697,10 @@ export const races: Race[] = [
     label: 'Tabaxi',
     spinIdentity: ['Scaling'],
     limitBreakOdds: 30,
-    weight: 9,
+    weight: 8,
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 1.0,
-    minStatTier: 'E-',
+    minStatTier: 'D-',
     description: 'Cat person. Speedrunner. Easily distracted by shiny objects.',
     injectedWheels: [
       { id: 'hunt', displayName: 'Hunt', order: 1, segments: [
@@ -800,7 +750,7 @@ export const races: Race[] = [
     weight: 8,
     abilitySpinCount: 1,
     weaknessProbabilityModifier: 0.8,
-    minStatTier: 'D',
+    minStatTier: 'C-',
     description: 'Literal mountain people. The mountain says no.',
     injectedWheels: [
       { id: 'colossus', displayName: 'Colossus', order: 1, segments: [
@@ -842,175 +792,13 @@ export const races: Race[] = [
     ],
   },
   {
-    label: 'Genasi (Fire)',
-    spinIdentity: ['Combo'],
-    limitBreakOdds: 32,
-    weight: 7,
-    abilitySpinCount: 2,
-    extraPowerSpins: 1,
-    weaknessProbabilityModifier: 1.1,
-    minStatTier: 'D-',
-    description: 'Born of elemental fire. Perpetually warm to the touch.',
-    injectedWheels: [
-      { id: 'inferno', displayName: 'Inferno', order: 1, segments: [
-        { label: 'Ember', weight: 5, statBonusGrants: { energyLevel: 'statBonus' }, description: 'Always slightly warm. Steam in cold air.' },
-        { label: 'Burning Aura', weight: 4, statBonusGrants: { powerMastery: 'statBonus' }, description: 'Things near them get hotter.' },
-        { label: 'Pyroclasm', weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, description: 'Explosive output.' },
-        { label: 'Solar Heart', weight: 2, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'A sun in the chest.' },
-        { label: 'Living Flame', weight: 1, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus', fightingSkill: 'statBonus' }, description: 'Touches return as ash.' },
-      ]},
-    ],
-    statModifiers: { energyLevel: 1.6, powerMastery: 1.3 },
-    classPool: [
-      { label: 'Flamecaller',  weight: 4, element: 'Fire', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Ignition Control', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Fire Shape', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Heat Sense', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Smoke Immunity', weight: 2, element: 'Shadow', grade: 'C' }, { label: 'Ash Form', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Wildfire Instinct', weight: 1, element: 'Fire', grade: 'C' }], powerPool: [{ label: 'Pyrokinesis', weight: 3 }, { label: 'Fire Breath', weight: 3 }, { label: 'Cinder Surge', weight: 2 }, { label: 'Lava Control', weight: 2 }, { label: 'Lava Shield', weight: 1 }] },
-      { label: 'Emberwarden',  weight: 3, element: 'Fire', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Ember Shield', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Slow Burn', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Fire Suppression', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Heat Absorption', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Smoldering Core', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Cinder Armor', weight: 1, element: 'Fire', grade: 'C' }], powerPool: [{ label: 'Lava Shield', weight: 3 }, { label: 'Fire Breath', weight: 3 }, { label: 'Pyrokinesis', weight: 2 }, { label: 'Sunfire Aura', weight: 2 }, { label: 'Consecrated Ground', weight: 1 }] },
-      { label: 'Magma Shaper', weight: 3, element: 'Fire', grade: 'B', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Lava Touch', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Rock Melt', weight: 2, element: 'Earth', grade: 'B' }, { label: 'Tectonic Sense', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Earthen Heat', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Lava Pool', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Volcanic Barrier', weight: 1, element: 'Fire', grade: 'B' }], powerPool: [{ label: 'Lava Control', weight: 3 }, { label: 'Lava Shield', weight: 3 }, { label: 'Cinder Surge', weight: 2 }, { label: 'Fire Breath', weight: 2 }, { label: 'Tremor Sense', weight: 1 }] },
-    ],
-    customHeightPool: [
-      { label: "5'2\"", weight: 3 }, { label: "5'4\"", weight: 5 }, { label: "5'6\"", weight: 7 },
-      { label: "5'8\"", weight: 7 }, { label: "5'10\"", weight: 6 }, { label: "6'0\"", weight: 4 },
-      { label: "6'2\"", weight: 2 }, { label: "6'4\"", weight: 1 },
-    ],
-
-    abilities: [
-      { label: 'Fire Immunity', weight: 2, element: 'Fire', grade: 'B' },
-      { label: 'Flame Burst', weight: 2, element: 'Fire', grade: 'B' },
-      { label: 'Cauterize', weight: 2, element: 'Fire', grade: 'B' },
-      { label: 'Smoke Screen', weight: 2, element: 'Shadow', grade: 'B' },
-      { label: 'Pyrokinetic Touch', weight: 2, element: 'Fire', grade: 'B' },
-      { label: 'Burning Determination', weight: 2, element: 'Fire', grade: 'B' },
-      { label: 'Ash Cloud', weight: 1, element: 'Fire', grade: 'B' },
-    ],
-  },
-  {
-    label: 'Genasi (Water)',
-    spinIdentity: ['Combo', 'FateManipulator'],
-    limitBreakOdds: 32,
-    weight: 7,
-    abilitySpinCount: 2,
-    weaknessProbabilityModifier: 0.9,
-    minStatTier: 'D-',
-    description: 'Born of elemental water. Great swimmer. Bad hair day, always.',
-    injectedWheels: [
-      { id: 'tide', displayName: 'Tide', order: 1, segments: [
-        { label: 'Calm Pool', weight: 5, statBonusGrants: { potential: 'statBonus', durability: 'statBonus' }, description: 'Patient. Deep.' },
-        { label: 'River-Bent', weight: 4, statBonusGrants: { agility: 'statBonus', potential: 'statBonus' }, description: 'Flows around obstacles.' },
-        { label: 'Healing Tide', weight: 3, statBonusGrants: { potential: 'statBonus', charisma: 'statBonus' }, description: 'Where they walk, wounds close.' },
-        { label: 'Riptide', weight: 2, statBonusGrants: { strength: 'statBonus', potential: 'statBonus' }, description: 'Pulls everything down.' },
-        { label: 'Ocean Heart', weight: 1, statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus', durability: 'statBonus' }, description: 'The deep listens to them.' },
-      ]},
-    ],
-    statModifiers: { potential: 1.3, agility: 1.2 },
-    classPool: [
-      { label: 'Tidecaller',  weight: 4, element: 'Water', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Current Read', weight: 2, element: 'Water', grade: 'C' }, { label: 'Water Shaping', weight: 2, element: 'Water', grade: 'C' }, { label: 'Tide Sense', weight: 2, element: 'Water', grade: 'C' }, { label: 'Flow Control', weight: 2, element: 'Water', grade: 'C' }, { label: 'Aqua Whip', weight: 2, element: 'Water', grade: 'C' }, { label: 'Wave Mastery', weight: 1, element: 'Water', grade: 'C' }], powerPool: [{ label: 'Hydrokinesis', weight: 3 }, { label: 'Tidal Burst', weight: 3 }, { label: 'Aqua Form', weight: 2 }, { label: 'Cryokinesis', weight: 2 }, { label: 'Moonwell Draw', weight: 1 }] },
-      { label: 'Frostweaver', weight: 3, element: 'Ice', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Freeze Sense', weight: 2, element: 'Ice', grade: 'C' }, { label: 'Ice Formation', weight: 2, element: 'Ice', grade: 'D' }, { label: 'Cold Immunity', weight: 2, element: 'Ice', grade: 'C' }, { label: 'Frost Trail', weight: 2, element: 'Ice', grade: 'C' }, { label: 'Blizzard Conjure (Minor)', weight: 2, element: 'Ice', grade: 'C' }, { label: 'Permafrost Touch', weight: 1, element: 'Ice', grade: 'C' }], powerPool: [{ label: 'Cryokinesis', weight: 3 }, { label: 'Frost Breath', weight: 3 }, { label: 'Blizzard Call', weight: 2 }, { label: 'Aqua Form', weight: 2 }, { label: 'Hydrokinesis', weight: 1 }] },
-      { label: 'Stormborn',   weight: 3, element: 'Lightning', grade: 'B', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Static Immunity', weight: 2, element: 'Lightning', grade: 'B' }, { label: 'Storm Sense', weight: 2, element: 'Lightning', grade: 'B' }, { label: 'Charge Buildup', weight: 2, element: 'Lightning', grade: 'B' }, { label: 'Lightning Rod', weight: 2, element: 'Lightning', grade: 'B' }, { label: 'Thunder Stride', weight: 2, element: 'Lightning', grade: 'B' }, { label: 'Eye of the Storm', weight: 1, element: 'Lightning', grade: 'B' }], powerPool: [{ label: 'Lightning Generation', weight: 3 }, { label: 'Storm Surge', weight: 3 }, { label: 'Hydrokinesis', weight: 2 }, { label: 'Thunder Clap', weight: 2 }, { label: 'Tidal Burst', weight: 1 }] },
-    ],
-    customHeightPool: [
-      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 5 }, { label: "5'4\"", weight: 7 },
-      { label: "5'6\"", weight: 7 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 4 },
-      { label: "6'0\"", weight: 2 }, { label: "6'2\"", weight: 1 },
-    ],
-
-    abilities: [
-      { label: 'Amphibious', weight: 3, element: 'Lightning', grade: 'B' },
-      { label: 'Water Control', weight: 2, element: 'Water', grade: 'B' },
-      { label: 'Tidal Surge', weight: 2, element: 'Water', grade: 'B' },
-      { label: 'Rain Regeneration', weight: 2, element: 'Water', grade: 'B' },
-      { label: 'Ice Shard', weight: 2, element: 'Ice', grade: 'B' },
-      { label: 'Drowning Aura', weight: 1, element: 'Lightning', grade: 'C' },
-      { label: 'Fluid Evasion', weight: 2, element: 'Lightning', grade: 'B' },
-    ],
-  },
-  {
-    label: 'Genasi (Air)',
-    spinIdentity: ['Combo', 'FateManipulator'],
-    limitBreakOdds: 32,
-    weight: 7,
-    abilitySpinCount: 2,
-    extraPowerSpins: 1,
-    weaknessProbabilityModifier: 0.9,
-    minStatTier: 'D-',
-    description: 'Born of elemental air. Technically never has a bad smell.',
-    injectedWheels: [
-      { id: 'tempest', displayName: 'Tempest', order: 1, segments: [
-        { label: 'Breeze', weight: 5, statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, description: 'Always cooler than they should be.' },
-        { label: 'Gale', weight: 4, statBonusGrants: { speed: 'statBonus', energyLevel: 'statBonus' }, description: 'Hard to stand against.' },
-        { label: 'Updraft', weight: 3, statBonusGrants: { agility: 'statBonus', potential: 'statBonus' }, description: 'Falls become flights.' },
-        { label: 'Storm Caller', weight: 2, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Weather pays attention.' },
-        { label: 'Living Tempest', weight: 1, statBonusGrants: { speed: 'statBonus', agility: 'statBonus', powerMastery: 'statBonus' }, description: 'Is the storm.' },
-      ]},
-    ],
-    statModifiers: { speed: 1.7, agility: 1.5, durability: 0.7 },
-    classPool: [
-      { label: 'Stormcaller', weight: 4, element: 'Wind', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, abilities: [{ label: 'Storm Sense', weight: 2, element: 'Lightning', grade: 'C' }, { label: 'Thunder Anticipation', weight: 2, element: 'Lightning', grade: 'C' }, { label: 'Gale Force', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Electrical Attunement', weight: 2, element: 'Lightning', grade: 'C' }, { label: 'Cyclone Formation', weight: 2, element: 'Wind', grade: 'D' }, { label: 'Tempest Roar', weight: 1, element: 'Wind', grade: 'C' }], powerPool: [{ label: 'Storm Surge', weight: 3 }, { label: 'Lightning Generation', weight: 3 }, { label: 'Thunder Clap', weight: 2 }, { label: 'Storm Circle', weight: 2 }, { label: 'Aerokinesis', weight: 1 }] },
-      { label: 'Windrunner',  weight: 4, element: 'Wind', grade: 'C', statBonusGrants: { speed: 'statBonus' }, abilities: [{ label: 'Slipstream Step', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Draft Riding', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Burst Speed', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Altitude Adaptation', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Wind Walk', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Vacuum Pocket', weight: 1, element: 'Wind', grade: 'C' }], powerPool: [{ label: 'Aerokinesis', weight: 3 }, { label: 'Wind Shear', weight: 3 }, { label: 'Super Speed', weight: 2 }, { label: 'Flight', weight: 2 }, { label: 'Storm Surge', weight: 1 }] },
-      { label: 'Tempest Born', weight: 3, element: 'Wind', grade: 'B', statBonusGrants: { speed: 'statBonus' }, abilities: [{ label: 'Pressure Immunity', weight: 2, element: 'Gravity', grade: 'B' }, { label: 'Sonic Burst (Passive)', weight: 2, element: 'Sound', grade: 'B' }, { label: 'Atmospheric Control', weight: 2, element: 'Wind', grade: 'B' }, { label: 'Static Field', weight: 2, element: 'Wind', grade: 'B' }, { label: 'Wind Shield', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Hurricane Channel', weight: 1, element: 'Wind', grade: 'B' }], powerPool: [{ label: 'Wind Shear', weight: 3 }, { label: 'Storm Born', weight: 3 }, { label: 'Aerokinesis', weight: 2 }, { label: 'Thunder Clap', weight: 2 }, { label: 'Lightning Generation', weight: 1 }] },
-    ],
-    customHeightPool: [
-      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 5 }, { label: "5'4\"", weight: 7 },
-      { label: "5'6\"", weight: 7 }, { label: "5'8\"", weight: 5 }, { label: "5'10\"", weight: 3 },
-      { label: "6'0\"", weight: 2 }, { label: '(Technically Weightless)', weight: 1 },
-    ],
-
-    abilities: [
-      { label: 'Wind Step', weight: 3, element: 'Wind', grade: 'B' },
-      { label: 'Breathless', weight: 2, element: 'Wind', grade: 'B' },
-      { label: 'Gust Barrier', weight: 2, element: 'Wind', grade: 'B' },
-      { label: 'Aerial Surveillance', weight: 2, element: 'Wind', grade: 'B' },
-      { label: 'Static Charge', weight: 2, element: 'Wind', grade: 'B' },
-      { label: 'Pressure Wave', weight: 1, element: 'Water', grade: 'B' },
-      { label: 'Uncontrolled Lightning Strike', weight: 1, element: 'Lightning', grade: 'B' },
-    ],
-  },
-  {
-    label: 'Genasi (Earth)',
-    spinIdentity: ['Combo'],
-    limitBreakOdds: 32,
-    weight: 7,
-    abilitySpinCount: 1,
-    weaknessProbabilityModifier: 0.8,
-    minStatTier: 'D-',
-    description: 'Born of elemental earth. Grounded. Literally.',
-    injectedWheels: [
-      { id: 'stoneheart', displayName: 'Stoneheart', order: 1, segments: [
-        { label: 'Soil-Born', weight: 5, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Slow to react. Slow to fall.' },
-        { label: 'Bedrock', weight: 4, statBonusGrants: { durability: 'statBonus', strength: 'statBonus' }, description: 'Cannot be moved.' },
-        { label: 'Stone Sense', weight: 3, statBonusGrants: { iq: 'statBonus', durability: 'statBonus' }, description: 'Hears the bones of the world.' },
-        { label: 'Mountain Lord', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', armorStrength: 'statBonus' }, description: 'Earth answers to them.' },
-        { label: 'Living Stone', weight: 1, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus', strength: 'statBonus', speed: 'statPenalty' }, description: 'Flesh is suggestion.' },
-      ]},
-    ],
-    statModifiers: { durability: 1.7, strength: 1.5, speed: 0.5, agility: 0.5 },
-    classPool: [
-      { label: 'Stonebinder',   weight: 4, element: 'Earth', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Mineral Sense', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Binding Earth', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Stone Call (Passive)', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Deep Vibration', weight: 2, element: 'Sound', grade: 'C' }, { label: 'Rock Formation', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Petrify Touch', weight: 1, element: 'Earth', grade: 'C' }], powerPool: [{ label: 'Geokinesis', weight: 3 }, { label: 'Tremor Sense', weight: 3 }, { label: 'Stone Call', weight: 2 }, { label: 'Crystal Armor', weight: 2 }, { label: 'Terrakinesis', weight: 1 }] },
-      { label: 'Quake Walker',  weight: 4, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Seismic Step', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Shock Wave Emit', weight: 2, element: 'Lightning', grade: 'C' }, { label: 'Ground Split', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Fault Line Read', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Quake Anticipation', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Tectonic Stomp', weight: 1, element: 'Earth', grade: 'C' }], powerPool: [{ label: 'Seismic Command', weight: 3 }, { label: 'Geokinesis', weight: 3 }, { label: 'Mountain Crash', weight: 2 }, { label: 'Tremor Sense', weight: 2 }, { label: 'Stone Call', weight: 1 }] },
-      { label: 'Crystal Shaper', weight: 3, element: 'Earth', grade: 'B', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Gem Formation', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Prismatic Defense', weight: 2, element: 'Earth', grade: 'B' }, { label: 'Crystal Lattice Sense', weight: 2, element: 'Ice', grade: 'B' }, { label: 'Refraction Control', weight: 2, element: 'Earth', grade: 'B' }, { label: 'Shard Burst', weight: 2, element: 'Earth', grade: 'B' }, { label: 'Diamond Hard Skin', weight: 1, element: 'Earth', grade: 'B' }], powerPool: [{ label: 'Crystal Armor', weight: 3 }, { label: 'Geokinesis', weight: 3 }, { label: 'Runic Ward', weight: 2 }, { label: 'Terrakinesis', weight: 2 }, { label: 'Stone Call', weight: 1 }] },
-    ],
-    customHeightPool: [
-      { label: "5'4\"", weight: 3 }, { label: "5'6\"", weight: 5 }, { label: "5'8\"", weight: 6 },
-      { label: "5'10\"", weight: 6 }, { label: "6'0\"", weight: 5 }, { label: "6'2\"", weight: 4 },
-      { label: "6'4\"", weight: 3 }, { label: "6'6\"", weight: 2 }, { label: "6'8\"", weight: 1 },
-    ],
-
-    abilities: [
-      { label: 'Stone Form', weight: 2, element: 'Earth', grade: 'B' },
-      { label: 'Tremorsense', weight: 2, element: 'Earth', grade: 'B' },
-      { label: 'Earthen Shell', weight: 3, element: 'Earth', grade: 'B' },
-      { label: 'Quake Stomp', weight: 2, element: 'Earth', grade: 'B' },
-      { label: 'Dust Cloud', weight: 2, element: 'Earth', grade: 'B' },
-      { label: 'Root (Pin Enemies)', weight: 2, element: 'Nature', grade: 'B' },
-      { label: 'Terra Firma', weight: 1, element: 'Earth', grade: 'B' },
-    ],
-  },
-  {
     label: 'Warforged',
     spinIdentity: ['HighVariance', 'Evolution'],
     limitBreakOdds: 38,
-    weight: 7,
+    weight: 5,
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 0.7,
-    minStatTier: 'D',
+    minStatTier: 'C-',
     description: 'Constructed for war, now grappling with purpose and carpal tunnel.',
     injectedWheels: [
       { id: 'upgradeTree', displayName: 'Upgrade Tree', order: 1, segments: [
@@ -1060,16 +848,15 @@ export const races: Race[] = [
       { label: 'Tactical Memory Core', weight: 1, element: 'Neutral', grade: 'C' },
     ],
   },
-  // ── Cyborg (Tier 3 — F+E locked) ──
   {
     label: 'Cyborg',
     spinIdentity: ['HighVariance'],
     limitBreakOdds: 38,
-    weight: 7,
+    weight: 5,
     abilitySpinCount: 2,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.8,
-    minStatTier: 'D-',
+    minStatTier: 'C-',
     description: 'Part flesh, part machine. Neither side is happy about it.',
     injectedWheels: [
       { id: 'implant', displayName: 'Implant', order: 1, segments: [
@@ -1111,12 +898,11 @@ export const races: Race[] = [
       { label: "Emotions.exe (Partially Corrupt)", weight: 1 },
     ],
   },
-  // Bender (Avatar: The Last Airbender / The Legend of Korra)
   {
     label: 'Bender',
     spinIdentity: ['Combo'],
     limitBreakOdds: 40,
-    weight: 7,
+    weight: 5,
     abilitySpinCount: 2,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.9,
@@ -1160,90 +946,15 @@ export const races: Race[] = [
       { label: 'Avatar State (Temporary)', weight: 1, element: 'Cosmic', grade: 'S' },
     ],
   },
-  // Shinobi (Naruto / Naruto Shippuden)
-  {
-    label: 'Shinobi',
-    spinIdentity: ['Combo'],
-    limitBreakOdds: 42,
-    weight: 6,
-    abilitySpinCount: 2,
-    extraPowerSpins: 1,
-    weaknessProbabilityModifier: 1.1,
-    minStatTier: 'C-',
-    description: 'A ninja trained in chakra manipulation, ninjutsu, and the art of sneaking dramatically.',
-    injectedWheels: [
-      { id: 'clan', displayName: 'Clan', order: 1, segments: [
-        { label: 'No Clan', weight: 5, description: 'Trained alone. Owes no one.' },
-        { label: 'Outer Clan', weight: 4, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' }, description: 'Tolerated. Useful. Replaceable.' },
-        { label: 'Main House', weight: 3, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'Bloodline technique inherited.' },
-        { label: 'Heir', weight: 2, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Trained to lead. Trained to die first.' },
-        { label: 'Forbidden Clan', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus', iq: 'statBonus', charisma: 'statPenalty' }, description: 'Bloodline so dangerous it was outlawed.' },
-      ]},
-      { id: 'jutsu', displayName: 'Jutsu Affinity', order: 2, segments: [
-        { label: 'Taijutsu', weight: 4, statBonusGrants: { fightingSkill: 'statBonus', strength: 'statBonus' }, description: 'Body alone. No tricks.' },
-        { label: 'Ninjutsu', weight: 4, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Hand seals. Element work.' },
-        { label: 'Genjutsu', weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, description: 'The mind is the battlefield.' },
-        { label: 'Sealing', weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Binds things — energy, beings, fate itself.' },
-        { label: 'Forbidden Art', weight: 1, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus', potential: 'statBonus', durability: 'statPenalty' }, description: 'Used once. Documented because nothing survived to forget.' },
-      ]},
-      { id: 'chakraNature', displayName: 'Chakra Nature', order: 3, segments: [
-        { label: 'Single Nature', weight: 6, statBonusGrants: { powerMastery: 'statBonus' }, description: 'One element. Trained deeply.' },
-        { label: 'Dual Nature', weight: 3, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Two natures. Recombines into a sub-style.' },
-        { label: 'Bloodline Nature', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, description: "Family fusion. Inherited, can't be taught." },
-        { label: 'All Five', weight: 1, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus', potential: 'statBonus', iq: 'statBonus' }, description: 'Fire. Water. Earth. Wind. Lightning. All of them.' },
-      ]},
-    ],
-    statModifiers: { agility: 1.5, speed: 1.4, fightingSkill: 1.3 },
-    subTypePool: [
-      { label: 'Konohagakure Shinobi (Hidden Leaf)', weight: 4, element: 'Nature', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Will of Fire', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Team Tactics', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Leaf Village Jutsu Library', weight: 2, element: 'Time', grade: 'C' }, { label: 'Taijutsu Foundation', weight: 2, element: 'Nature', grade: 'D' }, { label: 'Sensei Bond', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Hidden Leaf Loyalty', weight: 1, element: 'Nature', grade: 'C' }] },
-      { label: 'Sunagakure Shinobi (Hidden Sand)', weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Desert Camouflage', weight: 2, element: 'Shadow', grade: 'C' }, { label: 'Sand Sense', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Puppet Training Foundation', weight: 2, element: 'Water', grade: 'D' }, { label: 'Conserve Chakra', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Wind Affinity', weight: 2, element: 'Wind', grade: 'C' }, { label: "Gaara's Sand Echo", weight: 1 }] },
-      { label: 'Kirigakure Shinobi (Hidden Mist)', weight: 2, element: 'Water', grade: 'C', statBonusGrants: { agility: 'statBonus' }, abilities: [{ label: 'Mist Concealment', weight: 2, element: 'Water', grade: 'C' }, { label: 'Silent Kill Foundation', weight: 2, element: 'Water', grade: 'D' }, { label: 'Water Affinity', weight: 2, element: 'Water', grade: 'C' }, { label: 'Blood Mist Aura (Passive)', weight: 2, element: 'Water', grade: 'C' }, { label: 'Seven Swords Style Trace', weight: 2, element: 'Water', grade: 'C' }, { label: 'Hidden Mist Discipline', weight: 1, element: 'Water', grade: 'C' }] },
-      { label: 'Kumogakure Shinobi (Hidden Cloud)', weight: 2, element: 'Lightning', grade: 'C', statBonusGrants: { speed: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Lightning Affinity', weight: 2, element: 'Lightning', grade: 'C' }, { label: 'Raikage Speed Echo', weight: 2, element: 'Time', grade: 'C' }, { label: 'Cloud Taijutsu', weight: 2, element: 'Lightning', grade: 'C' }, { label: 'Lightning Armor (Minor)', weight: 2, element: 'Lightning', grade: 'C' }, { label: 'Iron Claw Foundation', weight: 2, element: 'Metal', grade: 'D' }, { label: 'Thunderclap Step', weight: 1, element: 'Lightning', grade: 'C' }] },
-      { label: 'Missing-Nin (Rogue)', weight: 3, element: 'Shadow', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus', agility: 'statBonus' }, abilities: [{ label: 'Off-Grid Survival', weight: 2, element: 'Shadow', grade: 'C' }, { label: 'Forbidden Jutsu Access', weight: 2, element: 'Shadow', grade: 'B' }, { label: 'Unregistered Chakra', weight: 2, element: 'Shadow', grade: 'C' }, { label: 'Rogue Combat', weight: 2, element: 'Shadow', grade: 'C' }, { label: 'Mercenary Tactical Mind', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Wanted Status (Intimidation)', weight: 1, element: 'Shadow', grade: 'C' }] },
-      { label: 'Akatsuki Member', weight: 1, element: 'Shadow', grade: 'B', statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'S-Rank Jutsu Foundation', weight: 2, element: 'Shadow', grade: 'D' }, { label: 'Pain Path Awareness', weight: 2, element: 'Shadow', grade: 'B' }, { label: 'Ring of Judgment', weight: 2, element: 'Shadow', grade: 'B' }, { label: 'Bijuu Extraction Resist', weight: 2, element: 'Shadow', grade: 'B' }, { label: 'Akatsuki Cloak', weight: 2, element: 'Shadow', grade: 'B' }, { label: 'Infamy Aura', weight: 1, element: 'Shadow', grade: 'C' }] },
-      { label: 'ANBU Black Ops', weight: 1, element: 'Shadow', grade: 'B', statBonusGrants: { fightingSkill: 'statBonus', agility: 'statBonus', speed: 'statBonus' }, abilities: [{ label: 'Assassination Protocol', weight: 2, element: 'Shadow', grade: 'B' }, { label: 'Memory Seal', weight: 2, element: 'Water', grade: 'B' }, { label: 'ANBU Mask Disguise', weight: 2, element: 'Shadow', grade: 'B' }, { label: 'Double Agent Shift', weight: 2, element: 'Time', grade: 'B' }, { label: 'Forbidden Archive Access', weight: 2, element: 'Shadow', grade: 'B' }, { label: 'Root Conditioning', weight: 1, element: 'Nature', grade: 'B' }] },
-    ],
-    classPool: [
-      { label: 'Academy Student (Genin Potential)', weight: 4, element: 'Neutral', grade: 'D', statBonusGrants: { fightingSkill: 'statPenalty' }, abilities: [{ label: 'Basic Ninjutsu', weight: 2, element: 'Neutral', grade: 'D' }, { label: 'Three Jutsu Mastery', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'Team Tactics (Beginner)', weight: 2, element: 'Neutral', grade: 'D' }, { label: 'Chakra Shaping (Early)', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'Kunai Precision', weight: 2, element: 'Neutral', grade: 'D' }, { label: 'Academy Resilience', weight: 1, element: 'Neutral', grade: 'D' }] },
-      { label: 'Chunin', weight: 4, element: 'Neutral', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Exam Hardened', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Chakra Reserve Growth', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Tactical Leadership Basics', weight: 2, element: 'Neutral', grade: 'D' }, { label: 'Mid-Range Jutsu', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'Trap Awareness', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'Chunin Exam Scar', weight: 1, element: 'Neutral', grade: 'C' }] },
-      { label: 'Jonin', weight: 3, element: 'Neutral', grade: 'B', statBonusGrants: { fightingSkill: 'statBonus', speed: 'statBonus' }, abilities: [{ label: 'High-Rank Jutsu Access', weight: 2, element: 'Neutral', grade: 'B' }, { label: 'Combat Intuition', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'Battlefield Command', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'Advanced Chakra Nature', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Sensor Level', weight: 2, element: 'Neutral', grade: 'B' }, { label: 'S-Rank Resistance', weight: 1, element: 'Neutral', grade: 'B' }] },
-      { label: 'Jonin Commander', weight: 2, element: 'Neutral', grade: 'B', statBonusGrants: { fightingSkill: 'statBonus', iq: 'statBonus' }, abilities: [{ label: 'Strategic Oversight', weight: 2, element: 'Neutral', grade: 'B' }, { label: 'Multi-Team Coordination', weight: 2, element: 'Neutral', grade: 'B' }, { label: 'War-Veteran Reflex', weight: 2, element: 'Neutral', grade: 'B' }, { label: 'Chakra Efficiency Mastery', weight: 2, element: 'Neutral', grade: 'C' }, { label: 'Command Presence', weight: 2, element: 'Psychic', grade: 'B' }, { label: 'Iron Discipline', weight: 1, element: 'Neutral', grade: 'B' }] },
-      { label: 'Kage-Level', weight: 1, element: 'Arcane', grade: 'S', statBonusGrants: { fightingSkill: 'statBonus', energyLevel: 'statBonus' }, abilities: [{ label: 'Unmatched Chakra Reserves', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Forbidden Arts Access', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Bijuu Knowledge', weight: 2, element: 'Arcane', grade: 'S' }, { label: "Kage's Will Aura", weight: 2 }, { label: 'Country-Level Threat', weight: 2, element: 'Arcane', grade: 'S' }, { label: 'Shadow Clone Mastery', weight: 1, element: 'Shadow', grade: 'C' }] },
-    ],
-    transformationPool: [
-      { label: 'Chakra-Suppressed', weight: 4, element: 'Neutral', grade: 'D', statBonus: 0.8 },
-      { label: 'Full Chakra', weight: 5, element: 'Neutral', grade: 'C', statBonus: 1.0 },
-      { label: 'Sage Mode', weight: 3, element: 'Nature', grade: 'B', statBonus: 1.5 },
-      { label: 'Tailed Beast Chakra Cloak', weight: 2, element: 'Nature', grade: 'A', statBonus: 1.8 },
-      { label: 'Six Paths Sage Mode', weight: 1, element: 'Cosmic', grade: 'SS', statBonus: 2.4, statBonusGrants: { fightingSkill: 'statBonus', agility: 'statBonus' } },
-    ],
-    customHeightPool: [
-      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 6 }, { label: "5'4\"", weight: 8 },
-      { label: "5'6\"", weight: 8 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 4 },
-      { label: "6'0\"", weight: 2 }, { label: "6'2\"", weight: 1 },
-    ],
-
-    abilities: [
-      { label: 'Sharingan / Dojutsu (Rare)', weight: 1, element: 'Cosmic', grade: 'SS' },
-      { label: 'Shadow Clone Jutsu', weight: 3, element: 'Shadow', grade: 'SS' },
-      { label: 'Chakra Control Mastery', weight: 3, element: 'Cosmic', grade: 'C' },
-      { label: 'Body Flicker Technique', weight: 2, element: 'Cosmic', grade: 'SS' },
-      { label: 'Elemental Ninjutsu', weight: 3, element: 'Cosmic', grade: 'C' },
-      { label: 'Genjutsu Resistance', weight: 2, element: 'Cosmic', grade: 'SS' },
-      { label: 'Taijutsu Expert', weight: 2, element: 'Cosmic', grade: 'SS' },
-      { label: 'Summoning Jutsu', weight: 2, element: 'Cosmic', grade: 'SS' },
-    ],
-  },
-  // Mutant (X-Men / Marvel)
   {
     label: 'Mutant',
     spinIdentity: ['HighVariance', 'Scaling'],
     limitBreakOdds: 44,
-    weight: 6,
+    weight: 5,
     abilitySpinCount: 2,
     extraPowerSpins: 2,
     weaknessProbabilityModifier: 1.2,
-    minStatTier: 'C-',
+    minStatTier: 'B-',
     description: 'A homo superior with a genetic X-gene mutation — feared and misunderstood everywhere.',
     injectedWheels: [
       { id: 'mutation', displayName: 'Mutation', order: 1, segments: [
@@ -1286,74 +997,6 @@ export const races: Race[] = [
       { label: 'Genetic Evolution (Situational)', weight: 1, element: 'Psychic', grade: 'S' },
     ],
   },
-  // Nen User (Hunter × Hunter)
-  {
-    label: 'Nen User',
-    spinIdentity: ['Combo'],
-    limitBreakOdds: 46,
-    weight: 6,
-    abilitySpinCount: 2,
-    extraPowerSpins: 1,
-    weaknessProbabilityModifier: 0.9,
-    minStatTier: 'C-',
-    description: 'A Hunter who has unlocked Nen — the manipulation of life energy. What type you are defines your destiny.',
-    injectedWheels: [
-      { id: 'nenCategory', displayName: 'Nen Category', order: 1, segments: [
-        { label: 'Enhancement', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Make yourself more.' },
-        { label: 'Emission', weight: 3, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Throw your aura far.' },
-        { label: 'Transmutation', weight: 3, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Aura becomes anything you imagine.' },
-        { label: 'Conjuration', weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, description: 'Make objects from nothing.' },
-        { label: 'Manipulation', weight: 2, statBonusGrants: { iq: 'statBonus', charisma: 'statBonus' }, description: 'Control things — people, objects, fate.' },
-        { label: 'Specialist', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus' }, description: 'One rule. One ability. Often impossible.' },
-      ]},
-      { id: 'restriction', displayName: 'Restriction', order: 2, segments: [
-        { label: 'Unrestricted', weight: 5, description: 'No vows. No bonus. Average ceiling.' },
-        { label: 'Time Restriction', weight: 4, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Only at certain hours. Worth it.' },
-        { label: 'Target Restriction', weight: 3, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'Only against one type of foe. Devastating against it.' },
-        { label: 'Condition Lock', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', durability: 'statPenalty' }, description: 'Only when X. The X is hard.' },
-        { label: 'Death Vow', weight: 1, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', potential: 'statBonus' }, description: 'Use it and die. Power: absurd.' },
-      ]},
-      { id: 'vow', displayName: 'Vow', order: 3, segments: [
-        { label: 'No Vow', weight: 5, description: 'Power tracks raw talent.' },
-        { label: 'Minor Vow', weight: 4, statBonusGrants: { powerMastery: 'statBonus' }, description: 'Small promise to self. Visible bonus.' },
-        { label: 'Public Vow', weight: 3, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Announced. Cannot be taken back.' },
-        { label: 'Blood Vow', weight: 2, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus', durability: 'statPenalty' }, description: 'Sealed with the body.' },
-        { label: 'Soul Vow', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' }, description: 'Bound to the spirit itself. Breaking it ends both.' },
-      ]},
-    ],
-    statModifiers: { energyLevel: 1.6, fightingSkill: 1.4, potential: 1.3 },
-    classPool: [
-      { label: 'Enhancer',    weight: 4, element: 'Earth', grade: 'C', abilities: [{ label: 'Physical Amplification', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Healing Rate Surge', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Nen Reinforcement', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Durability Push', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Gyo Combat', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Simple But Effective', weight: 1, element: 'Earth', grade: 'C' }], powerPool: [{ label: 'Super Strength', weight: 3 }, { label: 'Healing Factor', weight: 3 }, { label: 'Invulnerability', weight: 2 }, { label: 'Indomitable Rage', weight: 2 }, { label: 'Warrior Trance', weight: 1 }] },
-      { label: 'Emitter',     weight: 3, element: 'Arcane', grade: 'C', abilities: [{ label: 'Ranged Nen Control', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Projectile Aim', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Energy Dispersion', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Detached Aura', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Long-Range Hatsu', weight: 2, element: 'Arcane', grade: 'C' }, { label: "Emitter's Eye", weight: 1 }], powerPool: [{ label: 'Ki Blast', weight: 3 }, { label: 'Pyrokinesis', weight: 3 }, { label: 'Electrokinesis', weight: 2 }, { label: 'Cryokinesis', weight: 2 }, { label: 'Plasma Generation', weight: 1 }] },
-      { label: 'Transmuter',  weight: 3, element: 'Chaos', grade: 'C', abilities: [{ label: 'Form Lock', weight: 2, element: 'Chaos', grade: 'C' }, { label: 'Property Transfer', weight: 2, element: 'Chaos', grade: 'C' }, { label: 'Illusion Layer', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Frequency Shift', weight: 2, element: 'Chaos', grade: 'C' }, { label: 'Speed of Thought Shift', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Identity Change', weight: 1, element: 'Chaos', grade: 'C' }], powerPool: [{ label: 'Transmutation', weight: 3 }, { label: 'Shapeshifting', weight: 3 }, { label: 'Mimicry', weight: 2 }, { label: 'Molecular Vibration', weight: 2 }, { label: 'Atomic Restructuring', weight: 1 }] },
-      { label: 'Manipulator', weight: 3, element: 'Psychic', grade: 'C', abilities: [{ label: 'Puppet Protocol', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Command Implant', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Aura Interference', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Object Binding', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Remote Gyo', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Hivemind Trace', weight: 1, element: 'Psychic', grade: 'C' }], powerPool: [{ label: 'Telekinesis', weight: 3 }, { label: 'Neural Hijack', weight: 3 }, { label: 'Telepathy', weight: 2 }, { label: 'Mind Control', weight: 2 }, { label: 'Psychic Dominion', weight: 1 }] },
-      { label: 'Conjurer',    weight: 2, element: 'Arcane', grade: 'B', abilities: [{ label: 'Object Permanence Nen', weight: 2, element: 'Psychic', grade: 'B' }, { label: 'Conjure Quality Lock', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Item Enhancement', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Manifest Duration', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Nen Materialization', weight: 2, element: 'Psychic', grade: 'B' }, { label: 'Item World', weight: 1, element: 'Arcane', grade: 'B' }], powerPool: [{ label: 'Conjuration', weight: 3 }, { label: 'Mana Construct Creation', weight: 3 }, { label: 'Dimensional Pocket', weight: 2 }, { label: 'Golem Forging', weight: 2 }, { label: 'Summoning Surge', weight: 1 }] },
-      { label: 'Specialist',  weight: 1, element: 'Chaos', grade: 'S', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Undefined Power Form', weight: 2, element: 'Chaos', grade: 'S' }, { label: 'Rule-Breaking Aptitude', weight: 2, element: 'Chaos', grade: 'S' }, { label: 'Foreign Nen Reading', weight: 2, element: 'Psychic', grade: 'S' }, { label: 'Cross-Type Borrowing', weight: 2, element: 'Chaos', grade: 'S' }, { label: 'Luck Nen', weight: 2, element: 'Psychic', grade: 'S' }, { label: 'Singularity Event', weight: 1, element: 'Gravity', grade: 'S' }], powerPool: [{ label: 'Reality Warping', weight: 3 }, { label: 'Probability Manipulation', weight: 3 }, { label: 'Omnipotence (Weekend Only)', weight: 2 }, { label: 'Fate Threading', weight: 2 }, { label: 'Causality Violation', weight: 1 }] },
-    ],
-    transformationPool: [
-      { label: 'Nen Awakening (Basic)', weight: 5, element: 'Neutral', grade: 'D', statBonusGrants: { energyLevel: 'statPenalty' }, statBonus: 0.9 },
-      { label: 'Nen Refined', weight: 4, element: 'Neutral', grade: 'C', statBonusGrants: { energyLevel: 'statBonus' }, statBonus: 1.1 },
-      { label: 'Zetsu / Gyo Mastery', weight: 3, element: 'Neutral', grade: 'B', statBonusGrants: { energyLevel: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.3 },
-      { label: 'Hatsu Developed', weight: 3, element: 'Arcane', grade: 'B', statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.5 },
-      { label: 'Nen Genius / Post-NDE Upgrade', weight: 1, element: 'Arcane', grade: 'SS', statBonus: 2.2, statBonusGrants: { energyLevel: 'statBonus', fightingSkill: 'statBonus' } },
-    ],
-    customHeightPool: [
-      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 5 }, { label: "5'4\"", weight: 7 },
-      { label: "5'6\"", weight: 7 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 5 },
-      { label: "6'0\"", weight: 3 }, { label: "6'2\"", weight: 2 }, { label: "6'4\"", weight: 1 },
-    ],
-
-    abilities: [
-      { label: 'Ten (Life Aura Coating)', weight: 3, element: 'Arcane', grade: 'C' },
-      { label: 'Ren (Aura Amplification)', weight: 3, element: 'Arcane', grade: 'C' },
-      { label: 'Hatsu (Personal Nen Technique)', weight: 2, element: 'Psychic', grade: 'SS' },
-      { label: 'Ko (Focused Strike)', weight: 2, element: 'Arcane', grade: 'SS' },
-      { label: 'Ken (Sustained Defense)', weight: 2, element: 'Arcane', grade: 'SS' },
-      { label: 'Shu (Weapon Coating)', weight: 1, element: 'Arcane', grade: 'SS' },
-      { label: 'In (Concealed Aura)', weight: 1, element: 'Arcane', grade: 'C' },
-    ],
-  },
-  // Namekian (Dragon Ball Z)
   {
     label: 'Namekian',
     spinIdentity: ['Scaling', 'Summoner'],
@@ -1361,7 +1004,7 @@ export const races: Race[] = [
     weight: 5,
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 0.7,
-    minStatTier: 'C-',
+    minStatTier: 'B-',
     description: 'Green warriors from Planet Namek. They can regenerate limbs and create Dragon Balls, which is cheating.',
     injectedWheels: [
       { id: 'dragonClan', displayName: 'Dragon Clan Gift', order: 1, segments: [
@@ -1404,63 +1047,6 @@ export const races: Race[] = [
       { label: 'Ki Suppression', weight: 2, element: 'Earth', grade: 'A' },
     ],
   },
-  // Titan Shifter (Attack on Titan)
-  {
-    label: 'Titan Shifter',
-    spinIdentity: ['Evolution'],
-    limitBreakOdds: 50,
-    weight: 6,
-    abilitySpinCount: 3,
-    extraPowerSpins: 1,
-    weaknessProbabilityModifier: 1.3,
-    minStatTier: 'C-',
-    description: 'A human who can transform into a massive Titan at will. Subject to 13-year curse. Great at breaking walls.',
-    injectedWheels: [
-      { id: 'titanType', displayName: 'Titan Type', order: 1, segments: [
-        { label: 'Attack', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', speed: 'statBonus' }, description: 'Fast. Aggressive. Never retreats.' },
-        { label: 'Armored', weight: 3, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus', strength: 'statBonus' }, description: 'Hardened plating. Cannot be cut by ordinary means.' },
-        { label: 'Beast', weight: 3, statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus' }, description: 'Fur. Claws. Smells fear.' },
-        { label: 'Colossal', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', armorStrength: 'statBonus', speed: 'statPenalty' }, description: 'The largest. The wall.' },
-        { label: 'Founding', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus' }, description: 'Controls all titans. The original.' },
-      ]},
-    ],
-    statModifiers: { strength: 1.9, durability: 1.6, fightingSkill: 1.5, speed: 1.3 },
-    subTypePool: [
-      { label: 'Attack Titan',    weight: 3, element: 'Earth', grade: 'B', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Future Memory Access', weight: 2, element: 'Earth', grade: 'B' }, { label: 'Rage Titan Surge', weight: 2, element: 'Time', grade: 'B' }, { label: 'Path Bond', weight: 2, element: 'Earth', grade: 'B' }, { label: 'Shifter Will', weight: 2, element: 'Earth', grade: 'B' }, { label: 'Coordinate Sensitivity', weight: 2, element: 'Earth', grade: 'B' }, { label: "Eren's Legacy Echo", weight: 1 }], grantedPowers: ['Titan Shift'] },
-      { label: 'Armored Titan',   weight: 2, element: 'Earth', grade: 'B', statBonusGrants: { durability: 'statBonus', strength: 'statBonus' }, abilities: [{ label: 'Hardening Mastery', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Armor Formation Speed', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Full Body Hardening', weight: 2, element: 'Earth', grade: 'B' }, { label: 'Plate Recovery', weight: 2, element: 'Earth', grade: 'B' }, { label: 'Tank-Mode Shift', weight: 2, element: 'Earth', grade: 'B' }, { label: 'Armored Will', weight: 1, element: 'Earth', grade: 'B' }], grantedPowers: ['Titan Shift', 'Hardening'] },
-      { label: 'Female Titan',    weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { agility: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Crystal Hardening', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Shifter Scream (Attract Pure Titans)', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Endurance Body', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Flexible Combat', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Titan Copy', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Adaptive Mimicry', weight: 1, element: 'Earth', grade: 'C' }], grantedPowers: ['Titan Shift'] },
-      { label: 'Jaw Titan',       weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, abilities: [{ label: 'Jaw Shatter Force', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Speed Shift', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Ultra Fast Transformation', weight: 2, element: 'Earth', grade: 'D' }, { label: "Ymir's Mark", weight: 2 }, { label: 'Tendon Strength', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Crystal Breaker', weight: 1, element: 'Earth', grade: 'C' }], grantedPowers: ['Titan Shift', 'Jaw Titan Bite'] },
-      { label: 'Cart Titan',      weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { durability: 'statBonus' }, abilities: [{ label: 'Long-Range Endurance', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Carrier Form', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Quadrupedal Speed', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Logistical Bond', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Endurance Mode', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Pack Carrier', weight: 1, element: 'Earth', grade: 'C' }], grantedPowers: ['Titan Shift'] },
-      { label: 'Beast Titan',     weight: 2, element: 'Nature', grade: 'C', statBonusGrants: { strength: 'statBonus', iq: 'statBonus' }, abilities: [{ label: 'Projectile Launch (Full Body)', weight: 2, element: 'Nature', grade: 'C' }, { label: "Ymir's Curse Adaptation", weight: 2 }, { label: 'Beast Form Intelligence', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Ape Combat', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Throwing Precision', weight: 2, element: 'Nature', grade: 'C' }, { label: 'Animal Horde Command', weight: 1, element: 'Nature', grade: 'C' }], grantedPowers: ['Titan Shift'] },
-      { label: 'Colossal Titan',  weight: 1, element: 'Fire', grade: 'A', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Heat Wave Aura', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Massive Form Shift', weight: 2, element: 'Fire', grade: 'A' }, { label: 'Steam Defense', weight: 2, element: 'Fire', grade: 'A' }, { label: 'Structural Collapse', weight: 2, element: 'Fire', grade: 'A' }, { label: 'Blast Entry', weight: 2, element: 'Fire', grade: 'A' }, { label: 'Citywall Presence', weight: 1, element: 'Psychic', grade: 'A' }], grantedPowers: ['Titan Shift', 'Steam Explosion'] },
-      { label: 'War Hammer Titan', weight: 1, element: 'Earth', grade: 'A', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Construct Memory', weight: 2, element: 'Earth', grade: 'A' }, { label: 'Spike Formation Speed', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Terrain Control', weight: 2, element: 'Water', grade: 'A' }, { label: 'Distance Creation', weight: 2, element: 'Earth', grade: 'SSS' }, { label: 'Hardening Art', weight: 2, element: 'Earth', grade: 'A' }, { label: 'Living Weapon', weight: 1, element: 'Earth', grade: 'A' }], grantedPowers: ['Titan Shift', 'Hardening'] },
-      { label: 'Founding Titan',  weight: 1, element: 'Soul', grade: 'S', statBonusGrants: { strength: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Coordinate Activation', weight: 2, element: 'Soul', grade: 'S' }, { label: 'Titan Command (Broad)', weight: 2, element: 'Soul', grade: 'S' }, { label: 'Memory Alteration (Partial)', weight: 2, element: 'Soul', grade: 'S' }, { label: 'Subjects of Ymir Bond', weight: 2, element: 'Soul', grade: 'S' }, { label: 'Ancient Power Echo', weight: 2, element: 'Sound', grade: 'S' }, { label: 'World-Memory Access', weight: 1, element: 'Soul', grade: 'S' }], grantedPowers: ['Titan Shift'] },
-    ],
-    transformationPool: [
-      { label: 'Shifter Awakened',          weight: 5, element: 'Earth', grade: 'D', statBonus: 1.0 },
-      { label: 'Controlled Transformation', weight: 4, element: 'Earth', grade: 'C', statBonus: 1.2 },
-      { label: 'Hardening Mastered',        weight: 3, element: 'Earth', grade: 'B', statBonus: 1.4 },
-      { label: 'Coordinate Awakened',       weight: 2, element: 'Soul', grade: 'A', statBonus: 1.8 },
-      { label: 'Founder\'s Power Unleashed', weight: 1, element: 'Neutral', grade: 'C', statBonus: 2.5, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
-    ],
-    customHeightPool: [
-      { label: "5'0\"", weight: 3 }, { label: "5'2\"", weight: 5 }, { label: "5'4\"", weight: 7 },
-      { label: "5'6\"", weight: 7 }, { label: "5'8\"", weight: 6 }, { label: "5'10\"", weight: 4 },
-      { label: "6'0\"", weight: 2 }, { label: '(Titan Form: 4m–60m)', weight: 1 },
-    ],
-
-    abilities: [
-      { label: 'Titan Transformation', weight: 2, element: 'Neutral', grade: 'D' },
-      { label: 'Regeneration (Human Form)', weight: 3, element: 'Nature', grade: 'C' },
-      { label: 'Inheritor Memory', weight: 2, element: 'Neutral', grade: 'C' },
-      { label: 'Titanization Control', weight: 2, element: 'Neutral', grade: 'C' },
-      { label: 'Hardening', weight: 2, element: 'Neutral', grade: 'C' },
-      { label: 'Steam Emission (Combat)', weight: 1, element: 'Neutral', grade: 'C' },
-      { label: 'Titan Scream (Minor)', weight: 1, element: 'Neutral', grade: 'C' },
-    ],
-  },
-
-  // ── Rare / Tier 4 (weight 5–9, F+E+D locked → minStatTier C-) ──
   {
     label: 'Vampire',
     spinIdentity: ['Evolution', 'Corruption'],
@@ -1569,14 +1155,14 @@ export const races: Race[] = [
     ],
   },
   {
-    label: 'Undead (Revenant)',
+    label: 'Undead',
     spinIdentity: ['Corruption', 'Scaling'],
     limitBreakOdds: 50,
-    weight: 4,
+    weight: 3,
     abilitySpinCount: 3,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 1.5,
-    minStatTier: 'C-',
+    minStatTier: 'A-',
     description: 'Died once. Refused to stay that way. Now furious.',
     injectedWheels: [
       { id: 'causeOfDeath', displayName: 'Cause of Death', order: 1, segments: [
@@ -1626,7 +1212,7 @@ export const races: Race[] = [
     abilitySpinCount: 3,
     extraPowerSpins: 2,
     weaknessProbabilityModifier: 0.5,
-    minStatTier: 'C-',
+    minStatTier: 'B-',
     weaknessCount: 1,
     description: "Apex of nature's design. Infuriatingly aware of it.",
     statModifiers: { strength: 2.0, durability: 2.0, powerMastery: 1.7, charisma: 1.3 },
@@ -1683,63 +1269,14 @@ export const races: Race[] = [
     ],
   },
   {
-    label: 'Sphinx',
-    spinIdentity: ['FateManipulator'],
-    limitBreakOdds: 52,
-    weight: 4,
-    abilitySpinCount: 3,
-    extraPowerSpins: 1,
-    weaknessProbabilityModifier: 0.6,
-    minStatTier: 'C-',
-    description: 'Ancient riddle-keeper. Answers questions with worse questions.',
-    injectedWheels: [
-      { id: 'riddle', displayName: 'Riddle Type', order: 1, segments: [
-        { label: 'Common', weight: 5, statBonusGrants: { iq: 'statBonus' }, description: 'The riddle has a known answer. Solving it earns mercy.' },
-        { label: 'Ancient', weight: 4, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, description: 'The riddle is older than civilisation. The answer reshapes the asker.' },
-        { label: 'Personal', weight: 3, statBonusGrants: { iq: 'statBonus', charisma: 'statBonus' }, description: 'The riddle is about the person asked. They will not like the answer.' },
-        { label: 'Cosmic', weight: 2, statBonusGrants: { iq: 'statBonus', potential: 'statBonus', powerMastery: 'statBonus' }, description: 'The riddle pertains to the structure of the universe.' },
-        { label: 'Unanswerable', weight: 1, statBonusGrants: { iq: 'statBonus', potential: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'There is no answer. The riddle is the test.' },
-      ]},
-      { id: 'prophecy', displayName: 'Prophecy Granted', order: 2, segments: [
-        { label: 'Riddle Withheld', weight: 5, description: 'No prophecy. The encounter passes.' },
-        { label: 'Veiled', weight: 4, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, description: 'Cryptic verse. Useful in retrospect.' },
-        { label: 'Specific', weight: 3, statBonusGrants: { iq: 'statBonus', fightingSkill: 'statBonus', potential: 'statBonus' }, description: 'Names a future enemy. Names a future ally.' },
-        { label: 'Devastating', weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', charisma: 'statPenalty' }, description: "Tells of the asker's death. Date included." },
-        { label: 'World-Changing', weight: 1, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: "The asker is now responsible for the world's fate." },
-      ]},
-    ],
-    statModifiers: { iq: 2.0, potential: 1.7, charisma: 1.4 },
-    subTypePool: [
-      { label: 'Androsphinx',   weight: 3, element: 'Light', grade: 'B', statBonusGrants: { strength: 'statBonus' }, abilities: [{ label: 'Legendary Roar (Passive)', weight: 2, element: 'Sound', grade: 'B' }, { label: 'Claw Combat Mastery', weight: 2, element: 'Light', grade: 'C' }, { label: 'Lair Sense', weight: 2, element: 'Light', grade: 'B' }, { label: 'Fear Immunity', weight: 2, element: 'Psychic', grade: 'B' }, { label: "Champion's Presence", weight: 2 }, { label: 'Solar Bond', weight: 1, element: 'Fire', grade: 'B' }], powerPool: [{ label: 'Androsphinx Roar', weight: 3 }, { label: 'Riddle Binding', weight: 3 }, { label: 'Fear Projection', weight: 2 }, { label: 'Precognition', weight: 2 }, { label: 'Ancient Dominion', weight: 1 }] },
-      { label: 'Gynosphinx',    weight: 3, element: 'Arcane', grade: 'B', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Riddle Mastery', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Future Thread Sight', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Ancient Library', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Divination Focus', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Ward Permanence', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Knowledge Lock', weight: 1, element: 'Arcane', grade: 'B' }], powerPool: [{ label: 'Riddle Binding', weight: 3 }, { label: 'Divination', weight: 3 }, { label: 'Prophetic Wing', weight: 2 }, { label: 'Precognition', weight: 2 }, { label: 'Tome of All Knowledge', weight: 1 }] },
-      { label: 'Hieracosphinx', weight: 2, element: 'Wind', grade: 'C', statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, abilities: [{ label: 'Raptor Strike', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Aerial Predator', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Eyesight Precision', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Dive Attack', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Talon Lock', weight: 2, element: 'Wind', grade: 'C' }, { label: 'Hunting Hymn', weight: 1, element: 'Wind', grade: 'C' }], powerPool: [{ label: 'Predator Stance', weight: 3 }, { label: 'Pounce Strike', weight: 3 }, { label: 'Androsphinx Roar', weight: 2 }, { label: 'Flight', weight: 2 }, { label: 'Hunter\'s Mark', weight: 1 }] },
-      { label: 'Criosphinx',    weight: 2, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Ram Aura', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Force of Will', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Grounded Stance', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Charge Sense', weight: 2, element: 'Earth', grade: 'C' }, { label: 'Territorial Roar', weight: 2, element: 'Sound', grade: 'C' }, { label: 'Petrify Gaze (Passive)', weight: 1, element: 'Earth', grade: 'C' }], powerPool: [{ label: 'Gaze of Stone', weight: 3 }, { label: 'Prophetic Wing', weight: 3 }, { label: 'Riddle Binding', weight: 2 }, { label: 'Fear Projection', weight: 2 }, { label: 'Petrification Touch', weight: 1 }] },
-    ],
-    customHeightPool: [
-      { label: "12' (Shoulder)", weight: 3 }, { label: "15' (Shoulder)", weight: 5 },
-      { label: "18' (Shoulder)", weight: 5 }, { label: "20' (Shoulder)", weight: 4 },
-      { label: "25' (Shoulder)", weight: 2 }, { label: "30' (Ancient)", weight: 1 },
-    ],
-
-    abilities: [
-      { label: 'Riddle Compulsion', weight: 2, element: 'Earth', grade: 'C' },
-      { label: 'Clairvoyance', weight: 2, element: 'Time', grade: 'C' },
-      { label: 'Timeless Body', weight: 1, element: 'Earth', grade: 'C' },
-      { label: "Sphinx's Gaze", weight: 2 },
-      { label: 'Ancient Knowledge', weight: 2, element: 'Earth', grade: 'C' },
-      { label: 'Prophetic Dream', weight: 1, element: 'Earth', grade: 'C' },
-      { label: 'Ward Setting', weight: 1, element: 'Arcane', grade: 'C' },
-    ],
-  },
-  {
     label: 'Saiyan',
     spinIdentity: ['Evolution', 'Scaling'],
     limitBreakOdds: 55,
-    weight: 4,
+    weight: 3,
     abilitySpinCount: 3,
     extraPowerSpins: 2,
     weaknessProbabilityModifier: 0.8,
-    minStatTier: 'C',
+    minStatTier: 'S-',
     description: 'Elite warrior race from Planet Vegeta. Gets dramatically stronger every time they nearly die.',
     statModifiers: { strength: 1.9, speed: 1.7, fightingSkill: 1.9, durability: 1.5, armorStrength: 1.2 },
     // Evolution + Scaling identity: a Rage Threshold wheel that determines
@@ -1794,62 +1331,14 @@ export const races: Race[] = [
     ],
   },
   {
-    label: 'Githyanki',
-    spinIdentity: ['Combo'],
-    limitBreakOdds: 44,
-    weight: 4,
-    abilitySpinCount: 2,
-    extraPowerSpins: 1,
-    weaknessProbabilityModifier: 1.1,
-    minStatTier: 'C-',
-    description: 'Astral plane warriors who find your dimension deeply underwhelming.',
-    injectedWheels: [
-      { id: 'astral', displayName: 'Astral Calling', order: 1, segments: [
-        { label: 'Border Patrol', weight: 4, statBonusGrants: { agility: 'statBonus', fightingSkill: 'statBonus' }, description: 'Watches the edges of the realm.' },
-        { label: 'Knight', weight: 4, statBonusGrants: { fightingSkill: 'statBonus', strength: 'statBonus' }, description: 'Trained from childhood for combat.' },
-        { label: 'Astral Pirate', weight: 3, statBonusGrants: { agility: 'statBonus', fightingSkill: 'statBonus', charisma: 'statBonus' }, description: 'Boards passing dreams. Steals what is owed.' },
-        { label: "Lich Queen's Chosen", weight: 2, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' }, description: 'Personal champion. Bound to the throne.' },
-        { label: 'Renegade', weight: 1, statBonusGrants: { fightingSkill: 'statBonus', iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Cut ties. Hunted by their own. Stronger for it.' },
-      ]},
-      { id: 'psionic', displayName: 'Psionic Discipline', order: 2, segments: [
-        { label: 'Telekinesis', weight: 4, statBonusGrants: { powerMastery: 'statBonus', agility: 'statBonus' }, description: 'Lifts. Throws. Pins.' },
-        { label: 'Telepathy', weight: 4, statBonusGrants: { iq: 'statBonus', charisma: 'statBonus' }, description: 'Hears thoughts. Sends thoughts.' },
-        { label: 'Shaper', weight: 3, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus' }, description: 'Builds psionic constructs. Weapons. Armour. Walls.' },
-        { label: 'Soul Knife', weight: 2, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'Blade made of thought. Cuts what physical weapons cannot.' },
-        { label: 'Mind-Lord', weight: 1, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', charisma: 'statBonus', potential: 'statBonus' }, description: 'All disciplines. Dominates rooms before entering them.' },
-      ]},
-    ],
-    statModifiers: { fightingSkill: 1.6, iq: 1.4 },
-    classPool: [
-      { label: 'Gith Warrior',       weight: 4, element: 'Psychic', grade: 'C', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'Psionic Blade Form', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Astral Discipline', weight: 2, element: 'Cosmic', grade: 'C' }, { label: 'Silver Sword Bond', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Spatial Awareness', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Gith Battle Art', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Planar Strike', weight: 1, element: 'Psychic', grade: 'C' }], powerPool: [{ label: 'Astral Strike', weight: 3 }, { label: 'Mind Blade Conjuration', weight: 3 }, { label: 'Silver Sword Throw', weight: 2 }, { label: 'Combat Flow State', weight: 2 }, { label: 'Psionic Leap', weight: 1 }] },
-      { label: 'Gish (Warrior-Mage)', weight: 3, element: 'Psychic', grade: 'B', statBonusGrants: { powerMastery: 'statBonus' }, abilities: [{ label: 'Spell-Blade Integration', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Battle Counterspell', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Arcane Combat Flow', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Psionic Spell Blend', weight: 2, element: 'Arcane', grade: 'B' }, { label: 'Runic Weapon', weight: 2, element: 'Psychic', grade: 'B' }, { label: 'Mind-Edge Technique', weight: 1, element: 'Psychic', grade: 'B' }], powerPool: [{ label: 'Astral Strike', weight: 3 }, { label: 'Arcane Barrage', weight: 3 }, { label: 'Mind Blade Conjuration', weight: 2 }, { label: 'Counterspell', weight: 2 }, { label: 'Psionic Leap', weight: 1 }] },
-      { label: 'Psionic Adept',      weight: 2, element: 'Psychic', grade: 'A', statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Psionic Precision', weight: 2, element: 'Psychic', grade: 'A' }, { label: 'Empathic Shield', weight: 2, element: 'Psychic', grade: 'C' }, { label: 'Thought Projection', weight: 2, element: 'Psychic', grade: 'A' }, { label: 'Mind Probe', weight: 2, element: 'Psychic', grade: 'A' }, { label: 'Psychic Field', weight: 2, element: 'Psychic', grade: 'A' }, { label: 'Psi-Resonance', weight: 1, element: 'Sound', grade: 'B' }], powerPool: [{ label: 'Telepathy', weight: 3 }, { label: 'Telekinesis', weight: 3 }, { label: 'Psionic Leap', weight: 2 }, { label: 'Neural Hijack', weight: 2 }, { label: 'Mind Shatter', weight: 1 }] },
-    ],
-    customHeightPool: [
-      { label: "5'8\"", weight: 3 }, { label: "5'10\"", weight: 5 }, { label: "6'0\"", weight: 6 },
-      { label: "6'2\"", weight: 6 }, { label: "6'4\"", weight: 5 }, { label: "6'6\"", weight: 3 },
-      { label: "6'8\"", weight: 2 }, { label: "7'0\" (Psionic Brute)", weight: 1 },
-    ],
-
-    abilities: [
-      { label: 'Psionic Blade', weight: 2, element: 'Psychic', grade: 'A' },
-      { label: 'Astral Projection', weight: 2, element: 'Cosmic', grade: 'A' },
-      { label: 'Psionic Resistance', weight: 2, element: 'Psychic', grade: 'A' },
-      { label: 'Planar Awareness', weight: 2, element: 'Psychic', grade: 'A' },
-      { label: 'Silver Sword Mastery', weight: 1, element: 'Metal', grade: 'C' },
-      { label: 'Mindlink', weight: 1, element: 'Psychic', grade: 'A' },
-      { label: 'Nullify Magic Field', weight: 1, element: 'Arcane', grade: 'A' },
-    ],
-  },
-  {
     label: 'Mindflayer',
     spinIdentity: ['Corruption', 'Summoner'],
     limitBreakOdds: 48,
-    weight: 4,
+    weight: 3,
     abilitySpinCount: 3,
     extraPowerSpins: 2,
     weaknessProbabilityModifier: 1.3,
-    minStatTier: 'C-',
+    minStatTier: 'A-',
     description: 'Eldritch intelligence. Does not respect your personal space.',
     injectedWheels: [
       { id: 'brainConsumption', displayName: 'Brain Consumption', order: 1, segments: [
@@ -1901,16 +1390,15 @@ export const races: Race[] = [
       { label: 'Consume Memories', weight: 1, element: 'Psychic', grade: 'SS' },
     ],
   },
-  // Symbiote (Marvel)
   {
     label: 'Symbiote',
     spinIdentity: ['Evolution', 'Scaling'],
     limitBreakOdds: 46,
-    weight: 4,
+    weight: 5,
     abilitySpinCount: 3,
     extraPowerSpins: 2,
     weaknessProbabilityModifier: 1.5,
-    minStatTier: 'C-',
+    minStatTier: 'A-',
     description: 'An alien parasite bonded to a host. The relationship is complicated. Benefits include web-swinging and poor impulse control.',
     injectedWheels: [
       { id: 'host', displayName: 'Host Compatibility', order: 1, segments: [
@@ -1959,16 +1447,15 @@ export const races: Race[] = [
       { label: 'Sound/Fire Weakness (Mutual)', weight: 1, element: 'Fire', grade: 'SS' },
     ],
   },
-  // Hollow / Arrancar (Bleach)
   {
     label: 'Hollow / Arrancar',
     spinIdentity: ['Evolution', 'Corruption'],
     limitBreakOdds: 52,
-    weight: 4,
+    weight: 3,
     abilitySpinCount: 3,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 1.2,
-    minStatTier: 'C-',
+    minStatTier: 'A-',
     description: 'A corrupted soul with a hole in its chest and an axe to grind. Arrancar have removed their mask for more human form and power.',
     injectedWheels: [
       { id: 'mask', displayName: 'Mask Evolution', order: 1, segments: [
@@ -2016,16 +1503,15 @@ export const races: Race[] = [
       { label: 'Mask Fragment (Power Reservoir)', weight: 1, element: 'Shadow', grade: 'SS' },
     ],
   },
-  // Demon (Demon Slayer / Blue Exorcist / general anime)
   {
     label: 'Demon',
     spinIdentity: ['Corruption'],
     limitBreakOdds: 50,
-    weight: 5,
+    weight: 3,
     abilitySpinCount: 3,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 1.3,
-    minStatTier: 'C-',
+    minStatTier: 'S-',
     description: 'Born or transformed into a being of supernatural evil. Varies from "slightly ominous" to "literal apocalypse engine".',
     injectedWheels: [
       { id: 'sin', displayName: 'Sin Domain', order: 1, segments: [
@@ -2085,16 +1571,15 @@ export const races: Race[] = [
       { label: 'Demonic Perception', weight: 2, element: 'Fire', grade: 'SS' },
     ],
   },
-  // ── Half-Dragon (Tier 4 — F+E+D locked) ──
   {
     label: 'Half-Dragon',
     spinIdentity: ['Evolution'],
     limitBreakOdds: 50,
-    weight: 4,
+    weight: 3,
     abilitySpinCount: 2,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.7,
-    minStatTier: 'C-',
+    minStatTier: 'A-',
     description: 'One draconic parent, one mortal parent. The dragon parent had opinions about this.',
     injectedWheels: [
       { id: 'dragonBlood', displayName: 'Dragon Blood', order: 1, segments: [
@@ -2133,16 +1618,15 @@ export const races: Race[] = [
       { label: 'Wing Stumps (Decorative, Currently)', weight: 1, element: 'Fire', grade: 'A' },
     ],
   },
-  // ── Angel (Tier 4 — F+E+D locked) ──
   {
     label: 'Angel',
     spinIdentity: ['FateManipulator'],
     limitBreakOdds: 56,
-    weight: 4,
+    weight: 3,
     abilitySpinCount: 3,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.4,
-    minStatTier: 'C-',
+    minStatTier: 'S-',
     description: 'Divine messenger and warrior. Handles the smiting personally.',
     injectedWheels: [
       { id: 'choir', displayName: 'Choir', order: 1, segments: [
@@ -2195,7 +1679,6 @@ export const races: Race[] = [
       { label: 'Immune to Corruption (Unless Fallen)', weight: 1, element: 'Light', grade: 'SS' },
     ],
   },
-  // ── Beast (Tier 4 — F+E+D locked; rare subtype upgrades to Mythological Creature) ──
   {
     label: 'Beast',
     spinIdentity: ['Summoner', 'Scaling'],
@@ -2204,7 +1687,7 @@ export const races: Race[] = [
     abilitySpinCount: 2,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 1.2,
-    minStatTier: 'C-',
+    minStatTier: 'B-',
     description: 'A powerful creature of the natural world. Possibly the apex predator. Possibly much more.',
     injectedWheels: [
       { id: 'apex', displayName: 'Apex Trait', order: 1, segments: [
@@ -2247,8 +1730,6 @@ export const races: Race[] = [
       { label: 'Apex Predator Status', weight: 1, element: 'Cosmic', grade: 'S' },
     ],
   },
-
-  // ── Eldritch Being (Tier 5 — F+E+D+C locked) ──
   {
     label: 'Eldritch Being',
     spinIdentity: ['Corruption', 'RuleBreaker'],
@@ -2257,7 +1738,7 @@ export const races: Race[] = [
     abilitySpinCount: 3,
     extraPowerSpins: 2,
     weaknessProbabilityModifier: 0.3,
-    minStatTier: 'B-',
+    minStatTier: 'S-',
     description: "A non-Euclidean entity whose existence defies comprehension. You are the bad ending of someone else's story.",
     statModifiers: { iq: 2.0, powerMastery: 2.0, potential: 1.8, strength: 0.7, charisma: 0.3 },
     injectedWheels: [
@@ -2316,16 +1797,15 @@ export const races: Race[] = [
       { label: 'Cosmic Indifference (Passive)', weight: 1, element: 'Cosmic', grade: 'SS' },
     ],
   },
-  // ── Mythological Creature (Tier 5 — F+E+D+C locked) ──
   {
     label: 'Mythological Creature',
     spinIdentity: ['Summoner', 'Combo'],
     limitBreakOdds: 56,
-    weight: 3,
+    weight: 5,
     abilitySpinCount: 3,
     extraPowerSpins: 2,
     weaknessProbabilityModifier: 0.4,
-    minStatTier: 'B-',
+    minStatTier: 'A-',
     description: 'A creature of legend. The myths got most of the details wrong. You were so much worse.',
     injectedWheels: [
       { id: 'mythType', displayName: 'Myth Species', order: 1, segments: [
@@ -2373,8 +1853,6 @@ export const races: Race[] = [
       { label: 'Exist Outside Time (Partially)', weight: 1, element: 'Time', grade: 'SS' },
     ],
   },
-
-  // ── Legendary (weight 1–2, abilitySpinCount 3–4) ──
   {
     label: 'Viltrumite',
     spinIdentity: ['Scaling', 'Evolution'],
@@ -2383,7 +1861,7 @@ export const races: Race[] = [
     abilitySpinCount: 4,
     extraPowerSpins: 3,
     weaknessProbabilityModifier: 0.1,
-    minStatTier: 'B',
+    minStatTier: 'S-',
     weaknessCount: 0,
     description: 'Biologically perfect alien conquerors. No weaknesses on record. Technically a few. They don\'t discuss them.',
     injectedWheels: [
@@ -2446,7 +1924,7 @@ export const races: Race[] = [
     abilitySpinCount: 4,
     extraPowerSpins: 2,
     weaknessProbabilityModifier: 0.4,
-    minStatTier: 'B-',
+    minStatTier: 'S-',
     description: 'Realm-hopper from the Nine Realms. Significantly more durable than they let on.',
     injectedWheels: [
       { id: 'realm', displayName: 'Realm', order: 1, segments: [
@@ -2506,7 +1984,7 @@ export const races: Race[] = [
     abilitySpinCount: 4,
     extraPowerSpins: 2,
     weaknessProbabilityModifier: 0.4,
-    minStatTier: 'B',
+    minStatTier: 'S-',
     description: 'Last of a lost world. Under a yellow sun, becomes the most dangerous being alive.',
     injectedWheels: [
       { id: 'sunExposure', displayName: 'Sun Exposure', order: 1, segments: [
@@ -2562,7 +2040,7 @@ export const races: Race[] = [
     abilitySpinCount: 4,
     extraPowerSpins: 3,
     weaknessProbabilityModifier: 0.4,
-    minStatTier: 'B-',
+    minStatTier: 'S-',
     weaknessCount: 1,
     description: 'Building-sized apex predator. Multiple military branches exist specifically because of you.',
     injectedWheels: [
@@ -2618,7 +2096,6 @@ export const races: Race[] = [
       { label: 'Ancient Resilience', weight: 1, element: 'Cosmic', grade: 'S' },
     ],
   },
-  // Time Lord (Doctor Who)
   {
     label: 'Time Lord',
     spinIdentity: ['FateManipulator', 'RuleBreaker'],
@@ -2627,7 +2104,7 @@ export const races: Race[] = [
     abilitySpinCount: 4,
     extraPowerSpins: 2,
     weaknessProbabilityModifier: 0.5,
-    minStatTier: 'B-',
+    minStatTier: 'SS-',
     description: 'Ancient beings from Gallifrey who master time itself. Can regenerate into a new body 12 times. Has seen everything. Tired.',
     injectedWheels: [
       { id: 'timeline', displayName: 'Timeline Authority', order: 1, segments: [
@@ -2684,7 +2161,7 @@ export const races: Race[] = [
     abilitySpinCount: 3,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.5,
-    minStatTier: 'B-',
+    minStatTier: 'S-',
     description: 'Half mortal, half divine. Fully aware of which half is better.',
     injectedWheels: [
       { id: 'divineParent', displayName: 'Divine Parent', order: 1, segments: [
@@ -2728,16 +2205,15 @@ export const races: Race[] = [
       { label: 'Selective Omniscience', weight: 1, element: 'Soul', grade: 'A' },
     ],
   },
-  // ── Legendary / Divine (weight 1, minStatTier A- — F through B all locked) ──
   {
     label: 'God',
     spinIdentity: ['RuleBreaker'],
-    weight: 2,
+    weight: 3,
     abilitySpinCount: 4,
     extraPowerSpins: 3,
     weaknessProbabilityModifier: 0.2,
     weaknessCount: 0,
-    minStatTier: 'A',
+    minStatTier: 'SS-',
     description: 'An actual god. Not a partial, not a demi. THE god. Or at least A god. The paperwork is non-negotiable.',
     injectedWheels: [
       { id: 'divineDomain', displayName: 'Divine Domain', order: 1, segments: [
@@ -2802,7 +2278,7 @@ export const races: Race[] = [
     extraPowerSpins: 3,
     weaknessProbabilityModifier: 0.1,
     weaknessCount: 0,
-    minStatTier: 'A',
+    minStatTier: 'SSS-',
     description: 'A being older than gods, older than worlds. You predate the concept of "before."',
     injectedWheels: [
       { id: 'creationElement', displayName: 'Creation Element', order: 1, segments: [
@@ -2865,7 +2341,7 @@ export const races: Race[] = [
     extraPowerSpins: 4,
     weaknessProbabilityModifier: 0.05,
     weaknessCount: 0,
-    minStatTier: 'A+',
+    minStatTier: 'ZZ-',
     secretEventBias: 2.5,
     description: 'The one who made everything. Still occasionally surprised by the results.',
     statModifiers: { strength: 3.0, durability: 3.0, iq: 3.0, potential: 3.0, charisma: 3.0, powerMastery: 3.0, energyLevel: 3.0, armorStrength: 2.5 },
@@ -2918,10 +2394,6 @@ export const races: Race[] = [
       { label: 'Technically Responsible for Goblins', weight: 1, element: 'Cosmic', grade: 'SSS' },
     ],
   },
-
-  // ── 12 NEW RACES ──
-
-  // Alien — Extraterrestrial beings with advanced technology and bizarre biology
   {
     label: 'Alien',
     spinIdentity: ['HighVariance', 'Summoner'],
@@ -2931,7 +2403,7 @@ export const races: Race[] = [
     extraPowerSpins: 1,
     extraWeaponSpins: 1,
     weaknessProbabilityModifier: 1.0,
-    minStatTier: 'C-',
+    minStatTier: 'A-',
     description: 'Not from around here. Understatement of the millennium.',
     injectedWheels: [
       { id: 'planetOrigin', displayName: 'Planet Origin', order: 1, segments: [
@@ -2983,8 +2455,6 @@ export const races: Race[] = [
       { label: 'Universal Translator (Biological)', weight: 1, element: 'Sound', grade: 'B' },
     ],
   },
-
-  // Immortals — Truly deathless beings whose bodies regenerate indefinitely
   {
     label: 'Immortal',
     spinIdentity: ['Scaling'],
@@ -2994,7 +2464,7 @@ export const races: Race[] = [
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.5,
     weaknessCount: 1,
-    minStatTier: 'B-',
+    minStatTier: 'S-',
     description: 'Cannot die. Has been alive long enough to have regrets about that.',
     injectedWheels: [
       { id: 'eternalAge', displayName: 'Eternal Age', order: 1, segments: [
@@ -3038,16 +2508,14 @@ export const races: Race[] = [
       { label: 'Wound Memory', weight: 1, element: 'Soul', grade: 'S' },
     ],
   },
-
-  // Dinosaur — Prehistoric apex predators given sentient form
   {
     label: 'Dinosaur',
     spinIdentity: ['Scaling'],
     limitBreakOdds: 38,
-    weight: 4,
+    weight: 5,
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 1.3,
-    minStatTier: 'D-',
+    minStatTier: 'C-',
     description: 'Evolution gave you a second chance. You are using it to bite everything.',
     injectedWheels: [
       { id: 'predator', displayName: 'Predator Type', order: 1, segments: [
@@ -3092,8 +2560,6 @@ export const races: Race[] = [
       { label: 'Extinction Resistance', weight: 1, element: 'Nature', grade: 'A' },
     ],
   },
-
-  // Cybertronian — Living mechanical lifeforms, transforming war machines
   {
     label: 'Cybertronian',
     spinIdentity: ['Evolution', 'Combo'],
@@ -3103,7 +2569,7 @@ export const races: Race[] = [
     extraPowerSpins: 1,
     extraWeaponSpins: 1,
     weaknessProbabilityModifier: 0.8,
-    minStatTier: 'C-',
+    minStatTier: 'A-',
     description: 'More than meets the eye. Significantly more. Also considerably heavier.',
     injectedWheels: [
       { id: 'altForm', displayName: 'Alt Form', order: 1, segments: [
@@ -3149,8 +2615,6 @@ export const races: Race[] = [
       { label: 'All Spark Resonance', weight: 1, element: 'Cosmic', grade: 'A' },
     ],
   },
-
-  // Spirit — Incorporeal beings of pure spiritual energy
   {
     label: 'Spirit',
     spinIdentity: ['Summoner'],
@@ -3159,7 +2623,7 @@ export const races: Race[] = [
     abilitySpinCount: 2,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.7,
-    minStatTier: 'D-',
+    minStatTier: 'B-',
     description: 'Pure spiritual energy with unfinished business. Probably several.',
     injectedWheels: [
       { id: 'soul', displayName: 'Soul Anchor', order: 1, segments: [
@@ -3204,18 +2668,16 @@ export const races: Race[] = [
       { label: 'Fear Inducement', weight: 1, element: 'Shadow', grade: 'A' },
     ],
   },
-
-  // Ghoul — Flesh-devouring monsters with regeneration and a RC cell kagune
   {
     label: 'Ghoul',
     spinIdentity: ['Corruption', 'Scaling'],
     limitBreakOdds: 42,
-    weight: 7,
+    weight: 5,
     abilitySpinCount: 2,
     extraWeaponSpins: 1,
     weaknessProbabilityModifier: 1.2,
     weaknessCount: 1,
-    minStatTier: 'D-',
+    minStatTier: 'C-',
     description: 'Looks human. Isn\'t. Has strong opinions about the menu.',
     injectedWheels: [
       { id: 'hunger', displayName: 'Hunger', order: 1, segments: [
@@ -3260,18 +2722,16 @@ export const races: Race[] = [
       { label: 'Kakuja Fragment', weight: 1, element: 'Blood', grade: 'S' },
     ],
   },
-
-  // Shinigami — Death gods who wield soul-cutting blades and reiatsu
   {
     label: 'Shinigami',
     spinIdentity: ['Combo', 'Evolution'],
     limitBreakOdds: 60,
-    weight: 4,
+    weight: 3,
     abilitySpinCount: 3,
     extraWeaponSpins: 1,
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.8,
-    minStatTier: 'C-',
+    minStatTier: 'A-',
     description: 'Guardian of souls. Wields a sword that cuts the soul itself.',
     injectedWheels: [
       { id: 'zanpakuto', displayName: 'Zanpakutō Spirit', order: 1, segments: [
@@ -3316,8 +2776,6 @@ export const races: Race[] = [
       { label: 'Hollow Mask (Hidden)', weight: 1, element: 'Shadow', grade: 'S' },
     ],
   },
-
-  // Sea King — Gargantuan monsters of the deep ocean
   {
     label: 'Sea King',
     spinIdentity: ['Scaling'],
@@ -3326,7 +2784,7 @@ export const races: Race[] = [
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 0.6,
     weaknessCount: 1,
-    minStatTier: 'B-',
+    minStatTier: 'S-',
     description: 'The ocean\'s apex nightmare. Everything in the sea fears you, and rightfully so.',
     injectedWheels: [
       { id: 'abyss', displayName: 'Depth Domain', order: 1, segments: [
@@ -3369,17 +2827,15 @@ export const races: Race[] = [
       { label: 'Abyss Sense', weight: 1, element: 'Void', grade: 'S' },
     ],
   },
-
-  // Atlantean — Children of the sunken kingdom, masters of the sea
   {
     label: 'Atlantean',
     spinIdentity: ['Combo', 'Summoner'],
     limitBreakOdds: 48,
-    weight: 4,
+    weight: 3,
     abilitySpinCount: 2,
     extraWeaponSpins: 1,
     weaknessProbabilityModifier: 0.9,
-    minStatTier: 'D-',
+    minStatTier: 'A-',
     description: 'Heir to the greatest civilization ever sunk. It was fine. Totally intentional.',
     injectedWheels: [
       { id: 'tide', displayName: 'Tide Affinity', order: 1, segments: [
@@ -3422,8 +2878,6 @@ export const races: Race[] = [
       { label: 'Bioluminescence (Combat)', weight: 1, element: 'Light', grade: 'B' },
     ],
   },
-
-  // Hybrid — Dual heritage, draws on two bloodlines simultaneously
   {
     label: 'Hybrid',
     spinIdentity: ['Combo', 'HighVariance'],
@@ -3432,7 +2886,7 @@ export const races: Race[] = [
     abilitySpinCount: 0,
     extraPowerSpins: 0,
     weaknessProbabilityModifier: 1.0,
-    minStatTier: 'D-',
+    minStatTier: 'S-',
     description: 'Born of two worlds. The wheel spins twice more — your bloodline is whatever fate decides.',
     injectedWheels: [
       { id: 'heritage', displayName: 'Heritage', order: 1, segments: [
@@ -3477,13 +2931,11 @@ export const races: Race[] = [
       { label: 'True Form Glimpse', weight: 1, element: 'Cosmic', grade: 'S' },
     ],
   },
-
-  // Giant — Massively oversized humanoids of immense strength
   {
     label: 'Giant',
     spinIdentity: ['Scaling'],
     limitBreakOdds: 42,
-    weight: 4,
+    weight: 5,
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 1.2,
     weaknessCount: 1,
@@ -3532,8 +2984,6 @@ export const races: Race[] = [
       { label: 'Endurance Core', weight: 1, element: 'Earth', grade: 'A' },
     ],
   },
-
-  // Parasite — Symbiotic organism that bonds with and enhances its host
   {
     label: 'Parasite',
     spinIdentity: ['Corruption', 'HighVariance'],
@@ -3543,7 +2993,7 @@ export const races: Race[] = [
     extraPowerSpins: 1,
     weaknessProbabilityModifier: 0.9,
     weaknessCount: 1,
-    minStatTier: 'D-',
+    minStatTier: 'B-',
     description: 'Something else is in here too. It pays rent in combat effectiveness.',
     injectedWheels: [
       { id: 'host', displayName: 'Host', order: 1, segments: [
