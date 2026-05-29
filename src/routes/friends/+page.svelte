@@ -201,33 +201,28 @@
           <div class="flex flex-col gap-3">
             {#each friends as friend}
               <div class="flex items-center gap-3 rounded-xl px-4 py-3" style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(167,139,250,0.12);">
-                <!-- Avatar -->
-                <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
-                  style="background: rgba(167,139,250,0.15); color: #c4b5fd; font-family: 'Cinzel', serif;">
-                  {friend.username[0].toUpperCase()}
-                </div>
-                <!-- Info -->
-                <div class="flex-1 min-w-0">
-                  <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: #e4e1ee; font-size: 0.9rem;">{friend.username}</p>
-                  <div class="flex items-center gap-2 mt-0.5">
-                    <span class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #7c6fa0;">{rank(friend.rivalsWins)}</span>
-                    {#if friend.rivalsWins > 0}
-                      <span class="flex items-center gap-0.5 text-xs" style="color: #f0c040;">
-                        <span class="material-symbols-outlined" style="font-size: 11px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-                        {friend.rivalsWins}W
-                      </span>
-                    {/if}
+                <!-- Avatar + info → tap to open profile -->
+                <a href="/users/{friend.username}" class="flex items-center gap-3 flex-1 min-w-0 transition-all active:scale-[0.98]"
+                  style="text-decoration: none; color: inherit;" title="View {friend.username}'s profile">
+                  <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
+                    style="background: rgba(167,139,250,0.15); color: #c4b5fd; font-family: 'Cinzel', serif;">
+                    {friend.username[0].toUpperCase()}
                   </div>
-                </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: #e4e1ee; font-size: 0.9rem;">{friend.username}</p>
+                    <div class="flex items-center gap-2 mt-0.5">
+                      <span class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #7c6fa0;">{rank(friend.rivalsWins)}</span>
+                      {#if friend.rivalsWins > 0}
+                        <span class="flex items-center gap-0.5 text-xs" style="color: #f0c040;">
+                          <span class="material-symbols-outlined" style="font-size: 11px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+                          {friend.rivalsWins}W
+                        </span>
+                      {/if}
+                    </div>
+                  </div>
+                </a>
                 <!-- Actions -->
                 <div class="flex items-center gap-2 shrink-0">
-                  <a href="/users/{friend.username}"
-                    class="p-2 rounded-lg transition-all active:scale-95"
-                    style="color: #6b7280; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); text-decoration: none;"
-                    title="View Profile"
-                  >
-                    <span class="material-symbols-outlined" style="font-size: 16px;">person</span>
-                  </a>
                   <button
                     onclick={() => challengeFriend(friend.username)}
                     class="p-2 rounded-lg transition-all active:scale-95"
@@ -262,19 +257,22 @@
           <div class="flex flex-col gap-3">
             {#each requests as req}
               <div class="flex items-center gap-3 rounded-xl px-4 py-3" style="background: rgba(244,63,94,0.04); border: 1px solid rgba(244,63,94,0.2);">
-                <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
-                  style="background: rgba(244,63,94,0.12); color: #f87171; font-family: 'Cinzel', serif;">
-                  {req.requester.username[0].toUpperCase()}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="font-semibold" style="font-family: 'Cinzel', serif; color: #e4e1ee; font-size: 0.9rem;">{req.requester.username}</p>
-                  {#if req.requester.rivalsWins > 0}
-                    <p class="text-xs flex items-center gap-1 mt-0.5" style="color: #f0c040;">
-                      <span class="material-symbols-outlined" style="font-size: 11px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-                      {req.requester.rivalsWins} wins
-                    </p>
-                  {/if}
-                </div>
+                <a href="/users/{req.requester.username}" class="flex items-center gap-3 flex-1 min-w-0 transition-all active:scale-[0.98]"
+                  style="text-decoration: none; color: inherit;" title="View {req.requester.username}'s profile">
+                  <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
+                    style="background: rgba(244,63,94,0.12); color: #f87171; font-family: 'Cinzel', serif;">
+                    {req.requester.username[0].toUpperCase()}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-semibold" style="font-family: 'Cinzel', serif; color: #e4e1ee; font-size: 0.9rem;">{req.requester.username}</p>
+                    {#if req.requester.rivalsWins > 0}
+                      <p class="text-xs flex items-center gap-1 mt-0.5" style="color: #f0c040;">
+                        <span class="material-symbols-outlined" style="font-size: 11px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+                        {req.requester.rivalsWins} wins
+                      </p>
+                    {/if}
+                  </div>
+                </a>
                 <div class="flex items-center gap-2 shrink-0">
                   <button
                     onclick={() => acceptRequest(req.id)}

@@ -100,7 +100,7 @@
         <div class="flex flex-col gap-2">
           {#each endlessEntries as entry, i}
             {@const isMe = auth.user?.username === entry.username}
-            <div class="flex items-center gap-3 rounded-xl px-4 py-3" style="background: {isMe ? 'rgba(72,200,224,0.06)' : 'linear-gradient(180deg, #161520, #0c0b14)'}; border: 1px solid {isMe ? 'rgba(72,200,224,0.3)' : 'rgba(72,200,224,0.08)'};">
+            <a href="/users/{entry.username}" class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.99]" style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(72,200,224,0.06)' : 'linear-gradient(180deg, #161520, #0c0b14)'}; border: 1px solid {isMe ? 'rgba(72,200,224,0.3)' : 'rgba(72,200,224,0.08)'};" title="View {entry.username}'s profile">
               <div class="shrink-0 w-8 flex items-center justify-center">
                 {#if i < 3}<span style="font-size: 1.2rem;">{['🥇','🥈','🥉'][i]}</span>{:else}<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #4e4635; font-weight: 700;">#{i+1}</span>{/if}
               </div>
@@ -113,7 +113,7 @@
                 <p class="font-black" style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: #48c8e0;">{entry.wave}</p>
                 <p class="font-mono text-xs" style="color: #4e4635;">waves</p>
               </div>
-            </div>
+            </a>
           {/each}
         </div>
       {/if}
@@ -169,9 +169,11 @@
           {@const medal = MEDAL[i]}
           {@const isMe = auth.user?.username === entry.username}
           {@const winRate = entry.gamesPlayed > 0 ? Math.round((entry.rivalsWins / entry.gamesPlayed) * 100) : 0}
-          <div
-            class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all"
-            style="background: {isMe ? 'rgba(240,192,64,0.06)' : 'linear-gradient(180deg, #161520 0%, #0c0b14 100%)'}; border: 1px solid {isMe ? 'rgba(240,192,64,0.3)' : 'rgba(167,139,250,0.1)'};"
+          <a
+            href="/users/{entry.username}"
+            class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.99]"
+            style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(240,192,64,0.06)' : 'linear-gradient(180deg, #161520 0%, #0c0b14 100%)'}; border: 1px solid {isMe ? 'rgba(240,192,64,0.3)' : 'rgba(167,139,250,0.1)'};"
+            title="View {entry.username}'s profile"
           >
             <!-- Rank badge -->
             <div class="shrink-0 w-8 flex items-center justify-center">
@@ -207,7 +209,7 @@
               <span class="font-black" style="font-family: 'JetBrains Mono', monospace; font-size: 1rem;">{entry.rivalsWins}</span>
               <span class="text-xs" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">W</span>
             </div>
-          </div>
+          </a>
         {/each}
       </div>
     {/if}
