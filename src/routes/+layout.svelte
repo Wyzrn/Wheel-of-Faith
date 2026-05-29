@@ -5,6 +5,7 @@
   import ClickParticles from '../components/ClickParticles.svelte'
   import Toaster from '../components/Toaster.svelte'
   import AmbientField from '../components/AmbientField.svelte'
+  import RotateHint from '../components/RotateHint.svelte'
   import IncomingChallengePopup from '../components/IncomingChallengePopup.svelte'
   import ChallengeBattleOverlay from '../components/ChallengeBattleOverlay.svelte'
   import { page } from '$app/stores'
@@ -162,6 +163,9 @@
      character-vs-character duel. -->
 <IncomingChallengePopup />
 <ChallengeBattleOverlay />
+
+<!-- Mobile landscape gate — blocks portrait play on touch devices -->
+<RotateHint />
 
 <style>
   /* Stone fortress floor — the nav bar is a carved obsidian shelf */
