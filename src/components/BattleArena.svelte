@@ -217,9 +217,14 @@
   let dodgingStyle = $state<'agi' | 'iq' | 'cha'>('agi')
   // Name of the character currently playing the full-card block/shield VFX.
   let shieldingName = $state<string | null>(null)
+  // Names currently showing a buff (on the caster) / debuff (on the target).
+  let buffingName = $state<string | null>(null)
+  let debuffingName = $state<string | null>(null)
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
 
   const isDodgeType = (t: string) => t === 'dodge' || t === 'dodge_iq' || t === 'dodge_cha'
+  // Types that render only as a full-card overlay (no center AttackFX burst).
+  const isCardOnlyFx = (t: string) => isDodgeType(t) || t === 'buff' || t === 'debuff'
 
   function showAnim(
     type: string, color: string, direction: AnimDir,
@@ -229,19 +234,20 @@
   ) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
     activeAnim = { type, color, key: ++animKey, direction, grade, origin, attackType }
+    dodgingName = null; shieldingName = null; buffingName = null; debuffingName = null
     if (isDodgeType(type)) {
       dodgingName = dodgeMember ?? null
       dodgingStyle = type === 'dodge_iq' ? 'iq' : type === 'dodge_cha' ? 'cha' : 'agi'
-      shieldingName = null
     } else if (type === 'shield') {
       shieldingName = dodgeMember ?? null
-      dodgingName = null
-    } else {
-      dodgingName = null
-      shieldingName = null
+    } else if (type === 'buff') {
+      buffingName = dodgeMember ?? null
+    } else if (type === 'debuff') {
+      debuffingName = dodgeMember ?? null
     }
     animTimeoutId = setTimeout(() => {
       activeAnim = null; dodgingName = null; shieldingName = null
+      buffingName = null; debuffingName = null
     }, 1100)
   }
 
@@ -624,13 +630,17 @@
         // non-projectile path below since they fire on the actor, not the
         // target, and the visual is self-contained at the card.
         const isHeal       = fxAttackType === 'heal'
-        const isBeam       = !isHeal && BEAM_TYPES.has(type)
+        // Buff (on the caster) / debuff (on the target) — card-only indicators,
+        // never a projectile.
+        const isBuff       = type === 'buff'
+        const isDebuff     = type === 'debuff'
+        const isBeam       = !isHeal && !isBuff && !isDebuff && BEAM_TYPES.has(type)
         // Only dodges + shields are true self-anchored effects (no hit lands,
         // no target). Crits and berserker hits DO land on the target, so they
         // now travel an orb to the target and explode on impact like any other
         // attack. (Their lines carry 'damage!' so they qualify for isInPlace.)
         const isActorBurst = isDodgeType(type) || type === 'shield'
-        const isInPlace    = !isHeal && !isBeam && !isActorBurst && isDamage && !!fx
+        const isInPlace    = !isHeal && !isBuff && !isDebuff && !isBeam && !isActorBurst && isDamage && !!fx
 
         // Resolve attacker + targets once for the next several branches.
         const resolveAttackerOrigin = (): { x: number; y: number } | undefined => {
@@ -675,6 +685,20 @@
           // Heal lines DO have the target name in text — use it directly.
           if (hit) emitDamage(hit.targetName, hit.value, hit.kind)
           deferDamageEmit = true
+        } else if (isBuff) {
+          // Buff — full-card aura on the CASTER (the buff line leads with them).
+          const caster = fx ? memberFromFxIndex(fx.attackerSide, fx.attackerIdx) : undefined
+          const casterName = caster?.name ?? inferAttackerName(head) ?? undefined
+          showAnim('buff', color, direction, grade, undefined, fxAttackType, casterName)
+        } else if (isDebuff) {
+          // Debuff — full-card aura on the TARGET. The line reads "X curses Y
+          // with Z", so Y isn't the leader; prefer the fx target, else the
+          // first non-leader name in the line.
+          const tgt = fx ? memberFromFxIndex(oppositeSide(fx.attackerSide), (fx.targetIdxs ?? [0])[0]) : undefined
+          const leader = inferAttackerName(head)
+          const fromLine = allNames.find(n => n !== leader && head.includes(n))
+          const targetName = tgt?.name ?? fromLine ?? undefined
+          showAnim('debuff', color, direction, grade, undefined, fxAttackType, targetName)
         } else if (isInPlace) {
           // In-place at the target's card — uses status-effect positioning
           // (line-text → name → memberOrigin). A small orb now travels from
@@ -1137,6 +1161,22 @@
         <span class="shield-fx-label">BLOCKED</span>
       </div>
     {/if}
+    <!-- Buff: rising gold motes + "EMPOWERED" on the caster. -->
+    {#if buffingName === m.name}
+      <div class="statmod-fx statmod-fx-buff" aria-hidden="true">
+        <span class="statmod-fx-wash"></span>
+        <span class="material-symbols-outlined statmod-fx-icon">keyboard_double_arrow_up</span>
+        <span class="statmod-fx-label">EMPOWERED</span>
+      </div>
+    {/if}
+    <!-- Debuff: sinking purple haze + "WEAKENED" on the target. -->
+    {#if debuffingName === m.name}
+      <div class="statmod-fx statmod-fx-debuff" aria-hidden="true">
+        <span class="statmod-fx-wash"></span>
+        <span class="material-symbols-outlined statmod-fx-icon">keyboard_double_arrow_down</span>
+        <span class="statmod-fx-label">WEAKENED</span>
+      </div>
+    {/if}
   </div>
 {/snippet}
 
@@ -1252,7 +1292,7 @@
   <!-- Impact / non-projectile burst overlay. Wrapper-relative absolute
        positioning — coords passed in are already local to .ba-wrapper so
        this never drifts off-card when the parent re-flows. -->
-  {#if phase === 'battle' && activeAnim && effectsEnabled && !isDodgeType(activeAnim.type)}
+  {#if phase === 'battle' && activeAnim && effectsEnabled && !isCardOnlyFx(activeAnim.type)}
     {#key activeAnim.key}
       {@const ox = activeAnim.origin?.x}
       {@const oy = activeAnim.origin?.y}
@@ -1699,6 +1739,63 @@
   @media (prefers-reduced-motion: reduce) {
     .shield-fx-barrier { animation: none; opacity: 0.6; }
     .shield-fx-icon, .shield-fx-label { animation: none; opacity: 1; transform: none; }
+  }
+
+  /* ── Full-card buff / debuff indicators ────────────────────────────────── */
+  .statmod-fx {
+    position: absolute; inset: 0; z-index: 6;
+    pointer-events: none; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    --smc: #fbbf24;
+  }
+  .statmod-fx-buff   { --smc: #fbbf24; }   /* gold — power up */
+  .statmod-fx-debuff { --smc: #a855f7; }   /* purple — sapped */
+  /* Vertical gradient wash: buff sweeps UP, debuff sinks DOWN. */
+  .statmod-fx-wash {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top,
+                color-mix(in srgb, var(--smc) 60%, transparent) 0%,
+                transparent 70%);
+    opacity: 0;
+  }
+  .statmod-fx-buff .statmod-fx-wash   { animation: statmod-wash-up 1s ease-out forwards; }
+  .statmod-fx-debuff .statmod-fx-wash {
+    background: linear-gradient(to bottom,
+                color-mix(in srgb, var(--smc) 60%, transparent) 0%, transparent 70%);
+    animation: statmod-wash-down 1s ease-out forwards;
+  }
+  .statmod-fx-icon {
+    position: relative; z-index: 2; font-size: 24px; color: var(--smc);
+    font-variation-settings: 'FILL' 1;
+    filter: drop-shadow(0 0 9px var(--smc));
+    opacity: 0; animation: statmod-pop 1s cubic-bezier(0.2, 1.5, 0.5, 1) forwards;
+  }
+  .statmod-fx-label {
+    position: relative; z-index: 2;
+    font-family: 'Cinzel', serif; font-weight: 900;
+    font-size: clamp(0.6rem, 2.9vw, 0.9rem); letter-spacing: 0.15em; color: #fff;
+    text-shadow: 0 0 10px var(--smc), 0 0 20px var(--smc), 0 2px 4px rgba(0,0,0,0.8);
+    opacity: 0; animation: statmod-pop 1s ease-out 0.06s forwards;
+  }
+  @keyframes statmod-wash-up {
+    0% { opacity: 0; transform: translateY(20%); }
+    25% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-12%); }
+  }
+  @keyframes statmod-wash-down {
+    0% { opacity: 0; transform: translateY(-20%); }
+    25% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(12%); }
+  }
+  @keyframes statmod-pop {
+    0%   { opacity: 0; transform: scale(0.55); }
+    30%  { opacity: 1; transform: scale(1.1); }
+    72%  { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .statmod-fx-wash { animation: none; opacity: 0.5; }
+    .statmod-fx-icon, .statmod-fx-label { animation: none; opacity: 1; transform: none; }
   }
 
   /* ── Beam attack rendering ──────────────────────────────────────────

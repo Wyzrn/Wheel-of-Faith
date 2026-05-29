@@ -120,6 +120,13 @@ export function detectAnim(line: string, t1Names: Set<string>, t2Names: Set<stri
   if (/CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/i.test(line))
     return { type: 'crit', color: '#fde047', direction }
   if (/berserk|frenzy/i.test(line))     return { type: 'berserker', color: '#ef4444', direction }
+  // Buff / debuff — matched BEFORE the elemental keywords below, since buff
+  // lines ("...the team's power surges!") would otherwise trip the 'energy'
+  // (power/surge) match and wrongly fire a beam.
+  if (/team'?s power surges|power surges|empowers|rallies the|fortif|emboldens/i.test(line))
+    return { type: 'buff', color: '#fbbf24', direction }
+  if (/\bcurses\b.+\bwith\b|strength is sapped|is weakened|withers under|hexes/i.test(line))
+    return { type: 'debuff', color: '#a855f7', direction }
   if (/combo finisher|follow-up/i.test(line)) return { type: 'combo', color: '#f59e0b', direction }
   if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction }
   if (/fire|flame|blaze|inferno|burn|ember|magma|lava|heat/i.test(line)) return { type: 'fire', color: '#f97316', direction }
