@@ -107,7 +107,13 @@ export function detectAnim(line: string, t1Names: Set<string>, t2Names: Set<stri
     [...t2Names].some(n => line.startsWith(n)) ? 'rtl' :
     'center'
 
-  if (/narrowly dodges|weaves around|barely evades|slips past|anticipates and sidesteps|phases through|blinks away from|mirrors away/i.test(line))
+  // IQ / charisma flavored dodges — checked BEFORE the generic dodge regex
+  // since some of their phrases share keywords ("slips past") with it.
+  if (/predicts and sidesteps|outmaneuvers|outwits|calculates an escape|reads the attack and slips/i.test(line))
+    return { type: 'dodge_iq', color: '#5ad6ef', direction }
+  if (/winks and sidesteps|taunts past|charms their way clear|disarms with a grin|flusters their foe/i.test(line))
+    return { type: 'dodge_cha', color: '#f472b6', direction }
+  if (/narrowly dodges|weaves around|barely evades|slips past|anticipates and sidesteps|deflects|phases through|blinks away from|mirrors away/i.test(line))
     return { type: 'dodge', color: '#a5f3fc', direction }
   if (/barrier forms|defensive stance|protective shell|bracing/i.test(line))
     return { type: 'shield', color: '#93c5fd', direction: 'center' }

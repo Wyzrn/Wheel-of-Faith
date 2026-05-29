@@ -210,10 +210,16 @@
     grade?: string; origin?: { x: number; y: number }; attackType?: string
   } | null>(null)
   let animKey = 0
-  // Name of the character currently playing the panel-dodge phase
-  // animation — scoped so only their card phases, not the whole team.
+  // Name of the character currently playing the full-card dodge animation —
+  // scoped so only their card reacts, not the whole team. dodgingStyle drives
+  // the overlay color + label (reflex / out-think / disrupt).
   let dodgingName = $state<string | null>(null)
+  let dodgingStyle = $state<'agi' | 'iq' | 'cha'>('agi')
+  // Name of the character currently playing the full-card block/shield VFX.
+  let shieldingName = $state<string | null>(null)
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+  const isDodgeType = (t: string) => t === 'dodge' || t === 'dodge_iq' || t === 'dodge_cha'
 
   function showAnim(
     type: string, color: string, direction: AnimDir,
@@ -223,8 +229,20 @@
   ) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
     activeAnim = { type, color, key: ++animKey, direction, grade, origin, attackType }
-    dodgingName = type === 'dodge' ? (dodgeMember ?? null) : null
-    animTimeoutId = setTimeout(() => { activeAnim = null; dodgingName = null }, 950)
+    if (isDodgeType(type)) {
+      dodgingName = dodgeMember ?? null
+      dodgingStyle = type === 'dodge_iq' ? 'iq' : type === 'dodge_cha' ? 'cha' : 'agi'
+      shieldingName = null
+    } else if (type === 'shield') {
+      shieldingName = dodgeMember ?? null
+      dodgingName = null
+    } else {
+      dodgingName = null
+      shieldingName = null
+    }
+    animTimeoutId = setTimeout(() => {
+      activeAnim = null; dodgingName = null; shieldingName = null
+    }, 1100)
   }
 
   // ── Screen shake ─────────────────────────────────────────────────────────
@@ -250,7 +268,7 @@
     grade: string | undefined,
   ): ShakeStrength | null {
     // No shake for dodges, shields, heals, buffs, summons — they aren't impacts.
-    if (type === 'dodge' || type === 'shield') return null
+    if (isDodgeType(type) || type === 'shield') return null
     if (fxAttackType === 'heal' || fxAttackType === 'buff' || fxAttackType === 'summon') return null
     // AOE always shakes hard — it's an arena-wide event.
     if (fxAttackType === 'aoe') return 'hard'
@@ -611,7 +629,7 @@
         // no target). Crits and berserker hits DO land on the target, so they
         // now travel an orb to the target and explode on impact like any other
         // attack. (Their lines carry 'damage!' so they qualify for isInPlace.)
-        const isActorBurst = type === 'dodge' || type === 'shield'
+        const isActorBurst = isDodgeType(type) || type === 'shield'
         const isInPlace    = !isHeal && !isBeam && !isActorBurst && isDamage && !!fx
 
         // Resolve attacker + targets once for the next several branches.
@@ -1093,6 +1111,32 @@
       {/if}
       {#if cardExtra}{@render cardExtra(m)}{/if}
     </div>
+    <!-- Full-card dodge VFX — covers the whole card with a colored phase
+         sweep + afterimage and a verdict label that reads WHY they evaded:
+         reflex (agility), out-think (IQ), or disrupt (charisma). -->
+    {#if dodgingName === m.name}
+      <div class="dodge-fx dodge-fx-{dodgingStyle}" aria-hidden="true">
+        <span class="dodge-fx-sweep"></span>
+        <span class="dodge-fx-ring"></span>
+        <span class="dodge-fx-label">
+          {dodgingStyle === 'iq' ? 'OUTSMARTED' : dodgingStyle === 'cha' ? 'DISARMED' : 'DODGED'}
+        </span>
+        {#if dodgingStyle !== 'agi'}
+          <span class="material-symbols-outlined dodge-fx-icon">
+            {dodgingStyle === 'iq' ? 'psychology' : 'sentiment_very_satisfied'}
+          </span>
+        {/if}
+      </div>
+    {/if}
+    <!-- Full-card block VFX — a hard-light barrier flares over the card when
+         the character turns aside an incoming hit. -->
+    {#if shieldingName === m.name}
+      <div class="shield-fx" aria-hidden="true">
+        <span class="shield-fx-barrier"></span>
+        <span class="material-symbols-outlined shield-fx-icon">shield</span>
+        <span class="shield-fx-label">BLOCKED</span>
+      </div>
+    {/if}
   </div>
 {/snippet}
 
@@ -1208,7 +1252,7 @@
   <!-- Impact / non-projectile burst overlay. Wrapper-relative absolute
        positioning — coords passed in are already local to .ba-wrapper so
        this never drifts off-card when the parent re-flows. -->
-  {#if phase === 'battle' && activeAnim && effectsEnabled}
+  {#if phase === 'battle' && activeAnim && effectsEnabled && !isDodgeType(activeAnim.type)}
     {#key activeAnim.key}
       {@const ox = activeAnim.origin?.x}
       {@const oy = activeAnim.origin?.y}
@@ -1405,6 +1449,7 @@
   .stage-side-2 { top: 12px; right: 3%; align-items: flex-end; }
 
   .fighter {
+    position: relative;
     width: min(82vw, 340px);
     display: flex; align-items: center; gap: 16px; padding: 12px 16px;
     clip-path: polygon(7% 0, 100% 0, 93% 100%, 0 100%);
@@ -1537,8 +1582,123 @@
     100% { opacity: 1;    transform: translateX(0)     skewX(0deg);   filter: none; }
   }
   :global(.panel-dodging) {
-    animation: panel-dodge 0.80s ease-out forwards;
+    animation: panel-dodge 0.95s ease-out forwards;
     will-change: transform, opacity, filter;
+  }
+
+  /* ── Full-card dodge VFX ───────────────────────────────────────────────── */
+  /* Covers the entire fighter card (clipped to its polygon by the parent's
+     clip-path). --dfx is the style accent: cyan reflex, teal IQ, pink charisma. */
+  .dodge-fx {
+    position: absolute; inset: 0; z-index: 6;
+    pointer-events: none; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    --dfx: #a5f3fc;
+  }
+  .dodge-fx-agi { --dfx: #a5f3fc; }
+  .dodge-fx-iq  { --dfx: #5ad6ef; }
+  .dodge-fx-cha { --dfx: #f472b6; }
+  /* Diagonal light sweep that wipes across the card. */
+  .dodge-fx-sweep {
+    position: absolute; inset: -20% -60%;
+    background: linear-gradient(105deg, transparent 35%,
+                color-mix(in srgb, var(--dfx) 70%, transparent) 50%,
+                transparent 65%);
+    transform: translateX(-120%);
+    animation: dodge-sweep 0.95s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  /* Expanding "near-miss" ring that flares and fades. */
+  .dodge-fx-ring {
+    position: absolute; width: 40%; aspect-ratio: 1; border-radius: 50%;
+    border: 2px solid var(--dfx);
+    box-shadow: 0 0 18px var(--dfx), inset 0 0 12px color-mix(in srgb, var(--dfx) 60%, transparent);
+    opacity: 0; transform: scale(0.3);
+    animation: dodge-ring 0.8s ease-out forwards;
+  }
+  .dodge-fx-label {
+    position: relative; z-index: 2;
+    font-family: 'Cinzel', serif; font-weight: 900;
+    font-size: clamp(0.7rem, 3.4vw, 1.05rem); letter-spacing: 0.14em;
+    color: #fff; text-transform: uppercase;
+    text-shadow: 0 0 10px var(--dfx), 0 0 22px var(--dfx), 0 2px 4px rgba(0,0,0,0.8);
+    opacity: 0; transform: scale(0.6) translateY(6px);
+    animation: dodge-label 1s cubic-bezier(0.2, 1.4, 0.5, 1) forwards;
+  }
+  .dodge-fx-icon {
+    position: absolute; bottom: 8%; z-index: 2;
+    font-size: 20px; color: var(--dfx);
+    filter: drop-shadow(0 0 8px var(--dfx));
+    opacity: 0; animation: dodge-label 1s ease-out 0.08s forwards;
+  }
+  @keyframes dodge-sweep {
+    0%   { transform: translateX(-120%); opacity: 0; }
+    25%  { opacity: 1; }
+    100% { transform: translateX(120%);  opacity: 0; }
+  }
+  @keyframes dodge-ring {
+    0%   { opacity: 0;    transform: scale(0.3); }
+    35%  { opacity: 0.9;  transform: scale(1.0); }
+    100% { opacity: 0;    transform: scale(1.6); }
+  }
+  @keyframes dodge-label {
+    0%   { opacity: 0; transform: scale(0.6) translateY(6px); }
+    30%  { opacity: 1; transform: scale(1.08) translateY(0); }
+    72%  { opacity: 1; transform: scale(1) translateY(0); }
+    100% { opacity: 0; transform: scale(1) translateY(-4px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dodge-fx-sweep, .dodge-fx-ring { animation: none; opacity: 0; }
+    .dodge-fx-label, .dodge-fx-icon { animation: none; opacity: 1; transform: none; }
+  }
+
+  /* ── Full-card block / shield VFX ──────────────────────────────────────── */
+  .shield-fx {
+    position: absolute; inset: 0; z-index: 6;
+    pointer-events: none; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  }
+  /* Hard-light barrier wash that flashes over the card and settles. */
+  .shield-fx-barrier {
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(115deg,
+        color-mix(in srgb, #93c5fd 22%, transparent) 0 6px,
+        transparent 6px 14px),
+      radial-gradient(circle at 50% 45%,
+        color-mix(in srgb, #bfdbfe 55%, transparent) 0%, transparent 70%);
+    box-shadow: inset 0 0 0 2px #93c5fd, inset 0 0 22px rgba(147,197,253,0.7);
+    opacity: 0; transform: scale(1.08);
+    animation: shield-barrier 1s cubic-bezier(0.3, 1.2, 0.5, 1) forwards;
+  }
+  .shield-fx-icon {
+    position: relative; z-index: 2; font-size: 26px; color: #bfdbfe;
+    font-variation-settings: 'FILL' 1;
+    filter: drop-shadow(0 0 10px #93c5fd);
+    opacity: 0; transform: scale(0.5);
+    animation: shield-pop 1s cubic-bezier(0.2, 1.5, 0.5, 1) forwards;
+  }
+  .shield-fx-label {
+    position: relative; z-index: 2;
+    font-family: 'Cinzel', serif; font-weight: 900;
+    font-size: clamp(0.62rem, 3vw, 0.92rem); letter-spacing: 0.16em; color: #fff;
+    text-shadow: 0 0 10px #93c5fd, 0 0 20px #60a5fa, 0 2px 4px rgba(0,0,0,0.8);
+    opacity: 0; animation: shield-pop 1s ease-out 0.06s forwards;
+  }
+  @keyframes shield-barrier {
+    0%   { opacity: 0;    transform: scale(1.08); }
+    20%  { opacity: 1;    transform: scale(1); }
+    60%  { opacity: 0.85; }
+    100% { opacity: 0;    transform: scale(1); }
+  }
+  @keyframes shield-pop {
+    0%   { opacity: 0; transform: scale(0.5); }
+    30%  { opacity: 1; transform: scale(1.1); }
+    72%  { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1) translateY(-3px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shield-fx-barrier { animation: none; opacity: 0.6; }
+    .shield-fx-icon, .shield-fx-label { animation: none; opacity: 1; transform: none; }
   }
 
   /* ── Beam attack rendering ──────────────────────────────────────────

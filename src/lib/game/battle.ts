@@ -227,6 +227,18 @@ const DODGE_PHRASES = [
   'slips past', 'anticipates and sidesteps', 'deflects',
   'phases through', 'blinks away from', 'mirrors away',
 ]
+// IQ-flavored evasion — the defender out-thinks the attack. Keywords here are
+// matched by detectAnim() to trigger the 'dodge_iq' indicator.
+const IQ_DODGE_PHRASES = [
+  'predicts and sidesteps', 'outmaneuvers', 'outwits',
+  'calculates an escape from', 'reads the attack and slips past',
+]
+// Charisma-flavored evasion — the defender disrupts the attacker socially.
+// Keywords matched by detectAnim() to trigger the 'dodge_cha' indicator.
+const CHA_DODGE_PHRASES = [
+  'winks and sidesteps', 'taunts past', 'charms their way clear of',
+  'disarms with a grin and dodges', 'flusters their foe and evades',
+]
 
 const RIPOSTE_LINES = [
   '{name} exploits the opening — lightning riposte for {dmg}!',
@@ -877,7 +889,22 @@ export function doAction(
   // Dodge check (AOE cannot be fully dodged — 50% reduced chance)
   const dodgeChance = move.attackType === 'aoe' ? defender.dodgeChance * 0.5 : defender.dodgeChance
   if (Math.random() < dodgeChance) {
-    lines.push(`${defender.name} ${pick(DODGE_PHRASES)} ${attacker.name}'s ${move.name}!`)
+    // Flavor the dodge by the defender's standout evasion stat so the card
+    // shows WHY they slipped the hit: agility (reflex), IQ (out-think), or
+    // charisma (disrupt). The dodge chance itself is unchanged — this only
+    // picks the phrasing (and thus the indicator detectAnim renders).
+    const evasion: Array<['agi' | 'iq' | 'cha', number]> = [
+      ['agi', defender.agilityRank],
+      ['iq',  defender.iqRank],
+      ['cha', defender.charismaRank],
+    ]
+    evasion.sort((a, b) => b[1] - a[1])
+    const [topStat, topRank] = evasion[0]
+    const style = (topStat !== 'agi' && topRank >= 10 && Math.random() < 0.7) ? topStat : 'agi'
+    const phrase = style === 'iq' ? pick(IQ_DODGE_PHRASES)
+                 : style === 'cha' ? pick(CHA_DODGE_PHRASES)
+                 : pick(DODGE_PHRASES)
+    lines.push(`${defender.name} ${phrase} ${attacker.name}'s ${move.name}!`)
     if (defender.fightingSkillRank >= 12 && Math.random() < 0.40) {
       const riposteDmg = Math.max(1, Math.round(
         defender.physicalDamage * (0.20 + Math.random() * 0.28) * (1 - attacker.armorReduction)
