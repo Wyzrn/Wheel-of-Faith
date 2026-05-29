@@ -31,9 +31,57 @@ interface QueueEntry {
   joinedAt: number
 }
 
+// A lightweight character payload for "your character vs their character"
+// challenges. spins is the SpinResult[] the battle simulator consumes.
+interface ChallengeCharacter {
+  name: string
+  spins: object[]
+}
+
+interface PendingChallenge {
+  id: string
+  from: Player
+  fromUserId: string
+  fromUsername: string
+  targetUserId: string
+  mode: 'rivals' | 'character'
+  // Only set for 'character' mode — the challenger's chosen fighter.
+  character?: ChallengeCharacter
+  createdAt: number
+}
+
 // In-memory stores
 const rooms = new Map<string, Room>()
 const matchQueue: QueueEntry[] = []
+// Online presence: userId → set of live connections (a user may have several
+// tabs open). Powers friend online-detection + challenge delivery.
+const presence = new Map<string, Set<Player>>()
+// Outstanding friend challenges keyed by a generated id.
+const pendingChallenges = new Map<string, PendingChallenge>()
+
+function registerPresence(player: Player) {
+  if (!player.userId) return
+  let set = presence.get(player.userId)
+  if (!set) { set = new Set(); presence.set(player.userId, set) }
+  set.add(player)
+}
+
+function unregisterPresence(player: Player) {
+  if (!player.userId) return
+  const set = presence.get(player.userId)
+  if (!set) return
+  set.delete(player)
+  if (set.size === 0) presence.delete(player.userId)
+}
+
+function isOnline(userId: string): boolean {
+  const set = presence.get(userId)
+  return !!set && set.size > 0
+}
+
+function connectionsFor(userId: string): Player[] {
+  return Array.from(presence.get(userId) ?? [])
+}
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -72,6 +120,17 @@ setInterval(() => {
     if (room.createdAt < cutoff) rooms.delete(code)
   }
 }, 10 * 60 * 1000)
+
+// Expire unanswered friend challenges after 60 seconds.
+setInterval(() => {
+  const cutoff = Date.now() - 60 * 1000
+  for (const [id, ch] of pendingChallenges) {
+    if (ch.createdAt < cutoff) {
+      pendingChallenges.delete(id)
+      send(ch.from.ws, { type: 'challenge_expired', challengeId: id })
+    }
+  }
+}, 15 * 1000)
 
 // Matchmaking: check queue every 5 seconds
 setInterval(() => {
@@ -118,8 +177,114 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
 
       switch (msg.type) {
         case 'identify': {
+          // Re-identify cleanly if this connection was already registered.
+          if (player.userId) unregisterPresence(player)
           player.userId   = msg.userId as string | undefined
           player.username = msg.username as string | undefined
+          registerPresence(player)
+          break
+        }
+
+        // ── Friend online-presence query ─────────────────────────────────
+        // Client sends the userIds of its friends; we reply with the subset
+        // currently connected so the friends list can show online dots.
+        case 'presence_query': {
+          const ids = Array.isArray(msg.userIds) ? (msg.userIds as string[]) : []
+          const online = ids.filter(id => typeof id === 'string' && isOnline(id))
+          send(socket, { type: 'presence_status', online })
+          break
+        }
+
+        // ── Send a friend challenge ──────────────────────────────────────
+        // mode 'rivals'  → both players spin fresh characters, then fight.
+        // mode 'character' → challenger's chosen roster character vs one the
+        //                    target picks when they accept.
+        case 'challenge_send': {
+          const targetUserId = msg.targetUserId as string | undefined
+          const mode = (msg.mode === 'character' ? 'character' : 'rivals') as 'rivals' | 'character'
+          if (!player.userId || !player.username) { send(socket, { type: 'challenge_error', message: 'Log in to challenge friends.' }); break }
+          if (!targetUserId || !isOnline(targetUserId)) {
+            send(socket, { type: 'challenge_unavailable', targetUserId })
+            break
+          }
+          const id = generateCode() + generateCode()
+          const challenge: PendingChallenge = {
+            id,
+            from: player,
+            fromUserId: player.userId,
+            fromUsername: player.username,
+            targetUserId,
+            mode,
+            character: mode === 'character' ? (msg.character as ChallengeCharacter | undefined) : undefined,
+            createdAt: Date.now(),
+          }
+          pendingChallenges.set(id, challenge)
+          for (const conn of connectionsFor(targetUserId)) {
+            send(conn.ws, {
+              type: 'challenge_incoming',
+              challengeId: id,
+              fromUserId: player.userId,
+              fromUsername: player.username,
+              mode,
+              // Surface the challenger's fighter name so the target sees who/what
+              // they're up against; full spins aren't needed until battle starts.
+              challengerCharacterName: challenge.character?.name,
+            })
+          }
+          send(socket, { type: 'challenge_sent', challengeId: id, targetUserId })
+          break
+        }
+
+        // ── Respond to a friend challenge (accept / decline) ─────────────
+        case 'challenge_respond': {
+          const id = msg.challengeId as string | undefined
+          const accept = !!msg.accept
+          const challenge = id ? pendingChallenges.get(id) : undefined
+          if (!challenge) { send(socket, { type: 'challenge_error', message: 'This challenge expired.' }); break }
+          // Only the intended target may respond.
+          if (challenge.targetUserId !== player.userId) break
+          pendingChallenges.delete(id!)
+
+          if (!accept) {
+            send(challenge.from.ws, { type: 'challenge_declined', challengeId: id, byUsername: player.username })
+            break
+          }
+
+          // Challenger must still be connected (1 === WebSocket.OPEN).
+          const challenger = challenge.from
+          if (challenger.ws.readyState !== 1) {
+            send(socket, { type: 'challenge_error', message: 'Challenger went offline.' })
+            break
+          }
+
+          // Put both players in a room so the existing battle_result crediting
+          // path (which requires both sides to agree) works unchanged.
+          const room = createRoom(challenger, player)
+
+          if (challenge.mode === 'character') {
+            const responderChar = msg.character as ChallengeCharacter | undefined
+            const challengerChar = challenge.character
+            if (!challengerChar || !responderChar) {
+              send(socket, { type: 'challenge_error', message: 'Missing character data.' })
+              break
+            }
+            // Each side gets "you" = self, "opponent" = the other fighter.
+            send(challenger.ws, {
+              type: 'challenge_battle_start', roomCode: room.code, mode: 'character',
+              you: { name: challengerChar.name, results: challengerChar.spins },
+              opponent: { name: responderChar.name, results: responderChar.spins },
+            })
+            send(player.ws, {
+              type: 'challenge_battle_start', roomCode: room.code, mode: 'character',
+              you: { name: responderChar.name, results: responderChar.spins },
+              opponent: { name: challengerChar.name, results: challengerChar.spins },
+            })
+          } else {
+            // rivals (fresh-spin) mode — mirror the matchmaking 'matched' flow
+            // so both clients hand off to the normal spin → battle pipeline.
+            send(challenger.ws, { type: 'challenge_matched', code: room.code, isP1: true,  opponentUsername: player.username })
+            send(player.ws,     { type: 'challenge_matched', code: room.code, isP1: false, opponentUsername: challenge.fromUsername })
+          }
           break
         }
 
@@ -222,6 +387,16 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
 
     socket.on('close', () => {
       removeFromQueue(player)
+      unregisterPresence(player)
+      // Drop any challenges this player initiated; notify the target if online.
+      for (const [id, ch] of pendingChallenges) {
+        if (ch.from === player) {
+          pendingChallenges.delete(id)
+          for (const conn of connectionsFor(ch.targetUserId)) {
+            send(conn.ws, { type: 'challenge_cancelled', challengeId: id })
+          }
+        }
+      }
       if (player.room) {
         const other = getOther(player)
         if (other) send(other.ws, { type: 'partner_disconnected' })

@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import { goto } from '$app/navigation'
   import { auth } from '$lib/stores/auth.svelte'
+  import { presence } from '$lib/stores/presence.svelte'
+  import { toast } from '$lib/toast.svelte'
+  import { loadAllSlots } from '$lib/story/saveSlots'
+  import type { StoryRosterEntry } from '$lib/story/types'
 
   type Friend = {
     _id: string
@@ -31,6 +35,14 @@
     if (!auth.loggedIn && !auth.loading) { goto('/login'); return }
     await Promise.all([loadFriends(), loadRequests()])
     loading = false
+    // Ensure the presence socket is up, then poll online status periodically.
+    presence.connect()
+    refreshPresence()
+    presenceTimer = setInterval(refreshPresence, 10000)
+  })
+
+  onDestroy(() => {
+    if (presenceTimer) clearInterval(presenceTimer)
   })
 
   async function loadFriends() {
@@ -88,10 +100,59 @@
     removingId = null
   }
 
-  function challengeFriend(username: string) {
-    // Navigate to rivals page — user creates room, shares link with friend
-    goto(`/rivals`)
+  // ── Online presence ────────────────────────────────────────────────────
+  let presenceTimer: ReturnType<typeof setInterval> | null = null
+  function refreshPresence() {
+    const ids = friends.map(f => f._id)
+    if (ids.length) presence.queryPresence(ids)
   }
+
+  // ── Friend challenge flow ──────────────────────────────────────────────
+  // Step 1: pick rivals (fresh spin) or character duel. Step 2 (character):
+  // pick which of your roster characters to send.
+  let challengeTarget = $state<Friend | null>(null)
+  let challengeStep   = $state<'mode' | 'character'>('mode')
+  let myRoster        = $state<StoryRosterEntry[]>([])
+
+  function openChallenge(friend: Friend) {
+    if (!presence.isOnline(friend._id)) {
+      toast.error(`${friend.username} is offline`, { detail: 'They need to be in the app to receive a challenge.' })
+      return
+    }
+    challengeTarget = friend
+    challengeStep = 'mode'
+  }
+
+  function challengeRivals() {
+    if (!challengeTarget) return
+    presence.sendChallenge(challengeTarget._id, 'rivals')
+    toast.success(`Challenge sent to ${challengeTarget.username}`, { detail: 'Waiting for them to accept…' })
+    challengeTarget = null
+  }
+
+  function goToCharacterPick() {
+    try {
+      myRoster = loadAllSlots().flatMap(s => s?.roster ?? [])
+    } catch { myRoster = [] }
+    challengeStep = 'character'
+  }
+
+  function challengeWithCharacter(char: StoryRosterEntry) {
+    if (!challengeTarget) return
+    presence.sendChallenge(challengeTarget._id, 'character', { name: char.name, spins: char.spins })
+    toast.success(`Duel sent to ${challengeTarget.username}`, { detail: `${char.name} awaits their fighter…` })
+    challengeTarget = null
+  }
+
+  // Surface outgoing challenge outcomes (declined / offline / expired) as toasts.
+  $effect(() => {
+    const o = presence.outgoing
+    if (!o) return
+    if (o.status === 'declined') toast.show('Challenge declined', 'info')
+    else if (o.status === 'unavailable') toast.error('Friend went offline')
+    else if (o.status === 'expired') toast.show('Challenge expired — no response', 'info')
+    presence.clearOutgoing()
+  })
 
   function rank(wins: number): string {
     if (wins >= 100) return 'Legend'
@@ -200,18 +261,22 @@
         {:else}
           <div class="flex flex-col gap-3">
             {#each friends as friend}
+              {@const online = presence.isOnline(friend._id)}
               <div class="flex items-center gap-3 rounded-xl px-4 py-3" style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(167,139,250,0.12);">
                 <!-- Avatar + info → tap to open profile -->
                 <a href="/users/{friend.username}" class="flex items-center gap-3 flex-1 min-w-0 transition-all active:scale-[0.98]"
                   style="text-decoration: none; color: inherit;" title="View {friend.username}'s profile">
-                  <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
+                  <div class="relative shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
                     style="background: rgba(167,139,250,0.15); color: #c4b5fd; font-family: 'Cinzel', serif;">
                     {friend.username[0].toUpperCase()}
+                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full"
+                      style="background: {online ? '#34d399' : '#4e4635'}; border: 2px solid #0c0b14; box-shadow: {online ? '0 0 6px rgba(52,211,153,0.7)' : 'none'};"
+                      title={online ? 'Online' : 'Offline'}></span>
                   </div>
                   <div class="flex-1 min-w-0">
                     <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: #e4e1ee; font-size: 0.9rem;">{friend.username}</p>
                     <div class="flex items-center gap-2 mt-0.5">
-                      <span class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #7c6fa0;">{rank(friend.rivalsWins)}</span>
+                      <span class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: {online ? '#34d399' : '#7c6fa0'};">{online ? 'Online' : rank(friend.rivalsWins)}</span>
                       {#if friend.rivalsWins > 0}
                         <span class="flex items-center gap-0.5 text-xs" style="color: #f0c040;">
                           <span class="material-symbols-outlined" style="font-size: 11px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
@@ -224,7 +289,7 @@
                 <!-- Actions -->
                 <div class="flex items-center gap-2 shrink-0">
                   <button
-                    onclick={() => challengeFriend(friend.username)}
+                    onclick={() => openChallenge(friend)}
                     class="p-2 rounded-lg transition-all active:scale-95"
                     style="color: #f43f5e; background: rgba(244,63,94,0.06); border: 1px solid rgba(244,63,94,0.2); cursor: pointer;"
                     title="Challenge"
@@ -297,4 +362,60 @@
 
     {/if}
   </div>
+
+  <!-- ── Challenge modal ─────────────────────────────────────────────────── -->
+  {#if challengeTarget}
+    <div class="fixed inset-0 z-[60] flex items-center justify-center px-4"
+      style="background: rgba(7,7,13,0.9); backdrop-filter: blur(10px);">
+      <div class="obsidian-slab w-full max-w-sm rounded-2xl p-6 relative"
+        style="border: 1px solid rgba(244,63,94,0.35); box-shadow: 0 0 70px rgba(0,0,0,0.95);">
+        <button onclick={() => challengeTarget = null}
+          class="absolute top-3 right-3 p-1.5 rounded-lg" style="color: #6b7280; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer;">
+          <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+        </button>
+
+        {#if challengeStep === 'mode'}
+          <p class="text-center mb-1" style="font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 800; color: #ffdf96;">Challenge {challengeTarget.username}</p>
+          <p class="text-center text-xs mb-5" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Choose a battle format</p>
+          <div class="flex flex-col gap-3">
+            <button onclick={challengeRivals}
+              class="text-left px-4 py-3 rounded-xl transition-all active:scale-[0.98]"
+              style="background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.3); cursor: pointer;">
+              <p class="font-bold text-sm" style="font-family: 'Cinzel', serif; color: #34d399;">Rivals Battle</p>
+              <p class="text-xs mt-0.5" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Both spin fresh characters, then fight.</p>
+            </button>
+            <button onclick={goToCharacterPick}
+              class="text-left px-4 py-3 rounded-xl transition-all active:scale-[0.98]"
+              style="background: rgba(249,168,212,0.07); border: 1px solid rgba(249,168,212,0.3); cursor: pointer;">
+              <p class="font-bold text-sm" style="font-family: 'Cinzel', serif; color: #f9a8d4;">Character Duel</p>
+              <p class="text-xs mt-0.5" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Your character vs one they pick.</p>
+            </button>
+          </div>
+        {:else}
+          <button onclick={() => challengeStep = 'mode'} class="text-xs mb-3 block" style="color: #6b7280; font-family: 'JetBrains Mono', monospace; background: none; border: none; cursor: pointer;">← Back</button>
+          <p class="text-center mb-3" style="font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 800; color: #f9a8d4;">Pick your fighter</p>
+          {#if myRoster.length === 0}
+            <p class="text-center text-xs py-6" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">
+              No Story Mode characters yet. Build one in Story Mode first.
+            </p>
+          {:else}
+            <div class="flex flex-col gap-2 max-h-72 overflow-y-auto">
+              {#each myRoster as char}
+                <button onclick={() => challengeWithCharacter(char)}
+                  class="flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all active:scale-[0.98]"
+                  style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); cursor: pointer;">
+                  <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
+                    style="background: rgba(249,168,212,0.15); color: #f9a8d4; font-family: 'Cinzel', serif;">{char.overallTier}</div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-semibold truncate text-sm" style="font-family: 'Cinzel', serif; color: #e4e1ee;">{char.name}</p>
+                    <p class="text-xs truncate" style="font-family: 'JetBrains Mono', monospace; color: #6b7280;">{char.race} · {char.archetype}</p>
+                  </div>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        {/if}
+      </div>
+    </div>
+  {/if}
 </main>

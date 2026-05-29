@@ -4,10 +4,13 @@
   import SettingsPanel from '../components/SettingsPanel.svelte'
   import ClickParticles from '../components/ClickParticles.svelte'
   import Toaster from '../components/Toaster.svelte'
+  import IncomingChallengePopup from '../components/IncomingChallengePopup.svelte'
+  import ChallengeBattleOverlay from '../components/ChallengeBattleOverlay.svelte'
   import { page } from '$app/stores'
   import { goto, onNavigate } from '$app/navigation'
   import { triggerMenu, triggerStoryHome } from '$lib/menuState.svelte'
   import { auth } from '$lib/stores/auth.svelte'
+  import { presence } from '$lib/stores/presence.svelte'
   import { settings } from '$lib/settings.svelte'
   import { setPerfTierOverride } from '$lib/perf'
 
@@ -21,6 +24,13 @@
   // device to render full fidelity.
   $effect(() => {
     setPerfTierOverride(settings.highQualityOverride === 'high' ? 'high' : null)
+  })
+
+  // Keep a global presence/challenge socket open while logged in so friend
+  // challenges can pop up anywhere in the app and online status stays fresh.
+  $effect(() => {
+    if (auth.loggedIn) presence.connect()
+    else presence.disconnect()
   })
 
   let isStoryRoute = $derived($page.url.pathname.startsWith('/story'))
@@ -116,6 +126,12 @@
 <!-- Global toast notifications — anything in the app can call toast.show(),
      toast.success(), etc. and a single Toaster renders the queue here. -->
 <Toaster />
+
+<!-- Friend-challenge UI — both render globally so a challenge can arrive on
+     any page. The popup handles accept/decline; the overlay runs the
+     character-vs-character duel. -->
+<IncomingChallengePopup />
+<ChallengeBattleOverlay />
 
 <style>
   /* Stone fortress floor — the nav bar is a carved obsidian shelf */
