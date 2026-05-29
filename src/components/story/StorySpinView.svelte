@@ -34,6 +34,7 @@
   import { getRacesForStage, racesToSegments, getArchetypesForStage, archetypesToSegments } from '$lib/story/raceTiers'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
+  import { describeRacialGrants } from '$lib/game/racialGrants'
   import { buildIdentityCard } from '$lib/identityCard'
   import { twistByKey, RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS } from '$lib/twists'
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
@@ -857,6 +858,20 @@
         }
       }
 
+      // Race-specific injected wheels (Dragon Aspect / Breath Evolution, etc.)
+      // grant the landed segment's stat boost/debuff so they're rewarding too.
+      if (currentDef.category === 'raceWheel' && currentDef.raceWheelId) {
+        const raceResult = results.find(r => r.category === 'race')
+        const raceLabel = currentDef.forRace ?? raceResult?.resultLabel
+        const segs = getRaceWheelSegments(raceLabel ?? '', currentDef.raceWheelId) as Array<{ label: string; statBonusGrants?: Record<string, 'statBonus' | 'statPenalty'> }> | null
+        const seg = segs?.find(s => s.label === resultLabel)
+        if (seg?.statBonusGrants) {
+          for (const [stat, bonusType] of Object.entries(seg.statBonusGrants)) {
+            pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+          }
+        }
+      }
+
       if (currentDef.category === 'archetype') {
         const archetype = getArchetype(resultLabel)
         if (archetype) {
@@ -1517,11 +1532,17 @@
     lastResult.category === 'backstory' ||
     lastResult.category === 'title'
   ) ? buildIdentityCard(lastResult.category, lastResult.resultLabel ?? '') : null}
+  {@const _grants = describeRacialGrants(
+    lastResult.category,
+    results.find(r => r.category === 'race')?.resultLabel ?? currentDef?.forRace,
+    lastResult.resultLabel ?? '',
+    currentDef?.raceWheelId,
+  )}
   {@const resolvedMeta = {
     element: pendingResult.element,
     grade:   pendingResult.grade,
     abilityType:  pendingResult.abilityType,
-    description:  pendingResult.description,
+    description:  [pendingResult.description, _grants].filter(Boolean).join('  ·  ') || undefined,
     statEffect:   pendingResult.statEffect,
     ...(_identityCard ? { identityCard: _identityCard } : {}),
   } as ResolvedMeta}

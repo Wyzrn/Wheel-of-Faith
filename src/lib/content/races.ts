@@ -3635,30 +3635,37 @@ type _AugPoolEntry = {
 for (const race of races) {
   for (const pool of [race.subTypePool, race.classPool, race.transformationPool]) {
     for (const entry of (pool ?? []) as _AugPoolEntry[]) {
-      // Give rarer outcomes (weight ≤ 2) a reward beyond the wheel effect, with
-      // VARIETY: a signature power/ability, a stat boost/debuff, a bonus
-      // weapon/armor spin, or an innate weakness (powerful but flawed).
-      // Entries that already define a reward are left untouched.
+      // EVERY racial progression outcome (sub-type / class / transformation)
+      // grants a reward so no spin goes unrewarded. Rarer outcomes (weight ≤ 2)
+      // get the exciting variety — a signature power/ability, a bonus
+      // weapon/armor spin, or (rarest) an innate weakness alongside a stat
+      // boost. Commoner outcomes still grant a solid stat boost. Entries that
+      // already define a reward are left untouched.
       const hasReward = entry.statBonusGrants || entry.grantedPowers?.length || entry.bonusSpins?.length
-      if (entry.weight <= 2 && !hasReward) {
+      if (!hasReward) {
         const seed = entry.label.length + (entry.label.charCodeAt(0) ?? 0) + (entry.label.charCodeAt(entry.label.length - 1) ?? 0)
         const sig = entry.powerPool?.length ? entry.powerPool[entry.powerPool.length - 1].label : null
-        switch (seed % 5) {
-          case 0:
-            if (sig) { entry.grantedPowers = [sig]; break }
-            entry.statBonusGrants = _deriveStatGrants(entry.element, entry.weight); break
-          case 1:
-            entry.bonusSpins = [{ category: 'weapon', displayName: 'Signature Weapon' }]; break
-          case 2:
-            entry.bonusSpins = [{ category: 'armor', displayName: 'Natural Armor' }]; break
-          case 3:
-            // Rarest get power with a cost: a bonus weakness baked in.
-            entry.bonusSpins = entry.weight <= 1
-              ? [{ category: 'weakness', displayName: 'Innate Flaw' }]
-              : [{ category: 'armor', displayName: 'Natural Armor' }]
-            break
-          default:
-            entry.statBonusGrants = _deriveStatGrants(entry.element, entry.weight)
+        if (entry.weight <= 2) {
+          switch (seed % 5) {
+            case 0:
+              if (sig) { entry.grantedPowers = [sig]; break }
+              entry.statBonusGrants = _deriveStatGrants(entry.element, entry.weight); break
+            case 1:
+              entry.bonusSpins = [{ category: 'weapon', displayName: 'Signature Weapon' }]; break
+            case 2:
+              entry.bonusSpins = [{ category: 'armor', displayName: 'Natural Armor' }]; break
+            case 3:
+              entry.bonusSpins = entry.weight <= 1
+                ? [{ category: 'weakness', displayName: 'Innate Flaw' }]
+                : [{ category: 'armor', displayName: 'Natural Armor' }]
+              break
+            default:
+              entry.statBonusGrants = _deriveStatGrants(entry.element, entry.weight)
+          }
+        } else {
+          // Common outcome — a single thematic stat boost (no penalty).
+          const [stat] = _ELEMENT_STATS[entry.element ?? 'Neutral'] ?? _ELEMENT_STATS.Neutral
+          entry.statBonusGrants = { [stat]: 'statBonus' }
         }
       }
       for (const ab of entry.abilities ?? []) {
@@ -3670,6 +3677,18 @@ for (const race of races) {
   for (const ab of (race.abilities ?? []) as Array<{ element?: import('./types').ElementType; grade?: import('./types').ItemGrade }>) {
     if (!ab.element) ab.element = 'Neutral'
     if (!ab.grade) ab.grade = 'C'
+  }
+  // Race-specific injected wheels (e.g. Dragon Aspect / Breath Evolution) —
+  // every segment grants a stat boost/debuff so these progression spins are
+  // rewarding too. (Segments support statBonusGrants; applied by the hosts.)
+  for (const wheel of race.injectedWheels ?? []) {
+    for (const seg of wheel.segments as Array<{ weight: number; element?: import('./types').ElementType; statBonusGrants?: Record<string, 'statBonus' | 'statPenalty'> }>) {
+      if (!seg.statBonusGrants) {
+        seg.statBonusGrants = seg.weight <= 2
+          ? _deriveStatGrants(seg.element, seg.weight)
+          : { [(_ELEMENT_STATS[seg.element ?? 'Neutral'] ?? _ELEMENT_STATS.Neutral)[0]]: 'statBonus' }
+      }
+    }
   }
 }
 

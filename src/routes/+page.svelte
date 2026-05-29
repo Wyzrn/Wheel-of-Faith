@@ -49,6 +49,7 @@
   import { generateCharacterSummary } from '$lib/characterSummary'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
+  import { describeRacialGrants } from '$lib/game/racialGrants'
   import { buildIdentityCard } from '$lib/identityCard'
   import { tilt } from '$lib/actions/tilt'
   import { twistForRace, twistForArchetype, twistByKey, RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS } from '$lib/twists'
@@ -1234,6 +1235,18 @@
         pendingGrantedPowers = transItem.grantedPowers
         const msg = `${resultLabel}: grants ${pendingGrantedPowers.length} power${pendingGrantedPowers.length > 1 ? 's' : ''}!`
         showAnnouncement = showAnnouncement ? showAnnouncement + ' ' + msg : msg
+      }
+    } else if (def.category === 'raceWheel' && def.raceWheelId) {
+      // Injected race wheels (Dragon Aspect / Breath Evolution, etc.) grant the
+      // landed segment's stat boost/debuff so these progression spins reward too.
+      const raceResult = results.find(r => r.category === 'race')
+      const raceLabel = def.forRace ?? raceResult?.resultLabel
+      const segs = getRaceWheelSegments(raceLabel ?? '', def.raceWheelId) as Array<{ label: string; statBonusGrants?: Record<string, 'statBonus' | 'statPenalty'> }> | null
+      const seg = segs?.find(s => s.label === resultLabel)
+      if (seg?.statBonusGrants) {
+        for (const [stat, bonusType] of Object.entries(seg.statBonusGrants)) {
+          pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+        }
       }
     } else if (def.category === 'height') {
       // Apply stat modifiers to future stat spins based on height range
@@ -3102,12 +3115,18 @@
                 ? generateExtraDescription(last.category, last.resultLabel ?? '',
                     itemMeta?.element as any, itemMeta?.grade as any)
                 : ''}
+              {@const racialGrants = describeRacialGrants(
+                last.category,
+                results.find(r => r.category === 'race')?.resultLabel ?? raceWheelDef?.forRace,
+                last.resultLabel ?? '',
+                raceWheelDef?.raceWheelId,
+              )}
+              {@const baseDesc = raceWheelDesc || statDesc || extraDesc || ''}
+              {@const mergedDesc = [baseDesc, racialGrants].filter(Boolean).join('  ·  ')}
               {@const resolvedMeta = {
                 ...(itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}),
                 ...(identityCard ? { identityCard } : {}),
-                ...(raceWheelDesc ? { description: raceWheelDesc }
-                    : (statDesc ? { description: statDesc }
-                    : (extraDesc ? { description: extraDesc } : {}))),
+                ...(mergedDesc ? { description: mergedDesc } : {}),
               } as ResolvedMeta}
               <SpinResultReveal
                 result={last}
