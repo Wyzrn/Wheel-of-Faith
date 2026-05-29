@@ -859,9 +859,14 @@
             /^Infinite($|[-+]|\+\d+$)/.test(segTier) ? 'tg-infinite' :
             null
           ) : null}
+          {@const baseFill = segments[i]?.color}
+          {@const useLocalGrad = !isDimmed && !gradId && !baseFill}
+          {@const segGradId = `seg-grad-${i}`}
+          {@const cLight = `hsl(${hue}, ${saturation}%, ${Math.min(72, lightness + 13)}%)`}
+          {@const cDark  = `hsl(${hue}, ${Math.max(0, saturation - 10)}%, ${Math.max(6, lightness - 13)}%)`}
           {@const color = isDimmed
             ? `hsl(0, 0%, ${lightness}%)`
-            : (gradId ? `url(#${gradId})` : (segments[i]?.color ?? `hsl(${hue}, ${saturation}%, ${lightness}%)`))}
+            : (gradId ? `url(#${gradId})` : (baseFill ?? `url(#${segGradId})`))}
           {@const arcSpan = seg.endDeg - seg.startDeg}
           {@const fontSize = arcSpan >= 6 ? Math.max(7, Math.min(13, arcSpan * 0.42)) : 0}
           {@const tx = CENTER + WHEEL_RADIUS * 0.65 * Math.cos((seg.midDeg - 90) * Math.PI / 180)}
@@ -871,6 +876,12 @@
           {@const maxChars = Math.max(3, Math.floor(arcLength / (fontSize * 0.58)))}
           {@const rawLabel = segments[i]?.label ?? ''}
           {@const displayLabel = rawLabel.length > maxChars ? rawLabel.slice(0, maxChars - 1) + '…' : rawLabel}
+          {#if useLocalGrad}
+            <linearGradient id={segGradId} x1="0%" y1="0%" x2="100%" y2="100%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stop-color={cLight} />
+              <stop offset="100%" stop-color={cDark} />
+            </linearGradient>
+          {/if}
           <path
             d={slicePath(CENTER, CENTER, WHEEL_RADIUS, seg.startDeg, seg.endDeg)}
             fill={color}

@@ -57,7 +57,7 @@
 
   // ── Category hue map — mirrors main game so wheel colors match ───────────────
   const CATEGORY_HUES: Record<string, number> = {
-    race:              340,
+    race:              45,
     raceSubType:       350,
     raceClass:         160,
     raceTransformation: 30,

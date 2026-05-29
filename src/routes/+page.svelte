@@ -457,7 +457,7 @@
 
   // ── Category hue map — drives HSL gradient coloring in SpinWheel ─────────
   const CATEGORY_HUES: Record<string, number> = {
-    race:              340,
+    race:              45,
     raceSubType:       350,
     raceClass:         160,
     raceTransformation: 30,
