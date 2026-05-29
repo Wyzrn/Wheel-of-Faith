@@ -27,6 +27,7 @@
   import type { StoryTeam } from '$lib/story/types'
   import { getGemValue } from '$lib/story/shards'
   import { auth } from '$lib/stores/auth.svelte'
+  import { tilt } from '$lib/actions/tilt'
   import { getEffectiveMaxSpins, getEffectiveRosterCapacity } from '$lib/story/saveSlots'
   import { getStageTierLabel } from '$lib/story/raceTiers'
   import { WORLD_GRADES, type WorldGrade } from '$lib/story/worlds'
@@ -242,6 +243,15 @@
   // ── Persist current slot on every change ──────────────────────────────────
   $effect(() => {
     if (currentSlot) saveSaveSlot($state.snapshot(currentSlot) as StorySaveSlot)
+  })
+
+  // ── Lock background scroll while a full-screen overlay/modal is open, so the
+  // page behind the character-sheet popup can't scroll underneath it. ───────
+  $effect(() => {
+    if (typeof document === 'undefined') return
+    const lock = view === 'expanded' || comparePickerOpen || sellTarget !== null
+    document.body.style.overflow = lock ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
   })
 
   // ── Story Home hotbar button → return to hub from anywhere ─────────────────
@@ -1209,15 +1219,17 @@
     <div class="max-w-2xl mx-auto px-4 pt-5 flex flex-col gap-4">
 
       <!-- Hero — welcome banner + primary Spin CTA -->
-      <div class="obsidian-slab rounded-2xl p-5 relative overflow-hidden" style="box-shadow: var(--elev-3); border: 1px solid rgba(240,192,82,0.3);">
-        <div class="absolute top-0 right-0 p-3 opacity-20 pointer-events-none">
+      <div class="obsidian-slab group rounded-2xl p-5 relative overflow-hidden" style="box-shadow: var(--elev-3); border: 1px solid rgba(240,192,82,0.3);" use:tilt={{ max: 5 }}>
+        <div class="radial-pulse" style="--glow: rgba(240,192,82,0.4);"></div>
+        <div class="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 pointer-events-none transition-opacity duration-500"
+          style="animation: idle-float 5s ease-in-out infinite;">
           <span class="material-symbols-outlined" style="font-size: 88px; color: #f0c052;">auto_awesome</span>
         </div>
         <div class="filigree-tl"></div>
         <div class="filigree-br"></div>
         <div class="rune-seam"></div>
         <div class="relative z-10 flex flex-col gap-1.5">
-          <h2 class="font-bold" style="font-family: var(--font-cinzel); font-size: 22px; color: #f0c052;">Welcome back, Wayfarer</h2>
+          <h2 class="font-bold truncate" style="font-family: var(--font-cinzel); font-size: 22px; color: #f0c052;">Welcome back, {auth.user?.username ?? 'Wayfarer'}</h2>
           <p class="text-sm" style="color: var(--color-on-surface-variant); font-family: 'Inter', sans-serif;">
             Level {playerLevel} · {getStageTierLabel(stage)} · {roster.length} champion{roster.length === 1 ? '' : 's'} in your roster.
           </p>
@@ -1228,7 +1240,7 @@
           </div>
           <div class="mt-3">
             <button
-              class="metal-stamp inline-flex items-center gap-2 px-7 py-3 rounded-lg {hasAnySpin ? '' : 'opacity-40 cursor-not-allowed'}"
+              class="metal-stamp gild-sweep inline-flex items-center gap-2 px-7 py-3 rounded-lg {hasAnySpin ? 'cta-pulse' : 'opacity-40 cursor-not-allowed'}"
               style="background: linear-gradient(162deg,#ecc868,#c89030 60%,#a87018); color: #1a0e00; font-family: var(--font-cinzel); font-weight: 800; letter-spacing: 0.12em; box-shadow: var(--elev-2);"
               onclick={handleWheelClick} disabled={!hasAnySpin}
             >
@@ -1260,24 +1272,25 @@
       <div class="grid grid-cols-2 gap-3">
 
         <!-- Worlds — featured (full width) -->
-        <button class="obsidian-slab lift col-span-2 rounded-xl p-5 relative overflow-hidden text-left"
-          style="box-shadow: var(--elev-2); border-left: 4px solid #5ad6ef; min-height: 120px;" onclick={() => view = 'worlds'}>
-          <div class="flex items-start justify-between">
-            <div class="p-2.5 rounded-lg" style="background: rgba(106,228,253,0.18); color: #6ae4fd;">
+        <button class="obsidian-slab group col-span-2 rounded-xl p-5 relative overflow-hidden text-left"
+          style="box-shadow: var(--elev-2); border-left: 4px solid #5ad6ef; min-height: 120px;" onclick={() => view = 'worlds'} use:tilt={{ max: 6 }}>
+          <div class="radial-pulse" style="--glow: rgba(90,214,239,0.45);"></div>
+          <div class="relative z-10 flex items-start justify-between">
+            <div class="p-2.5 rounded-lg transition-transform duration-300 group-hover:scale-110" style="background: rgba(106,228,253,0.18); color: #6ae4fd;">
               <span class="material-symbols-outlined" style="font-size: 26px; font-variation-settings: 'FILL' 1;">public</span>
             </div>
             <span class="font-mono text-xs" style="color: #6ae4fd;">MAP {worldPct}%</span>
           </div>
-          <div class="mt-4">
+          <div class="relative z-10 mt-4">
             <h3 class="font-bold tracking-wide" style="font-family: var(--font-cinzel); font-size: 18px; color: #6ae4fd;">WORLDS</h3>
             <p class="text-xs mt-0.5" style="color: var(--color-on-surface-variant);">{worldsCleared} / {WORLD_GRADES.length} realms cleared</p>
           </div>
-          <div class="arcane-gauge mt-3"><div class="arcane-gauge-fill" style="width: {worldPct}%;"></div></div>
+          <div class="arcane-gauge relative z-10 mt-3"><div class="arcane-gauge-fill" style="width: {worldPct}%;"></div></div>
         </button>
 
         <!-- Roster -->
-        <button class="obsidian-slab lift rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid var(--color-outline);" onclick={() => view = 'roster'}>
-          <div class="p-2.5 rounded-lg w-fit" style="background: rgba(134,147,150,0.18); color: var(--color-outline);">
+        <button class="obsidian-slab group rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid var(--color-outline);" onclick={() => view = 'roster'} use:tilt={{ max: 7 }}>
+          <div class="p-2.5 rounded-lg w-fit transition-transform duration-300 group-hover:scale-110" style="background: rgba(134,147,150,0.18); color: var(--color-outline);">
             <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">groups</span>
           </div>
           <h3 class="font-bold tracking-wide mt-3" style="font-family: var(--font-cinzel); font-size: 15px; color: var(--color-on-surface);">ROSTER</h3>
@@ -1285,8 +1298,8 @@
         </button>
 
         <!-- Trader / Shop -->
-        <button class="obsidian-slab lift rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid #f0c052;" onclick={() => view = 'shop'}>
-          <div class="p-2.5 rounded-lg w-fit" style="background: rgba(240,192,82,0.18); color: #f0c052;">
+        <button class="obsidian-slab group rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid #f0c052;" onclick={() => view = 'shop'} use:tilt={{ max: 7 }}>
+          <div class="p-2.5 rounded-lg w-fit transition-transform duration-300 group-hover:scale-110" style="background: rgba(240,192,82,0.18); color: #f0c052;">
             <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">storefront</span>
           </div>
           <h3 class="font-bold tracking-wide mt-3" style="font-family: var(--font-cinzel); font-size: 15px; color: #f0c052;">TRADER</h3>
@@ -1294,8 +1307,8 @@
         </button>
 
         <!-- Inventory -->
-        <button class="obsidian-slab lift rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid #ffc7be;" onclick={() => view = 'inventory'}>
-          <div class="p-2.5 rounded-lg w-fit" style="background: rgba(255,199,190,0.16); color: #ffc7be;">
+        <button class="obsidian-slab group rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid #ffc7be;" onclick={() => view = 'inventory'} use:tilt={{ max: 7 }}>
+          <div class="p-2.5 rounded-lg w-fit transition-transform duration-300 group-hover:scale-110" style="background: rgba(255,199,190,0.16); color: #ffc7be;">
             <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">backpack</span>
           </div>
           <h3 class="font-bold tracking-wide mt-3" style="font-family: var(--font-cinzel); font-size: 15px; color: #ffc7be;">INVENTORY</h3>
@@ -1303,8 +1316,8 @@
         </button>
 
         <!-- Teams -->
-        <button class="obsidian-slab lift rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid #48c8e0;" onclick={() => view = 'teams'}>
-          <div class="p-2.5 rounded-lg w-fit" style="background: rgba(72,200,224,0.16); color: #48c8e0;">
+        <button class="obsidian-slab group rounded-xl p-4 text-left relative" style="box-shadow: var(--elev-2); border-left: 4px solid #48c8e0;" onclick={() => view = 'teams'} use:tilt={{ max: 7 }}>
+          <div class="p-2.5 rounded-lg w-fit transition-transform duration-300 group-hover:scale-110" style="background: rgba(72,200,224,0.16); color: #48c8e0;">
             <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">shield</span>
           </div>
           <h3 class="font-bold tracking-wide mt-3" style="font-family: var(--font-cinzel); font-size: 15px; color: #48c8e0;">TEAMS</h3>
@@ -1314,9 +1327,9 @@
         <!-- Endless (unlocks at level 3) -->
         {#if playerLevel >= 3}
           {@const canEnterEndless = hasActiveRun || endlessKeys > 0}
-          <button class="obsidian-slab lift col-span-2 rounded-xl p-4 text-left relative flex items-center gap-4 {canEnterEndless ? '' : 'opacity-60'}"
-            style="box-shadow: var(--elev-2); border-left: 4px solid #ffb4ab;" onclick={() => canEnterEndless ? enterEndless() : view = 'shop'}>
-            <div class="p-2.5 rounded-lg" style="background: rgba(255,180,171,0.16); color: #ffb4ab;">
+          <button class="obsidian-slab group col-span-2 rounded-xl p-4 text-left relative flex items-center gap-4 {canEnterEndless ? '' : 'opacity-60'}"
+            style="box-shadow: var(--elev-2); border-left: 4px solid #ffb4ab;" onclick={() => canEnterEndless ? enterEndless() : view = 'shop'} use:tilt={{ max: 6 }}>
+            <div class="p-2.5 rounded-lg transition-transform duration-300 group-hover:scale-110" style="background: rgba(255,180,171,0.16); color: #ffb4ab;">
               <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">skull</span>
             </div>
             <div class="flex-1 min-w-0">
@@ -1875,8 +1888,8 @@
     tabindex="-1"
   >
     <div
-      class="obsidian-slab w-full max-w-[640px] max-h-[90vh] overflow-y-auto rounded-xl mx-4"
-      style="animation: slideInBottom 200ms ease-out;"
+      class="obsidian-slab w-full max-w-[640px] max-h-[90vh] overflow-y-auto overscroll-contain rounded-xl mx-4"
+      style="animation: slideInBottom 200ms ease-out; -webkit-overflow-scrolling: touch;"
       onclick={(e) => e.stopPropagation()}
       onkeydown={(e) => e.stopPropagation()}
       role="document"

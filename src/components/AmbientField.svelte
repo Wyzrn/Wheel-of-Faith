@@ -13,7 +13,7 @@
       && matchMedia('(prefers-reduced-motion: reduce)').matches
     const tier = getPerfTier()
     if (reduce || tier === 'low') return
-    const count = tier === 'high' ? 26 : 14
+    const count = tier === 'high' ? 36 : 20
     embers = Array.from({ length: count }, () => ({
       left: Math.random() * 100,
       delay: Math.random() * 10,

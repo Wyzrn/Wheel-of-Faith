@@ -373,16 +373,18 @@
   overflow: hidden;
 }
 
-/* Stone noise texture overlay */
+/* Woven carbon-fibre texture + faint stone grain. Baked-in alphas (no global
+   opacity) so the weave reads clearly across the panel like the mockup. */
 .obsidian-slab::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.040;
   pointer-events: none;
   border-radius: inherit;
-  mix-blend-mode: screen;
+  background-image:
+    repeating-linear-gradient(45deg,  rgba(255,255,255,0.022) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(135deg, rgba(0,0,0,0.12)        0 1px, transparent 1px 6px),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
 /* Corner accent gradients — light catching four beveled corners */
@@ -468,8 +470,24 @@
   .parallax-card:hover { transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
 }
 
+/* CTA PULSE — breathing gold glow ring on the primary button. */
+@keyframes cta-pulse {
+  0%, 100% { box-shadow: var(--elev-2), 0 0 0 0 rgba(240,192,82,0.45); }
+  50%      { box-shadow: var(--elev-2), 0 0 24px 5px rgba(240,192,82,0.30); }
+}
+.cta-pulse { animation: cta-pulse 2.6s ease-in-out infinite; }
+
+/* RADIAL PULSE — soft breathing glow layer inside a relative tile. Set --glow. */
+@keyframes radial-breathe { 0%, 100% { opacity: 0.10; } 50% { opacity: 0.30; } }
+.radial-pulse {
+  position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(circle at 50% 50%, var(--glow, rgba(240,192,82,0.55)) 0%, transparent 62%);
+  animation: radial-breathe 3.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .rune-seam, .ember, .arcane-gauge-fill, .metal-stamp, .parallax-card { animation: none !important; transition: none !important; }
+  .rune-seam, .ember, .arcane-gauge-fill, .metal-stamp, .parallax-card,
+  .cta-pulse, .radial-pulse { animation: none !important; transition: none !important; }
 }
 
 /* ════════════ SHARED UTILITIES (opt-in across pages) ════════════ */
