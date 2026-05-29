@@ -30,24 +30,23 @@ const _GRADE_INTENSITY: Record<ItemGrade, number> = {
   A: 0.65, S: 0.75, SS: 0.85, SSS: 0.93, God: 1.0,
 }
 
-// Race spin weight → intensity. Race weights span ~1 (Viltrumite, God-tier
-// rares) to ~15 (Human, Goblin — basics). Rarer = bigger celebration. The
-// player just rolled a 1-in-200 race; they deserve fireworks. A common race
-// still gets a basic puff so EVERY race spin has a payoff.
-function raceWeightIntensity(weight: number): number {
-  // Smooth curve: weight 1 → 0.98, weight 5 → 0.65, weight 10 → 0.35, weight 15 → 0.10.
-  // Capped to keep weight-15 races above 'silent' threshold.
-  return Math.max(0.12, Math.min(0.98, 1.05 - weight * 0.06))
+// Race / archetype rarity buckets. ONE function drives both the celebration
+// intensity AND the subtitle label so the animation a player sees matches the
+// rarity it announces: Common→basic, Uncommon/Rare→good, Legendary→great,
+// Mythological→mythic. (Intensity thresholds in LandingCelebration: mythic
+// ≥0.70, great ≥0.50, good ≥0.30, basic ≥0.10.) Race weights span ~1 (rarest)
+// to ~15 (Human/Goblin); archetype weights are tighter (1-6).
+function raceRarity(weight: number): { label: string; intensity: number } {
+  if (weight <= 2) return { label: 'Mythological', intensity: 0.85 }  // mythic
+  if (weight <= 4) return { label: 'Legendary',    intensity: 0.60 }  // great
+  if (weight <= 7) return { label: 'Uncommon',     intensity: 0.40 }  // good
+  return { label: 'Common', intensity: 0.20 }                          // basic
 }
-
-// Archetype weights are tighter (1-6). Tuned per-row so the 1-weight
-// archetypes (Sorcerer, Time Traveler, Awakened, Chaos Gremlin) trigger
-// mythic, while 6-weight (Warrior) still gets a 'good' celebration.
-const _ARCHETYPE_INTENSITY: Record<number, number> = {
-  1: 0.95, 2: 0.78, 3: 0.62, 4: 0.48, 5: 0.36, 6: 0.30,
-}
-function archetypeWeightIntensity(weight: number): number {
-  return _ARCHETYPE_INTENSITY[weight] ?? Math.max(0.20, 0.95 - (weight - 1) * 0.13)
+function archetypeRarity(weight: number): { label: string; intensity: number } {
+  if (weight <= 1) return { label: 'Mythological', intensity: 0.85 }  // mythic
+  if (weight <= 2) return { label: 'Legendary',    intensity: 0.60 }  // great
+  if (weight <= 4) return { label: 'Rare',         intensity: 0.40 }  // good
+  return { label: 'Common', intensity: 0.20 }                          // basic
 }
 
 export interface LandingResolution {
@@ -60,21 +59,6 @@ export interface LandingResolution {
   // ("Mythological", "Legendary", etc.). For stats: undefined (the wheel
   // falls back to the segment tier label).
   subtitle?: string | null
-}
-
-// Map a race/archetype weight to a "rarity bucket" label shown under the
-// mythic banner. Tight, evocative, ALL-CAPS friendly.
-function raceRarityLabel(weight: number): string {
-  if (weight <= 2) return 'Mythological'
-  if (weight <= 4) return 'Legendary'
-  if (weight <= 7) return 'Uncommon'
-  return 'Common'
-}
-function archetypeRarityLabel(weight: number): string {
-  if (weight === 1) return 'Mythological'
-  if (weight === 2) return 'Legendary'
-  if (weight <= 4) return 'Rare'
-  return 'Common'
 }
 
 export function resolveLandingForCategory(
@@ -131,7 +115,7 @@ export function resolveLandingForCategory(
       // bias, etc. — falls back to a neutral gold accent.
       const race = racesByLabel.get(label)
       if (race) {
-        weightIntensity = raceWeightIntensity(race.weight)
+        weightIntensity = raceRarity(race.weight).intensity
         // Pull a representative element from the race's class pool if any
         // class entry carries one. We prefer the highest-grade class's
         // element so the tint reads as "the legendary class of this race."
@@ -151,7 +135,7 @@ export function resolveLandingForCategory(
     }
     case 'archetype': {
       const arc = archetypesByLabel.get(label)
-      if (arc) weightIntensity = archetypeWeightIntensity(arc.weight)
+      if (arc) weightIntensity = archetypeRarity(arc.weight).intensity
       // Archetype tint comes from its first elemental ability when present,
       // falling back to gold.
       const arcAbil = arc?.abilities?.find(a => a.element)
@@ -173,10 +157,10 @@ export function resolveLandingForCategory(
   let subtitle: string | null = null
   if (category === 'race') {
     const race = racesByLabel.get(label)
-    if (race) subtitle = raceRarityLabel(race.weight) + ' Race'
+    if (race) subtitle = raceRarity(race.weight).label + ' Race'
   } else if (category === 'archetype') {
     const arc = archetypesByLabel.get(label)
-    if (arc) subtitle = archetypeRarityLabel(arc.weight) + ' Archetype'
+    if (arc) subtitle = archetypeRarity(arc.weight).label + ' Archetype'
   } else if (grade) {
     subtitle = ITEM_GRADE_INFO[grade]?.label ?? grade
   }
