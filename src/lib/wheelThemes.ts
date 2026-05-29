@@ -118,10 +118,14 @@ export const WHEEL_THEMES: Record<WheelThemeId, WheelTheme> = {
   }),
   void_wheel: T({
     id: 'void_wheel', name: 'Void', gamepass: 'void_wheel',
-    innerStops: ['rgba(232,121,249,0)', 'rgba(192,38,211,0.3)', 'rgba(107,33,168,0.55)', 'rgba(0,0,0,0.95)'],
-    spikeStops: ['#1a032a', '#581c87', '#e879f9'],
-    rimStroke: '#d946ef', rimAccent: '#f0abfc', glow: 'rgba(217,70,239,0.85)',
-    cssClass: 'wt-void', spikeSpinS: 22, innerPulseS: 3.2,
+    // Pitch-black scheme. Center is pure void that darkens segments through
+    // mix-blend-mode: multiply (overridden per wt-void CSS); the animation
+    // suckss INWARD instead of pulsing outward, so the wheel reads as a black
+    // hole consuming everything around it.
+    innerStops: ['rgba(0,0,0,1)', 'rgba(5,5,10,0.92)', 'rgba(15,12,22,0.55)', 'rgba(0,0,0,0.1)'],
+    spikeStops: ['#000000', '#0a0a10', '#1f1f2a'],
+    rimStroke: '#1a1a22', rimAccent: '#3f3f4d', glow: 'rgba(0,0,0,0.95)',
+    cssClass: 'wt-void', spikeSpinS: 28, innerPulseS: 3.2,
   }),
 }
 

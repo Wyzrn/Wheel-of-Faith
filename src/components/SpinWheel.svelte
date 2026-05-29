@@ -1157,6 +1157,28 @@
     0%, 100% { opacity: 0.55; transform: scale(0.94); }
     50%      { opacity: 1;    transform: scale(1.02); }
   }
+
+  /* ── Void Wheel: blacks out the center via multiply blend and the aura
+       contracts INWARD while rotating, so the wheel reads as a black hole
+       pulling everything in. The spike crown drifts inward in counter-step. */
+  :global(.wt-void) .cursed-inner-glow {
+    animation-name: voidSuck !important;
+    mix-blend-mode: multiply !important;
+  }
+  @keyframes voidSuck {
+    0%, 100% { opacity: 0.75; transform: scale(1.06) rotate(0deg); }
+    50%      { opacity: 1;    transform: scale(0.78) rotate(160deg); }
+  }
+  :global(.wt-void) .cursed-spikes-spin,
+  :global(.wt-void) .cursed-spikes-spin-rev {
+    transform-origin: 250px 250px;
+    animation-name: voidSpikeDrift !important;
+  }
+  @keyframes voidSpikeDrift {
+    0%   { transform: rotate(0deg)   scale(1); }
+    50%  { transform: rotate(180deg) scale(0.95); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
   @media (prefers-reduced-motion: reduce) {
     .cursed-spikes-spin, .cursed-spikes-spin-rev, .cursed-inner-glow { animation: none; }
   }
