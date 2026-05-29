@@ -25,6 +25,18 @@
     // Expose perf tier to CSS so heavy ambient effects can be gated declaratively.
     try { document.documentElement.dataset.perf = getPerfTier() } catch { /* ssr */ }
 
+    // Mobile sizing: the game is landscape-locked, so on a phone the viewport
+    // width is large (~844px) and the desktop sizing renders far too big on
+    // the physically small screen. Render touch devices at a fixed desktop-ish
+    // CSS width and let the browser scale it to fit — UI shrinks uniformly and
+    // the proper desktop layouts apply ("looks like PC, just smaller").
+    try {
+      if (matchMedia('(pointer: coarse)').matches) {
+        const vp = document.querySelector('meta[name="viewport"]')
+        vp?.setAttribute('content', 'width=1280, viewport-fit=cover')
+      }
+    } catch { /* ssr */ }
+
     // Graceful network net: turn silent fetch failures (offline / server down)
     // into one friendly, throttled toast instead of a dead button + console
     // spew. Conservative — only catches network-type rejections.
