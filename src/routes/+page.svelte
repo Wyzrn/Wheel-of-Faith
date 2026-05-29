@@ -3003,7 +3003,10 @@
         </div>
 
         <!-- Wheel container (relative so overlay can sit on top) -->
-        <div class="relative w-full max-w-[340px] md:max-w-lg">
+        <!-- z-[60] lifts the whole wheel subtree (wheel, spin button, reveal,
+             celebration) above the fixed top nav (z-50) so nothing covers it,
+             esp. on short landscape-mobile viewports. -->
+        <div class="relative z-[60] w-full max-w-[340px] md:max-w-lg">
 
           <!-- First-time hint that fires on the very first race spin. Only
                shows once per device (localStorage flag). Anchored above the

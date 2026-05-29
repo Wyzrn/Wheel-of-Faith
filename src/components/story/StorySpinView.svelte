@@ -1356,8 +1356,10 @@
   </div>
 
   <!-- Spin wheel (remounts on each new spin via {#key}) -->
+  <!-- z-30 lifts the wheel + spin button above the top bar (z-20) so the
+       wheel and its controls are never covered, matching the main game. -->
   {#if currentDef && !showResumePrompt}
-    <div class="relative z-[2] flex flex-col items-center gap-4">
+    <div class="relative z-30 flex flex-col items-center gap-4">
       {#if currentIndex === 0 && currentDef?.category === 'race' && !pendingResult}
         <FirstTimeTooltip
           storageKey="wof_seen_race_hint"
