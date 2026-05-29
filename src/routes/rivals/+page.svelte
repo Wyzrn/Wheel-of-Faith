@@ -10,6 +10,7 @@
   import type { SpinResult } from '$lib/session/types'
   import { setRivalsWs, getRivalsWs, clearRivalsWs } from '$lib/stores/rivalsWs'
   import { startOfflineRivals, getOfflineRivalsResult, clearOfflineRivals } from '$lib/stores/offlineRivals'
+  import { tilt } from '$lib/actions/tilt'
 
   // ── Phase state machine ────────────────────────────────────────────────────
   // 'preview' is a 4-second pre-battle screen showing both characters before
@@ -337,7 +338,7 @@
         <!-- Pass & Play (local 2-player) -->
         <button
           onclick={() => goto('/?rivals=offline')}
-          class="obsidian-slab py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]"
+          class="obsidian-slab py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]" use:tilt={{ max: 5 }}
           style="cursor: pointer;"
         >
           <div class="flex items-center gap-4">
@@ -355,7 +356,7 @@
         <!-- vs Bot -->
         <button
           onclick={startBotRivals}
-          class="obsidian-slab py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]"
+          class="obsidian-slab py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]" use:tilt={{ max: 5 }}
           style="cursor: pointer; border: 1px solid rgba(52,211,153,0.2)!important;"
         >
           <div class="flex items-center gap-4">
@@ -373,7 +374,7 @@
         <!-- Find Match -->
         <button
           onclick={() => auth.loggedIn ? findMatch() : goto('/login')}
-          class="py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]"
+          class="py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]" use:tilt={{ max: 5 }}
           style="background: linear-gradient(180deg, #0d1f17 0%, #091410 100%); border: 1px solid rgba(52,211,153,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 1px 1px 0 rgba(52,211,153,0.08); cursor: pointer;"
         >
           <div class="flex items-center gap-4">
@@ -396,7 +397,7 @@
         <!-- Room Code -->
         <button
           onclick={() => auth.loggedIn ? (phase = 'create_or_join') : goto('/login')}
-          class="py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]"
+          class="py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]" use:tilt={{ max: 5 }}
           style="background: linear-gradient(180deg, #1a0d18 0%, #100910 100%); border: 1px solid rgba(249,168,212,0.25); box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 1px 1px 0 rgba(249,168,212,0.06); cursor: pointer;"
         >
           <div class="flex items-center gap-4">
