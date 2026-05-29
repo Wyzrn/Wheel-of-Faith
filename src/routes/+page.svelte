@@ -2328,13 +2328,13 @@
 <!-- Landing page — shown on first visit before the main menu -->
 {#if showLanding}
   <div class="fixed inset-0 z-[60] flex flex-col items-center justify-center px-6 overflow-y-auto"
-    style="background: #07070d;">
-    <!-- Top glow -->
+    style="background: #16121a;">
+    <!-- Top glow (gold haze) -->
     <div class="absolute top-0 inset-x-0 h-64 pointer-events-none"
-      style="background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(240,192,64,0.09), transparent);"></div>
-    <!-- Bottom glow -->
-    <div class="absolute bottom-0 inset-x-0 h-48 pointer-events-none"
-      style="background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(157,23,77,0.07), transparent);"></div>
+      style="background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(240,192,82,0.10), transparent);"></div>
+    <!-- Bottom glow (arcane teal swell) -->
+    <div class="absolute bottom-0 inset-x-0 h-56 pointer-events-none"
+      style="background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(90,214,239,0.10), transparent);"></div>
 
     <div class="relative z-10 w-full max-w-sm flex flex-col items-center gap-6 py-12">
       <!-- Logo -->
@@ -2364,8 +2364,10 @@
 
       <!-- Description -->
       <div class="w-full obsidian-slab rounded-xl p-5 relative overflow-hidden"
-        style="border: 1px solid rgba(240,192,64,0.12);">
-        <div class="noise-overlay"></div>
+        style="box-shadow: var(--elev-2);">
+        <div class="filigree-tl"></div>
+        <div class="filigree-br"></div>
+        <div class="rune-seam"></div>
         <div class="relative z-10 flex flex-col gap-3">
           <p class="text-sm leading-relaxed" style="font-family: 'JetBrains Mono', monospace; color: #9a907b; line-height: 1.75;">
             A character creation engine driven entirely by chance.
@@ -2418,12 +2420,13 @@
   </div>
 {/if}
 
-<main class="min-h-screen" style="background: #07070d; color: #e4e1ee;">
+<main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
 
   <!-- Fixed top nav -->
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"
-    style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(240,192,64,0.13); backdrop-filter: blur(16px);"
+    style="background: rgba(22,18,26,0.92); border-bottom: 2px solid rgba(240,192,82,0.45); backdrop-filter: blur(16px); box-shadow: 0 4px 20px rgba(90,214,239,0.12);"
   >
+    <div class="rune-seam"></div>
     <!-- Left slot: home button -->
     <div class="flex items-center" style="min-width: 80px;">
       {#if !showMenu && !showCard && !showNameScreen}
@@ -2456,8 +2459,8 @@
        game modes feel parallel. Hidden on menu since there's no active session. -->
   {#if !showMenu && spinQueue.length > 0}
     <div class="fixed inset-x-0 z-40 pointer-events-none" style="top: 56px;">
-      <div class="h-[3px] mx-auto max-w-[640px] rounded-full overflow-hidden" style="background: rgba(255,255,255,0.04);">
-        <div style="height: 100%; width: {Math.round((currentSpinIndex / spinQueue.length) * 100)}%; background: linear-gradient(90deg, #c0882a, #f0c040); box-shadow: 0 0 6px rgba(240,192,64,0.5); transition: width 0.4s cubic-bezier(0.22, 0.8, 0.3, 1);"></div>
+      <div class="arcane-gauge h-[3px] mx-auto max-w-[640px]">
+        <div class="arcane-gauge-fill" style="width: {Math.round((currentSpinIndex / spinQueue.length) * 100)}%;"></div>
       </div>
     </div>
   {/if}
@@ -2468,9 +2471,10 @@
 
   <!-- Main Menu — fixed overlay so game content beneath can't be scrolled to -->
   {#if showMenu}
-    <div class="fixed inset-0 z-30 flex flex-col items-center justify-center px-5 overflow-y-auto" style="background: #07070d;">
-      <!-- Decorative top glow -->
-      <div class="absolute top-0 inset-x-0 h-48 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240,192,64,0.07), transparent);"></div>
+    <div class="fixed inset-0 z-30 flex flex-col items-center justify-center px-5 overflow-y-auto" style="background: #16121a;">
+      <!-- Decorative glows: gold haze up top, arcane teal swell at the base -->
+      <div class="absolute top-0 inset-x-0 h-48 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240,192,82,0.09), transparent);"></div>
+      <div class="absolute bottom-0 inset-x-0 h-56 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(90,214,239,0.08), transparent);"></div>
 
       <!-- Logo mark -->
       <div class="mb-4 flex flex-col items-center gap-3">
@@ -2725,7 +2729,7 @@
 
   <!-- Online rivals waiting screen -->
   {#if rivalsOnlineWaiting}
-    <div class="fixed inset-0 z-40 flex items-center justify-center px-4" style="background: #07070d;">
+    <div class="fixed inset-0 z-40 flex items-center justify-center px-4" style="background: #16121a;">
       <div class="text-center">
         <div class="animate-spin mb-6 mx-auto" style="width: 48px; height: 48px; border: 3px solid rgba(240,192,64,0.2); border-top-color: #f0c040; border-radius: 50%;"></div>
         <p style="font-family: 'Cinzel', serif; font-size: 1.15rem; font-weight: 700; color: #ffdf96; letter-spacing: 0.08em;">Waiting for opponent…</p>
@@ -2818,7 +2822,7 @@
 
   <!-- Rivals battle screen -->
   {#if rivalMode && rivalPhase === 'battle'}
-    <div style="background: #07070d; min-height: 100dvh;">
+    <div style="background: #16121a; min-height: 100dvh;">
       <QuickBattleView
         team1={[{ results, name: characterName }]}
         team2={[{ results: p1Results, name: p1Name }]}
