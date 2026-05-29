@@ -25,27 +25,36 @@
     // Expose perf tier to CSS so heavy ambient effects can be gated declaratively.
     try { document.documentElement.dataset.perf = getPerfTier() } catch { /* ssr */ }
 
-    // Mobile sizing: the game is landscape-locked, so in LANDSCAPE we render
-    // touch devices at a fixed desktop-ish CSS width and let the browser scale
-    // it to fit — UI shrinks uniformly and the desktop layouts apply ("looks
-    // like PC, just smaller"). In PORTRAIT we keep native device-width so the
-    // rotate-to-landscape prompt shows at its proper size (not shrunk).
+    // Mobile sizing: the game is landscape-locked and laid out for a desktop
+    // (~1280px) canvas, so on a phone the UI feels oversized. In LANDSCAPE on
+    // touch devices we apply CSS `zoom` so the whole page renders as if at the
+    // design width and shrinks uniformly to fit ("looks like PC, just
+    // smaller"). Dynamic viewport-meta swaps don't reliably reflow on Chrome
+    // Android, but `zoom` always does. PORTRAIT stays at native size so the
+    // rotate-to-landscape prompt isn't shrunk.
+    const DESIGN_W = 1280   // tune up = smaller UI, down = larger
     let orientationMq: MediaQueryList | null = null
     let applyViewport: (() => void) | null = null
+    let applyingZoom = false
     try {
       if (matchMedia('(pointer: coarse)').matches) {
-        const vp = document.querySelector('meta[name="viewport"]')
+        const root = document.documentElement as HTMLElement & { style: any }
         applyViewport = () => {
+          if (applyingZoom) return   // ignore resize events we cause ourselves
+          applyingZoom = true
+          root.style.zoom = ''       // read the true (unscaled) width first
+          const w = window.innerWidth
           const landscape = matchMedia('(orientation: landscape)').matches
-          vp?.setAttribute('content', landscape
-            ? 'width=1280, viewport-fit=cover'
-            : 'width=device-width, initial-scale=1, viewport-fit=cover')
+          if (landscape && w > 0 && w < DESIGN_W) {
+            root.style.zoom = String(Math.max(0.4, w / DESIGN_W))
+          }
+          requestAnimationFrame(() => { applyingZoom = false })
         }
         applyViewport()
         orientationMq = matchMedia('(orientation: landscape)')
         orientationMq.addEventListener('change', applyViewport)
-        // Entering/exiting fullscreen (and the chrome show/hide) changes the
-        // viewport without always firing an orientation change, so re-apply
+        // Entering/exiting fullscreen (and browser-chrome show/hide) changes
+        // the available width without firing an orientation change, so re-run
         // on fullscreenchange + resize too.
         document.addEventListener('fullscreenchange', applyViewport)
         window.addEventListener('resize', applyViewport)
