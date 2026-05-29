@@ -578,15 +578,13 @@
   }
 </script>
 
-<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<!-- ── Header (hidden during fight/intro — the arena owns its own top rail;
+     a floating quit button keeps the Save-or-Claim choice reachable) ──────── -->
+{#if phase !== 'fight' && phase !== 'intro'}
 <header class="fixed top-0 left-0 right-0 z-30 flex items-center gap-3 px-4"
-  style="height: 64px; background: rgba(7,7,13,0.97); border-bottom: 1px solid rgba(167,139,250,0.2); backdrop-filter: blur(20px);">
+  style="height: 64px; background: rgba(22,18,26,0.97); border-bottom: 1px solid rgba(167,139,250,0.2); backdrop-filter: blur(20px);">
   {#if phase === 'pick'}
     <button onclick={handleQuit}
-      style="background: none; border: none; cursor: pointer; color: var(--color-outline); font-size: 20px; line-height: 1; padding: 8px;">←</button>
-  {:else if phase === 'fight' || phase === 'intro'}
-    <!-- Mid-battle quit — opens the Save-or-Claim choice dialog. -->
-    <button onclick={() => pendingQuitChoice = true} aria-label="Quit run"
       style="background: none; border: none; cursor: pointer; color: var(--color-outline); font-size: 20px; line-height: 1; padding: 8px;">←</button>
   {:else}
     <div style="width: 36px;"></div>
@@ -605,6 +603,15 @@
   </div>
   <div style="width: 36px;"></div>
 </header>
+{/if}
+{#if phase === 'fight' || phase === 'intro'}
+  <!-- Floating quit (above the full-screen arena) — opens Save-or-Claim. -->
+  <button onclick={() => pendingQuitChoice = true} aria-label="Quit run"
+    class="fixed top-3 left-3 z-[60] w-9 h-9 rounded-full flex items-center justify-center"
+    style="background: rgba(22,18,26,0.92); border: 1px solid rgba(167,139,250,0.35); color: #a78bfa; cursor: pointer; backdrop-filter: blur(8px);">
+    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+  </button>
+{/if}
 
 <!-- ── Mid-battle quit choice: Save & Resume Later vs End & Claim ──────────── -->
 {#if pendingQuitChoice}

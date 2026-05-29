@@ -432,7 +432,8 @@
   }
 </script>
 
-<!-- ── Header ─────────────────────────────────────────────────────────────── -->
+<!-- ── Header (hidden during the fight — the arena owns its own top rail) ── -->
+{#if phase !== 'fight'}
 <header class="fixed top-0 left-0 right-0 z-30 flex items-center gap-3 px-4"
   style="height: 64px; background: rgba(7,7,13,0.97); border-bottom: 1px solid rgba(240,192,64,0.15); backdrop-filter: blur(20px);">
   {#if phase === 'pick'}
@@ -444,19 +445,13 @@
   <h2 class="font-bold flex-1 text-center" style="font-family: var(--font-cinzel); font-size: 15px; color: var(--color-on-surface);">
     {plusMode ? `Absolute +${absolutePlusLevel}` : `${world} World`} — Battle {battleNumber}/{BATTLES_PER_WORLD}
   </h2>
-  {#if phase === 'fight' && allWaves.length > 1}
-    <span class="font-mono text-xs px-2 py-1 rounded"
-      style="background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.2); color: #a78bfa;">
-      W{waveIdx + 1}/{allWaves.length}
-    </span>
-  {:else}
-    <div style="width: 36px;"></div>
-  {/if}
+  <div style="width: 36px;"></div>
 </header>
+{/if}
 
 <div class="pt-20 px-4 w-full flex flex-col"
   style="max-width: 560px; margin: 0 auto; min-height: 100dvh;
-         padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 96px)); contain: layout;">
+         padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 96px));">
 
   <!-- ══ Phase: pick ══════════════════════════════════════════════════════════ -->
   {#if phase === 'pick'}

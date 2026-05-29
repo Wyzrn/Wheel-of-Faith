@@ -1018,7 +1018,36 @@
     </div>
   {/if}
 
-  <!-- ── Stage (full screen — battle controls live in the dock now) ───── -->
+  <!-- ── Command rail (top): gamemode · battle title · wave count ──────── -->
+  <header class="arena-rail">
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="font-cinzel arena-mode">{modeName ?? 'Arcane Coliseum'}</span>
+      <span class="arena-rail-div"></span>
+      <span class="font-jetbrains arena-rail-detail">{modeTitle}</span>
+    </div>
+    <div class="flex items-center gap-3 shrink-0">
+      {#if modeSubtitle}
+        <span class="arena-wave">{modeSubtitle}</span>
+      {/if}
+      {#if controllerMode && onManualToggle}
+        <button class="arena-auto" class:arena-auto-on={!manualMode}
+          onclick={() => flipManual(!manualMode)}
+          aria-pressed={!manualMode} aria-label="{manualMode ? 'Enable' : 'Disable'} auto battle">
+          <span class="arena-auto-label">Auto</span>
+          <span class="arena-auto-track"><span class="arena-auto-dot"></span></span>
+        </button>
+      {/if}
+      {#if canInstant && phase === 'battle'}
+        <button class="arena-skip" onclick={instantResolve} title="Instant Battle — skip to result">
+          <span class="material-symbols-outlined" style="font-size: 13px; font-variation-settings: 'FILL' 1;">fast_forward</span>
+          SKIP
+        </button>
+      {/if}
+    </div>
+    <div class="rune-seam"></div>
+  </header>
+
+  <!-- ── Stage ───────────────────────────────────────────────────────── -->
   <main class="arena-stage">
     <div class="arena-seam"></div>
     <!-- Team 1 (player) — bottom-left -->
@@ -1117,30 +1146,6 @@
 
   <!-- ── Action dock ─────────────────────────────────────────────────── -->
   <footer class="arena-dock">
-    <!-- Control strip (moved off the old top rail): gamemode + auto + skip -->
-    <div class="dock-bar">
-      <div class="dock-bar-mode">
-        <span class="font-cinzel arena-mode">{modeName ?? (modeSubtitle || 'Arcane Coliseum')}</span>
-        <span class="dock-bar-div"></span>
-        <span class="font-jetbrains arena-rail-detail">{modeTitle}</span>
-      </div>
-      <div class="flex items-center gap-3 shrink-0">
-        {#if controllerMode && onManualToggle}
-          <button class="arena-auto" class:arena-auto-on={!manualMode}
-            onclick={() => flipManual(!manualMode)}
-            aria-pressed={!manualMode} aria-label="{manualMode ? 'Enable' : 'Disable'} auto battle">
-            <span class="arena-auto-label">Auto</span>
-            <span class="arena-auto-track"><span class="arena-auto-dot"></span></span>
-          </button>
-        {/if}
-        {#if canInstant && phase === 'battle'}
-          <button class="arena-skip" onclick={instantResolve} title="Instant Battle — skip to result">
-            <span class="material-symbols-outlined" style="font-size: 13px; font-variation-settings: 'FILL' 1;">fast_forward</span>
-            SKIP
-          </button>
-        {/if}
-      </div>
-    </div>
     <div class="arena-dock-inner">
       <!-- Turn counter + roster avatars -->
       <div class="dock-turn">
@@ -1256,9 +1261,15 @@
     cursor: pointer; transition: background 0.2s;
   }
   .arena-skip:hover { background: rgba(90,214,239,0.1); }
+  .arena-wave {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 999px;
+    background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.28); color: #c4b5fd;
+    white-space: nowrap;
+  }
 
   /* ── Stage ────────────────────────────────────────────────────────── */
-  .arena-stage { position: relative; flex: 1 1 auto; overflow: hidden; padding-top: env(safe-area-inset-top); }
+  .arena-stage { position: relative; flex: 1 1 auto; overflow: hidden; }
   .arena-seam {
     position: absolute; left: 50%; top: 6%; bottom: 8%; width: 2px; transform: translateX(-50%);
     background: linear-gradient(to bottom, transparent, #5ad6ef, #ff7b52, transparent);
@@ -1271,7 +1282,7 @@
   }
   .stage-side { position: absolute; z-index: 10; display: flex; flex-direction: column; gap: 12px; }
   .stage-side-1 { bottom: 6%; left: 3%; align-items: flex-start; }
-  .stage-side-2 { top: calc(env(safe-area-inset-top, 0px) + 12px); right: 3%; align-items: flex-end; }
+  .stage-side-2 { top: 12px; right: 3%; align-items: flex-end; }
 
   .fighter {
     width: min(82vw, 340px);
