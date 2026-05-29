@@ -44,33 +44,41 @@ export const auth = {
   },
 
   async login(username: string, password: string): Promise<string | null> {
-    const res = await fetch(`${API}/auth/login`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    })
-    const data = await res.json()
-    if (!res.ok) return data.error ?? 'Login failed'
-    _user = normalizeUser(data.user)
-    return null
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      })
+      const data = await res.json()
+      if (!res.ok) return data.error ?? 'Login failed'
+      _user = normalizeUser(data.user)
+      return null
+    } catch {
+      return "Couldn't reach the server — check your connection and try again."
+    }
   },
 
   async register(username: string, password: string, email?: string): Promise<string | null> {
-    const res = await fetch(`${API}/auth/register`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, email }),
-    })
-    const data = await res.json()
-    if (!res.ok) return data.error ?? 'Registration failed'
-    _user = normalizeUser(data.user)
-    return null
+    try {
+      const res = await fetch(`${API}/auth/register`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, email }),
+      })
+      const data = await res.json()
+      if (!res.ok) return data.error ?? 'Registration failed'
+      _user = normalizeUser(data.user)
+      return null
+    } catch {
+      return "Couldn't reach the server — check your connection and try again."
+    }
   },
 
   async logout() {
-    await fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' })
+    try { await fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' }) } catch { /* offline — clear locally anyway */ }
     _user = null
   },
 

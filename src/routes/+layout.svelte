@@ -14,6 +14,7 @@
   import { presence } from '$lib/stores/presence.svelte'
   import { settings } from '$lib/settings.svelte'
   import { setPerfTierOverride, getPerfTier } from '$lib/perf'
+  import { toast } from '$lib/toast.svelte'
 
   let { children } = $props()
   let showSettings = $state(false)
@@ -22,6 +23,27 @@
     auth.init()
     // Expose perf tier to CSS so heavy ambient effects can be gated declaratively.
     try { document.documentElement.dataset.perf = getPerfTier() } catch { /* ssr */ }
+
+    // Graceful network net: turn silent fetch failures (offline / server down)
+    // into one friendly, throttled toast instead of a dead button + console
+    // spew. Conservative — only catches network-type rejections.
+    let lastNetToast = 0
+    const onRejection = (e: PromiseRejectionEvent) => {
+      const r: any = e.reason
+      const msg = (r?.message ?? String(r ?? '')).toLowerCase()
+      const isNetwork = r?.name === 'TypeError'
+        || msg.includes('failed to fetch') || msg.includes('networkerror')
+        || msg.includes('load failed') || msg.includes('network request failed')
+      if (!isNetwork) return
+      const now = Date.now()
+      if (now - lastNetToast > 6000) {
+        lastNetToast = now
+        toast.error('Connection hiccup', { detail: "Couldn't reach the server — check your connection." })
+      }
+      e.preventDefault()  // handled — don't let it spam the console
+    }
+    window.addEventListener('unhandledrejection', onRejection)
+    return () => window.removeEventListener('unhandledrejection', onRejection)
   })
 
   // Keep the perf-tier override in sync with the High Quality settings
