@@ -638,9 +638,9 @@ export function buildBattleCharacter(
       effectTag: detectEffectTag(r.resultLabel),
       behavior: detectMoveBehavior(r.resultLabel),
       attackType: 'attack',
-      // Weapons intentionally have NO element so weapon attacks render
-      // as a plain weapon slash rather than borrowing the element's FX
-      // (e.g. an Inferno Sword should slash, not detonate a fireball).
+      // Weapons carry their element so attacks render the matching projectile
+      // (a Light weapon beams, a fire weapon throws a fire orb, etc.).
+      element: wepData?.element,
       grade: wepData?.grade,
     })
   }
