@@ -371,8 +371,11 @@
   border: 1px solid rgba(240,192,82,0.13);
   border-top-color:  rgba(240,192,82,0.24);
   position: relative;
-  overflow: hidden;
 }
+/* NOTE: no base `overflow: hidden` here — it would clobber `overflow-y:auto`
+   on scrollable obsidian-slab panels (e.g. the story character-sheet popup).
+   The grain/corner pseudo-elements self-clip via `border-radius: inherit`,
+   and tiles that need clipping add their own `overflow-hidden`. */
 
 /* Woven carbon-fibre texture + faint stone grain. Baked-in alphas (no global
    opacity) so the weave reads clearly across the panel like the mockup. */
