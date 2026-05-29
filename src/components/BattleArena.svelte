@@ -369,8 +369,9 @@
     // Speed-scale the beam duration so "fast" actually feels fast — the
     // glow/main/core all share these timings via CSS variables below.
     const speed = Math.max(0.4, Math.min(4, speedFactor))
-    const dur = Math.max(140, Math.round(BEAM_DURATION_MS / speed))
-    const fade = Math.max(80, Math.round(BEAM_FADE_DURATION_MS / speed))
+    // Floors keep the beam clearly visible even at fast/auto speeds.
+    const dur = Math.max(200, Math.round(BEAM_DURATION_MS / speed))
+    const fade = Math.max(120, Math.round(BEAM_FADE_DURATION_MS / speed))
     const widthMult: number = (typeKey && BEAM_WIDTH_MULT[typeKey]) || 1.0
     const b: Beam = {
       id: ++beamIdCounter,
@@ -400,10 +401,11 @@
     color: string
     durationMs: number
     size: number
+    rot: number       // travel angle in deg, so the comet tail points correctly
   }
   let orbs = $state<Orb[]>([])
   let orbIdCounter = 0
-  const ORB_DURATION_MS = 300
+  const ORB_DURATION_MS = 420
 
   function spawnOrb(
     startX: number, startY: number,
@@ -412,10 +414,12 @@
     onImpact: () => void,
   ) {
     const speed = Math.max(0.4, Math.min(4, speedFactor))
-    const dur = Math.max(110, Math.round(ORB_DURATION_MS / speed))
+    // Keep a 220ms floor so the orb stays clearly visible even on fast/auto.
+    const dur = Math.max(220, Math.round(ORB_DURATION_MS / speed))
     const gradeIdx = GRADE_IDX[grade ?? 'C'] ?? 3
-    const size = 13 + gradeIdx * 2.2   // higher grades hurl a bigger orb
-    const o: Orb = { id: ++orbIdCounter, startX, startY, endX, endY, color, durationMs: dur, size }
+    const size = 18 + gradeIdx * 2.6   // higher grades hurl a bigger orb
+    const rot = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI
+    const o: Orb = { id: ++orbIdCounter, startX, startY, endX, endY, color, durationMs: dur, size, rot }
     orbs = [...orbs, o]
     setTimeout(() => {
       onImpact()
@@ -1188,8 +1192,9 @@
                   width: {o.size}px; height: {o.size}px;
                   --orb-color: {o.color};
                   --orb-dx: {o.endX - o.startX}px; --orb-dy: {o.endY - o.startY}px;
-                  --orb-dur: {o.durationMs}ms;
+                  --orb-dur: {o.durationMs}ms; --orb-rot: {o.rot}deg;
                   z-index: 28; pointer-events: none;">
+        <span class="ba-orb-tail"></span>
       </div>
     {/each}
   {/if}
@@ -1599,23 +1604,42 @@
     border-radius: 50%;
     background: radial-gradient(circle at 35% 32%,
                                 #fff 0%,
-                                var(--orb-color) 52%,
-                                color-mix(in srgb, var(--orb-color) 60%, transparent) 78%,
+                                var(--orb-color) 50%,
+                                color-mix(in srgb, var(--orb-color) 65%, transparent) 76%,
                                 transparent 100%);
-    box-shadow: 0 0 10px var(--orb-color), 0 0 20px var(--orb-color),
-                0 0 6px #fff inset;
+    box-shadow: 0 0 12px var(--orb-color), 0 0 26px var(--orb-color),
+                0 0 40px color-mix(in srgb, var(--orb-color) 60%, transparent),
+                0 0 8px #fff inset;
     transform: translate(-50%, -50%);
-    animation: ba-orb-fly var(--orb-dur) cubic-bezier(0.45, 0, 0.65, 1) forwards;
+    animation: ba-orb-fly var(--orb-dur) cubic-bezier(0.4, 0, 0.7, 1) forwards;
     will-change: transform;
   }
+  /* Comet tail trailing behind the orb along its travel direction. */
+  .ba-orb-tail {
+    position: absolute;
+    right: 50%;
+    top: 50%;
+    height: 42%;
+    width: 320%;
+    transform-origin: right center;
+    transform: translateY(-50%) rotate(calc(var(--orb-rot) + 180deg));
+    background: linear-gradient(to left,
+                var(--orb-color),
+                color-mix(in srgb, var(--orb-color) 45%, transparent) 45%,
+                transparent 100%);
+    border-radius: 999px;
+    filter: blur(2px);
+    opacity: 0.85;
+    pointer-events: none;
+  }
   @keyframes ba-orb-fly {
-    0%   { transform: translate(-50%, -50%) scale(0.55); opacity: 0; }
-    16%  { opacity: 1; }
-    88%  { opacity: 1; }
+    0%   { transform: translate(-50%, -50%) scale(0.5);  opacity: 0; }
+    14%  { transform: translate(calc(-50% + var(--orb-dx) * 0.14), calc(-50% + var(--orb-dy) * 0.14)) scale(1.1); opacity: 1; }
     100% { transform: translate(calc(-50% + var(--orb-dx)), calc(-50% + var(--orb-dy))) scale(1); opacity: 1; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ba-orb { animation-duration: 1ms; }
+    .ba-orb-tail { display: none; }
   }
 
   @keyframes ba-beam-fire {

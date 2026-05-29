@@ -1328,7 +1328,7 @@
 <!-- h-[100dvh] + overflow-y-auto + my-auto on the wheel block centers the wheel
      when it fits but lets it scroll (top reachable, not clipped) on short
      landscape-mobile viewports. justify-center would clip the top instead. -->
-<div class="h-[100dvh] overflow-y-auto flex flex-col items-center px-4 relative">
+<div class="h-[100dvh] overflow-y-auto flex flex-col items-center px-4 relative pt-12 pb-20">
 
   <!-- Top bar: mode indicator + progress bar + exit link. The progress bar is
        new — gives the player a constant sense of "how far am I" instead of just
@@ -1358,9 +1358,11 @@
   <!-- z-30 lifts the wheel + spin button above the top bar (z-20) so the
        wheel and its controls are never covered, matching the main game. -->
   {#if currentDef && !showResumePrompt}
-    <!-- Top-aligned like the main game: heading above the wheel, wheel below
-         it, dots under. --sw-mobile-cap makes the Story wheel a touch larger. -->
-    <div class="relative z-30 flex flex-col items-center gap-4 pt-20 pb-8"
+    <!-- Centered between the top bar and the bottom nav (my-auto centers when
+         it fits, scrolls without clipping when it doesn't). Root reserves space
+         for the top bar + 64px bottom nav so the wheel doesn't leave a dead gap
+         or hide behind the hotbar. --sw-mobile-cap makes it a touch larger. -->
+    <div class="relative z-30 flex flex-col items-center gap-4 my-auto"
          style="--sw-mobile-cap: min(66vh, 380px);">
       {#if currentIndex === 0 && currentDef?.category === 'race' && !pendingResult}
         <FirstTimeTooltip
