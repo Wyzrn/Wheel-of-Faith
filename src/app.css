@@ -535,10 +535,43 @@
 }
 :where(button, a, [role="button"]) { -webkit-tap-highlight-color: transparent; }
 
-/* Perf-tier gate (set <html data-perf="low"> from getPerfTier at boot). */
+/* Perf-tier gate (set <html data-perf="low"> from getPerfTier at boot).
+   NOTE: every touch device buckets as 'low' (see getPerfTier), so these are
+   really the *mobile* rules. Goal: keep the look but drop the techniques that
+   thrash mobile GPUs — blend modes, big blur shadows, animated box-shadows,
+   backdrop blur, and fixed background-attachment. */
 :root[data-perf="low"] .gild-sweep::after,
 :root[data-perf="low"] [class*="ember"] { display: none; }
 :root[data-perf="low"] .surface-textured::before { opacity: 0.03; }
+
+/* Kill backdrop-filter blur everywhere on mobile — fixed bars re-blur the
+   scrolling content behind them every frame, the single biggest jank source. */
+:root[data-perf="low"] [style*="backdrop-filter"],
+:root[data-perf="low"] .bottom-nav {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Cheaper panels: drop the soft-light grain blend + the big blurred glow
+   shadow (kept the rim + one tight ambient shadow). */
+:root[data-perf="low"] .obsidian-slab::before { mix-blend-mode: normal; opacity: 0.05; }
+:root[data-perf="low"] .obsidian-slab {
+  box-shadow:
+    0 0 0 1px rgba(240,192,82,0.12),
+    0 6px 16px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* Static (un-animated) glows on mobile — animating box-shadow/opacity on big
+   blurred layers repaints every frame. */
+:root[data-perf="low"] .cta-pulse {
+  animation: none;
+  box-shadow: var(--elev-2), 0 0 14px rgba(240,192,82,0.45);
+}
+:root[data-perf="low"] .radial-pulse { animation: none; opacity: 0.16; }
+
+/* Fixed background-attachment forces a full repaint on every scroll frame. */
+:root[data-perf="low"] body { background-attachment: scroll; }
 
 @media (prefers-reduced-motion: reduce) {
   .gild-sweep::after, .lift, .surface-textured { animation: none !important; }
