@@ -1070,8 +1070,9 @@
     .sw-outcomes { display: none; }               /* declutter the row */
     /* Shrink the wheel so the button fits beside it within the parent
        container, and so the top isn't clipped on short landscape screens.
-       !important overrides the inline clamp() width. */
-    .sw-wheel-box { width: min(62vh, 360px) !important; }
+       The cap is overridable per-screen via --sw-mobile-cap (Story Mode sets
+       a slightly larger one). !important overrides the inline clamp() width. */
+    .sw-wheel-box { width: var(--sw-mobile-cap, min(62vh, 360px)) !important; }
   }
 
   @keyframes runeRingPulse {

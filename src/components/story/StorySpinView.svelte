@@ -1358,7 +1358,10 @@
   <!-- z-30 lifts the wheel + spin button above the top bar (z-20) so the
        wheel and its controls are never covered, matching the main game. -->
   {#if currentDef && !showResumePrompt}
-    <div class="relative z-30 flex flex-col items-center gap-4 my-auto py-16">
+    <!-- Top-aligned like the main game: heading above the wheel, wheel below
+         it, dots under. --sw-mobile-cap makes the Story wheel a touch larger. -->
+    <div class="relative z-30 flex flex-col items-center gap-4 pt-20 pb-8"
+         style="--sw-mobile-cap: min(66vh, 380px);">
       {#if currentIndex === 0 && currentDef?.category === 'race' && !pendingResult}
         <FirstTimeTooltip
           storageKey="wof_seen_race_hint"
@@ -1367,6 +1370,18 @@
           placement="top"
         />
       {/if}
+
+      <!-- Category heading above the wheel (matches the main game). -->
+      <div class="text-center mb-1" style="animation: fadeIn 0.25s ease-out forwards;">
+        <p class="text-xs tracking-[0.22em] uppercase mb-1.5"
+          style="font-family: var(--font-mono, monospace); color: #9a907b;">
+          {pendingResult ? 'result revealed' : 'spinning for'}
+        </p>
+        <h2 style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: clamp(1rem, 4vw, 1.55rem); font-weight: 700; color: #ffdf96; letter-spacing: 0.1em;">
+          {(currentDef?.displayName ?? '').toUpperCase()}
+        </h2>
+      </div>
+
       {#key currentIndex}
         <SpinWheel
           segments={currentSegments}
@@ -1385,11 +1400,8 @@
         />
       {/key}
 
-      <!-- Spin label + progress counter under the wheel -->
+      <!-- Progress counter under the wheel (name now shown in the heading above). -->
       <div class="flex flex-col items-center gap-1.5 mt-1">
-        <p style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: 15px; color: var(--color-on-surface); font-weight: 600;">
-          {currentDef.displayName}
-        </p>
         <StreakBanner streak={currentStreak} />
         <SpinProgressDots
           currentIndex={currentIndex}
