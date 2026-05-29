@@ -3596,6 +3596,68 @@ export const racesByLabel: Map<string, Race> = new Map(races.map(r => [r.label, 
 export const getRace = (label: string | undefined | null): Race | undefined =>
   label ? racesByLabel.get(label) : undefined
 
+// ── Content augmentation (runs once at module load, before the lookups) ──────
+// 1. Rarer racial spin outcomes (weight ≤ 2) that don't already grant stats get
+//    a derived stat boost/debuff — so the rare ones DO something beyond their
+//    wheel effect, for every race. The rarest (weight 1) grant two; "dark"
+//    elements buy power with a stat PENALTY.
+// 2. Every racial ability inherits an element + grade from its parent pool
+//    entry when missing, so each fires a meaningful elemental projectile/beam.
+const _ELEMENT_STATS: Record<string, [string, string]> = {
+  Fire: ['strength', 'durability'], Earth: ['durability', 'strength'], Metal: ['durability', 'fightingSkill'],
+  Lightning: ['speed', 'energyLevel'], Wind: ['agility', 'speed'], Water: ['agility', 'potential'],
+  Arcane: ['powerMastery', 'iq'], Cosmic: ['powerMastery', 'potential'], Time: ['speed', 'iq'],
+  Psychic: ['iq', 'powerMastery'], Soul: ['potential', 'charisma'], Void: ['powerMastery', 'potential'],
+  Light: ['charisma', 'potential'], Sound: ['charisma', 'iq'], Nature: ['potential', 'durability'],
+  Shadow: ['agility', 'powerMastery'], Poison: ['durability', 'agility'], Chaos: ['potential', 'powerMastery'],
+  Blood: ['strength', 'durability'], Neutral: ['fightingSkill', 'strength'],
+}
+const _DARK_ELEMENTS = new Set(['Shadow', 'Void', 'Blood', 'Chaos', 'Poison'])
+
+function _deriveStatGrants(element: string | undefined, weight: number): Record<string, 'statBonus' | 'statPenalty'> {
+  const [a, b] = _ELEMENT_STATS[element ?? 'Neutral'] ?? _ELEMENT_STATS.Neutral
+  const grants: Record<string, 'statBonus' | 'statPenalty'> = { [a]: 'statBonus' }
+  if (weight <= 1) grants[b] = _DARK_ELEMENTS.has(element ?? '') ? 'statPenalty' : 'statBonus'
+  return grants
+}
+
+type _AugPoolEntry = {
+  label: string
+  weight: number
+  element?: import('./types').ElementType
+  grade?: import('./types').ItemGrade
+  statBonusGrants?: Record<string, 'statBonus' | 'statPenalty'>
+  grantedPowers?: string[]
+  powerPool?: { label: string; weight: number }[]
+  abilities?: Array<{ element?: import('./types').ElementType; grade?: import('./types').ItemGrade }>
+}
+for (const race of races) {
+  for (const pool of [race.subTypePool, race.classPool, race.transformationPool]) {
+    for (const entry of (pool ?? []) as _AugPoolEntry[]) {
+      // Give rarer outcomes (weight ≤ 2) a reward beyond the wheel effect, but
+      // keep VARIETY: about half grant a signature power/ability, the rest a
+      // stat boost/debuff. Entries that already define a reward are left alone.
+      if (entry.weight <= 2 && !entry.statBonusGrants && !entry.grantedPowers?.length) {
+        const seed = entry.label.length + (entry.label.charCodeAt(0) ?? 0)
+        const sig = entry.powerPool?.length ? entry.powerPool[entry.powerPool.length - 1].label : null
+        if (sig && seed % 2 === 0) {
+          entry.grantedPowers = [sig]                              // a specific power/ability
+        } else {
+          entry.statBonusGrants = _deriveStatGrants(entry.element, entry.weight)
+        }
+      }
+      for (const ab of entry.abilities ?? []) {
+        if (!ab.element) ab.element = entry.element ?? 'Neutral'
+        if (!ab.grade) ab.grade = entry.grade ?? 'C'
+      }
+    }
+  }
+  for (const ab of (race.abilities ?? []) as Array<{ element?: import('./types').ElementType; grade?: import('./types').ItemGrade }>) {
+    if (!ab.element) ab.element = 'Neutral'
+    if (!ab.grade) ab.grade = 'C'
+  }
+}
+
 // Flat lookup from every race subType/class/transformation entry → element + grade.
 // Previously rebuilt at +page.svelte module init on every page load; lifting it here
 // means the Map is computed once when the races chunk is loaded.

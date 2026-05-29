@@ -32,11 +32,14 @@ const _armorMap  = new Map(armorsPool.map(a => [a.label, a]))
 // Used for ability moves so racial abilities like "Battle Hardened" or
 // "Backstab" pick up their element/grade for damage scaling and VFX.
 function lookupMoveData(label: string): { element?: ElementType; grade?: string; attackType?: AttackType } {
+  // Every racial power / ability resolves an element + attackType — defaulting
+  // to Neutral / 'attack' so none fall through to a typeless move. detectAttackType
+  // still reads the label keywords first, so heal/buff/aura moves keep their type.
   const p = _powerMap.get(label)
-  if (p) return { element: p.element, grade: p.grade, attackType: p.attackType }
+  if (p) return { element: p.element ?? 'Neutral', grade: p.grade, attackType: p.attackType ?? 'attack' }
   const a = _abilityLookup.get(label)
-  if (a) return { element: a.element, grade: a.grade }
-  return {}
+  if (a) return { element: a.element ?? 'Neutral', grade: a.grade, attackType: 'attack' }
+  return { element: 'Neutral', attackType: 'attack' }
 }
 
 // ─── Move-grade damage multiplier ─────────────────────────────────────────────
