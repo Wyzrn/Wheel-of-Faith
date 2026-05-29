@@ -422,7 +422,7 @@
           {@const borderColor = isT1 ? 'rgba(240,192,64,0.65)' : isT2 ? 'rgba(232,121,249,0.65)' : char.error ? 'rgba(240,192,64,0.06)' : 'rgba(240,192,64,0.18)'}
           {@const glowColor   = isT1 ? 'rgba(240,192,64,0.14)' : isT2 ? 'rgba(232,121,249,0.14)' : 'none'}
           <div class="flex items-center gap-0 rounded-lg overflow-hidden"
-            style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid {borderColor}; box-shadow: {isSelected ? `0 0 20px ${glowColor}, inset 1px 1px 0 rgba(255,223,150,0.07)` : 'inset 1px 1px 0 rgba(255,223,150,0.05)'}; transition: border-color 0.2s, box-shadow 0.2s;"
+            style="background: linear-gradient(145deg, #241f29 0%, #14111a 100%); border: 1px solid {borderColor}; box-shadow: {isSelected ? `0 0 20px ${glowColor}, inset 1px 1px 0 rgba(255,223,150,0.07)` : 'inset 1px 1px 0 rgba(255,223,150,0.05)'}; transition: border-color 0.2s, box-shadow 0.2s;"
           >
             <!-- Battle select button: cycles unselected → T1 → T2 → unselected -->
             <button

@@ -591,7 +591,7 @@
           <!-- Leaderboard tile → public clan page. -->
           <a href={`/clans/${clan._id}`} data-fx="big"
             class="flex items-center gap-3 rounded-xl px-3 py-3 transition-all active:scale-98"
-            style="background: linear-gradient(180deg, #2d2831, #1e1a22); border: 1px solid rgba(167,139,250,0.1); text-decoration: none;">
+            style="background: linear-gradient(145deg, #241f29 0%, #14111a 100%); border: 1px solid rgba(167,139,250,0.1); text-decoration: none;">
             <div class="shrink-0 w-8 flex items-center justify-center">
               {#if i < 3}<span style="font-size: 1.2rem;">{['🥇','🥈','🥉'][i]}</span>{:else}<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #4e4635; font-weight: 700;">#{i+1}</span>{/if}
             </div>

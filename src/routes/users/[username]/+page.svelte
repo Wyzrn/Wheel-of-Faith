@@ -145,7 +145,7 @@
             {#each data.characters as char}
               {@const tierColor = TIER_COLORS[char.overall_tier] ?? '#6b7280'}
               <a href="/character/{char.shareId}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:brightness-110"
-                style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(167,139,250,0.1); text-decoration: none;">
+                style="background: linear-gradient(145deg, #241f29 0%, #14111a 100%); border: 1px solid rgba(167,139,250,0.1); text-decoration: none;">
                 <div class="shrink-0 w-12 h-10 rounded-lg flex items-center justify-center"
                   style="background: {tierColor}18; border: 1px solid {tierColor}28;">
                   <span class="text-xs font-black" style="font-family: 'Cinzel', serif; color: {tierColor};">{char.overall_tier}</span>

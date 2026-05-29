@@ -381,7 +381,7 @@
     {#if loading}
       <div class="flex flex-col gap-3">
         {#each [1, 2, 3, 4, 5] as _}
-          <div class="rounded-lg animate-pulse" style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(255,223,150,0.06); height: 80px;"></div>
+          <div class="rounded-lg animate-pulse" style="background: linear-gradient(145deg, #241f29 0%, #14111a 100%); border: 1px solid rgba(255,223,150,0.06); height: 80px;"></div>
         {/each}
       </div>
 
@@ -419,7 +419,7 @@
           {@const tierGrad = tierGradient(charTier)}
           <div
             class="flex rounded-lg overflow-hidden transition-all hover:brightness-110"
-            style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(167,139,250,0.18); box-shadow: inset 1px 1px 0 rgba(167,139,250,0.05);"
+            style="background: linear-gradient(145deg, #241f29 0%, #14111a 100%); border: 1px solid rgba(167,139,250,0.18); box-shadow: inset 1px 1px 0 rgba(167,139,250,0.05);"
           >
             <!-- Main link area -->
             <a
@@ -587,7 +587,7 @@
             <button
               onclick={() => startBattle(mine.shareId)}
               class="flex items-center gap-3 w-full rounded-lg px-4 py-3 text-left transition-all active:scale-[0.98]"
-              style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(255,223,150,0.1); cursor: pointer; box-shadow: inset 1px 1px 0 rgba(255,223,150,0.04);"
+              style="background: linear-gradient(145deg, #241f29 0%, #14111a 100%); border: 1px solid rgba(255,223,150,0.1); cursor: pointer; box-shadow: inset 1px 1px 0 rgba(255,223,150,0.04);"
               onmouseenter={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(244,63,94,0.4)'}
               onmouseleave={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,223,150,0.1)'}
             >

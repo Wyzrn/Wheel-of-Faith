@@ -262,7 +262,7 @@
           <div class="flex flex-col gap-3">
             {#each friends as friend}
               {@const online = presence.isOnline(friend._id)}
-              <div class="flex items-center gap-3 rounded-xl px-4 py-3" style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(167,139,250,0.12);">
+              <div class="flex items-center gap-3 rounded-xl px-4 py-3" style="background: linear-gradient(145deg, #241f29 0%, #14111a 100%); border: 1px solid rgba(167,139,250,0.12);">
                 <!-- Avatar + info → tap to open profile -->
                 <a href="/users/{friend.username}" class="flex items-center gap-3 flex-1 min-w-0 transition-all active:scale-[0.98]"
                   style="text-decoration: none; color: inherit;" title="View {friend.username}'s profile">

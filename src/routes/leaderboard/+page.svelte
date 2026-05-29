@@ -100,7 +100,7 @@
         <div class="flex flex-col gap-2">
           {#each endlessEntries as entry, i}
             {@const isMe = auth.user?.username === entry.username}
-            <a href="/users/{entry.username}" class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.99]" style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(90,214,239,0.06)' : 'linear-gradient(180deg, #2d2831, #1e1a22)'}; border: 1px solid {isMe ? 'rgba(90,214,239,0.3)' : 'rgba(90,214,239,0.08)'};" title="View {entry.username}'s profile">
+            <a href="/users/{entry.username}" class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.99]" style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(90,214,239,0.06)' : 'linear-gradient(145deg, #241f29 0%, #14111a 100%)'}; border: 1px solid {isMe ? 'rgba(90,214,239,0.3)' : 'rgba(90,214,239,0.08)'};" title="View {entry.username}'s profile">
               <div class="shrink-0 w-8 flex items-center justify-center">
                 {#if i < 3}<span style="font-size: 1.2rem;">{['🥇','🥈','🥉'][i]}</span>{:else}<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #4e4635; font-weight: 700;">#{i+1}</span>{/if}
               </div>
@@ -172,7 +172,7 @@
           <a
             href="/users/{entry.username}"
             class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.99]"
-            style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(240,192,64,0.06)' : 'linear-gradient(180deg, #2d2831 0%, #1e1a22 100%)'}; border: 1px solid {isMe ? 'rgba(240,192,64,0.3)' : 'rgba(167,139,250,0.1)'};"
+            style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(240,192,64,0.06)' : 'linear-gradient(145deg, #241f29 0%, #14111a 100%)'}; border: 1px solid {isMe ? 'rgba(240,192,64,0.3)' : 'rgba(167,139,250,0.1)'};"
             title="View {entry.username}'s profile"
           >
             <!-- Rank badge -->
