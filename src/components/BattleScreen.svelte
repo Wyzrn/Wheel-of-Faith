@@ -178,6 +178,7 @@
       onManualToggle={(m) => manualMode = m}
       canInstant={canInstant}
       modeTitle="RIVALS BATTLE"
+      modeName="Rivals"
       modeSubtitle="⚔ Rivals Mode"
       modeAccent="#f9a8d4"
       speedFactor={settings.battleSpeed}

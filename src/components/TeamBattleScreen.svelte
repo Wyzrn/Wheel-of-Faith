@@ -149,6 +149,7 @@
       manualMode={manualMode}
       onManualToggle={(m) => manualMode = m}
       modeTitle={is1v1 ? 'RIVALS BATTLE' : `${team1.length}v${team2.length} TEAM BATTLE`}
+      modeName="Rivals"
       modeSubtitle="⚔ Rivals Mode"
       modeAccent="#f9a8d4"
       speedFactor={settings.battleSpeed}

@@ -777,6 +777,7 @@
         controller={controller}
         manualMode={manualMode}
         onManualToggle={(m) => manualMode = m}
+        modeName="Endless"
         modeTitle={`Wave ${currentWave} — ${currentGrade}`}
         modeSubtitle={allSubWaves.length > 1
           ? `Sub-wave ${subWaveIdx + 1} / ${allSubWaves.length}`

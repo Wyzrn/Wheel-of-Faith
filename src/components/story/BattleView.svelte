@@ -563,6 +563,7 @@
         controller={controller}
         manualMode={manualMode}
         onManualToggle={(m) => manualMode = m}
+        modeName="Story Mode"
         modeTitle={plusMode ? `Absolute +${absolutePlusLevel}` : `${world} World — Battle ${battleNumber}`}
         modeSubtitle={allWaves.length > 1 ? `Wave ${waveIdx + 1} / ${allWaves.length}` : 'Story Battle'}
         modeAccent={ec}

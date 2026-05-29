@@ -189,6 +189,7 @@
       manualMode={manualMode}
       onManualToggle={(m) => manualMode = m}
       modeTitle={title}
+      modeName="Rivals"
       modeSubtitle="⚔ Quick Battle"
       modeAccent="#f9a8d4"
       speedFactor={settings.battleSpeed}

@@ -15,6 +15,7 @@
 -->
 <script lang="ts">
   import { onDestroy, tick, type Snippet } from 'svelte'
+  import { getPerfTier } from '$lib/perf'
   import AttackFX from './AttackFX.svelte'
   import BattleHotbar from './BattleHotbar.svelte'
   import DamageIndicator from './DamageIndicator.svelte'
@@ -39,6 +40,9 @@
     phase: 'intro' | 'battle' | 'result'
     modeTitle: string
     modeSubtitle?: string
+    // Game-mode label shown in the command rail (e.g. "Rivals", "Story Mode",
+    // "Endless"). Falls back to modeSubtitle, then "Arcane Coliseum".
+    modeName?: string
     modeAccent?: string
     introMs?: number
     speedFactor: number              // settings.battleSpeed (legacy)
@@ -72,13 +76,32 @@
   }
   let {
     teams, rounds = [], phase = $bindable(), modeTitle, modeSubtitle = '',
-    modeAccent = '#f0c040', introMs = 2600, speedFactor, effectsEnabled,
+    modeName, modeAccent = '#f0c040', introMs = 2600, speedFactor, effectsEnabled,
     autoStart = true,
     controller, manualMode = false, playerActorId, onManualToggle,
     canInstant = false,
     prebattle, result, hotbar, cardExtra,
     onPhaseChange, onRoundEnd, onLineShown, onBattleEnd,
   }: Props = $props()
+
+  // ── Atmospheric embers (perf-gated; off on touch/low + reduced-motion) ───
+  let arenaEmbers = $state<{ left: number; delay: number; dur: number; op: number }[]>([])
+  // ── Full-screen takeover: lock background scroll while the arena is mounted.
+  $effect(() => {
+    if (typeof document === 'undefined') return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const reduce = matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (!reduce && getPerfTier() !== 'low') {
+      arenaEmbers = Array.from({ length: getPerfTier() === 'high' ? 24 : 14 }, () => ({
+        left: Math.random() * 100,
+        delay: Math.random() * 5,
+        dur: 3 + Math.random() * 4,
+        op: Math.random() * 0.5,
+      }))
+    }
+    return () => { document.body.style.overflow = prev }
+  })
 
   // Whether this battle is being driven by a controller (turn-by-turn)
   // instead of a pre-baked rounds[] queue.
@@ -926,136 +949,117 @@
   }
 </script>
 
-<div bind:this={wrapperEl} class="ba-wrapper" style="overflow:visible;">
-
-  <!-- Header -->
-  <div class="text-center mb-3 sm:mb-5 relative" style="animation: fadeIn 0.3s ease-out forwards;">
-    {#if modeSubtitle}
-      <p class="text-xs tracking-[0.28em] uppercase mb-1 sm:mb-2"
-         style="font-family: 'JetBrains Mono', monospace; color: {modeAccent};">{modeSubtitle}</p>
-    {/if}
-    <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.2rem, 5vw, 2.4rem); font-weight: 900;
-               color: #ffdf96; letter-spacing: 0.15em;">{modeTitle}</h1>
-
-    <!-- Auto / Manual toggle (visible switch — only shown when controllable) -->
-    {#if controllerMode && onManualToggle}
-      <div class="ba-auto-toggle"
-           role="group"
-           aria-label="Auto battle on or off"
-           style="--accent: {modeAccent};">
-        <span class="ba-auto-label">Auto</span>
-        <button
-          class="ba-switch"
-          class:ba-switch-on={!manualMode}
-          onclick={() => flipManual(!manualMode)}
-          aria-pressed={!manualMode}
-          aria-label="{manualMode ? 'Enable' : 'Disable'} auto battle">
-          <span class="ba-switch-knob"></span>
-        </button>
-      </div>
-    {/if}
-
-    <!-- Instant Battle skip button (Instant Battle gamepass) -->
-    {#if canInstant && phase === 'battle'}
-      <button class="ba-skip-btn"
-              onclick={instantResolve}
-              aria-label="Skip battle to result"
-              title="Instant Battle — skip to result">
-        <span class="material-symbols-outlined" style="font-size: 16px; font-variation-settings: 'FILL' 1;">fast_forward</span>
-        <span>Skip</span>
-      </button>
-    {/if}
-  </div>
-
-  <!-- Two-team grid -->
-  <div class="grid grid-cols-2 gap-2 sm:gap-4 relative w-full" style="overflow:visible;">
-    {#each teams as team (team.side)}
-      <div class="flex flex-col gap-2">
-        {#if team.members.length > 1}
-          <p class="text-[10px] tracking-[0.22em] uppercase mb-0.5"
-             style="font-family: 'JetBrains Mono', monospace; color: {team.accent};">{team.label}</p>
+<!-- Reusable combatant banner (the Coliseum "fighter" frame). -->
+{#snippet fighter(m: ArenaMember, team: ArenaTeam, isRight: boolean)}
+  {@const pct = hpPctFor(m)}
+  {@const badges = charStatusByName.get(m.name) ?? []}
+  {@const accent = m.accent ?? team.accent}
+  {@const dead = isDead(m)}
+  {@const won = isVictor(m)}
+  {@const isTargetable = !!pickingTarget && !dead &&
+                         currentActorMember != null &&
+                         m.side !== currentActorMember.side}
+  <div use:trackCharEl={{ name: m.name }}
+    class="fighter {isRight ? 'fighter-right' : ''}
+           {dodgingName === m.name ? 'panel-dodging' : ''}
+           {m.spinClass === 'paragon' ? 'bv-paragon' : m.spinClass === 'legend' ? 'bv-legend' : m.spinClass === 'hero' ? 'bv-hero' : ''}"
+    class:fighter-victor={won}
+    class:fighter-targetable={isTargetable}
+    class:target-beckon={isTargetable}
+    role={isTargetable ? 'button' : undefined}
+    tabindex={isTargetable ? 0 : undefined}
+    onclick={isTargetable ? () => handleTargetClick(m) : undefined}
+    onkeydown={isTargetable
+      ? (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') handleTargetClick(m) }
+      : undefined}
+    style="--accent-color: {accent}; opacity: {dead ? 0.4 : 1};">
+    <div class="hp-ring" style="--hp: {Math.round(pct * 100)}%; --ring: {hpColor(pct)};">
+      <div class="character-sigil" style="border-color: {accent}66; color: {accent};">
+        {#if won}
+          <span class="material-symbols-outlined" style="font-size: 26px; color: {accent}; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+        {:else if dead}
+          <span class="material-symbols-outlined" style="font-size: 26px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
+        {:else}
+          <span class="font-cinzel" style="font-size: 1.5rem; font-weight: 700;">{m.name.charAt(0).toUpperCase()}</span>
         {/if}
-        {#each team.members as m (m.id)}
-          {@const pct = hpPctFor(m)}
-          {@const badges = charStatusByName.get(m.name) ?? []}
-          {@const accent = m.accent ?? team.accent}
-          {@const dead = isDead(m)}
-          {@const won = isVictor(m)}
-          {@const isTargetable = !!pickingTarget && !dead &&
-                                 currentActorMember != null &&
-                                 m.side !== currentActorMember.side}
-          <div use:trackCharEl={{ name: m.name }}
-            class="bv-char-card {team.side === 'team1' ? 'bv-team-1' : 'bv-team-2'}
-                   {dodgingName === m.name ? 'panel-dodging' : ''}
-                   {m.spinClass === 'paragon' ? 'bv-paragon' : m.spinClass === 'legend' ? 'bv-legend' : m.spinClass === 'hero' ? 'bv-hero' : ''}"
-            class:bv-victor={won}
-            class:ba-targetable={isTargetable}
-            role={isTargetable ? 'button' : undefined}
-            tabindex={isTargetable ? 0 : undefined}
-            onclick={isTargetable ? () => handleTargetClick(m) : undefined}
-            onkeydown={isTargetable
-              ? (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') handleTargetClick(m) }
-              : undefined}
-            style="padding: 12px; --team-accent: {accent}; opacity: {dead ? 0.45 : 1};
-                   {isTargetable ? 'cursor: pointer;' : ''}">
-
-            <div class="flex items-center gap-2 min-w-0 mb-1.5">
-              {#if won}
-                <span class="material-symbols-outlined shrink-0"
-                  style="font-size: 18px; color: {accent}; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-              {:else if phase === 'result' && winner && winner !== 'draw' && winner !== team.side}
-                <span class="material-symbols-outlined shrink-0"
-                  style="font-size: 18px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
-              {/if}
-              <p class="font-bold truncate"
-                 style="font-family: 'Cinzel', serif; color: {accent}; font-size: 0.95rem;">{m.name}</p>
-            </div>
-
-            {#if m.raceLabel || m.archetypeLabel}
-              <p class="text-xs truncate mb-1.5"
-                 style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{[m.raceLabel, m.archetypeLabel].filter(Boolean).join(' · ')}</p>
-            {/if}
-
-            <div class="bv-hp-track" style="height: 10px;">
-              <div class="bv-hp-fill"
-                style="width: {pct * 100}%; background: {hpColor(pct)}; color: {hpColor(pct)};"></div>
-            </div>
-            <p class="text-xs mt-1"
-               style="font-family: 'JetBrains Mono', monospace; color: {hpColor(pct)};">
-              {formatHp(displayHp[m.id] ?? m.hp)}<span style="color: #4e4635;"> / {formatHp(m.maxHp)} HP</span>
-            </p>
-
-            {#if m.stats && m.stats.length > 0}
-              <div class="grid gap-1 mt-2"
-                   style="grid-template-columns: repeat({m.stats.length}, minmax(0, 1fr));">
-                {#each m.stats as s}
-                  <div class="text-center rounded py-1"
-                       style="background: {accent}10; border: 1px solid {accent}1f;">
-                    <p style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 9px;">{s.label}</p>
-                    <p class="font-bold text-xs" style="font-family: 'Cinzel', serif; color: {accent};">{s.value}</p>
-                  </div>
-                {/each}
-              </div>
-            {/if}
-
-            {#if badges.length > 0}
-              <div class="flex flex-wrap gap-1 justify-center mt-2">
-                {#each badges as b}
-                  <span class="bv-status-chip" title="{b.label}: {b.description}"
-                    style="background: {b.color}22; border-color: {b.color}66;">
-                    <span class="material-symbols-outlined"
-                      style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
-                  </span>
-                {/each}
-              </div>
-            {/if}
-
-            {#if cardExtra}{@render cardExtra(m)}{/if}
-          </div>
-        {/each}
       </div>
-    {/each}
+    </div>
+    <div class="fighter-info {isRight ? 'items-end text-right' : ''}">
+      <h2 class="fighter-name" style="color: {accent};">{m.name}</h2>
+      {#if m.raceLabel || m.archetypeLabel}
+        <span class="fighter-sub">{[m.raceLabel, m.archetypeLabel].filter(Boolean).join(' · ')}</span>
+      {/if}
+      <span class="fighter-hp" style="color: {hpColor(pct)};">
+        {formatHp(displayHp[m.id] ?? m.hp)}<span style="color: #6b6150;"> / {formatHp(m.maxHp)}</span>
+      </span>
+      {#if badges.length > 0}
+        <div class="fighter-badges {isRight ? 'justify-end' : ''}">
+          {#each badges as b}
+            <span class="bv-status-chip" title="{b.label}: {b.description}"
+              style="background: {b.color}22; border-color: {b.color}66;">
+              <span class="material-symbols-outlined"
+                style="font-size: 11px; color: {b.color}; font-variation-settings: 'FILL' 1;">{b.icon}</span>
+            </span>
+          {/each}
+        </div>
+      {/if}
+      {#if cardExtra}{@render cardExtra(m)}{/if}
+    </div>
   </div>
+{/snippet}
+
+<div bind:this={wrapperEl} class="arena">
+  <div class="void-grain"></div>
+  {#if arenaEmbers.length > 0}
+    <div class="arena-embers" aria-hidden="true">
+      {#each arenaEmbers as e}
+        <span class="ember" style="left: {e.left}vw; animation-delay: {e.delay}s; animation-duration: {e.dur}s; opacity: {e.op};"></span>
+      {/each}
+    </div>
+  {/if}
+
+  <!-- ── Command rail ────────────────────────────────────────────────── -->
+  <header class="arena-rail">
+    <div class="flex items-center gap-3 min-w-0">
+      <h1 class="font-cinzel arena-mode">{modeName ?? (modeSubtitle || 'Arcane Coliseum')}</h1>
+      <div class="arena-rail-div"></div>
+      <span class="font-jetbrains arena-rail-detail">{modeTitle}</span>
+    </div>
+    <div class="flex items-center gap-4 shrink-0">
+      {#if controllerMode && onManualToggle}
+        <button class="arena-auto" class:arena-auto-on={!manualMode}
+          onclick={() => flipManual(!manualMode)}
+          aria-pressed={!manualMode} aria-label="{manualMode ? 'Enable' : 'Disable'} auto battle">
+          <span class="arena-auto-label">Auto</span>
+          <span class="arena-auto-track"><span class="arena-auto-dot"></span></span>
+        </button>
+      {/if}
+      {#if canInstant && phase === 'battle'}
+        <button class="arena-skip" onclick={instantResolve} title="Instant Battle — skip to result">
+          <span class="material-symbols-outlined" style="font-size: 13px; font-variation-settings: 'FILL' 1;">fast_forward</span>
+          SKIP
+        </button>
+      {/if}
+    </div>
+    <div class="rune-seam"></div>
+  </header>
+
+  <!-- ── Stage ───────────────────────────────────────────────────────── -->
+  <main class="arena-stage">
+    <div class="arena-seam"></div>
+    <!-- Team 1 (player) — bottom-left -->
+    <div class="stage-side stage-side-1">
+      {#each teams[0].members as m (m.id)}{@render fighter(m, teams[0], false)}{/each}
+    </div>
+    <!-- Team 2 (enemy) — top-right -->
+    <div class="stage-side stage-side-2">
+      {#each teams[1].members as m (m.id)}{@render fighter(m, teams[1], true)}{/each}
+    </div>
+    <!-- Center ticker (latest battle-log line) -->
+    {#if phase !== 'intro' && logLines.length > 0}
+      <div class="arena-ticker"><span>{logLines.at(-1)}</span></div>
+    {/if}
+  </main>
 
   <!-- Projectile layer retired post-S5: damage dispatches go through the
        in-place / beam paths in showAnim now. Component file kept around
@@ -1120,89 +1124,68 @@
   <!-- Floating damage / heal / miss indicators -->
   <DamageIndicator events={damageEvents} />
 
-  <!-- Intro splash -->
+  <!-- Intro splash — centered stage overlay -->
   {#if phase === 'intro'}
-    {#if prebattle}
-      {@render prebattle()}
-    {:else}
-      <div class="text-center py-6" style="animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
-        <p style="font-family: 'Cinzel', serif; font-size: 3rem; font-weight: 900;
-                  color: {modeAccent}; letter-spacing: 0.2em;
-                  filter: drop-shadow(0 0 20px {modeAccent}55);">VS</p>
-        <p class="mt-2 text-sm tracking-[0.2em] uppercase"
-           style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Calculating fate…</p>
-      </div>
-    {/if}
-  {/if}
-
-  <!-- Battle log -->
-  {#if phase !== 'intro'}
-    <div class="w-full rounded-xl overflow-hidden mt-4 mb-4 sm:mb-6"
-         style="border: 1px solid {modeAccent}1f; background: #0d0d16;">
-      <div class="flex items-center gap-2 px-4 py-2.5"
-           style="border-bottom: 1px solid {modeAccent}14;">
-        <span class="material-symbols-outlined"
-              style="font-size: 14px; color: #9a907b; font-variation-settings: 'FILL' 1;">menu_book</span>
-        <p class="text-xs tracking-[0.15em] uppercase"
-           style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Battle Log</p>
-        {#if phase === 'battle' && totalRounds > 0}
-          <span class="ml-auto text-xs px-2 py-0.5 rounded"
-                style="background: {modeAccent}22; border: 1px solid {modeAccent}55;
-                       font-family: 'JetBrains Mono', monospace; color: {modeAccent};">
-            Round {roundDisplayN} of {totalRounds}
-          </span>
-        {/if}
-      </div>
-      <div bind:this={logEl} class="overflow-y-auto px-4 py-3"
-           style="max-height: 300px; scroll-behavior: smooth;">
-        {#if logLines.length === 0}
-          <p class="text-xs text-center py-4" style="color: #4e4635; font-style: italic;">The battle begins…</p>
-        {/if}
-        {#each logLines as line}
-          {#if line.startsWith('──')}
-            <p class="text-xs mt-3 mb-1 tracking-[0.15em]"
-               style="font-family: 'JetBrains Mono', monospace; color: #9a907b;
-                      border-bottom: 1px solid {modeAccent}14; padding-bottom: 4px;">{line}</p>
-          {:else if /CRITICAL|DEVASTATING|PERFECT STRIKE|OVERWHELMING|UNSTOPPABLE|OVERKILL/.test(line)}
-            <p class="text-xs mb-1 font-bold"
-               style="color: #fde047; font-family: 'JetBrains Mono', monospace;">{line}</p>
-          {:else if [...t1Names].some(n => line.startsWith(n))}
-            <p class="text-xs mb-1"
-               style="color: #fde68a; font-family: 'JetBrains Mono', monospace;">{line}</p>
-          {:else if [...t2Names].some(n => line.startsWith(n))}
-            <p class="text-xs mb-1"
-               style="color: #e9d5ff; font-family: 'JetBrains Mono', monospace;">{line}</p>
-          {:else}
-            <p class="text-xs mb-1"
-               style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-style: italic;">{line}</p>
-          {/if}
-        {/each}
-      </div>
+    <div class="arena-intro">
+      {#if prebattle}
+        {@render prebattle()}
+      {:else}
+        <div class="text-center" style="animation: resultReveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+          <p style="font-family: 'Cinzel', serif; font-size: 3rem; font-weight: 900;
+                    color: {modeAccent}; letter-spacing: 0.2em;
+                    filter: drop-shadow(0 0 20px {modeAccent}55);">VS</p>
+          <p class="mt-2 text-sm tracking-[0.2em] uppercase"
+             style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Calculating fate…</p>
+        </div>
+      {/if}
     </div>
   {/if}
 
-  <!-- Manual hotbar: either the built-in BattleHotbar (controller mode +
-       awaiting player input) or a caller-supplied `hotbar` snippet. -->
-  {#if phase === 'battle' && controllerMode && awaitingPlayerInput && currentActorChar && currentActorMember}
-    {#if pickingTarget}
-      <!-- Target-selection prompt — replaces the hotbar while the player
-           chooses an enemy by clicking a highlighted card. -->
-      <div class="ba-target-prompt" style="--accent: {modeAccent};">
-        <p class="ba-target-prompt-title">Select a target</p>
-        <p class="ba-target-prompt-sub">Tap an enemy card to strike</p>
-        <button class="ba-target-cancel" onclick={cancelTargetPick}>Cancel</button>
+  <!-- ── Action dock ─────────────────────────────────────────────────── -->
+  <footer class="arena-dock">
+    <div class="arena-dock-inner">
+      <!-- Turn counter + roster avatars -->
+      <div class="dock-turn">
+        <div class="dock-turn-n">
+          <span class="dock-turn-label">Turn</span>
+          <span class="dock-turn-val">{String(roundDisplayN).padStart(2, '0')}</span>
+        </div>
+        <div class="dock-roster">
+          {#each allMembers.slice(0, 5) as m (m.id)}
+            <div class="dock-avatar" class:dock-avatar-dead={isDead(m)}
+                 title={m.name}
+                 style="border-color: {(m.accent ?? '#f0c052')}{isDead(m) ? '33' : 'aa'};">
+              <span style="color: {m.accent ?? '#f0c052'};">{m.name.charAt(0).toUpperCase()}</span>
+            </div>
+          {/each}
+        </div>
       </div>
-    {:else}
-      {@const cd = controller!.getPowerCooldowns(currentActorMember.id)}
-      <BattleHotbar
-        availability={availableActions(currentActorChar, cd)}
-        actorName={currentActorMember.name}
-        accent={teams.find(t => t.side === currentActorMember.side)?.accent ?? '#f0c040'}
-        onAction={handlePlayerAction}/>
-    {/if}
-  {:else if phase === 'battle' && hotbar}
-    {@render hotbar()}
-  {/if}
+
+      <!-- Hotbar / target prompt / auto state -->
+      <div class="dock-actions">
+        {#if phase === 'battle' && controllerMode && awaitingPlayerInput && currentActorChar && currentActorMember}
+          {#if pickingTarget}
+            <div class="ba-target-prompt" style="--accent: {modeAccent};">
+              <p class="ba-target-prompt-title">Select a target</p>
+              <p class="ba-target-prompt-sub">Tap an enemy to strike</p>
+              <button class="ba-target-cancel" onclick={cancelTargetPick}>Cancel</button>
+            </div>
+          {:else}
+            {@const cd = controller!.getPowerCooldowns(currentActorMember.id)}
+            <BattleHotbar
+              availability={availableActions(currentActorChar, cd)}
+              actorName={currentActorMember.name}
+              accent={teams.find(t => t.side === currentActorMember.side)?.accent ?? '#f0c040'}
+              onAction={handlePlayerAction}/>
+          {/if}
+        {:else if phase === 'battle' && hotbar}
+          {@render hotbar()}
+        {:else if phase === 'battle'}
+          <span class="dock-idle">{manualMode ? 'Awaiting turn…' : 'Auto-resolving…'}</span>
+        {/if}
+      </div>
+    </div>
+  </footer>
 
   <!-- Result overlay slot — each mode renders its own modal -->
   {#if phase === 'result' && result}
@@ -1211,11 +1194,182 @@
 </div>
 
 <style>
-  .ba-wrapper {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    position: relative;
+  /* ══ Arcane Coliseum — full-screen battle HUD ══════════════════════════ */
+  .arena {
+    position: fixed; inset: 0; z-index: 40;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #1f1b14 0%, #110e07 100%);
+    color: #ebe1d5;
+    font-family: 'Inter', sans-serif;
+  }
+  .void-grain {
+    position: absolute; inset: 0; opacity: 0.05; pointer-events: none; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .arena-embers { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+  .ember {
+    position: absolute; bottom: -10px; width: 3px; height: 3px;
+    background: #f0c052; border-radius: 50%; filter: blur(1px); opacity: 0;
+    animation: rise 5s infinite ease-out;
+  }
+  @keyframes rise {
+    0%   { transform: translateY(0) scale(0); opacity: 0; }
+    50%  { opacity: 0.4; }
+    100% { transform: translateY(-100vh) scale(1.5); opacity: 0; }
+  }
+
+  /* ── Command rail ─────────────────────────────────────────────────── */
+  .arena-rail {
+    position: relative; z-index: 30; flex: 0 0 auto;
+    height: 44px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px calc(0px) 16px; padding-top: env(safe-area-inset-top);
+    background: rgba(17,19,12,0.92);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .arena-mode {
+    color: #ffdf9f; font-size: 0.8rem; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase; white-space: nowrap;
+    text-shadow: 0 0 14px rgba(240,192,82,0.35);
+  }
+  .arena-rail-div { width: 1px; height: 12px; background: rgba(255,255,255,0.12); }
+  .arena-rail-detail {
+    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(90,214,239,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .arena-auto {
+    display: flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer;
+  }
+  .arena-auto-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; text-transform: uppercase; color: rgba(235,225,213,0.4); }
+  .arena-auto-track {
+    width: 32px; height: 16px; border-radius: 999px; position: relative;
+    background: #231f17; border: 1px solid rgba(255,255,255,0.1); transition: border-color 0.3s;
+  }
+  .arena-auto-dot {
+    position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(90,214,239,0.4); transition: left 0.3s, background 0.3s;
+  }
+  .arena-auto-on .arena-auto-track { border-color: rgba(90,214,239,0.5); }
+  .arena-auto-on .arena-auto-dot   { left: 18px; background: #5ad6ef; }
+  .arena-skip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 10px; border: 1px solid rgba(90,214,239,0.3); background: rgba(23,19,12,0.5);
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: #5ad6ef;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .arena-skip:hover { background: rgba(90,214,239,0.1); }
+
+  /* ── Stage ────────────────────────────────────────────────────────── */
+  .arena-stage { position: relative; flex: 1 1 auto; overflow: hidden; }
+  .arena-seam {
+    position: absolute; left: 50%; top: 8%; bottom: 16%; width: 2px; transform: translateX(-50%);
+    background: linear-gradient(to bottom, transparent, #5ad6ef, #ff7b52, transparent);
+    box-shadow: 0 0 20px rgba(90,214,239,0.4); z-index: 5;
+    animation: arena-seam-pulse 3s infinite ease-in-out;
+  }
+  @keyframes arena-seam-pulse {
+    0%, 100% { opacity: 0.3; filter: brightness(1); }
+    50%      { opacity: 0.75; filter: brightness(1.5); }
+  }
+  .stage-side { position: absolute; z-index: 10; display: flex; flex-direction: column; gap: 12px; }
+  .stage-side-1 { bottom: 8%; left: 4%; align-items: flex-start; }
+  .stage-side-2 { top: 6%; right: 4%; align-items: flex-end; }
+
+  .fighter {
+    width: min(78vw, 340px);
+    display: flex; align-items: center; gap: 16px; padding: 12px 16px;
+    clip-path: polygon(7% 0, 100% 0, 93% 100%, 0 100%);
+    background: linear-gradient(135deg, rgba(46,41,33,0.92) 0%, rgba(23,19,12,0.92) 100%);
+    border-right: 2px solid var(--accent-color, #5ad6ef);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    transition: transform 0.3s ease, filter 0.2s ease;
+  }
+  .fighter-right {
+    flex-direction: row-reverse;
+    clip-path: polygon(0 0, 93% 0, 100% 100%, 7% 100%);
+    border-right: none; border-left: 2px solid var(--accent-color, #ff7b52);
+  }
+  .fighter-victor { filter: drop-shadow(0 0 16px var(--accent-color)); }
+  .fighter-targetable { cursor: pointer; outline: 1px solid color-mix(in srgb, var(--accent-color) 60%, transparent); outline-offset: 3px; }
+  .target-beckon { animation: target-beckon 2s infinite ease-in-out; }
+  @keyframes target-beckon {
+    0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
+    50%      { transform: translateY(-4px) scale(1.02); filter: brightness(1.25); }
+  }
+
+  .hp-ring {
+    width: 64px; height: 64px; flex-shrink: 0; border-radius: 50%; padding: 4px;
+    position: relative; display: flex; align-items: center; justify-content: center;
+    background: conic-gradient(var(--ring, #5ad6ef) var(--hp, 100%), rgba(255,255,255,0.07) var(--hp, 100%));
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    transition: --hp 0.45s ease;
+  }
+  .hp-ring::after { content: ''; position: absolute; inset: 3px; background: #110e07; border-radius: 50%; z-index: 1; }
+  .character-sigil {
+    position: relative; z-index: 2; width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(23,19,12,0.9); border: 1px solid rgba(255,255,255,0.1); overflow: hidden;
+  }
+  .fighter-info { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+  .fighter-name {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fighter-sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: rgba(235,225,213,0.45);
+  }
+  .fighter-hp { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 700; margin-top: 2px; }
+  .fighter-badges { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+
+  /* ── Central ticker (latest log line) ─────────────────────────────── */
+  .arena-ticker {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(90vw, 520px); pointer-events: none; z-index: 4; text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 6px 0;
+  }
+  .arena-ticker span {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.35em;
+    text-transform: uppercase; color: rgba(235,225,213,0.5);
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .arena-intro { position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+
+  /* ── Action dock ──────────────────────────────────────────────────── */
+  .arena-dock {
+    position: relative; z-index: 30; flex: 0 0 auto;
+    min-height: 92px; background: rgba(17,19,12,0.96);
+    border-top: 1px solid rgba(255,255,255,0.06); box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .arena-dock-inner {
+    max-width: 720px; margin: 0 auto; height: 100%; min-height: 92px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 16px;
+  }
+  .dock-turn { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .dock-turn-n { display: flex; flex-direction: column; align-items: center; }
+  .dock-turn-label { font-family: 'JetBrains Mono', monospace; font-size: 8px; text-transform: uppercase; color: rgba(235,225,213,0.3); }
+  .dock-turn-val { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 700; color: #ffdf9f; }
+  .dock-roster { display: flex; }
+  .dock-avatar {
+    width: 34px; height: 34px; border-radius: 50%; margin-left: -8px;
+    display: flex; align-items: center; justify-content: center;
+    background: #231f17; border: 2px solid rgba(240,192,82,0.7);
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 0.8rem; box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .dock-avatar:first-child { margin-left: 0; }
+  .dock-avatar-dead { opacity: 0.35; filter: grayscale(1); }
+  .dock-actions { flex: 1 1 auto; display: flex; align-items: center; justify-content: flex-end; min-width: 0; }
+  .dock-idle { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(235,225,213,0.35); }
+
+  /* Mobile: shrink fighters + dock so nothing collides on narrow screens. */
+  @media (max-width: 480px) {
+    .fighter { width: min(86vw, 300px); gap: 12px; padding: 10px 12px; }
+    .hp-ring { width: 54px; height: 54px; }
+    .character-sigil { width: 44px; height: 44px; }
+    .stage-side-1 { left: 2%; bottom: 6%; }
+    .stage-side-2 { right: 2%; top: 5%; }
   }
 
   /* Rune-flash dodge — panel phases through reality. Inherited from
