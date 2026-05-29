@@ -24,8 +24,18 @@ const GAMEPASS_COSTS: Record<string, number> = {
   sell_bonus:         1_000,
   daily_booster:      3_500,
   legend_tag:           500,
-  cursed_wheel:         800,
+  cursed_wheel:       1_500,
   gold_roster_frame:    600,
+  // Cosmetic wheel skins.
+  guilded_wheel:      1_000,
+  holy_wheel:         1_500,
+  hellfire_wheel:     2_000,
+  aquatic_wheel:      1_000,
+  nature_wheel:         500,
+  arcane_wheel:       1_500,
+  cosmic_wheel:       2_000,
+  glowing_wheel:        500,
+  void_wheel:         2_500,
 }
 
 // Non-stackable passes (can only own one)
@@ -34,6 +44,10 @@ const NON_STACKABLE = new Set([
   'double_luck', 'reroll_insurance', 'blessed_wheel',
   'sell_bonus', 'daily_booster',
   'legend_tag', 'cursed_wheel', 'gold_roster_frame',
+  // Cosmetic wheel skins are one-of-a-kind.
+  'guilded_wheel', 'holy_wheel', 'hellfire_wheel', 'aquatic_wheel',
+  'nature_wheel', 'arcane_wheel', 'cosmic_wheel', 'glowing_wheel',
+  'void_wheel',
 ])
 
 function getStripe(): Stripe {

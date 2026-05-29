@@ -48,7 +48,10 @@
           // change while the rotate-to-landscape gate is disabled. Without
           // this, portrait would render desktop-sized CSS at narrow widths.
           if (w > 0 && w < DESIGN_W) {
-            root.style.zoom = String(Math.max(0.4, w / DESIGN_W))
+            // Higher floor (0.8) so mobile UI doesn't shrink to a postage-stamp.
+            // Some desktop-designed layouts will overflow within the wider CSS
+            // viewport that results — acceptable temporary trade.
+            root.style.zoom = String(Math.max(0.8, w / DESIGN_W))
           }
           requestAnimationFrame(() => { applyingZoom = false })
         }
