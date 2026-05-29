@@ -1624,32 +1624,30 @@
     .stage-side-2 { right: 2%; top: 5%; }
   }
 
-  /* Touch devices: lay the two teams out left vs right (vertically centered)
-     so fighter cards don't overlap on narrower screens. Cards shrink so both
-     sides fit. Keyed on pointer:coarse since the mobile CSS zoom inflates the
-     layout viewport width, making max-width queries unreliable. */
+  /* Touch devices: keep the diagonal Coliseum positioning (team 1 bottom-
+     left, team 2 top-right) but shrink the fighter cards so the two sides
+     don't overlap mid-arena on short landscape viewports. Text scales down
+     proportionally — never squished, no horizontal clipping. Keyed on
+     pointer:coarse since the mobile CSS zoom inflates the layout viewport
+     width, making max-width queries unreliable. */
   @media (pointer: coarse) {
-    .stage-side-1 {
-      top: 50%; bottom: auto; left: 1%;
-      transform: translateY(-50%);
-      align-items: flex-start;
-    }
-    .stage-side-2 {
-      top: 50%; bottom: auto; right: 1%;
-      transform: translateY(-50%);
-      align-items: flex-end;
-    }
+    .stage-side-1 { bottom: 5%; left: 2%; top: auto; right: auto; transform: none; align-items: flex-start; }
+    .stage-side-2 { top: 12px;  right: 2%; bottom: auto; left: auto;  transform: none; align-items: flex-end; }
     .fighter {
-      width: min(44vw, 260px);
-      gap: 10px;
-      padding: 8px 10px;
+      width: min(58vw, 280px);
+      gap: 11px;
+      padding: 9px 12px;
     }
-    .hp-ring { width: 52px; height: 52px; }
-    .character-sigil { width: 42px; height: 42px; }
-    .fighter-name { font-size: 0.95rem; }
-    .fighter-sub  { font-size: 0.6rem; }
-    .fighter-hp   { font-size: 0.72rem; }
-    .fighter-stats { gap: 2px 6px; }
+    .hp-ring { width: 56px; height: 56px; }
+    .character-sigil { width: 46px; height: 46px; }
+    .fighter-name { font-size: 1rem; line-height: 1.15; }
+    .fighter-sub  { font-size: 0.66rem; line-height: 1.2; }
+    .fighter-hp   { font-size: 0.78rem; }
+    .fighter-stat-label { font-size: 0.46rem; }
+    .fighter-stat-val   { font-size: 0.6rem; }
+    .fighter-stats { gap: 3px 7px; margin-top: 3px; }
+    .fighter-badges { gap: 2px; margin-top: 3px; }
+    .fighter-info { min-width: 0; }
   }
 
   /* Rune-flash dodge — panel phases through reality. Inherited from

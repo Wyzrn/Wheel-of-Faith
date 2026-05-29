@@ -1122,29 +1122,9 @@
 {/if}
 
 <style>
-  /* Mobile (touch) only: the game is landscape-locked and vertical space is
-     tight, so lay the wheel out as a row with the Spin Fate button to the
-     LEFT of the wheel. This frees vertical room so the progress dots (rendered
-     by the parent right after this component) sit directly below the wheel.
-     Keyed on pointer:coarse because the mobile CSS `zoom` inflates the layout
-     viewport width, making max-width media queries unreliable. */
-  @media (pointer: coarse) {
-    .sw-root {
-      flex-direction: row;
-      flex-wrap: nowrap;
-      justify-content: center;
-      align-items: center;
-      gap: 20px;
-    }
-    .sw-stage { width: auto; flex: 0 0 auto; }
-    .sw-spin-btn { order: -1; flex: 0 0 auto; }   /* sits left of the wheel */
-    .sw-outcomes { display: none; }               /* declutter the row */
-    /* Shrink the wheel so the button fits beside it within the parent
-       container, and so the top isn't clipped on short landscape screens.
-       The cap is overridable per-screen via --sw-mobile-cap (Story Mode sets
-       a slightly larger one). !important overrides the inline clamp() width. */
-    .sw-wheel-box { width: var(--sw-mobile-cap, min(62vh, 360px)) !important; }
-  }
+  /* The earlier mobile (pointer:coarse) override that put the Spin button to
+     the LEFT of a shrunken wheel has been removed — mobile now uses the same
+     column layout + full-size wheel as PC. */
 
   @keyframes runeRingPulse {
     0%, 100% { opacity: 0.70; }
