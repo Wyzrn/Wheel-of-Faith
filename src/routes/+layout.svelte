@@ -25,15 +25,25 @@
     // Expose perf tier to CSS so heavy ambient effects can be gated declaratively.
     try { document.documentElement.dataset.perf = getPerfTier() } catch { /* ssr */ }
 
-    // Mobile sizing: the game is landscape-locked, so on a phone the viewport
-    // width is large (~844px) and the desktop sizing renders far too big on
-    // the physically small screen. Render touch devices at a fixed desktop-ish
-    // CSS width and let the browser scale it to fit — UI shrinks uniformly and
-    // the proper desktop layouts apply ("looks like PC, just smaller").
+    // Mobile sizing: the game is landscape-locked, so in LANDSCAPE we render
+    // touch devices at a fixed desktop-ish CSS width and let the browser scale
+    // it to fit — UI shrinks uniformly and the desktop layouts apply ("looks
+    // like PC, just smaller"). In PORTRAIT we keep native device-width so the
+    // rotate-to-landscape prompt shows at its proper size (not shrunk).
+    let orientationMq: MediaQueryList | null = null
+    let applyViewport: (() => void) | null = null
     try {
       if (matchMedia('(pointer: coarse)').matches) {
         const vp = document.querySelector('meta[name="viewport"]')
-        vp?.setAttribute('content', 'width=1280, viewport-fit=cover')
+        applyViewport = () => {
+          const landscape = matchMedia('(orientation: landscape)').matches
+          vp?.setAttribute('content', landscape
+            ? 'width=1280, viewport-fit=cover'
+            : 'width=device-width, initial-scale=1, viewport-fit=cover')
+        }
+        applyViewport()
+        orientationMq = matchMedia('(orientation: landscape)')
+        orientationMq.addEventListener('change', applyViewport)
       }
     } catch { /* ssr */ }
 
@@ -56,7 +66,10 @@
       e.preventDefault()  // handled — don't let it spam the console
     }
     window.addEventListener('unhandledrejection', onRejection)
-    return () => window.removeEventListener('unhandledrejection', onRejection)
+    return () => {
+      window.removeEventListener('unhandledrejection', onRejection)
+      if (orientationMq && applyViewport) orientationMq.removeEventListener('change', applyViewport)
+    }
   })
 
   // Keep the perf-tier override in sync with the High Quality settings
