@@ -49,7 +49,7 @@
   onclick={onClose} role="presentation">
   <div class="obsidian-slab w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl relative"
     onclick={(e) => e.stopPropagation()}
-    role="dialog" aria-modal="true" aria-labelledby="compare-title"
+    role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="compare-title"
     style="border: 1px solid rgba(240,192,64,0.32); box-shadow: 0 0 80px rgba(0,0,0,0.96), 0 0 40px rgba(240,192,64,0.08);">
 
     <!-- Header -->

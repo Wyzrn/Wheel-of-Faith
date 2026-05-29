@@ -306,7 +306,7 @@
 </script>
 
 <main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
-  <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14" style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(240,192,64,0.2); backdrop-filter: blur(16px);">
+  <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14" style="background: rgba(22,18,26,0.92); border-bottom: 2px solid rgba(240,192,82,0.45); backdrop-filter: blur(16px); box-shadow: 0 4px 20px rgba(90,214,239,0.12);">
     <a href="/" class="flex items-center gap-1 transition-all active:scale-95" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-decoration: none; padding: 4px 6px; border-radius: 6px;">
       <span class="material-symbols-outlined" style="font-size: 15px;">home</span>
       <span>Menu</span>

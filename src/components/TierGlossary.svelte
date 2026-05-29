@@ -38,7 +38,7 @@
       class="obsidian-slab w-full max-w-md rounded-2xl relative overflow-hidden flex flex-col"
       style="max-height: min(85vh, 720px); border: 1px solid rgba(240,192,64,0.32); box-shadow: 0 0 80px rgba(0,0,0,0.96), 0 0 40px rgba(240,192,64,0.08);"
       onclick={(e) => e.stopPropagation()}
-      role="dialog"
+      role="dialog" tabindex="-1"
       aria-modal="true"
       aria-labelledby="tier-glossary-title"
     >

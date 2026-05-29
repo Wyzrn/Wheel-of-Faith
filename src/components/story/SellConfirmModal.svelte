@@ -56,7 +56,7 @@
   class="fixed inset-0 z-50 flex items-center justify-center px-4"
   style="background: rgba(7,7,13,0.72); backdrop-filter: blur(8px);"
   onclick={handleBackdropClick}
-  role="dialog"
+  role="dialog" tabindex="-1"
   aria-modal="true"
   aria-label="Sell character confirmation"
 >

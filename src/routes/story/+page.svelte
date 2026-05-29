@@ -1968,7 +1968,7 @@
     onclick={() => comparePickerOpen = false} role="presentation">
     <div class="obsidian-slab w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl p-5"
       onclick={(e) => e.stopPropagation()}
-      role="dialog" aria-modal="true" aria-labelledby="compare-pick-title"
+      role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="compare-pick-title"
       style="border: 1px solid rgba(167,139,250,0.32);">
       <h3 id="compare-pick-title" class="font-bold mb-1" style="font-family: 'Cinzel', serif; color: #ffdf96; font-size: 1rem;">Compare with</h3>
       <p class="text-xs mb-4" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Pick a roster character to stack against <span style="color: #ffdf96;">{expandedEntry.name}</span>.</p>
@@ -2455,7 +2455,7 @@
   <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
     style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(24px, calc(env(safe-area-inset-bottom,0px) + 24px));"
     onclick={() => spinTypeModal = false}
-    role="dialog" aria-modal="true">
+    role="dialog" tabindex="-1" aria-modal="true">
     <div class="w-full max-w-sm rounded-2xl overflow-hidden obsidian-slab"
       style="border: 1px solid rgba(240,192,64,0.25); animation: resultReveal 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;"
       onclick={(e) => e.stopPropagation()}>
@@ -2585,7 +2585,7 @@
   <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
     style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(24px, calc(env(safe-area-inset-bottom,0px) + 24px));"
     onclick={() => equipModal = null}
-    role="dialog" aria-modal="true">
+    role="dialog" tabindex="-1" aria-modal="true">
     <div class="w-full max-w-md rounded-2xl overflow-hidden obsidian-slab"
       style="border: 1px solid rgba(240,192,64,0.25); animation: resultReveal 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;"
       onclick={(e) => e.stopPropagation()}>
@@ -2636,7 +2636,7 @@
   <div class="fixed inset-0 z-50 flex items-end justify-center px-4"
     style="background: rgba(0,0,0,0.72); backdrop-filter: blur(10px); padding-bottom: max(24px, calc(env(safe-area-inset-bottom,0px) + 24px));"
     onclick={() => { useStatModal = null; useStatError = null }}
-    role="dialog" aria-modal="true">
+    role="dialog" tabindex="-1" aria-modal="true">
     <div class="w-full max-w-md rounded-2xl overflow-hidden obsidian-slab"
       style="border: 1px solid {color}33; animation: resultReveal 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;"
       onclick={(e) => e.stopPropagation()}>
@@ -2762,7 +2762,7 @@
     style="background: rgba(0,0,0,0.78); backdrop-filter: blur(10px);"
     onclick={() => removeItemTarget = null}
     onkeydown={(e) => { if (e.key === 'Escape') removeItemTarget = null }}
-    role="dialog" aria-modal="true" tabindex="-1"
+    role="dialog" tabindex="-1" aria-modal="true"
   >
     <div
       class="obsidian-slab w-full max-w-md rounded-xl p-5 flex flex-col gap-4"
@@ -2811,7 +2811,7 @@
     style="background: rgba(0,0,0,0.78); backdrop-filter: blur(10px);"
     onclick={closeDismantle}
     onkeydown={(e) => { if (e.key === 'Escape') closeDismantle() }}
-    role="dialog" aria-modal="true" tabindex="-1"
+    role="dialog" tabindex="-1" aria-modal="true"
   >
     <div
       class="obsidian-slab w-full max-w-md rounded-xl p-5 flex flex-col gap-4"
@@ -2888,7 +2888,7 @@
     style="background: rgba(7,7,13,0.92); backdrop-filter: blur(12px);"
     onclick={closeFuse}
     onkeydown={(e) => { if (e.key === 'Escape') closeFuse() }}
-    role="dialog" aria-modal="true" tabindex="-1"
+    role="dialog" tabindex="-1" aria-modal="true"
   >
     <div
       class="obsidian-slab w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-5 flex flex-col gap-4"
@@ -2988,7 +2988,7 @@
   <div class="fixed inset-0 z-[70] flex items-center justify-center"
     style="background: rgba(0,0,0,0.92); backdrop-filter: blur(20px);"
     onclick={ca.phase === 'reveal' ? dismissCrystalAnim : undefined}
-    role="dialog" aria-modal="true">
+    role="dialog" tabindex="-1" aria-modal="true">
 
     {#if ca.phase === 'pulse'}
       <!-- Pulsing crystal orb -->
@@ -3075,7 +3075,7 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center px-4"
     style="background: rgba(7,7,13,0.9); backdrop-filter: blur(12px);"
     onclick={() => { shareSlotId = null; shareSlotUrl = null; shareSlotError = null }}
-    role="dialog" aria-modal="true">
+    role="dialog" tabindex="-1" aria-modal="true">
     <div class="obsidian-slab w-full max-w-sm rounded-xl p-7 text-center"
       style="border: 1px solid rgba(240,192,64,0.25);"
       onclick={(e) => e.stopPropagation()}>
@@ -3115,7 +3115,7 @@
     class="fixed inset-0 z-50 flex items-center justify-center px-4"
     style="background: rgba(7,7,13,0.9); backdrop-filter: blur(12px);"
     onclick={() => deleteConfirmId = null}
-    role="dialog"
+    role="dialog" tabindex="-1"
     aria-modal="true"
   >
     <div

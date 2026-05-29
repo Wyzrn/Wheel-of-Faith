@@ -620,7 +620,7 @@
     onclick={() => pendingQuitChoice = false} role="presentation">
     <div class="obsidian-slab w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4"
       style="border: 1px solid rgba(167,139,250,0.4);"
-      onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      onclick={(e) => e.stopPropagation()} role="dialog" tabindex="-1" aria-modal="true">
       <div class="text-center">
         <span class="material-symbols-outlined" style="font-size: 28px; color: #a78bfa; font-variation-settings: 'FILL' 1;">pause_circle</span>
         <p class="font-bold text-lg mt-1" style="font-family: var(--font-cinzel); color: #a78bfa;">Leave Endless?</p>
@@ -654,7 +654,7 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center px-4"
     style="background: rgba(7,7,13,0.92); backdrop-filter: blur(12px);" role="presentation">
     <div class="obsidian-slab w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4 text-center"
-      style="border: 1px solid rgba(167,139,250,0.4);" role="dialog" aria-modal="true">
+      style="border: 1px solid rgba(167,139,250,0.4);" role="dialog" tabindex="-1" aria-modal="true">
       <span class="material-symbols-outlined block text-4xl" style="color: #a78bfa; font-variation-settings: 'FILL' 1;">history</span>
       <div>
         <p class="font-bold text-lg" style="font-family: var(--font-cinzel); color: #a78bfa;">Resume Endless Run?</p>

@@ -57,7 +57,7 @@
 
   <!-- Nav -->
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"
-    style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(240,192,64,0.2); backdrop-filter: blur(16px);"
+    style="background: rgba(22,18,26,0.92); border-bottom: 2px solid rgba(240,192,82,0.45); backdrop-filter: blur(16px); box-shadow: 0 4px 20px rgba(90,214,239,0.12);"
   >
     <div class="flex items-center" style="min-width: 80px;">
       <a href="/" class="flex items-center gap-1 transition-all active:scale-95"
