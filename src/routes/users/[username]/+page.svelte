@@ -79,7 +79,7 @@
   }
 </script>
 
-<main class="min-h-screen" style="background: #07070d; color: #e4e1ee;">
+<main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
 
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"
     style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(167,139,250,0.18); backdrop-filter: blur(16px);"

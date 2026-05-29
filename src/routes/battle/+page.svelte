@@ -66,7 +66,7 @@
   }
 </script>
 
-<div style="background: #07070d; min-height: 100dvh; color: #e4e1ee;">
+<div style="background: transparent; min-height: 100dvh; color: #e9dfeb;">
 
   {#if loading}
     <div class="flex flex-col items-center justify-center min-h-screen gap-4">

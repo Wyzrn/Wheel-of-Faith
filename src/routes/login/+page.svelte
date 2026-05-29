@@ -21,7 +21,7 @@
   }
 </script>
 
-<main class="min-h-screen flex items-center justify-center px-4" style="background: #07070d;">
+<main class="min-h-screen flex items-center justify-center px-4" style="background: transparent;">
   <div class="w-full max-w-sm">
     <!-- Header -->
     <div class="text-center mb-8">

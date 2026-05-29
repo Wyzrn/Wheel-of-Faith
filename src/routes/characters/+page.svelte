@@ -250,7 +250,7 @@
   }
 </script>
 
-<main class="min-h-screen" style="background: #07070d; color: #e4e1ee;">
+<main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
 
   <!-- Nav -->
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"

@@ -322,7 +322,7 @@
      reserve a full viewport above the BattleArena (which has its own
      fixed top header) and force the player to scroll down to see the fight. -->
 {#if phase !== 'battle' && phase !== 'preview'}
-<main class="min-h-screen pt-16 pb-24 px-4" style="background: #07070d;">
+<main class="min-h-screen pt-16 pb-24 px-4" style="background: transparent;">
   <div class="max-w-md mx-auto">
 
     <!-- ── Menu ─────────────────────────────────────────────────────────────── -->
@@ -578,7 +578,7 @@
 
 <!-- ── Battle screen ──────────────────────────────────────────────────────────── -->
 {#if phase === 'battle'}
-  <div style="background: #07070d; min-height: 100dvh;">
+  <div style="background: transparent; min-height: 100dvh;">
     <QuickBattleView
       team1={[{ results: myResults, name: myCharName ?? auth.user?.username ?? 'You' }]}
       team2={[{ results: partnerResults, name: partnerName || 'Opponent' }]}

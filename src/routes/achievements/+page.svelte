@@ -76,7 +76,7 @@
   const TIER_ORDER: AchievementTier[] = ['bronze', 'silver', 'gold', 'mythic']
 </script>
 
-<main class="min-h-screen pt-16 pb-24 px-4" style="background: #07070d;">
+<main class="min-h-screen pt-16 pb-24 px-4" style="background: transparent;">
   <div class="max-w-2xl mx-auto">
 
     <!-- Header -->
