@@ -220,11 +220,14 @@
   // Names currently showing a buff (on the caster) / debuff (on the target).
   let buffingName = $state<string | null>(null)
   let debuffingName = $state<string | null>(null)
+  // Name currently showing the precision/observation read indicator.
+  let precisionName = $state<string | null>(null)
   let animTimeoutId: ReturnType<typeof setTimeout> | null = null
 
   const isDodgeType = (t: string) => t === 'dodge' || t === 'dodge_iq' || t === 'dodge_cha'
   // Types that render only as a full-card overlay (no center AttackFX burst).
-  const isCardOnlyFx = (t: string) => isDodgeType(t) || t === 'buff' || t === 'debuff'
+  const isCardOnlyFx = (t: string) =>
+    isDodgeType(t) || t === 'buff' || t === 'debuff' || t === 'precision'
 
   function showAnim(
     type: string, color: string, direction: AnimDir,
@@ -234,7 +237,7 @@
   ) {
     if (animTimeoutId) clearTimeout(animTimeoutId)
     activeAnim = { type, color, key: ++animKey, direction, grade, origin, attackType }
-    dodgingName = null; shieldingName = null; buffingName = null; debuffingName = null
+    dodgingName = null; shieldingName = null; buffingName = null; debuffingName = null; precisionName = null
     if (isDodgeType(type)) {
       dodgingName = dodgeMember ?? null
       dodgingStyle = type === 'dodge_iq' ? 'iq' : type === 'dodge_cha' ? 'cha' : 'agi'
@@ -244,10 +247,12 @@
       buffingName = dodgeMember ?? null
     } else if (type === 'debuff') {
       debuffingName = dodgeMember ?? null
+    } else if (type === 'precision') {
+      precisionName = dodgeMember ?? null
     }
     animTimeoutId = setTimeout(() => {
       activeAnim = null; dodgingName = null; shieldingName = null
-      buffingName = null; debuffingName = null
+      buffingName = null; debuffingName = null; precisionName = null
     }, 1100)
   }
 
@@ -1177,6 +1182,15 @@
         <span class="statmod-fx-label">WEAKENED</span>
       </div>
     {/if}
+    <!-- Observation: a targeting reticle locks on as the reader spots an
+         opening for a precision strike. -->
+    {#if precisionName === m.name}
+      <div class="precision-fx" aria-hidden="true">
+        <span class="precision-fx-reticle"></span>
+        <span class="material-symbols-outlined precision-fx-icon">center_focus_strong</span>
+        <span class="precision-fx-label">PRECISION</span>
+      </div>
+    {/if}
   </div>
 {/snippet}
 
@@ -1796,6 +1810,51 @@
   @media (prefers-reduced-motion: reduce) {
     .statmod-fx-wash { animation: none; opacity: 0.5; }
     .statmod-fx-icon, .statmod-fx-label { animation: none; opacity: 1; transform: none; }
+  }
+
+  /* ── Observation / precision read indicator ────────────────────────────── */
+  .precision-fx {
+    position: absolute; inset: 0; z-index: 6;
+    pointer-events: none; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    --pc: #fcd34d;
+  }
+  /* Targeting reticle that snaps inward + spins, then locks. */
+  .precision-fx-reticle {
+    position: absolute; width: 58%; aspect-ratio: 1; border-radius: 50%;
+    border: 2px dashed var(--pc);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--pc) 70%, transparent);
+    opacity: 0; transform: scale(1.6) rotate(0deg);
+    animation: precision-lock 1s cubic-bezier(0.3, 1.1, 0.5, 1) forwards;
+  }
+  .precision-fx-icon {
+    position: relative; z-index: 2; font-size: 24px; color: var(--pc);
+    filter: drop-shadow(0 0 9px var(--pc));
+    opacity: 0; transform: scale(1.5);
+    animation: precision-pop 1s cubic-bezier(0.2, 1.4, 0.5, 1) forwards;
+  }
+  .precision-fx-label {
+    position: relative; z-index: 2;
+    font-family: 'Cinzel', serif; font-weight: 900;
+    font-size: clamp(0.58rem, 2.8vw, 0.88rem); letter-spacing: 0.16em; color: #fff;
+    text-shadow: 0 0 10px var(--pc), 0 0 20px var(--pc), 0 2px 4px rgba(0,0,0,0.8);
+    opacity: 0; animation: precision-pop 1s ease-out 0.08s forwards;
+  }
+  @keyframes precision-lock {
+    0%   { opacity: 0;   transform: scale(1.6) rotate(0deg); }
+    35%  { opacity: 1;   transform: scale(1) rotate(140deg); }
+    75%  { opacity: 0.9; transform: scale(1) rotate(180deg); }
+    100% { opacity: 0;   transform: scale(0.94) rotate(190deg); }
+  }
+  @keyframes precision-pop {
+    0%   { opacity: 0; transform: scale(1.5); }
+    35%  { opacity: 1; transform: scale(1); }
+    75%  { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .precision-fx-reticle { animation: none; opacity: 0.6; transform: scale(1); }
+    .precision-fx-icon, .precision-fx-label { animation: none; opacity: 1; transform: none; }
   }
 
   /* ── Beam attack rendering ──────────────────────────────────────────

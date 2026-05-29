@@ -127,6 +127,10 @@ export function detectAnim(line: string, t1Names: Set<string>, t2Names: Set<stri
     return { type: 'buff', color: '#fbbf24', direction }
   if (/\bcurses\b.+\bwith\b|strength is sapped|is weakened|withers under|hexes/i.test(line))
     return { type: 'debuff', color: '#a855f7', direction }
+  // Observation / precision read — the attacker spots an opening and a
+  // precision strike bypasses defenses. Card-only indicator on the reader.
+  if (/reads the opening|precision strike|bypasses all defenses|spots an opening|finds the weak/i.test(line))
+    return { type: 'precision', color: '#fcd34d', direction }
   if (/combo finisher|follow-up/i.test(line)) return { type: 'combo', color: '#f59e0b', direction }
   if (/restores|recovers.*HP|vital force|mends/i.test(line)) return { type: 'holy', color: '#34d399', direction }
   if (/fire|flame|blaze|inferno|burn|ember|magma|lava|heat/i.test(line)) return { type: 'fire', color: '#f97316', direction }
