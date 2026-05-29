@@ -50,6 +50,7 @@
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
   import { describeRacialGrants, describeTwist } from '$lib/game/racialGrants'
+  import { resolveActiveTheme } from '$lib/wheelThemes'
   import { buildIdentityCard } from '$lib/identityCard'
   import { tilt } from '$lib/actions/tilt'
   import { twistForRace, twistForArchetype, twistByKey, RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS } from '$lib/twists'
@@ -3073,7 +3074,7 @@
               soundEnabled={settings.soundEnabled}
               effectsEnabled={settings.effectsEnabled}
               spinSpeedMultiplier={settings.spinSpeed}
-              cursedTheme={(auth.user?.gamepasses?.includes('cursed_wheel') ?? false) && settings.cursedWheelEnabled}
+              wheelTheme={resolveActiveTheme(settings.activeWheelTheme, auth.user?.gamepasses)}
               spinTrigger={spinTriggerKey}
               replayTrigger={replayTriggerKey}
               resolveLandingColors={resolveLandingColors}

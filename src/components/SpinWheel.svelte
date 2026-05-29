@@ -41,7 +41,7 @@
 
   const COLORS = ['#E63946','#457B9D','#2A9D8F','#E9C46A','#F4A261','#264653','#6A0572','#0077B6']
 
-  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, cursedTheme = false, spinTrigger = 0, replayTrigger = 0, resolveLandingColors, onLanded, wheelSignature = null }: {
+  let { segments, onSpinComplete, categoryHue = undefined, soundEnabled = true, effectsEnabled = true, spinSpeedMultiplier = 1.0, wheelTheme = undefined, spinTrigger = 0, replayTrigger = 0, resolveLandingColors, onLanded, wheelSignature = null }: {
     segments: WeightedSegment[]
     onSpinComplete: (resultIndex: number, resultLabel: string) => void
     // Fires when the wheel finishes landing, just BEFORE celebration mounts
@@ -54,7 +54,7 @@
     soundEnabled?: boolean
     effectsEnabled?: boolean
     spinSpeedMultiplier?: number
-    cursedTheme?: boolean
+    wheelTheme?: import('$lib/wheelThemes').WheelTheme
     spinTrigger?: number
     // Per-race visual signature. When set to a race label, the SVG root
     // gets a matching .wheel-sig-* class that applies a bespoke CSS
@@ -139,6 +139,8 @@
   let frozenSegments = $state<typeof segments | null>(null)
 
   let canSpin = $derived(spinStatus === 'IDLE')
+  // True when a cosmetic wheel skin is active (not the default vanilla wheel).
+  let _hasTheme = $derived(!!wheelTheme && wheelTheme.id !== 'default')
   let isRevealed = $derived(spinStatus === 'REVEALED')
   let activeSegments = $derived(frozenSegments ?? segments)
   // Only allocate a new displaySegments array when there is at least one dimmed segment
@@ -725,7 +727,7 @@
   <!-- Shake wrapper — GSAP applies translate() here during spin -->
   <div bind:this={shakeEl} class="sw-stage flex justify-center w-full">
   <!-- Wheel + canvas wrapper — CSS Grid overlay so canvas and SVG share identical pixel bounds -->
-  <div class="sw-wheel-box" style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${cursedTheme ? 'drop-shadow(0 0 32px rgba(139,92,246,0.5)) drop-shadow(0 0 16px rgba(100,0,200,0.4))' : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(90,214,239,0.15))'}`}; {cursedTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
+  <div class="sw-wheel-box {_hasTheme ? wheelTheme!.cssClass : ''}" style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${_hasTheme ? `drop-shadow(0 0 32px ${wheelTheme!.glow}) drop-shadow(0 0 16px ${wheelTheme!.glow})` : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(90,214,239,0.15))'}`}; {_hasTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
     <svg
       bind:this={svgEl}
       viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
@@ -770,19 +772,21 @@
           <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
         <!-- Cursed Wheel — violet spike gradient + glow -->
+        <!-- Cosmetic-wheel spike crown gradient — stops bound to the active
+             theme (Cursed/Hellfire/Void use this; the rest skip the spikes). -->
         <radialGradient id="cursedSpikeGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stop-color="#3b1066" />
-          <stop offset="70%"  stop-color="#7c3aed" />
-          <stop offset="100%" stop-color="#c084fc" />
+          <stop offset="0%"   stop-color={wheelTheme?.spikeStops?.[0] ?? '#3b1066'} />
+          <stop offset="70%"  stop-color={wheelTheme?.spikeStops?.[1] ?? '#7c3aed'} />
+          <stop offset="100%" stop-color={wheelTheme?.spikeStops?.[2] ?? '#c084fc'} />
         </radialGradient>
-        <!-- Cursed Wheel — pulsating violet inner aura, like the Immortal
-             rainbow signature but pinned to a purple hue. Sits OVER segments
-             with screen blend so the underlying colors still read through. -->
+        <!-- Cosmetic-wheel inner aura — stops bound to the active theme. Sits
+             OVER segments with screen blend so the underlying colors still read
+             through. Pulsates via .cursed-inner-glow keyframes. -->
         <radialGradient id="cursedInnerGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stop-color="rgba(168,85,247,0)" />
-          <stop offset="55%"  stop-color="rgba(168,85,247,0.18)" />
-          <stop offset="85%"  stop-color="rgba(124,58,237,0.45)" />
-          <stop offset="100%" stop-color="rgba(59,16,102,0.6)" />
+          <stop offset="0%"   stop-color={wheelTheme?.innerStops?.[0] ?? 'rgba(168,85,247,0)'} />
+          <stop offset="55%"  stop-color={wheelTheme?.innerStops?.[1] ?? 'rgba(168,85,247,0.18)'} />
+          <stop offset="85%"  stop-color={wheelTheme?.innerStops?.[2] ?? 'rgba(124,58,237,0.45)'} />
+          <stop offset="100%" stop-color={wheelTheme?.innerStops?.[3] ?? 'rgba(59,16,102,0.6)'} />
         </radialGradient>
         <filter id="cursedGlow" x="-40%" y="-40%" width="180%" height="180%">
           <feGaussianBlur stdDeviation="4" result="b" />
@@ -855,15 +859,19 @@
         </linearGradient>
       </defs>
 
-      {#if cursedTheme}
-        <!-- ── Cursed Wheel: jagged violet spike crown ringing the rim ── -->
-        <path d={CURSED_SPIKES_LONG} fill="url(#cursedSpikeGrad)" stroke="#1a0533" stroke-width="0.6"
-              filter="url(#cursedGlow)" class="cursed-spikes-spin" opacity="0.95" />
-        <path d={CURSED_SPIKES_SHORT} fill="#2a0a4d" stroke="#c084fc" stroke-width="0.4"
-              class="cursed-spikes-spin-rev" opacity="0.8" />
-        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 8} fill="none" stroke="#a855f7" stroke-width="2.6" opacity="0.85" filter="url(#cursedGlow)" class="rune-ring-main" />
-        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 3} fill="none" stroke="#e9d5ff" stroke-width="1.0" opacity="0.45" />
-        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 15} fill="none" stroke="#7c3aed" stroke-width="0.7" opacity="0.3" stroke-dasharray="3 7" class="rune-ring-slow" />
+      {#if _hasTheme}
+        {#if wheelTheme!.spikeStops}
+          <!-- ── Themed jagged spike crown (Cursed / Hellfire / Void) ── -->
+          <path d={CURSED_SPIKES_LONG} fill="url(#cursedSpikeGrad)" stroke="#0d0418" stroke-width="0.6"
+                filter="url(#cursedGlow)" class="cursed-spikes-spin" opacity="0.95"
+                style="animation-duration: {wheelTheme!.spikeSpinS ?? 20}s;" />
+          <path d={CURSED_SPIKES_SHORT} fill={wheelTheme!.spikeStops[0]} stroke={wheelTheme!.rimAccent} stroke-width="0.4"
+                class="cursed-spikes-spin-rev" opacity="0.8" />
+        {/if}
+        <!-- Themed rim ring set — colors pulled from the active theme. -->
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 8}  fill="none" stroke={wheelTheme!.rimStroke} stroke-width="2.6" opacity="0.85" filter="url(#cursedGlow)" class="rune-ring-main" />
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 3}  fill="none" stroke={wheelTheme!.rimAccent} stroke-width="1.0" opacity="0.45" />
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 15} fill="none" stroke={wheelTheme!.rimStroke} stroke-width="0.7" opacity="0.3" stroke-dasharray="3 7" class="rune-ring-slow" />
       {:else}
         <!-- Outer decorative rings — layered bronze-gold rim with arcane ghost -->
         <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 20} fill="none" stroke="#5ad6ef"  stroke-width="1.0" opacity="0.05" />
@@ -970,9 +978,9 @@
 
       <!-- Vignette overlay (non-rotating) -->
       <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS} fill="url(#vignetteGrad)" />
-      {#if cursedTheme}
-        <!-- Pulsating violet aura inside the wheel (slice colors stay intact). -->
-        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS - 2} fill="url(#cursedInnerGlow)" class="cursed-inner-glow" style="mix-blend-mode: screen;" pointer-events="none" />
+      {#if _hasTheme}
+        <!-- Themed pulsating inner aura (slice colors stay intact). -->
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS - 2} fill="url(#cursedInnerGlow)" class="cursed-inner-glow" style="mix-blend-mode: screen; animation-duration: {wheelTheme!.innerPulseS ?? 2.4}s;" pointer-events="none" />
       {/if}
 
       <!-- Hub decoration (non-rotating) — deep stone boss with arcane jewel -->

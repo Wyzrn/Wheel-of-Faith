@@ -49,6 +49,7 @@
     spinning: 'casino',
     roster:   'group',
     prestige: 'workspace_premium',
+    cosmetic: 'palette',
   }
 </script>
 
@@ -190,15 +191,17 @@
                     style="background: rgba(30,28,48,0.4); border: 1px solid rgba(48,44,64,0.5);">
                     <span class="font-mono text-xs font-bold" style="color: #2e2b45;">—</span>
                   </div>
-                {:else if alreadyOwned && gp.id === 'cursed_wheel'}
-                  <!-- Owned cosmetic with an on/off toggle. -->
+                {:else if alreadyOwned && gp.category === 'cosmetic'}
+                  <!-- Cosmetic wheel skin — single-select. Clicking activates it (and
+                       deactivates any other); clicking the active one disables. -->
+                  {@const isActive = settings.activeWheelTheme === gp.id}
                   <button
-                    onclick={() => { settings.cursedWheelEnabled = !settings.cursedWheelEnabled; settings.save() }}
+                    onclick={() => { settings.activeWheelTheme = isActive ? 'default' : (gp.id as any); settings.save() }}
                     class="flex items-center gap-1.5 px-3 py-2 rounded-lg font-mono text-xs font-bold transition-all"
-                    style="background: {settings.cursedWheelEnabled ? 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(124,58,237,0.1))' : 'rgba(255,255,255,0.04)'}; border: 1px solid {settings.cursedWheelEnabled ? 'rgba(168,85,247,0.45)' : 'rgba(78,70,53,0.3)'}; color: {settings.cursedWheelEnabled ? '#c084fc' : '#9a907b'};"
+                    style="background: {isActive ? 'linear-gradient(135deg, rgba(168,85,247,0.22), rgba(124,58,237,0.12))' : 'rgba(255,255,255,0.04)'}; border: 1px solid {isActive ? 'rgba(168,85,247,0.5)' : 'rgba(78,70,53,0.3)'}; color: {isActive ? '#c084fc' : '#9a907b'};"
                   >
-                    <span class="material-symbols-outlined" style="font-size: 14px; font-variation-settings: 'FILL' 1;">{settings.cursedWheelEnabled ? 'toggle_on' : 'toggle_off'}</span>
-                    {settings.cursedWheelEnabled ? 'Enabled' : 'Disabled'}
+                    <span class="material-symbols-outlined" style="font-size: 14px; font-variation-settings: 'FILL' 1;">{isActive ? 'toggle_on' : 'toggle_off'}</span>
+                    {isActive ? 'Active' : 'Equip'}
                   </button>
                 {:else if alreadyOwned}
                   <div class="flex items-center gap-1 px-3 py-2 rounded-lg"

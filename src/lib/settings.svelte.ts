@@ -1,5 +1,6 @@
 // settings.svelte.ts — Persistent game settings using Svelte 5 class runes.
 import { browser } from '$app/environment'
+import type { WheelThemeId } from './wheelThemes'
 
 const STORAGE_KEY = 'wof_settings'
 
@@ -22,10 +23,10 @@ class SettingsStore {
   // Useful on flagship phones that the heuristic mis-buckets as 'low'
   // (any touch device defaults to low). null = auto (default).
   highQualityOverride: 'auto' | 'high' = $state('auto')
-  // Cursed Wheel gamepass cosmetic toggle. Only takes effect if the player
-  // owns the 'cursed_wheel' gamepass; lets them switch the dark/spiked wheel
-  // skin on or off. Default on so owners see it immediately after buying.
-  cursedWheelEnabled = $state(true)
+  // Active cosmetic wheel skin. Only takes effect if the player owns the
+  // matching gamepass; resolveActiveTheme falls back to 'default' otherwise.
+  // 'default' = no skin (vanilla gold wheel).
+  activeWheelTheme: WheelThemeId = $state('default')
 
   // Backward-compat shim: existing views still read settings.battleSpeed
   // as a single numeric multiplier. Resolves to the auto speed when auto is
@@ -54,7 +55,9 @@ class SettingsStore {
       if (typeof s.autoBattleSpeed === 'number')  this.autoBattleSpeed = s.autoBattleSpeed
       if (typeof s.autoContinueMs  === 'number')  this.autoContinueMs  = s.autoContinueMs
       if (s.highQualityOverride === 'auto' || s.highQualityOverride === 'high') this.highQualityOverride = s.highQualityOverride
-      if (typeof s.cursedWheelEnabled === 'boolean') this.cursedWheelEnabled = s.cursedWheelEnabled
+      if (typeof s.activeWheelTheme === 'string') this.activeWheelTheme = s.activeWheelTheme as WheelThemeId
+      // Migrate legacy boolean cursedWheelEnabled -> activeWheelTheme.
+      else if (s.cursedWheelEnabled === true) this.activeWheelTheme = 'cursed_wheel'
       // Migrate the old battleSpeed field (single slider, 99 = instant).
       if (s.autoBattleSpeed === undefined && typeof s.battleSpeed === 'number') {
         if (s.battleSpeed >= 99) { this.autoBattle = true; this.autoBattleSpeed = 1.6 }
@@ -73,7 +76,7 @@ class SettingsStore {
       autoBattleSpeed: this.autoBattleSpeed,
       autoContinueMs:  this.autoContinueMs,
       highQualityOverride: this.highQualityOverride,
-      cursedWheelEnabled: this.cursedWheelEnabled,
+      activeWheelTheme: this.activeWheelTheme,
     }))
   }
 }

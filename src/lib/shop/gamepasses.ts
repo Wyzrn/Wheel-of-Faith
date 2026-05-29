@@ -13,8 +13,18 @@ export type GamepassId =
   | 'legend_tag'
   | 'cursed_wheel'
   | 'gold_roster_frame'
+  // Cosmetic wheel skins — one active at a time via settings.activeWheelTheme.
+  | 'guilded_wheel'
+  | 'holy_wheel'
+  | 'hellfire_wheel'
+  | 'aquatic_wheel'
+  | 'nature_wheel'
+  | 'arcane_wheel'
+  | 'cosmic_wheel'
+  | 'glowing_wheel'
+  | 'void_wheel'
 
-export type GamepassCategory = 'combat' | 'spinning' | 'roster' | 'prestige'
+export type GamepassCategory = 'combat' | 'spinning' | 'roster' | 'prestige' | 'cosmetic'
 
 export interface GamepassDef {
   id: GamepassId
@@ -160,12 +170,103 @@ export const GAMEPASSES: GamepassDef[] = [
   {
     id: 'cursed_wheel',
     name: 'Cursed Wheel',
-    description: 'Transforms the spin wheel into a dark, eldritch variant with a haunted visual theme.',
-    effect: 'Dark wheel cosmetic',
-    category: 'prestige',
-    costShards: 2_400,
+    description: 'A haunted violet skin: spike crowns ring the rim and a pulsating dark aura churns inside the wheel.',
+    effect: 'Wheel skin',
+    category: 'cosmetic',
+    costShards: 1_500,
     stackable: false,
     icon: 'dark_mode',
+  },
+  // ── Cosmetic wheel skins — pricier ones look cooler. ─────────────────────
+  {
+    id: 'glowing_wheel',
+    name: 'Glowing Wheel',
+    description: 'A clean cyan luminance with a soft inner pulse — every spin feels charged.',
+    effect: 'Wheel skin',
+    category: 'cosmetic',
+    costShards: 500,
+    stackable: false,
+    icon: 'light_mode',
+  },
+  {
+    id: 'nature_wheel',
+    name: 'Nature Wheel',
+    description: 'Verdant emerald rim threaded with vines and a soft mossy glow within.',
+    effect: 'Wheel skin',
+    category: 'cosmetic',
+    costShards: 500,
+    stackable: false,
+    icon: 'forest',
+  },
+  {
+    id: 'guilded_wheel',
+    name: 'Guilded Wheel',
+    description: 'Bright gilded gold rim with a warm gilded sheen rippling across the inner aura.',
+    effect: 'Wheel skin',
+    category: 'cosmetic',
+    costShards: 1_000,
+    stackable: false,
+    icon: 'auto_awesome',
+  },
+  {
+    id: 'aquatic_wheel',
+    name: 'Aquatic Wheel',
+    description: 'Tidal cyan rim and a rolling deep-sea aura that ripples inside the wheel.',
+    effect: 'Wheel skin',
+    category: 'cosmetic',
+    costShards: 1_000,
+    stackable: false,
+    icon: 'water_drop',
+  },
+  {
+    id: 'holy_wheel',
+    name: 'Holy Wheel',
+    description: 'A radiant halo of white-gold light, with a divine inner glow that feels sanctified.',
+    effect: 'Wheel skin',
+    category: 'cosmetic',
+    costShards: 1_500,
+    stackable: false,
+    icon: 'church',
+  },
+  {
+    id: 'arcane_wheel',
+    name: 'Arcane Wheel',
+    description: 'Indigo runes dance around the rim while an arcane violet-azure aura swims inside.',
+    effect: 'Wheel skin',
+    category: 'cosmetic',
+    costShards: 1_500,
+    stackable: false,
+    icon: 'auto_fix',
+  },
+  {
+    id: 'hellfire_wheel',
+    name: 'Hellfire Wheel',
+    description: 'A crown of jagged crimson flames and a furious ember-storm aura raging inside. Cooler than cursed.',
+    effect: 'Wheel skin',
+    category: 'cosmetic',
+    costShards: 2_000,
+    stackable: false,
+    icon: 'local_fire_department',
+  },
+  {
+    id: 'cosmic_wheel',
+    name: 'Cosmic Wheel',
+    description: 'A galactic nebula swirls inside the wheel with rotating star fields and a deep-space rim.',
+    effect: 'Wheel skin',
+    category: 'cosmetic',
+    costShards: 2_000,
+    stackable: false,
+    icon: 'auto_awesome_mosaic',
+  },
+  {
+    id: 'void_wheel',
+    name: 'Void Wheel',
+    description: 'Reality fractures around the rim — a swirling magenta void inside threatens to consume the wheel. The crown jewel.',
+    effect: 'Wheel skin',
+    category: 'cosmetic',
+    costShards: 2_500,
+    stackable: false,
+    icon: 'blur_on',
   },
   {
     id: 'gold_roster_frame',
@@ -205,4 +306,5 @@ export const CATEGORY_LABELS: Record<GamepassCategory, string> = {
   spinning: 'Spinning',
   roster:   'Roster',
   prestige: 'Prestige',
+  cosmetic: 'Cosmetic',
 }
