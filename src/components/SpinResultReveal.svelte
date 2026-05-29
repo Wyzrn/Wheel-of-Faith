@@ -265,9 +265,9 @@
             <p class="text-xs leading-relaxed" style="color: #9a907b; max-width: 30ch; font-family: 'JetBrains Mono', monospace;">{meta.description}</p>
           {/if}
           {#if meta.statEffect}
-            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-xs"
+            <div class="srr-reward flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-xs"
               style="background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.18); color: #9a907b;">
-              <span class="material-symbols-outlined" style="font-size: 11px; color: #f0c040; font-variation-settings: 'FILL' 1;">bolt</span>
+              <span class="material-symbols-outlined srr-reward-bolt" style="font-size: 11px; color: #f0c040; font-variation-settings: 'FILL' 1;">bolt</span>
               {meta.statEffect}
             </div>
           {/if}
@@ -437,6 +437,27 @@
   @keyframes srrFadeIn {
     from { opacity: 0; }
     to   { opacity: 1; }
+  }
+  /* Reward (stat-effect / grants) badge pops in after the panel settles, with
+     a brief bolt flash, so granted rewards read as a distinct beat. */
+  .srr-reward {
+    animation: srrRewardIn 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) 0.22s both;
+  }
+  @keyframes srrRewardIn {
+    0%   { opacity: 0; transform: scale(0.7) translateY(6px); }
+    60%  { opacity: 1; transform: scale(1.06); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .srr-reward-bolt {
+    animation: srrBoltFlash 0.6s ease-out 0.32s both;
+  }
+  @keyframes srrBoltFlash {
+    0%   { filter: drop-shadow(0 0 0 #f0c040); transform: scale(1); }
+    40%  { filter: drop-shadow(0 0 8px #f0c040); transform: scale(1.4); }
+    100% { filter: drop-shadow(0 0 3px #f0c040); transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .srr-reward, .srr-reward-bolt { animation: none; }
   }
   @keyframes srrPop {
     0%   { transform: scale(0.6) translateY(20px); opacity: 0; filter: blur(8px); }

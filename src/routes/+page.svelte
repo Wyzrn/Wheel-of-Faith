@@ -3122,11 +3122,11 @@
                 raceWheelDef?.raceWheelId,
               )}
               {@const baseDesc = raceWheelDesc || statDesc || extraDesc || ''}
-              {@const mergedDesc = [baseDesc, racialGrants].filter(Boolean).join('  ·  ')}
               {@const resolvedMeta = {
                 ...(itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}),
                 ...(identityCard ? { identityCard } : {}),
-                ...(mergedDesc ? { description: mergedDesc } : {}),
+                ...(baseDesc ? { description: baseDesc } : {}),
+                ...(racialGrants ? { statEffect: racialGrants } : {}),
               } as ResolvedMeta}
               <SpinResultReveal
                 result={last}

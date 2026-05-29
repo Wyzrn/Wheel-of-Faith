@@ -1542,8 +1542,8 @@
     element: pendingResult.element,
     grade:   pendingResult.grade,
     abilityType:  pendingResult.abilityType,
-    description:  [pendingResult.description, _grants].filter(Boolean).join('  ·  ') || undefined,
-    statEffect:   pendingResult.statEffect,
+    description:  pendingResult.description,
+    statEffect:   [pendingResult.statEffect, _grants].filter(Boolean).join('  ·  ') || undefined,
     ...(_identityCard ? { identityCard: _identityCard } : {}),
   } as ResolvedMeta}
   <SpinResultReveal
