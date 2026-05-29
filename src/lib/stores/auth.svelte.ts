@@ -17,6 +17,16 @@ export interface AuthUser {
 let _user = $state<AuthUser | null>(null)
 let _loading = $state(true)
 
+// Guarantee array fields the type promises but the server payload may omit
+// (e.g. a freshly-registered account whose `gamepasses` hasn't been set).
+// Without this, `auth.user.gamepasses.includes(...)` throws — and when that
+// throw lands inside GSAP's spin onComplete it's swallowed, so the wheel
+// lands but no result reveal ever fires.
+function normalizeUser(u: AuthUser | null | undefined): AuthUser | null {
+  if (!u) return null
+  return { ...u, gamepasses: Array.isArray(u.gamepasses) ? u.gamepasses : [] }
+}
+
 export const auth = {
   get user() { return _user },
   get loading() { return _loading },
@@ -27,7 +37,7 @@ export const auth = {
       const res = await fetch(`${API}/auth/me`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
-        _user = data.user
+        _user = normalizeUser(data.user)
       }
     } catch { /* network error — stay logged out */ }
     _loading = false
@@ -42,7 +52,7 @@ export const auth = {
     })
     const data = await res.json()
     if (!res.ok) return data.error ?? 'Login failed'
-    _user = data.user
+    _user = normalizeUser(data.user)
     return null
   },
 
@@ -55,7 +65,7 @@ export const auth = {
     })
     const data = await res.json()
     if (!res.ok) return data.error ?? 'Registration failed'
-    _user = data.user
+    _user = normalizeUser(data.user)
     return null
   },
 

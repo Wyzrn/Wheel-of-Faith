@@ -452,7 +452,7 @@
   function confirmSell() {
     if (!sellTarget || !currentSlot) return
     let value = getGemValue(sellTarget.overallTier)
-    if (auth.user?.gamepasses.includes('sell_bonus')) value = Math.ceil(value * 1.25)
+    if (auth.user?.gamepasses?.includes('sell_bonus')) value = Math.ceil(value * 1.25)
     currentSlot = sellCharacterFromSlot(
       $state.snapshot(currentSlot) as StorySaveSlot,
       sellTarget.id,
@@ -2808,7 +2808,7 @@
 {#if sellTarget !== null}
   <SellConfirmModal
     entry={sellTarget}
-    sellBonus={auth.user?.gamepasses.includes('sell_bonus') ?? false}
+    sellBonus={auth.user?.gamepasses?.includes('sell_bonus') ?? false}
     onConfirm={confirmSell}
     onCancel={() => sellTarget = null}
   />

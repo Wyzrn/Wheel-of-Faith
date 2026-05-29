@@ -82,7 +82,7 @@
         <p class="font-bold text-2xl" style="font-family: 'Cinzel', serif; color: #f0c040;">
           {(auth.user?.shards ?? 0).toLocaleString()}
         </p>
-        <p class="font-mono text-xs mt-0.5" style="color: #4e4635;">Gamepasses owned: {auth.user?.gamepasses.length ?? 0}</p>
+        <p class="font-mono text-xs mt-0.5" style="color: #4e4635;">Gamepasses owned: {auth.user?.gamepasses?.length ?? 0}</p>
       </div>
       <span class="material-symbols-outlined" style="font-size: 40px; color: #f0c040; font-variation-settings: 'FILL' 1; opacity: 0.7;">diamond</span>
     </div>

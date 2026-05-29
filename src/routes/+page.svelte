@@ -931,7 +931,7 @@
 
       const forceTutorialWildcard = isStatSpin && def.category === 'strength' && tutorialStep > 0 && tutorialStep < 15 && !tutorialWildcardDone
       if (forceTutorialWildcard) tutorialWildcardDone = true
-      const hasDoubleLuck = auth.user?.gamepasses.includes('double_luck') ?? false
+      const hasDoubleLuck = auth.user?.gamepasses?.includes('double_luck') ?? false
       if (isStatSpin && (Math.random() < (hasDoubleLuck ? 0.10 : 0.05) || forceTutorialWildcard)) {
         // Stat wildcard: pick outcome from weighted table
         const outcome = forceTutorialWildcard

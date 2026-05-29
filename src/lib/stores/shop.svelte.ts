@@ -8,10 +8,10 @@ const API = '/api'
 
 export const gamepasses = {
   has(id: GamepassId): boolean {
-    return auth.user?.gamepasses.includes(id) ?? false
+    return auth.user?.gamepasses?.includes(id) ?? false
   },
   count(id: GamepassId): number {
-    return auth.user?.gamepasses.filter(g => g === id).length ?? 0
+    return auth.user?.gamepasses?.filter(g => g === id).length ?? 0
   },
   get all(): string[] {
     return auth.user?.gamepasses ?? []

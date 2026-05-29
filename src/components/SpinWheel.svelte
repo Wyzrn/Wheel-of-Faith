@@ -680,7 +680,14 @@
         currentRotation = targetAngle
         lastResult = { index: resultIndex, label: segments[resultIndex].label }
         spinStatus = 'LANDED'
-        onSpinComplete(resultIndex, segments[resultIndex].label)
+        // GSAP swallows exceptions thrown inside onComplete. If the host's
+        // handler throws, the wheel would land with no result reveal and no
+        // way forward — so surface the error and still advance the status.
+        try {
+          onSpinComplete(resultIndex, segments[resultIndex].label)
+        } catch (err) {
+          console.error('onSpinComplete handler threw:', err)
+        }
         // Pop the reveal card early — the celebration layers OVER the
         // card (z-60) so the player sees fireworks crash on top of the
         // result. Short delay just so the wheel finishes its landing
