@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { User } from '../models/User.js'
 import { Character } from '../models/Character.js'
 import { markEvent } from '../lib/challenges.js'
+import { isAdminUsername } from '../lib/admin.js'
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -83,6 +84,7 @@ export async function authRoutes(app: FastifyInstance) {
       rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed,
       email: user.email, shards: user.shards ?? 0, gamepasses: user.gamepasses ?? [],
       dailyStreak: user.dailyStreak ?? 0, lastVisitDate: user.lastVisitDate ?? null,
+      isAdmin: isAdminUsername(user.username),
     } })
   })
 

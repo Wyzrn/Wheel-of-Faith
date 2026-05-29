@@ -1,4 +1,6 @@
 import { Character } from '../models/Character.js'
+import { User } from '../models/User.js'
+import { requireAdmin } from '../lib/admin.js'
 import type { FastifyPluginAsync } from 'fastify'
 
 // Must stay in sync with src/lib/game/scoreTier.ts STAT_WEIGHTS
@@ -149,5 +151,162 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     return reply.send({ updated, skipped, total: characters.length })
+  })
+
+  // ── Developer sandbox endpoints (gated by username allowlist) ─────────────
+  // All routes below require the caller's account to appear in ADMIN_USERNAMES.
+  // The guard re-reads the user from the DB on every call so revoking admin
+  // status takes effect immediately on the next request.
+
+  // GET /admin/users?q= — search up to 25 users by username substring.
+  fastify.get('/admin/users', async (req: any, reply) => {
+    if (!(await requireAdmin(req, reply))) return
+    const { q } = (req.query ?? {}) as { q?: string }
+    const filter = q ? { username: { $regex: q.trim().slice(0, 32), $options: 'i' } } : {}
+    const users = await User.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(25)
+      .select('_id username email shards gamepasses createdAt')
+      .lean()
+    reply.send({ users })
+  })
+
+  // PATCH /admin/users/:id — adjust shards (delta) and/or grant/revoke
+  // gamepasses on a target account. Operations are independent and any
+  // subset can be supplied.
+  fastify.patch('/admin/users/:id', async (req: any, reply) => {
+    if (!(await requireAdmin(req, reply))) return
+    const { id } = req.params as { id: string }
+    const body = (req.body ?? {}) as {
+      shardsDelta?: number
+      setShards?: number
+      grantGamepass?: string
+      revokeGamepass?: string
+    }
+
+    const user = await User.findById(id)
+    if (!user) return reply.status(404).send({ error: 'user not found' })
+
+    if (typeof body.setShards === 'number' && isFinite(body.setShards)) {
+      user.shards = Math.max(0, Math.floor(body.setShards))
+    }
+    if (typeof body.shardsDelta === 'number' && isFinite(body.shardsDelta)) {
+      user.shards = Math.max(0, (user.shards ?? 0) + Math.floor(body.shardsDelta))
+    }
+    if (typeof body.grantGamepass === 'string' && body.grantGamepass) {
+      if (!user.gamepasses.includes(body.grantGamepass)) {
+        user.gamepasses.push(body.grantGamepass)
+      }
+    }
+    if (typeof body.revokeGamepass === 'string' && body.revokeGamepass) {
+      user.gamepasses = user.gamepasses.filter((g) => g !== body.revokeGamepass)
+    }
+
+    await user.save()
+    reply.send({
+      user: {
+        id: user._id, username: user.username,
+        shards: user.shards, gamepasses: user.gamepasses,
+      },
+    })
+  })
+
+  // GET /admin/characters?q=&userId= — search characters by name, shareId,
+  // race, or archetype. Optional userId narrows to a single account.
+  fastify.get('/admin/characters', async (req: any, reply) => {
+    if (!(await requireAdmin(req, reply))) return
+    const { q, userId } = (req.query ?? {}) as { q?: string; userId?: string }
+    const filter: Record<string, unknown> = {}
+    if (userId) filter.userId = userId
+    if (q) {
+      const term = q.trim().slice(0, 64)
+      filter.$or = [
+        { name:      { $regex: term, $options: 'i' } },
+        { shareId:   { $regex: term, $options: 'i' } },
+        { race:      { $regex: term, $options: 'i' } },
+        { archetype: { $regex: term, $options: 'i' } },
+      ]
+    }
+    const characters = await Character.find(filter)
+      .sort({ created_at: -1 })
+      .limit(25)
+      .select('_id shareId userId name race archetype overall_score overall_tier created_at')
+      .lean()
+    reply.send({ characters })
+  })
+
+  // GET /admin/characters/:shareId — full character document including spins.
+  fastify.get('/admin/characters/:shareId', async (req: any, reply) => {
+    if (!(await requireAdmin(req, reply))) return
+    const { shareId } = req.params as { shareId: string }
+    const character = await Character.findOne({ shareId }).lean()
+    if (!character) return reply.status(404).send({ error: 'character not found' })
+    reply.send({ character })
+  })
+
+  // PATCH /admin/characters/:shareId — rewrite individual spin entries by
+  // index, optionally recompute overall_score/tier using current weights, or
+  // overwrite name/race/archetype/elementWeaknesses directly.
+  fastify.patch('/admin/characters/:shareId', async (req: any, reply) => {
+    if (!(await requireAdmin(req, reply))) return
+    const { shareId } = req.params as { shareId: string }
+    const body = (req.body ?? {}) as {
+      name?:              string
+      race?:              string
+      archetype?:         string
+      elementWeaknesses?: string[]
+      overall_score?:     number
+      overall_tier?:      string
+      recomputeOverall?:  boolean
+      spinPatches?:       Array<{ index: number; patch: Record<string, unknown> }>
+    }
+
+    const character = await Character.findOne({ shareId })
+    if (!character) return reply.status(404).send({ error: 'character not found' })
+
+    if (typeof body.name === 'string')      character.name = body.name.slice(0, 80)
+    if (typeof body.race === 'string')      character.race = body.race.slice(0, 80)
+    if (typeof body.archetype === 'string') character.archetype = body.archetype.slice(0, 80)
+    if (Array.isArray(body.elementWeaknesses)) {
+      character.elementWeaknesses = body.elementWeaknesses
+        .filter((e) => typeof e === 'string')
+        .slice(0, 8)
+    }
+
+    // Apply targeted spin patches. Spins is a Mixed blob, so we read,
+    // mutate, and reassign as a whole so Mongoose persists the change.
+    if (Array.isArray(body.spinPatches) && body.spinPatches.length > 0) {
+      const spins = Array.isArray(character.spins) ? [...(character.spins as any[])] : []
+      for (const { index, patch } of body.spinPatches) {
+        if (!Number.isInteger(index) || index < 0 || index >= spins.length) continue
+        if (!patch || typeof patch !== 'object') continue
+        spins[index] = { ...spins[index], ...patch }
+      }
+      character.spins = spins as any
+      character.markModified('spins')
+    }
+
+    if (body.recomputeOverall) {
+      const spins = Array.isArray(character.spins) ? (character.spins as any[]) : []
+      const statScores: Record<string, number> = {}
+      for (const spin of spins) {
+        if (spin?.category && typeof spin.score === 'number' &&
+            STAT_WEIGHTS[spin.category as string] !== undefined) {
+          statScores[spin.category as string] = spin.score
+        }
+      }
+      character.overall_score = computeOverallScore(statScores)
+      character.overall_tier  = scoreTier(character.overall_score)
+    } else {
+      if (typeof body.overall_score === 'number' && isFinite(body.overall_score)) {
+        character.overall_score = Math.round(body.overall_score)
+      }
+      if (typeof body.overall_tier === 'string') {
+        character.overall_tier = body.overall_tier.slice(0, 16)
+      }
+    }
+
+    await character.save()
+    reply.send({ character: character.toObject() })
   })
 }

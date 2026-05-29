@@ -11,6 +11,7 @@ export interface AuthUser {
   gamepasses: string[]
   dailyStreak?: number
   lastVisitDate?: string | null
+  isAdmin?: boolean
 }
 
 // Svelte 5 reactive auth state

@@ -193,11 +193,21 @@
             <p class="text-xs mt-0.5" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">{auth.user.email}</p>
           {/if}
         </div>
-        <button
-          onclick={async () => { await auth.logout(); goto('/') }}
-          class="ml-auto text-xs px-3 py-1.5 rounded-lg shrink-0"
-          style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #9a907b; font-family: 'JetBrains Mono', monospace; cursor: pointer;"
-        >Sign out</button>
+        <div class="ml-auto flex items-center gap-2 shrink-0">
+          {#if auth.user.isAdmin}
+            <a
+              href="/admin"
+              class="text-xs px-3 py-1.5 rounded-lg"
+              style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.4); color: #fde68a; font-family: 'JetBrains Mono', monospace; text-decoration: none;"
+              title="Developer sandbox"
+            >Admin</a>
+          {/if}
+          <button
+            onclick={async () => { await auth.logout(); goto('/') }}
+            class="text-xs px-3 py-1.5 rounded-lg"
+            style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #9a907b; font-family: 'JetBrains Mono', monospace; cursor: pointer;"
+          >Sign out</button>
+        </div>
       </div>
 
       <!-- Stats -->
