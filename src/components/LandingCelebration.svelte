@@ -87,7 +87,12 @@
   let isCosmicTier = $derived(
     !!tier && /Cosmic|Immortal|Celestial|Godly|Primordial|Absolute|Transcendent|Infinite/i.test(tier),
   )
+  // Divine races (the new top rarity tier) carry a 'Divine' marker. They reuse
+  // transcendent's full cinematic layer set PLUS a unique golden divine
+  // signature overlay (see lc-divine), so the moment reads as above-mythic.
+  let isDivine = $derived(tier === 'Divine' || intensity >= 1.0)
   let level = $derived(
+    isDivine          ? 'transcendent' :
     isCosmicTier      ? 'transcendent' :
     intensity >= 0.70 ? 'mythic'       :
     intensity >= 0.50 ? 'great'        :
@@ -365,9 +370,20 @@
     class="lc-root {tierKind}"
     class:lc-perf-low={cheap}
     class:lc-perf-mid={perfTier === 'mid'}
+    class:lc-divine={isDivine}
     style="--accent: {accent}; --accent2: {accent2}; --tier-color: {tierColor}; --origin-x: {originX}; --origin-y: {originY};"
     aria-hidden="true"
   >
+    <!-- DIVINE-ONLY: the new top-tier signature. A blinding white-gold flash, a
+         radiant cross of god-rays from the origin, and slow golden halo rings —
+         layered OVER the transcendent set so Divine reads as beyond cosmic. -->
+    {#if isDivine}
+      <div class="lc-divine-flash"></div>
+      <div class="lc-divine-rays"></div>
+      <div class="lc-divine-halo"></div>
+      <div class="lc-divine-halo lc-divine-halo-2"></div>
+    {/if}
+
     <!-- TRANSCENDENT-ONLY: reality hue-shift wash. Briefly tints the whole
          viewport with the accent color via a screen-blended layer — feels
          like reality is being rewritten. -->
@@ -561,6 +577,66 @@
        pointer-events: none keeps everything below clickable through it. */
     z-index: 70;
     overflow: hidden;
+  }
+
+  /* ── DIVINE signature (new top tier, above transcendent) ─────────────────
+     A white-gold flash, a radiant cross of god-rays from the spin origin, and
+     two slow expanding golden halos. Layered over the full transcendent set. */
+  .lc-divine-flash {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at var(--origin-x) var(--origin-y),
+                #fffdf5 0%, rgba(255,236,170,0.85) 14%, rgba(255,210,90,0.35) 32%, transparent 60%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: lc-divine-flash 2.6s ease-out forwards;
+  }
+  .lc-divine-rays {
+    position: absolute;
+    left: var(--origin-x); top: var(--origin-y);
+    width: 240vmax; height: 240vmax;
+    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+    background: repeating-conic-gradient(from 0deg at 50% 50%,
+                rgba(255,240,190,0.0) 0deg,
+                rgba(255,240,190,0.55) 2deg,
+                rgba(255,240,190,0.0) 9deg);
+    -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+            mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: lc-divine-rays 3.4s cubic-bezier(0.15, 0.6, 0.2, 1) forwards;
+  }
+  .lc-divine-halo {
+    position: absolute;
+    left: var(--origin-x); top: var(--origin-y);
+    width: 40vmax; height: 40vmax;
+    transform: translate(-50%, -50%) scale(0.2);
+    border-radius: 50%;
+    border: 3px solid rgba(255,224,130,0.9);
+    box-shadow: 0 0 60px rgba(255,210,90,0.7), inset 0 0 50px rgba(255,236,170,0.5);
+    opacity: 0;
+    animation: lc-divine-halo 2.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  }
+  .lc-divine-halo-2 { animation-delay: 0.4s; border-color: rgba(255,255,255,0.85); }
+  @keyframes lc-divine-flash {
+    0%   { opacity: 0; }
+    8%   { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  @keyframes lc-divine-rays {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotate(0deg); }
+    18%  { opacity: 0.9; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3) rotate(38deg); }
+  }
+  @keyframes lc-divine-halo {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+    25%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(2.4); }
+  }
+  /* Divine pushes the whole scene a touch warmer/brighter. */
+  .lc-divine { filter: saturate(1.1) brightness(1.05); }
+  .lc-perf-low .lc-divine-rays { display: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .lc-divine-flash, .lc-divine-rays, .lc-divine-halo { animation: none; opacity: 0; }
   }
 
   /* ── Edge vignette tint ────────────────────────────────────────────────── */

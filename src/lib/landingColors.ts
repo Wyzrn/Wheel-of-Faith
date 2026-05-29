@@ -30,16 +30,17 @@ const _GRADE_INTENSITY: Record<ItemGrade, number> = {
   A: 0.65, S: 0.75, SS: 0.85, SSS: 0.93, God: 1.0,
 }
 
-// Race / archetype rarity buckets. ONE function drives both the celebration
-// intensity AND the subtitle label so the animation a player sees matches the
-// rarity it announces: Common→basic, Uncommon/Rare→good, Legendary→great,
-// Mythological→mythic. (Intensity thresholds in LandingCelebration: mythic
-// ≥0.70, great ≥0.50, good ≥0.30, basic ≥0.10.) Race weights span ~1 (rarest)
-// to ~15 (Human/Goblin); archetype weights are tighter (1-6).
+// Race rarity buckets (6-tier scheme). ONE function drives the celebration
+// intensity AND the subtitle label so the animation matches the announced
+// rarity. Weight bands: Divine 1 · Mythological 2 · Legendary 3-4 · Rare 5-7 ·
+// Uncommon 8-11 · Common 12+. (LandingCelebration thresholds: divine ≥1.0,
+// mythic ≥0.70, great ≥0.50, good ≥0.30, basic ≥0.10.)
 function raceRarity(weight: number): { label: string; intensity: number } {
-  if (weight <= 2) return { label: 'Mythological', intensity: 0.85 }  // mythic
-  if (weight <= 4) return { label: 'Legendary',    intensity: 0.60 }  // great
-  if (weight <= 7) return { label: 'Uncommon',     intensity: 0.40 }  // good
+  if (weight <= 1) return { label: 'Divine',       intensity: 1.05 }  // divine (new top tier)
+  if (weight <= 2) return { label: 'Mythological', intensity: 0.88 }  // mythic
+  if (weight <= 4) return { label: 'Legendary',    intensity: 0.72 }  // mythic
+  if (weight <= 7) return { label: 'Rare',         intensity: 0.55 }  // great
+  if (weight <= 11) return { label: 'Uncommon',    intensity: 0.38 }  // good
   return { label: 'Common', intensity: 0.20 }                          // basic
 }
 function archetypeRarity(weight: number): { label: string; intensity: number } {
@@ -165,7 +166,14 @@ export function resolveLandingForCategory(
     subtitle = ITEM_GRADE_INFO[grade]?.label ?? grade
   }
 
+  // Divine-tier races (weight ≤ 1) carry a 'Divine' marker so the celebration
+  // fires its dedicated top-tier effect (above transcendent).
+  const divineTier = category === 'race' && (racesByLabel.get(label)?.weight ?? 99) <= 1
+    ? 'Divine'
+    : null
+
   return {
+    tier: divineTier,
     tierColor: gradeColor ?? null,
     elementColor,
     intensityOverride,
