@@ -122,9 +122,11 @@ export const LIMIT_BREAK_SHIFT: Record<string, number> = {
 // skip the splice entirely.
 export function limitBreakSegmentsFor(odds: number | undefined | null): WeightedSegment[] | null {
   if (!odds || odds < 2) return null
+  // "Limit Break" weighted 2 (vs odds-2) makes it land ~2× as often as the
+  // natural 1/odds chance — i.e. ≈ 2/odds.
   return [
-    { label: 'No Limit Break', weight: Math.max(1, odds - 1) },
-    { label: 'Limit Break',    weight: 1, tier: 'Infinite', color: 'var(--tier-infinite)' },
+    { label: 'No Limit Break', weight: Math.max(1, odds - 2) },
+    { label: 'Limit Break',    weight: 2, tier: 'Infinite', color: 'var(--tier-infinite)' },
   ]
 }
 
@@ -442,8 +444,8 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
       // race.limitBreakOdds (see limitBreakSegmentsFor()). This default is
       // returned when limitBreak somehow fires with no race context.
       return [
-        { label: 'No Limit Break', weight: 99 },
-        { label: 'Limit Break',    weight: 1, tier: 'Infinite' },
+        { label: 'No Limit Break', weight: 98 },
+        { label: 'Limit Break',    weight: 2, tier: 'Infinite' },
       ]
 
     case 'limitBreakLevel':

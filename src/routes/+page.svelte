@@ -2868,7 +2868,7 @@
       <!-- Glitch-text WILDCARD -->
       <p class="relative wc-text"
          style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 6.5rem); font-weight: 900; color: #fffaf0; text-shadow: 0 0 30px rgba(240,192,64,0.9);">
-        ⚡ WILDCARD ⚡
+        WILDCARD
       </p>
     </div>
   {/if}
@@ -2886,7 +2886,7 @@
         style="background: linear-gradient(135deg, #1f1830 0%, #12111e 70%);
                border: 2px solid rgba(240,192,64,0.55);
                box-shadow: 0 0 100px rgba(240,192,64,0.3), inset 0 1px 0 rgba(255,255,255,0.06);">
-        <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.3em; color: #f0c040; text-transform: uppercase; margin-bottom: 12px;">⚡ Wildcard Activated</p>
+        <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.3em; color: #f0c040; text-transform: uppercase; margin-bottom: 12px;">Wildcard Activated</p>
         <p style="font-family: 'Cinzel', serif; font-size: 1.55rem; font-weight: 900; color: #ffdf96; letter-spacing: 0.12em; line-height: 1.2; text-shadow: 0 0 20px rgba(240,192,64,0.5);">{wildcardOutcomeLabel}</p>
         <p class="mt-3 text-sm leading-relaxed" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{wildcardOutcomeDesc}</p>
         <button

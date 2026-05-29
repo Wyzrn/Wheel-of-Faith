@@ -245,8 +245,16 @@
     const index = wildcardPendingIndex
     const type = wildcardOutcomeType
 
-    if (type === 'itemBonus' && currentDef) {
-      queue.splice(currentIndex + 1, 0, { category: currentDef.category as SpinCategory, displayName: `Bonus: ${currentDef.displayName}` })
+    if (currentDef) {
+      if (type === 'reroll') {
+        queue.splice(currentIndex + 1, 0, { category: currentDef.category as SpinCategory, displayName: `${currentDef.displayName} (Reroll)`, isReroll: true })
+      } else if (type === 'power_gift') {
+        queue.splice(currentIndex + 1, 0, { category: 'power' as const, displayName: 'Wildcard Bonus Power' })
+      } else if (type === 'double_edge') {
+        queue.splice(currentIndex + 1, 0, { category: 'weakness' as const, displayName: 'Wildcard Weakness' })
+      } else if (type === 'itemBonus') {
+        queue.splice(currentIndex + 1, 0, { category: currentDef.category as SpinCategory, displayName: `Bonus ${currentDef.displayName}` })
+      }
     }
 
     wildcardPhase = 'idle'
@@ -572,51 +580,46 @@
         const statSegs = getSegmentsForCategory(currentDef.category as SpinCategory) as { label: string; tier?: string; weight: number }[]
 
         let modifiedLabel = resultLabel
-        let outcomeDesc = outcome.desc
 
-        if (outcome.type === 'blessing') {
-          modifiedLabel = shiftTierLabel(resultLabel, 2, statSegs)
-          outcomeDesc = `+2 tier shift → ${modifiedLabel}`
-        } else if (outcome.type === 'curse') {
-          modifiedLabel = shiftTierLabel(resultLabel, -2, statSegs)
-          outcomeDesc = `-2 tier shift → ${modifiedLabel}`
-        } else if (outcome.type === 'c_tier') {
-          const cSeg = statSegs.find(s => s.tier === 'C')
-          if (cSeg) modifiedLabel = cSeg.label
-          outcomeDesc = `Locked to C-tier → ${modifiedLabel}`
-        } else if (outcome.type === 'double_edge') {
-          modifiedLabel = shiftTierLabel(resultLabel, 3, statSegs)
-          outcomeDesc = `+3 tier shift → ${modifiedLabel} (penalty incoming)`
-        } else if (outcome.type === 'primordial') {
-          const godSeg = statSegs.find(s => s.tier === 'God')
-          if (godSeg) modifiedLabel = godSeg.label
-          outcomeDesc = `Primordial force — God tier → ${modifiedLabel}`
+        if (outcome.type === 'primordial') {
+          modifiedLabel = statSegs.find(s => s.tier === 'Primordial')?.label ?? resultLabel
         } else if (outcome.type === 'forgotten') {
-          const fSeg = statSegs.find(s => s.tier === 'F-' || s.tier === 'F')
-          if (fSeg) modifiedLabel = fSeg.label
-          outcomeDesc = `Forgotten — F tier → ${modifiedLabel}`
+          modifiedLabel = statSegs.find(s => s.tier === 'F-')?.label ?? resultLabel
+        } else if (outcome.type === 'blessing') {
+          modifiedLabel = shiftTierLabel(resultLabel, 3, statSegs)
+        } else if (outcome.type === 'curse') {
+          modifiedLabel = shiftTierLabel(resultLabel, -3, statSegs)
+        } else if (outcome.type === 'mirror') {
+          const bestStat = [...results].filter(r => STAT_CATEGORIES.has(r.category) && r.score !== undefined)
+            .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0]
+          if (bestStat?.tier) modifiedLabel = statSegs.find(s => s.tier === bestStat.tier)?.label ?? resultLabel
+        } else if (outcome.type === 'chaos') {
+          modifiedLabel = statSegs[Math.floor(Math.random() * statSegs.length)]?.label ?? resultLabel
+        } else if (outcome.type === 'c_tier') {
+          modifiedLabel = statSegs.find(s => s.tier === 'C')?.label ?? resultLabel
+        } else if (outcome.type === 'double_edge') {
+          modifiedLabel = shiftTierLabel(resultLabel, 4, statSegs)
+        } else if (outcome.type === 'shared') {
+          const lastStat = [...results].reverse().find(r => STAT_CATEGORIES.has(r.category) && r.tier !== undefined)
+          if (lastStat?.tier) modifiedLabel = statSegs.find(s => s.tier === lastStat.tier)?.label ?? resultLabel
         }
+        // 'reroll' and 'power_gift' leave the label unchanged; effects applied in handleWildcardContinue
 
         wildcardPendingLabel = modifiedLabel
         wildcardPendingIndex = resultIndex
         wildcardOutcomeType = outcome.type
         wildcardOutcomeLabel = outcome.outcomeLabel
-        wildcardOutcomeDesc = outcomeDesc
+        wildcardOutcomeDesc = outcome.desc
         wildcardPhase = 'flashing'
         setTimeout(() => { wildcardPhase = 'reveal' }, 3000)
         return
       }
 
       if (isItemSpin && Math.random() < (gamepasses.has('double_luck') ? 0.35 : 0.20)) {
-        // Award a bonus extra item spin of the same type
-        const bonusDef: SpinDefinition = {
-          category: currentDef.category,
-          displayName: `Bonus ${currentDef.displayName}`,
-        }
-        queue.splice(currentIndex + 1, 0, bonusDef)
-        wildcardOutcomeType = 'item_bonus'
-        wildcardOutcomeLabel = 'Item Wildcard!'
-        wildcardOutcomeDesc = `Bonus ${currentDef.displayName} spin incoming!`
+        // Award a bonus extra item spin of the same type (spliced in handleWildcardContinue)
+        wildcardOutcomeType = 'itemBonus'
+        wildcardOutcomeLabel = 'WILDCARD BONUS'
+        wildcardOutcomeDesc = `An extra ${currentDef.displayName.toLowerCase()} spin appears! The wheel rewards your luck.`
         wildcardPendingLabel = resultLabel
         wildcardPendingIndex = resultIndex
         wildcardPhase = 'flashing'
@@ -1425,7 +1428,7 @@
     <div class="absolute wc-pulse" style="width: min(20vw, 160px); height: min(20vw, 160px); border-radius: 50%; background: radial-gradient(circle, #fff 0%, #fde047 40%, transparent 70%); filter: blur(8px);"></div>
     <p class="relative wc-text"
        style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 6.5rem); font-weight: 900; color: #fffaf0; text-shadow: 0 0 30px rgba(240,192,64,0.9);">
-      ⚡ WILDCARD ⚡
+      WILDCARD
     </p>
   </div>
 {/if}
@@ -1444,9 +1447,9 @@
              border: 2px solid rgba(240,192,64,0.55);
              box-shadow: 0 0 100px rgba(240,192,64,0.3), inset 0 1px 0 rgba(255,255,255,0.06);"
     >
-      <div class="text-5xl">{wildcardOutcomeType === 'item_bonus' ? '🎁' : '⚡'}</div>
+      <div class="text-5xl">{wildcardOutcomeType === 'itemBonus' ? '🎁' : '✦'}</div>
       <div>
-        <p class="text-xs tracking-[0.3em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #f0c040;">⚡ Wildcard Activated</p>
+        <p class="text-xs tracking-[0.3em] uppercase mb-2" style="font-family: 'JetBrains Mono', monospace; color: #f0c040;">Wildcard Activated</p>
         <p class="font-bold text-xl tracking-widest uppercase" style="font-family: var(--font-cinzel,'Cinzel',serif); color: #ffdf96; letter-spacing: 0.12em; text-shadow: 0 0 20px rgba(240,192,64,0.5);">{wildcardOutcomeLabel}</p>
       </div>
       <p class="text-sm leading-relaxed" style="font-family: 'JetBrains Mono', monospace; color: #9a907b; max-width: 240px;">{wildcardOutcomeDesc}</p>
