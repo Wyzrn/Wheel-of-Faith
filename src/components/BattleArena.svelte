@@ -617,15 +617,13 @@
           const att = memberFromFxIndex(fx.attackerSide, fx.attackerIdx)
           return att ? memberOriginById(att.id) : undefined
         }
-        // Find the target the same way status effects do: parse the target
-        // name out of the damage line, look it up in the live charEls map.
-        // Falls back to fxEvent.targetIdxs[0], then to undefined.
+        // Resolve the TARGET position. Prefer the authoritative fxEvent target
+        // (attacker side + targetIdxs) — attack lines name the ATTACKER and the
+        // move, not the target, so a line-text parse (damageHitFromLine) returns
+        // the attacker. Using that made startOrigin === targetOrigin, so the orb
+        // spawned on the attacker and never travelled. Line-text is only the
+        // fallback (covers the rare line that does name the defender).
         const resolveTargetOrigin = (): { x: number; y: number } | undefined => {
-          const hit = damageHitFromLine(head, allNames)
-          if (hit) {
-            const fromLine = memberOrigin(hit.targetName)
-            if (fromLine) return fromLine
-          }
           if (fx) {
             const enemySide = oppositeSide(fx.attackerSide)
             const tgt = (fx.targetIdxs ?? [0])
@@ -635,6 +633,11 @@
               const o = memberOriginById(tgt.id)
               if (o) return o
             }
+          }
+          const hit = damageHitFromLine(head, allNames)
+          if (hit) {
+            const fromLine = memberOrigin(hit.targetName)
+            if (fromLine) return fromLine
           }
           return undefined
         }
