@@ -145,6 +145,10 @@
   let wildcardPhase = $state<'idle' | 'flashing' | 'reveal'>('idle')
   let wildcardRevealTimeout: ReturnType<typeof setTimeout> | null = null
   let tutorialWildcardDone = $state(false)
+  // Hard cap on wildcard-granted bonus weapons/armors per run. Powers are not
+  // capped per the spec. Reset alongside other run state.
+  const WILDCARD_BONUS_ITEM_CAP = 3
+  let wildcardBonusGranted = $state<{ weapon: number; armor: number }>({ weapon: 0, armor: 0 })
   let wildcardOutcomeType = $state('')
   let wildcardOutcomeLabel = $state('')
   let wildcardOutcomeDesc = $state('')
@@ -1525,14 +1529,16 @@
       // Use direct typed import — avoids WeightedSegment cast issues with filtered wheels
       const fl = weaponMasteryLabels.find(s => s.label === resultLabel)
       const tierIdx = fl != null ? TIER_ORDER.indexOf(fl.tier) : -1
-      const bMinusIdx  = TIER_ORDER.indexOf('B-' as TierGrade)
-      const ssMinusIdx = TIER_ORDER.indexOf('SS-' as TierGrade)
-      const zzMinusIdx = TIER_ORDER.indexOf('ZZ-' as TierGrade)
-      // Determine enchants per weapon based on tier
+      // Enchant tier thresholds: S- = 1 · ZZZ- = 2 · Godly- = 3 · Infinite- = 4.
+      const sMinusIdx   = TIER_ORDER.indexOf('S-' as TierGrade)
+      const zzzMinusIdx = TIER_ORDER.indexOf('ZZZ-' as TierGrade)
+      const godlyMinusIdx = TIER_ORDER.indexOf('Godly-' as TierGrade)
+      const infMinusIdx = TIER_ORDER.indexOf('Infinite-' as TierGrade)
       let enchantsPerWeapon = 0
-      if (tierIdx >= bMinusIdx)  enchantsPerWeapon = 1
-      if (tierIdx >= ssMinusIdx) enchantsPerWeapon = 2
-      if (tierIdx >= zzMinusIdx) enchantsPerWeapon = 3
+      if (tierIdx >= sMinusIdx)    enchantsPerWeapon = 1
+      if (tierIdx >= zzzMinusIdx)  enchantsPerWeapon = 2
+      if (tierIdx >= godlyMinusIdx) enchantsPerWeapon = 3
+      if (tierIdx >= infMinusIdx)  enchantsPerWeapon = 4
       // Count all real weapons (bonus + main); Unarmed doesn't qualify
       const weaponResults = results.filter(r => r.category === 'weapon' && r.resultLabel !== 'No Weapon (Unarmed)' && r.resultLabel !== 'No Weapon')
       const totalEnchants = weaponResults.length * enchantsPerWeapon
@@ -1554,13 +1560,16 @@
     } else if (def.category === 'armorStrength') {
       const fl = armorStrengthLabels.find(s => s.label === resultLabel)
       const tierIdx    = fl != null ? TIER_ORDER.indexOf(fl.tier) : -1
-      const bMinusIdx  = TIER_ORDER.indexOf('B-' as TierGrade)
-      const ssMinusIdx = TIER_ORDER.indexOf('SS-' as TierGrade)
-      const zzMinusIdx = TIER_ORDER.indexOf('ZZ-' as TierGrade)
+      // Enchant tier thresholds: S- = 1 · ZZZ- = 2 · Godly- = 3 · Infinite- = 4.
+      const sMinusIdx   = TIER_ORDER.indexOf('S-' as TierGrade)
+      const zzzMinusIdx = TIER_ORDER.indexOf('ZZZ-' as TierGrade)
+      const godlyMinusIdx = TIER_ORDER.indexOf('Godly-' as TierGrade)
+      const infMinusIdx = TIER_ORDER.indexOf('Infinite-' as TierGrade)
       let enchantsPerArmor = 0
-      if (tierIdx >= bMinusIdx)  enchantsPerArmor = 1
-      if (tierIdx >= ssMinusIdx) enchantsPerArmor = 2
-      if (tierIdx >= zzMinusIdx) enchantsPerArmor = 3
+      if (tierIdx >= sMinusIdx)    enchantsPerArmor = 1
+      if (tierIdx >= zzzMinusIdx)  enchantsPerArmor = 2
+      if (tierIdx >= godlyMinusIdx) enchantsPerArmor = 3
+      if (tierIdx >= infMinusIdx)  enchantsPerArmor = 4
       const armorResults = results.filter(r => r.category === 'armor' && r.resultLabel !== 'No Armor')
       const totalArmorEnchants = armorResults.length * enchantsPerArmor
       if (totalArmorEnchants > 0) {
@@ -2056,10 +2065,18 @@
         displayName: 'Wildcard Weakness',
       })
     } else if (otype === 'itemBonus') {
-      spinQueue.splice(currentSpinIndex + 1, 0, {
-        category: cat as SpinCategory,
-        displayName: `Bonus ${spinQueue[currentSpinIndex]?.displayName ?? cat}`,
-      })
+      // Cap bonus weapons/armors at WILDCARD_BONUS_ITEM_CAP per run; powers uncapped.
+      const isWeapon = cat === 'weapon', isArmor = cat === 'armor'
+      const atCap = (isWeapon && wildcardBonusGranted.weapon >= WILDCARD_BONUS_ITEM_CAP)
+                 || (isArmor && wildcardBonusGranted.armor >= WILDCARD_BONUS_ITEM_CAP)
+      if (!atCap) {
+        if (isWeapon) wildcardBonusGranted = { ...wildcardBonusGranted, weapon: wildcardBonusGranted.weapon + 1 }
+        else if (isArmor) wildcardBonusGranted = { ...wildcardBonusGranted, armor: wildcardBonusGranted.armor + 1 }
+        spinQueue.splice(currentSpinIndex + 1, 0, {
+          category: cat as SpinCategory,
+          displayName: `Bonus ${spinQueue[currentSpinIndex]?.displayName ?? cat}`,
+        })
+      }
     }
 
     // After tutorial wildcard on strength resolves, advance to wildcard explanation card
@@ -2115,6 +2132,7 @@
     heightModifiers = {}
     if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
     wildcardPhase = 'idle'
+    wildcardBonusGranted = { weapon: 0, armor: 0 }
     corruptionScore = 0
     raceOverride = null
     rivalMode = false
@@ -2178,6 +2196,7 @@
     heightModifiers = {}
     if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
     wildcardPhase = 'idle'
+    wildcardBonusGranted = { weapon: 0, armor: 0 }
     corruptionScore = 0
     raceOverride = null
     rivalMode = true
@@ -2211,6 +2230,7 @@
     heightModifiers = {}
     if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
     wildcardPhase = 'idle'
+    wildcardBonusGranted = { weapon: 0, armor: 0 }
     corruptionScore = 0
     raceOverride = null
     // Pre-load winner as P1; P2 spins fresh
@@ -2244,6 +2264,7 @@
     heightModifiers = {}
     if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
     wildcardPhase = 'idle'
+    wildcardBonusGranted = { weapon: 0, armor: 0 }
     corruptionScore = 0
     raceOverride = null
     rivalMode = false
@@ -2277,6 +2298,7 @@
       heightModifiers = {}
       if (wildcardRevealTimeout) { clearTimeout(wildcardRevealTimeout); wildcardRevealTimeout = null }
     wildcardPhase = 'idle'
+    wildcardBonusGranted = { weapon: 0, armor: 0 }
       corruptionScore = 0
       raceOverride = null
       p2StartedAt = new Date().toISOString()

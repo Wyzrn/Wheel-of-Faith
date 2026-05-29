@@ -210,6 +210,9 @@
   // ── Wildcard state ────────────────────────────────────────────────────────
   let wildcardPhase = $state<'idle' | 'flashing' | 'reveal'>('idle')
   let wildcardOutcomeType = $state('')
+  // Hard cap on wildcard-granted bonus weapons/armors per character (powers uncapped).
+  const WILDCARD_BONUS_ITEM_CAP = 3
+  let wildcardBonusGranted = $state<{ weapon: number; armor: number }>({ weapon: 0, armor: 0 })
   let wildcardOutcomeLabel = $state('')
   let wildcardOutcomeDesc = $state('')
   let wildcardPendingLabel = $state('')
@@ -259,7 +262,15 @@
       } else if (type === 'double_edge') {
         queue.splice(currentIndex + 1, 0, { category: 'weakness' as const, displayName: 'Wildcard Weakness' })
       } else if (type === 'itemBonus') {
-        queue.splice(currentIndex + 1, 0, { category: currentDef.category as SpinCategory, displayName: `Bonus ${currentDef.displayName}` })
+        const cat = currentDef.category
+        const isWeapon = cat === 'weapon', isArmor = cat === 'armor'
+        const atCap = (isWeapon && wildcardBonusGranted.weapon >= WILDCARD_BONUS_ITEM_CAP)
+                   || (isArmor && wildcardBonusGranted.armor >= WILDCARD_BONUS_ITEM_CAP)
+        if (!atCap) {
+          if (isWeapon) wildcardBonusGranted = { ...wildcardBonusGranted, weapon: wildcardBonusGranted.weapon + 1 }
+          else if (isArmor) wildcardBonusGranted = { ...wildcardBonusGranted, armor: wildcardBonusGranted.armor + 1 }
+          queue.splice(currentIndex + 1, 0, { category: cat as SpinCategory, displayName: `Bonus ${currentDef.displayName}` })
+        }
       }
     }
 
@@ -1023,13 +1034,16 @@
       if (currentDef.category === 'weaponMastery') {
         const fl = weaponMasteryLabels.find(s => s.label === resultLabel)
         const tierIdx    = fl != null ? TIER_ORDER.indexOf(fl.tier) : -1
-        const bMinusIdx  = TIER_ORDER.indexOf('B-' as import('$lib/game/scoreTier').TierGrade)
-        const ssMinusIdx = TIER_ORDER.indexOf('SS-' as import('$lib/game/scoreTier').TierGrade)
-        const zzMinusIdx = TIER_ORDER.indexOf('ZZ-' as import('$lib/game/scoreTier').TierGrade)
+        // Enchant tier thresholds: S- = 1 · ZZZ- = 2 · Godly- = 3 · Infinite- = 4.
+        const sMinusIdx   = TIER_ORDER.indexOf('S-' as import('$lib/game/scoreTier').TierGrade)
+        const zzzMinusIdx = TIER_ORDER.indexOf('ZZZ-' as import('$lib/game/scoreTier').TierGrade)
+        const godlyMinusIdx = TIER_ORDER.indexOf('Godly-' as import('$lib/game/scoreTier').TierGrade)
+        const infMinusIdx = TIER_ORDER.indexOf('Infinite-' as import('$lib/game/scoreTier').TierGrade)
         let enchantsPerWeapon = 0
-        if (tierIdx >= bMinusIdx)  enchantsPerWeapon = 1
-        if (tierIdx >= ssMinusIdx) enchantsPerWeapon = 2
-        if (tierIdx >= zzMinusIdx) enchantsPerWeapon = 3
+        if (tierIdx >= sMinusIdx)    enchantsPerWeapon = 1
+        if (tierIdx >= zzzMinusIdx)  enchantsPerWeapon = 2
+        if (tierIdx >= godlyMinusIdx) enchantsPerWeapon = 3
+        if (tierIdx >= infMinusIdx)  enchantsPerWeapon = 4
         const weaponResults = results.filter(r => r.category === 'weapon' && r.resultLabel !== 'No Weapon (Unarmed)' && r.resultLabel !== 'No Weapon')
         const totalEnchants = weaponResults.length * enchantsPerWeapon
         if (totalEnchants > 0) {
@@ -1052,13 +1066,16 @@
       if (currentDef.category === 'armorStrength') {
         const fl = armorStrengthLabels.find(s => s.label === resultLabel)
         const tierIdx    = fl != null ? TIER_ORDER.indexOf(fl.tier) : -1
-        const bMinusIdx  = TIER_ORDER.indexOf('B-' as import('$lib/game/scoreTier').TierGrade)
-        const ssMinusIdx = TIER_ORDER.indexOf('SS-' as import('$lib/game/scoreTier').TierGrade)
-        const zzMinusIdx = TIER_ORDER.indexOf('ZZ-' as import('$lib/game/scoreTier').TierGrade)
+        // Enchant tier thresholds: S- = 1 · ZZZ- = 2 · Godly- = 3 · Infinite- = 4.
+        const sMinusIdx   = TIER_ORDER.indexOf('S-' as import('$lib/game/scoreTier').TierGrade)
+        const zzzMinusIdx = TIER_ORDER.indexOf('ZZZ-' as import('$lib/game/scoreTier').TierGrade)
+        const godlyMinusIdx = TIER_ORDER.indexOf('Godly-' as import('$lib/game/scoreTier').TierGrade)
+        const infMinusIdx = TIER_ORDER.indexOf('Infinite-' as import('$lib/game/scoreTier').TierGrade)
         let enchantsPerArmor = 0
-        if (tierIdx >= bMinusIdx)  enchantsPerArmor = 1
-        if (tierIdx >= ssMinusIdx) enchantsPerArmor = 2
-        if (tierIdx >= zzMinusIdx) enchantsPerArmor = 3
+        if (tierIdx >= sMinusIdx)    enchantsPerArmor = 1
+        if (tierIdx >= zzzMinusIdx)  enchantsPerArmor = 2
+        if (tierIdx >= godlyMinusIdx) enchantsPerArmor = 3
+        if (tierIdx >= infMinusIdx)  enchantsPerArmor = 4
         const armorResults = results.filter(r => r.category === 'armor' && r.resultLabel !== 'No Armor')
         const totalArmorEnchants = armorResults.length * enchantsPerArmor
         if (totalArmorEnchants > 0) {
