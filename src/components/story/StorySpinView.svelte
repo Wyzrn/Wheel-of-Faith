@@ -1325,7 +1325,10 @@
 </script>
 
 <!-- ── Story Mode spin UI ─────────────────────────────────────────────────────── -->
-<div class="min-h-screen flex flex-col items-center justify-center px-4 relative">
+<!-- h-[100dvh] + overflow-y-auto + my-auto on the wheel block centers the wheel
+     when it fits but lets it scroll (top reachable, not clipped) on short
+     landscape-mobile viewports. justify-center would clip the top instead. -->
+<div class="h-[100dvh] overflow-y-auto flex flex-col items-center px-4 relative">
 
   <!-- Top bar: mode indicator + progress bar + exit link. The progress bar is
        new — gives the player a constant sense of "how far am I" instead of just
@@ -1355,7 +1358,7 @@
   <!-- z-30 lifts the wheel + spin button above the top bar (z-20) so the
        wheel and its controls are never covered, matching the main game. -->
   {#if currentDef && !showResumePrompt}
-    <div class="relative z-30 flex flex-col items-center gap-4">
+    <div class="relative z-30 flex flex-col items-center gap-4 my-auto py-16">
       {#if currentIndex === 0 && currentDef?.category === 'race' && !pendingResult}
         <FirstTimeTooltip
           storageKey="wof_seen_race_hint"
