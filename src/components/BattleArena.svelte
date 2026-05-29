@@ -388,11 +388,46 @@
     }, dur + fade)
   }
 
+  // ── Orb projectile registry ────────────────────────────────────────────────
+  // Non-beam damage attacks fire a small glowing orb from the attacker to the
+  // target. On arrival the orb vanishes and triggers the SAME impact burst the
+  // attack always used (no VFX is flung across the screen — only the orb
+  // travels). Beam-type attacks use spawnBeam instead.
+  interface Orb {
+    id: number
+    startX: number; startY: number
+    endX: number; endY: number
+    color: string
+    durationMs: number
+    size: number
+  }
+  let orbs = $state<Orb[]>([])
+  let orbIdCounter = 0
+  const ORB_DURATION_MS = 300
+
+  function spawnOrb(
+    startX: number, startY: number,
+    endX: number, endY: number,
+    color: string, grade: string | undefined,
+    onImpact: () => void,
+  ) {
+    const speed = Math.max(0.4, Math.min(4, speedFactor))
+    const dur = Math.max(110, Math.round(ORB_DURATION_MS / speed))
+    const gradeIdx = GRADE_IDX[grade ?? 'C'] ?? 3
+    const size = 13 + gradeIdx * 2.2   // higher grades hurl a bigger orb
+    const o: Orb = { id: ++orbIdCounter, startX, startY, endX, endY, color, durationMs: dur, size }
+    orbs = [...orbs, o]
+    setTimeout(() => {
+      onImpact()
+      orbs = orbs.filter(x => x.id !== o.id)
+    }, dur)
+  }
+
   // FX types that render as a beam line attacker→target. Everything else
   // anchors in-place on the target's card (the legacy "comet flies across
   // the screen" projectile path is gone — it looked like a skip every time
   // the comet over/undershot, and read worse than a clean stationary burst).
-  const BEAM_TYPES = new Set(['holy', 'arcane', 'cosmic', 'energy', 'void', 'sound'])
+  const BEAM_TYPES = new Set(['holy', 'arcane', 'cosmic', 'energy', 'void', 'sound', 'lightning', 'psychic', 'time'])
 
   const GRADE_IDX: Record<string, number> = {
     F: 0, E: 1, D: 2, C: 3, B: 4, A: 5, S: 6, SS: 7, SSS: 8, God: 9, Godly: 9,
@@ -614,15 +649,24 @@
           deferDamageEmit = true
         } else if (isInPlace) {
           // In-place at the target's card — uses status-effect positioning
-          // (line-text → name → memberOrigin). Falls back to wrapper
-          // CENTER instead of the previous direction-based offset which
-          // misplaced attacks toward one side of the column.
+          // (line-text → name → memberOrigin). A small orb now travels from
+          // the attacker to the target first; the SAME burst fires on impact
+          // (the VFX is never launched across the screen). Falls back to an
+          // immediate burst if origins can't be resolved.
           const targetOrigin = resolveTargetOrigin() ?? wrapperOrigin('center')
-          showAnim(type, color, direction, grade, targetOrigin, fxAttackType)
-          triggerShake(shakeStrengthFor(fxAttackType, type, grade))
+          const startOrigin = resolveAttackerOrigin()
           const hit = damageHitFromLine(head, allNames)
           const targetName = resolveDamageTargetName(head, fx) ?? hit?.targetName
-          if (hit && targetName) emitDamage(targetName, hit.value, hit.kind)
+          const doBurst = () => {
+            showAnim(type, color, direction, grade, targetOrigin, fxAttackType)
+            triggerShake(shakeStrengthFor(fxAttackType, type, grade))
+            if (hit && targetName) emitDamage(targetName, hit.value, hit.kind)
+          }
+          if (effectsEnabled && startOrigin && targetOrigin) {
+            spawnOrb(startOrigin.x, startOrigin.y, targetOrigin.x, targetOrigin.y, color, grade, doBurst)
+          } else {
+            doBurst()
+          }
           deferDamageEmit = true
         } else if (isBeam && fx) {
           // Beam path — line from attacker anchor to target anchor.
@@ -1016,6 +1060,16 @@
       <span class="fighter-hp" style="color: {hpColor(pct)};">
         {formatHp(displayHp[m.id] ?? m.hp)}<span style="color: #6b6150;"> / {formatHp(m.maxHp)}</span>
       </span>
+      {#if m.stats?.length}
+        <div class="fighter-stats {isRight ? 'justify-end' : ''}">
+          {#each m.stats as s}
+            <span class="fighter-stat">
+              <span class="fighter-stat-label">{s.label}</span>
+              <span class="fighter-stat-val">{s.value}</span>
+            </span>
+          {/each}
+        </div>
+      {/if}
       {#if badges.length > 0}
         <div class="fighter-badges {isRight ? 'justify-end' : ''}">
           {#each badges as b}
@@ -1121,6 +1175,21 @@
         <!-- Charge-up bulb at the attacker end — sells the "channeled
              power" feel that makes wide beams read as kamehameha. -->
         <div class="ba-beam-charge"></div>
+      </div>
+    {/each}
+  {/if}
+
+  <!-- Orb projectiles: a small glowing ball flies attacker→target for every
+       non-beam damage attack, then vanishes and triggers the impact burst. -->
+  {#if phase === 'battle' && effectsEnabled && orbs.length > 0}
+    {#each orbs as o (o.id)}
+      <div class="ba-orb"
+           style="left: {o.startX}px; top: {o.startY}px;
+                  width: {o.size}px; height: {o.size}px;
+                  --orb-color: {o.color};
+                  --orb-dx: {o.endX - o.startX}px; --orb-dy: {o.endY - o.startY}px;
+                  --orb-dur: {o.durationMs}ms;
+                  z-index: 28; pointer-events: none;">
       </div>
     {/each}
   {/if}
@@ -1369,6 +1438,11 @@
     text-transform: uppercase; color: rgba(235,225,213,0.45);
   }
   .fighter-hp { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 700; margin-top: 2px; }
+  .fighter-stats { display: flex; flex-wrap: wrap; gap: 3px 9px; margin-top: 4px; }
+  .fighter-stats.justify-end { justify-content: flex-end; }
+  .fighter-stat { display: inline-flex; align-items: baseline; gap: 3px; font-family: 'JetBrains Mono', monospace; }
+  .fighter-stat-label { font-size: 0.5rem; letter-spacing: 0.08em; text-transform: uppercase; color: #6b6150; }
+  .fighter-stat-val { font-size: 0.64rem; font-weight: 700; color: #bcc9cc; }
   .fighter-badges { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
 
   /* ── Central ticker (latest log line) ─────────────────────────────── */
@@ -1519,6 +1593,31 @@
     filter: blur(2px);
     animation: ba-beam-charge var(--beam-dur) ease-out forwards;
   }
+  /* ── Orb projectile ──────────────────────────────────────────────────── */
+  .ba-orb {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 32%,
+                                #fff 0%,
+                                var(--orb-color) 52%,
+                                color-mix(in srgb, var(--orb-color) 60%, transparent) 78%,
+                                transparent 100%);
+    box-shadow: 0 0 10px var(--orb-color), 0 0 20px var(--orb-color),
+                0 0 6px #fff inset;
+    transform: translate(-50%, -50%);
+    animation: ba-orb-fly var(--orb-dur) cubic-bezier(0.45, 0, 0.65, 1) forwards;
+    will-change: transform;
+  }
+  @keyframes ba-orb-fly {
+    0%   { transform: translate(-50%, -50%) scale(0.55); opacity: 0; }
+    16%  { opacity: 1; }
+    88%  { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--orb-dx)), calc(-50% + var(--orb-dy))) scale(1); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ba-orb { animation-duration: 1ms; }
+  }
+
   @keyframes ba-beam-fire {
     0%   { transform: rotate(var(--beam-rot)) scaleX(0);    opacity: 0; }
     14%  { transform: rotate(var(--beam-rot)) scaleX(0.5);  opacity: 1; filter: brightness(3.2); }
