@@ -44,6 +44,11 @@
         applyViewport()
         orientationMq = matchMedia('(orientation: landscape)')
         orientationMq.addEventListener('change', applyViewport)
+        // Entering/exiting fullscreen (and the chrome show/hide) changes the
+        // viewport without always firing an orientation change, so re-apply
+        // on fullscreenchange + resize too.
+        document.addEventListener('fullscreenchange', applyViewport)
+        window.addEventListener('resize', applyViewport)
       }
     } catch { /* ssr */ }
 
@@ -69,6 +74,10 @@
     return () => {
       window.removeEventListener('unhandledrejection', onRejection)
       if (orientationMq && applyViewport) orientationMq.removeEventListener('change', applyViewport)
+      if (applyViewport) {
+        document.removeEventListener('fullscreenchange', applyViewport)
+        window.removeEventListener('resize', applyViewport)
+      }
     }
   })
 
