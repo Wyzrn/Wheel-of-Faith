@@ -2456,16 +2456,6 @@
     </div>
   </nav>
 
-  <!-- Spin progress bar — pinned below nav, matches the Story Mode bar so both
-       game modes feel parallel. Hidden on menu since there's no active session. -->
-  {#if !showMenu && spinQueue.length > 0}
-    <div class="fixed inset-x-0 z-40 pointer-events-none" style="top: 56px;">
-      <div class="arcane-gauge h-[3px] mx-auto max-w-[640px]">
-        <div class="arcane-gauge-fill" style="width: {Math.round((currentSpinIndex / spinQueue.length) * 100)}%;"></div>
-      </div>
-    </div>
-  {/if}
-
   {#if showSettings}
     <SettingsPanel onClose={() => showSettings = false} />
   {/if}

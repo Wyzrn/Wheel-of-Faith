@@ -1338,11 +1338,7 @@
       Story · Stage {stage}
     </span>
 
-    <!-- Animated progress bar -->
-    <div class="flex-1 h-1.5 max-w-[260px] mx-2 rounded-full overflow-hidden pointer-events-none"
-      style="background: rgba(255,255,255,0.05); border: 1px solid rgba(240,192,64,0.12);">
-      <div style="height: 100%; width: {Math.round(((currentIndex) / Math.max(1, queue.length)) * 100)}%; background: linear-gradient(90deg, #c0882a, #f0c040); box-shadow: 0 0 6px rgba(240,192,64,0.6); transition: width 0.4s cubic-bezier(0.22, 0.8, 0.3, 1);"></div>
-    </div>
+    <div class="flex-1"></div>
 
     <button
       class="pointer-events-auto flex items-center gap-1"
