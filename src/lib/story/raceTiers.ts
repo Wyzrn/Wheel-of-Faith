@@ -27,7 +27,7 @@ export const ARCHETYPE_STAGE_MIN_WEIGHTS = [5, 4, 3, 2, 1, 1] as const
  * Stage 6: weight >= 1  (+ Godlike — Viltrumite and all remaining)
  */
 export function getRacesForStage(stage: number): Race[] {
-  const clamped = Math.max(1, Math.min(6, stage))
+  const clamped = Math.max(1, Math.min(STAGE_MIN_WEIGHTS.length, stage))
   const minWeight = STAGE_MIN_WEIGHTS[clamped - 1]
   return races.filter(r => r.weight >= minWeight)
 }
@@ -36,7 +36,7 @@ export function getRacesForStage(stage: number): Race[] {
  * Returns a human-readable tier label for the given stage (e.g. "Common", "Rare").
  */
 export function getStageTierLabel(stage: number): string {
-  const clamped = Math.max(1, Math.min(6, stage))
+  const clamped = Math.max(1, Math.min(STAGE_LABELS.length, stage))
   return STAGE_LABELS[clamped - 1]
 }
 

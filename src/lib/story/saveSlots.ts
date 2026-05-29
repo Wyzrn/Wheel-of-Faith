@@ -15,11 +15,13 @@ import { powers } from '../content/powers'
 
 export type SlotId = 1 | 2 | 3 | 4
 
-/** Labels displayed in the hub for each stage (legacy — kept for raceTiers compatibility). */
-export const STAGE_LABELS = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Godlike'] as const
+// Stage = playerLevel + 1 (index 0 = L0 ... index 8 = L8). Race caps by level:
+// L0 Common · L1 Uncommon · L2 Rare · L3 Legendary · L5 Mythological · L7 Divine.
+export const STAGE_LABELS = ['Common', 'Uncommon', 'Rare', 'Legendary', 'Legendary', 'Mythological', 'Mythological', 'Divine', 'Divine'] as const
 
-/** Minimum race weight allowed at each stage (index 0 = stage 1). */
-export const STAGE_MIN_WEIGHTS = [12, 7, 5, 4, 2, 1] as const
+/** Minimum race weight allowed at each stage (index 0 = stage 1 / L0). New tier
+ *  weights: Divine 1 · Mythological 2 · Legendary 3 · Rare 5 · Uncommon 8 · Common 13. */
+export const STAGE_MIN_WEIGHTS = [12, 8, 5, 3, 3, 2, 2, 1, 1] as const
 
 /** Starting spin credits given to a brand-new save slot. */
 export const INITIAL_SPIN_CREDITS = 10
