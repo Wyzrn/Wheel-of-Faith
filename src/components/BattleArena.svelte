@@ -607,8 +607,11 @@
         // target, and the visual is self-contained at the card.
         const isHeal       = fxAttackType === 'heal'
         const isBeam       = !isHeal && BEAM_TYPES.has(type)
-        const isActorBurst = type === 'crit' || type === 'dodge' ||
-                             type === 'shield' || type === 'berserker'
+        // Only dodges + shields are true self-anchored effects (no hit lands,
+        // no target). Crits and berserker hits DO land on the target, so they
+        // now travel an orb to the target and explode on impact like any other
+        // attack. (Their lines carry 'damage!' so they qualify for isInPlace.)
+        const isActorBurst = type === 'dodge' || type === 'shield'
         const isInPlace    = !isHeal && !isBeam && !isActorBurst && isDamage && !!fx
 
         // Resolve attacker + targets once for the next several branches.
@@ -706,8 +709,8 @@
             triggerShake(shakeStrengthFor(fxAttackType, type, grade))
           }
         } else {
-          // Non-projectile path: dodges, shields, crits (in-place flash),
-          // heals, buffs, summons, debuffs. Anchored to the actor's card.
+          // Non-projectile path: dodges, shields, heals, buffs, summons,
+          // debuffs. Anchored to the actor's card (no hit travels).
           const enemyDir: AnimDir = direction === 'ltr' ? 'rtl' : direction === 'rtl' ? 'ltr' : 'center'
           const originDir = (fxAttackType === 'aoe' || fxAttackType === 'debuff') ? enemyDir : direction
           // For dodges the log line is "DefenderName narrowly dodges
