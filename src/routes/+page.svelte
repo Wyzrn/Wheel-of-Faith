@@ -2103,8 +2103,16 @@
     p1ShareId = ''
   }
 
-  // ── handleBackToMenu: return to main menu without starting a new session ─
+  // ── handleBackToMenu: return to main menu ────────────────────────────────
+  // If the run is FINISHED (viewing the character card), fully reset so the
+  // wheel returns to its original state next time — otherwise the completed
+  // run lingers and the wheel shows its stale, post-run state. Mid-run we keep
+  // progress so the player can resume.
   function handleBackToMenu() {
+    if (showCard || currentSpinIndex >= spinQueue.length) {
+      handleNewCharacter()   // full reset + showMenu = true
+      return
+    }
     showMenu = true
     showCard = false
     showNameScreen = false
