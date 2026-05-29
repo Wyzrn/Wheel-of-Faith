@@ -2173,120 +2173,89 @@
          a battlefield-erasing implosion. -->
     <svg viewBox="0 0 100 100" class="fx-svg vd-band-{tierBand}" overflow="visible">
       {#if tierBand === 'small'}
-        <!-- F-D: a small tear in reality opens briefly, pulls in light,
-             collapses violently -->
-        <ellipse class="vd-s-tear" cx="50" cy="50" rx="22" ry="3" fill="#000" opacity="0"/>
-        <!-- Inward pull lines (light being consumed) -->
-        {#each [{a:0},{a:60},{a:120},{a:180},{a:240},{a:300}] as p, i}
-          {@const ang = (p.a * Math.PI) / 180}
-          <line class="vd-s-pull" style="animation-delay:{0.08 + i * 0.02}s;"
-                x1={50 + Math.cos(ang) * 40} y1={50 + Math.sin(ang) * 40}
-                x2={50 + Math.cos(ang) * 14} y2={50 + Math.sin(ang) * 14}
-                stroke="var(--c)" stroke-width="2" stroke-linecap="round" opacity="0"/>
+        <!-- L1 — a small black hole forms and sucks light inward -->
+        <ellipse class="bh-ring" cx="50" cy="50" rx="20" ry="7" fill="none" stroke="var(--c)" stroke-width="3" opacity="0"/>
+        {#each [0,45,90,135,180,225,270,315] as deg, i}
+          {@const a = (deg * Math.PI) / 180}
+          <line class="bh-pull" style="animation-delay:{0.05 + i * 0.02}s;"
+                x1={50 + Math.cos(a) * 38} y1={50 + Math.sin(a) * 38}
+                x2={50 + Math.cos(a) * 12} y2={50 + Math.sin(a) * 12}
+                stroke="var(--c)" stroke-width="1.8" stroke-linecap="round" opacity="0"/>
         {/each}
-        <!-- Collapse implosion -->
-        <circle class="vd-s-collapse" cx="50" cy="50" r="18" fill="var(--c)" opacity="0"/>
-        <circle class="vd-s-collapse-c" cx="50" cy="50" r="8" fill="#000" opacity="0"/>
+        <circle class="bh-core" cx="50" cy="50" r="10" fill="#000" opacity="0"/>
+        <circle class="bh-collapse" cx="50" cy="50" r="13" fill="#fff" opacity="0"/>
 
       {:else if tierBand === 'medium'}
-        <!-- C-A: dark void FRACTURES spread across battlefield as
-             collapsing singularities appear around the enemy -->
-        <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.18" class="vd-m-haze" style="filter:blur(14px)"/>
-        <!-- 4 reality fracture cracks zigzagging across -->
-        {#each [
-          'M2 30 L20 22 L26 32 L42 24 L50 50',
-          'M98 30 L80 22 L74 32 L58 24 L50 50',
-          'M2 70 L20 78 L26 68 L42 76 L50 50',
-          'M98 70 L80 78 L74 68 L58 76 L50 50',
-        ] as p, i}
-          <path class="vd-m-frac" style="animation-delay:{0.06 + i * 0.04}s;"
-                d={p} stroke="var(--c)" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0"/>
-        {/each}
-        <!-- 6 collapsing singularities (small black orbs) -->
-        {#each Array.from({length: 6}) as _, i}
-          {@const a = (i * Math.PI * 2) / 6}
-          {@const x = 50 + Math.cos(a) * 30}
-          {@const y = 50 + Math.sin(a) * 24}
-          <g class="vd-m-sing" style="animation-delay:{0.20 + i * 0.04}s;">
-            <circle cx={x} cy={y} r="7" fill="var(--c)"/>
-            <circle cx={x} cy={y} r="4" fill="#000"/>
-          </g>
-        {/each}
-        <!-- Central rift -->
-        <g class="vd-m-core">
-          <ellipse cx="50" cy="50" rx="14" ry="22" fill="#000"/>
-          <ellipse cx="50" cy="50" rx="8" ry="14" fill="var(--c)" opacity="0.7"/>
-        </g>
-
-      {:else if tierBand === 'large'}
-        <!-- S-SSS: a MASSIVE rift opens behind the target, dragging debris
-             and energy into absolute nothingness -->
-        <circle cx="50" cy="50" r="60" fill="var(--c)" opacity="0.3" class="vd-l-bloom" style="filter:blur(20px)"/>
-        <!-- Vertical mega-rift -->
-        <g class="vd-l-rift">
-          <ellipse cx="50" cy="50" rx="30" ry="60" fill="#000"/>
-          <ellipse cx="50" cy="50" rx="20" ry="48" fill="var(--c)" opacity="0.7"/>
-          <ellipse cx="50" cy="50" rx="10" ry="32" fill="#000"/>
-        </g>
-        <!-- 16 inward pull streams -->
-        {#each Array.from({length: 16}) as _, i}
-          {@const a = (i * Math.PI * 2) / 16}
-          {@const sx = 50 + Math.cos(a) * 90}
-          {@const sy = 50 + Math.sin(a) * 80}
-          <line class="vd-l-pull" style="animation-delay:{0.10 + i * 0.018}s;"
-                x1={sx} y1={sy} x2={50 + Math.cos(a) * 24} y2={50 + Math.sin(a) * 24}
-                stroke="var(--c)" stroke-width="2" stroke-linecap="round" opacity="0"/>
-        {/each}
-        <!-- Reality cracks emanating from rift -->
-        {#each [
-          'M50 50 L38 32 L32 28 L18 12',
-          'M50 50 L62 32 L68 28 L82 12',
-          'M50 50 L62 68 L68 72 L82 88',
-          'M50 50 L38 68 L32 72 L18 88',
-        ] as p, i}
-          <path class="vd-l-crack" style="animation-delay:{0.15 + i * 0.03}s;"
-                d={p} stroke="var(--c)" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0"/>
-        {/each}
-        <!-- Debris being pulled in -->
+        <!-- L2 — a medium black hole with a tilted accretion disk drags debris in -->
+        <circle cx="50" cy="50" r="46" fill="var(--c)" opacity="0.16" class="vd-m-haze" style="filter:blur(14px)"/>
+        <ellipse class="bh-disk" cx="50" cy="50" rx="34" ry="12" fill="none" stroke="var(--c)" stroke-width="3.5" opacity="0"/>
+        <ellipse class="bh-disk2" cx="50" cy="50" rx="26" ry="9" fill="none" stroke="#fff" stroke-width="1.5" opacity="0"/>
         {#each Array.from({length: 12}) as _, i}
           {@const a = (i * Math.PI * 2) / 12}
-          {@const ox = 50 + Math.cos(a) * 70}
-          {@const oy = 50 + Math.sin(a) * 60}
-          <polygon class="vd-l-deb" style="--ox:{ox - 50}px; --oy:{oy - 50}px; animation-delay:{0.20 + i * 0.02}s;"
-                   points="50,50 53,48 55,52 51,54" fill="var(--c)" opacity="0"/>
+          <line class="bh-pull" style="animation-delay:{0.06 + i * 0.02}s;"
+                x1={50 + Math.cos(a) * 56} y1={50 + Math.sin(a) * 50}
+                x2={50 + Math.cos(a) * 16} y2={50 + Math.sin(a) * 16}
+                stroke="var(--c)" stroke-width="1.8" stroke-linecap="round" opacity="0"/>
         {/each}
+        {#each Array.from({length: 8}) as _, i}
+          {@const a = (i * Math.PI * 2) / 8}
+          <polygon class="bh-deb" style="--ox:{Math.cos(a) * 46}px; --oy:{Math.sin(a) * 40}px; animation-delay:{0.12 + i * 0.02}s;"
+                   points="50,48 53,50 50,52 47,50" fill="var(--c)" opacity="0"/>
+        {/each}
+        <circle class="bh-core" cx="50" cy="50" r="14" fill="#000" opacity="0"/>
+
+      {:else if tierBand === 'large'}
+        <!-- L3 — a large black hole; the pull is sped up and intensified -->
+        <circle cx="50" cy="50" r="60" fill="var(--c)" opacity="0.28" class="vd-l-bloom" style="filter:blur(20px)"/>
+        <ellipse class="bh-disk fast" cx="50" cy="50" rx="48" ry="17" fill="none" stroke="var(--c)" stroke-width="4.5" opacity="0"/>
+        <ellipse class="bh-disk2 fast" cx="50" cy="50" rx="36" ry="13" fill="none" stroke="#fff" stroke-width="2" opacity="0"/>
+        <circle class="bh-lens" cx="50" cy="50" r="24" fill="none" stroke="var(--c)" stroke-width="1.5" opacity="0"/>
+        {#each Array.from({length: 22}) as _, i}
+          {@const a = (i * Math.PI * 2) / 22}
+          <line class="bh-pull fast" style="animation-delay:{0.02 + i * 0.012}s;"
+                x1={50 + Math.cos(a) * 92} y1={50 + Math.sin(a) * 82}
+                x2={50 + Math.cos(a) * 20} y2={50 + Math.sin(a) * 20}
+                stroke="var(--c)" stroke-width="2" stroke-linecap="round" opacity="0"/>
+        {/each}
+        {#each Array.from({length: 14}) as _, i}
+          {@const a = (i * Math.PI * 2) / 14}
+          <polygon class="bh-deb fast" style="--ox:{Math.cos(a) * 78}px; --oy:{Math.sin(a) * 68}px; animation-delay:{0.05 + i * 0.014}s;"
+                   points="50,47 54,50 50,53 46,50" fill="var(--c)" opacity="0"/>
+        {/each}
+        <circle class="bh-core" cx="50" cy="50" r="22" fill="#000" opacity="0"/>
 
       {:else}
-        <!-- GOD: REALITY ITSELF tears apart as a colossal void consumes the
-             battlefield, erasing matter, sound, and light before imploding
-             silently. (Inverted colors via filter:invert.) -->
+        <!-- L4 — two supermassive black holes orbit, inspiral, and explode -->
         <rect class="vd-g-darken" x="-300" y="-300" width="700" height="700" fill="#000" opacity="0"/>
-        <!-- Massive void mouth (covers screen) -->
-        <g class="vd-g-mouth">
-          <circle cx="50" cy="50" r="240" fill="var(--c)" opacity="0.4" style="filter:blur(40px)"/>
-          <circle cx="50" cy="50" r="180" fill="#000"/>
-          <circle cx="50" cy="50" r="120" fill="var(--c)" opacity="0.6"/>
-          <circle cx="50" cy="50" r="80" fill="#000"/>
-        </g>
-        <!-- Screen-wide reality cracks (fracturing in all directions) -->
-        {#each Array.from({length: 18}) as _, i}
-          {@const a = (i * Math.PI * 2) / 18}
-          <path class="vd-g-tear" style="--rot:{(a * 180) / Math.PI}deg; animation-delay:{0.20 + i * 0.012}s;"
-                d="M50 50 L50 -150" stroke="var(--c)" stroke-width="3" fill="none"
-                stroke-linecap="round" opacity="0"/>
-        {/each}
-        <!-- Everything-being-consumed streams (from screen edges to center) -->
+        <!-- pull streams from the screen edges -->
         {#each Array.from({length: 32}) as _, i}
           {@const a = (i * Math.PI * 2) / 32}
-          {@const sx = 50 + Math.cos(a) * 300}
-          {@const sy = 50 + Math.sin(a) * 300}
-          <line class="vd-g-consume" style="animation-delay:{0.05 + i * 0.008}s;"
-                x1={sx} y1={sy} x2={50 + Math.cos(a) * 80} y2={50 + Math.sin(a) * 80}
-                stroke="var(--c)" stroke-width="1.6" stroke-linecap="round" opacity="0"/>
+          <line class="bh-pull fast" style="animation-delay:{0.02 + i * 0.008}s;"
+                x1={50 + Math.cos(a) * 320} y1={50 + Math.sin(a) * 320}
+                x2={50 + Math.cos(a) * 40} y2={50 + Math.sin(a) * 40}
+                stroke="var(--c)" stroke-width="1.8" stroke-linecap="round" opacity="0"/>
         {/each}
-        <!-- Silent implosion (final pulse, white core then black) -->
-        <circle class="vd-g-implode" cx="50" cy="50" r="80" fill="#fff" opacity="0"/>
-        <circle class="vd-g-implode-c" cx="50" cy="50" r="40" fill="#000" opacity="0"/>
+        <!-- binary pair: parent orbits + inspirals around 50,50; each disk spins -->
+        <g class="bh-binary">
+          <g class="bh-spin" style="transform-box: view-box; transform-origin: 26px 50px;">
+            <ellipse cx="26" cy="50" rx="30" ry="10" fill="none" stroke="var(--c)" stroke-width="4"/>
+            <circle cx="26" cy="50" r="17" fill="#000"/>
+          </g>
+          <g class="bh-spin" style="transform-box: view-box; transform-origin: 74px 50px;">
+            <ellipse cx="74" cy="50" rx="30" ry="10" fill="none" stroke="#fff" stroke-width="2.5"/>
+            <circle cx="74" cy="50" r="17" fill="#000"/>
+          </g>
+        </g>
+        <!-- merge detonation across the screen -->
+        <circle class="bh-merge" cx="50" cy="50" r="70" fill="#fff" opacity="0"/>
+        <circle class="bh-merge-ring" cx="50" cy="50" r="50" fill="none" stroke="var(--c)" stroke-width="7" opacity="0"/>
+        <circle class="bh-merge-ring2" cx="50" cy="50" r="50" fill="none" stroke="#fff" stroke-width="3" opacity="0"/>
+        {#each Array.from({length: 24}) as _, i}
+          {@const a = (i * Math.PI * 2) / 24}
+          <line class="bh-ejecta" style="--dx:{Math.cos(a) * 320}px; --dy:{Math.sin(a) * 320}px; animation-delay:{0.78 + i * 0.004}s;"
+                x1="50" y1="50" x2={50 + Math.cos(a) * 30} y2={50 + Math.sin(a) * 30}
+                stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" opacity="0"/>
+        {/each}
       {/if}
     </svg>
 
@@ -2819,102 +2788,71 @@
          universe-shattering descent of constellations. -->
     <svg viewBox="0 0 100 100" class="fx-svg cs-band-{tierBand}" overflow="visible">
       {#if tierBand === 'small'}
-        <!-- F-D: a shooting star crashes into the target -->
-        <line class="cs-s-trail" x1="-10" y1="14" x2="50" y2="50"
-              stroke="var(--c)" stroke-width="6" stroke-linecap="round" opacity="0"/>
-        <line class="cs-s-trail-c" x1="-10" y1="14" x2="50" y2="50"
-              stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity="0"/>
-        <polygon class="cs-s-star"
-                 points="50,30 56,46 72,46 60,56 66,72 50,62 34,72 40,56 28,46 44,46"
-                 fill="var(--c)" opacity="0"/>
-        <circle class="cs-s-burst" cx="50" cy="50" r="20" fill="url(#fi-core)" opacity="0"/>
-        <!-- Small star scatter -->
-        {#each [{x:30,y:30},{x:70,y:30},{x:30,y:70},{x:70,y:70}] as s, i}
-          <polygon class="cs-s-spark" style="animation-delay:{0.22 + i * 0.025}s;"
-                   points="{s.x},{s.y-3} {s.x+2},{s.y} {s.x},{s.y+3} {s.x-2},{s.y}" fill="#fff"/>
-        {/each}
+        <!-- L1 — a small solar system: a sun with planets on orbit -->
+        <circle class="cs-orbit" cx="50" cy="50" r="22" fill="none" stroke="var(--c)" stroke-width="0.8" opacity="0"/>
+        <circle class="cs-orbit" cx="50" cy="50" r="34" fill="none" stroke="var(--c)" stroke-width="0.8" opacity="0" style="animation-delay:0.05s;"/>
+        <g class="cs-sys">
+          <circle cx="72" cy="50" r="3"   fill="var(--c)"/>
+          <circle cx="50" cy="16" r="4"   fill="#fff"/>
+          <circle cx="24" cy="62" r="2.5" fill="var(--c)"/>
+        </g>
+        <circle class="cs-sun"      cx="50" cy="50" r="9" fill="var(--c)" opacity="0"/>
+        <circle class="cs-sun-core" cx="50" cy="50" r="5" fill="#fff"     opacity="0"/>
 
       {:else if tierBand === 'medium'}
-        <!-- C-A: orbiting stars spiral together before exploding into
-             cosmic energy -->
-        <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.22" class="cs-m-bloom" style="filter:blur(16px)"/>
-        <!-- 8 stars spiraling toward center -->
-        {#each Array.from({length: 8}) as _, i}
-          {@const a = (i * Math.PI * 2) / 8}
-          {@const ox = 50 + Math.cos(a) * 48}
-          {@const oy = 50 + Math.sin(a) * 40}
-          <polygon class="cs-m-star" style="--ox:{ox - 50}px; --oy:{oy - 50}px; animation-delay:{i * 0.03}s;"
-                   points="50,46 54,50 50,54 46,50" fill="var(--c)" opacity="0"/>
+        <!-- L2 — multiple solar systems orbit, then a unifying pulse -->
+        <circle cx="50" cy="50" r="50" fill="var(--c)" opacity="0.18" class="cs-m-bloom" style="filter:blur(16px)"/>
+        {#each [{cx:28,cy:32},{cx:72,cy:36},{cx:50,cy:72}] as s, i}
+          <g class="cs-minisys" style="transform-box: view-box; transform-origin: {s.cx}px {s.cy}px; animation-delay:{i * 0.10}s;">
+            <circle cx={s.cx} cy={s.cy} r="13" fill="none" stroke="var(--c)" stroke-width="0.7" opacity="0.6"/>
+            <circle cx={s.cx} cy={s.cy} r="5"  fill="var(--c)"/>
+            <circle cx={s.cx} cy={s.cy} r="2.5" fill="#fff"/>
+            <circle cx={s.cx + 13} cy={s.cy} r="2.5" fill="#fff"/>
+            <circle cx={s.cx - 9}  cy={s.cy + 9} r="2" fill="var(--c)"/>
+          </g>
         {/each}
-        <!-- Cosmic energy detonation -->
-        <circle class="cs-m-deton" cx="50" cy="50" r="36" fill="url(#fi-core)" opacity="0"/>
-        <!-- Burst star points -->
-        {#each [0, 45, 90, 135, 180, 225, 270, 315] as deg, i}
-          {@const a = (deg * Math.PI) / 180}
-          <polygon class="cs-m-burst-star" style="animation-delay:{0.32 + i * 0.018}s;"
-                   points="{50 + Math.cos(a) * 36 - 2},{50 + Math.sin(a) * 36}
-                           {50 + Math.cos(a) * 36},{50 + Math.sin(a) * 36 - 4}
-                           {50 + Math.cos(a) * 36 + 2},{50 + Math.sin(a) * 36}
-                           {50 + Math.cos(a) * 36},{50 + Math.sin(a) * 36 + 4}" fill="var(--c)"/>
-        {/each}
+        <circle class="cs-m-deton" cx="50" cy="50" r="40" fill="url(#fi-core)" opacity="0"/>
 
       {:else if tierBand === 'large'}
-        <!-- S-SSS: a miniature GALAXY forms overhead and collapses into a
-             stellar detonation -->
-        <circle cx="50" cy="50" r="60" fill="var(--c)" opacity="0.35" class="cs-l-bloom" style="filter:blur(22px)"/>
-        <!-- Galaxy with spiral arms -->
+        <!-- L3 — a galaxy forms, spins up, and explodes -->
+        <circle cx="50" cy="50" r="60" fill="var(--c)" opacity="0.32" class="cs-l-bloom" style="filter:blur(22px)"/>
         <g class="cs-l-galaxy">
           <path d="M50 50 Q40 30 20 28 Q8 38 12 56 Q24 70 50 50" stroke="var(--c)" stroke-width="3" fill="none" opacity="0.9"/>
           <path d="M50 50 Q60 70 80 72 Q92 62 88 44 Q76 30 50 50" stroke="var(--c)" stroke-width="3" fill="none" opacity="0.9"/>
           <path d="M50 50 Q70 40 72 20 Q60 8 42 12 Q28 24 50 50" stroke="var(--c)" stroke-width="2.4" fill="none" opacity="0.8"/>
           <path d="M50 50 Q30 60 28 80 Q40 92 58 88 Q72 76 50 50" stroke="var(--c)" stroke-width="2.4" fill="none" opacity="0.8"/>
         </g>
-        <!-- Stellar collapse flash -->
-        <circle class="cs-l-collapse" cx="50" cy="50" r="40" fill="#fff" opacity="0"/>
-        <!-- Detonation rings -->
+        <circle class="cs-l-collapse" cx="50" cy="50" r="44" fill="#fff" opacity="0"/>
         <circle class="cs-l-det1" cx="50" cy="50" r="20" fill="none" stroke="var(--c)" stroke-width="4" opacity="0"/>
         <circle class="cs-l-det2" cx="50" cy="50" r="20" fill="none" stroke="#fff" stroke-width="2.4" opacity="0"/>
-        <!-- 12 comet trails outward -->
         {#each [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] as deg, i}
           {@const a = (deg * Math.PI) / 180}
-          <line class="cs-l-comet" style="animation-delay:{0.45 + i * 0.018}s;"
-                x1="50" y1="50" x2={50 + Math.cos(a) * 60} y2={50 + Math.sin(a) * 60}
+          <line class="cs-l-comet" style="animation-delay:{0.50 + i * 0.016}s;"
+                x1="50" y1="50" x2={50 + Math.cos(a) * 64} y2={50 + Math.sin(a) * 64}
                 stroke="var(--c)" stroke-width="2.5" stroke-linecap="round" opacity="0"/>
         {/each}
 
       {:else}
-        <!-- GOD: entire CONSTELLATIONS awaken as planets, stars, and
-             galaxies descend in a universe-shattering cosmic event -->
-        <rect class="cs-g-cosmos" x="-300" y="-300" width="700" height="700"
-              fill="#03031f" opacity="0"/>
-        <!-- Massive screen-spanning galaxy spirals -->
-        <g class="cs-g-galaxy">
-          <path d="M50 50 Q-50 -30 -180 30 Q-280 130 -180 250 Q-30 250 50 50"
-                stroke="var(--c)" stroke-width="6" fill="none" opacity="0"/>
-          <path d="M50 50 Q150 130 280 70 Q380 -30 280 -150 Q130 -150 50 50"
-                stroke="var(--c)" stroke-width="6" fill="none" opacity="0"/>
-          <path d="M50 50 Q-50 130 -180 70 Q-280 -30 -180 -150 Q-30 -150 50 50"
-                stroke="var(--c)" stroke-width="5" fill="none" opacity="0"/>
-          <path d="M50 50 Q150 -30 280 30 Q380 130 280 250 Q130 250 50 50"
-                stroke="var(--c)" stroke-width="5" fill="none" opacity="0"/>
+        <!-- L4 — the galaxy collapses and detonates into a screen-wide supernova -->
+        <rect class="cs-g-cosmos" x="-300" y="-300" width="700" height="700" fill="#0a0420" opacity="0"/>
+        <!-- spiral galaxy spins up fast, then collapses to a point -->
+        <g class="cs-nova-galaxy">
+          <path d="M50 50 Q20 20 24 -10 Q60 -30 90 4 Q96 36 50 50" stroke="var(--c)" stroke-width="5" fill="none" opacity="0.9"/>
+          <path d="M50 50 Q80 80 76 110 Q40 130 10 96 Q4 64 50 50" stroke="var(--c)" stroke-width="5" fill="none" opacity="0.9"/>
+          <path d="M50 50 Q86 40 108 64 Q104 104 64 108 Q40 92 50 50" stroke="#fff" stroke-width="2.5" fill="none" opacity="0.7"/>
+          <path d="M50 50 Q14 60 -8 36 Q-4 -4 36 -8 Q60 8 50 50" stroke="#fff" stroke-width="2.5" fill="none" opacity="0.7"/>
         </g>
-        <!-- Constellation stars scattered across screen -->
-        {#each Array.from({length: 32}) as _, i}
-          {@const a = (i * Math.PI * 2) / 32}
-          {@const r = 120 + (i % 5) * 30}
-          {@const x = 50 + Math.cos(a) * r}
-          {@const y = 50 + Math.sin(a) * r * 0.7}
-          <polygon class="cs-g-cstar" style="animation-delay:{0.25 + i * 0.011}s;"
-                   points="{x},{y-4} {x+4},{y} {x},{y+4} {x-4},{y}" fill="var(--c)"/>
+        <!-- supernova: white core expands beyond the screen + colored shock + nebula -->
+        <circle class="cs-nova-glow" cx="50" cy="50" r="320" fill="var(--c)" opacity="0" style="filter:blur(44px)"/>
+        <circle class="cs-nova-core" cx="50" cy="50" r="320" fill="#fff" opacity="0"/>
+        <circle class="cs-nova-ring"  cx="50" cy="50" r="60" fill="none" stroke="var(--c)" stroke-width="8" opacity="0"/>
+        <circle class="cs-nova-ring2" cx="50" cy="50" r="60" fill="none" stroke="#fff"     stroke-width="4" opacity="0"/>
+        <!-- star ejecta hurled across the whole screen -->
+        {#each Array.from({length: 28}) as _, i}
+          {@const a = (i * Math.PI * 2) / 28}
+          <polygon class="cs-nova-star" style="--dx:{Math.cos(a) * 320}px; --dy:{Math.sin(a) * 320}px; animation-delay:{0.62 + i * 0.006}s;"
+                   points="50,46 53,50 50,54 47,50" fill="var(--c)" opacity="0"/>
         {/each}
-        <!-- Descending planets -->
-        {#each [{x:-40,y:-30,r:14,d:0.30},{x:120,y:-20,r:18,d:0.35},{x:-30,y:120,r:12,d:0.40},{x:130,y:100,r:16,d:0.45},{x:50,y:-80,r:20,d:0.50}] as p, i}
-          <circle class="cs-g-planet" style="animation-delay:{p.d}s;"
-                  cx={p.x} cy={p.y} r={p.r} fill="var(--c)" opacity="0"/>
-        {/each}
-        <!-- Universe-shattering core detonation -->
-        <circle class="cs-g-deton" cx="50" cy="50" r="220" fill="url(#fi-core)" opacity="0"/>
-        <circle class="cs-g-deton-c" cx="50" cy="50" r="120" fill="#fff" opacity="0"/>
       {/if}
     </svg>
 
@@ -5114,6 +5052,58 @@
 @keyframes cs-g-galaxy { 0% { transform: scale(0.3) rotate(0deg); opacity: 0; } 50% { transform: scale(1.1) rotate(180deg); opacity: 1; filter: brightness(2) drop-shadow(0 0 40px var(--c)); } 100% { transform: scale(1.3) rotate(360deg); opacity: 0; } }
 @keyframes cs-g-cstar  { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 50% { transform: scale(1.4) rotate(180deg); opacity: 1; filter: brightness(2.5); } 100% { transform: scale(1) rotate(360deg); opacity: 0; } }
 @keyframes cs-g-planet { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.2); opacity: 1; filter: brightness(1.6) drop-shadow(0 0 16px var(--c)); } 100% { transform: scale(0.5); opacity: 0; } }
+
+/* ─── VOID — black-hole 4-level revamp ─────────────────────────── */
+.bh-ring      { transform-origin: 50% 50%; animation: bh-ring 0.7s ease-out forwards; }
+.bh-pull      { transform-origin: 50% 50%; animation: bh-pull 0.55s ease-in forwards; }
+.bh-pull.fast { animation-duration: 0.32s; }
+.bh-core      { transform-origin: 50% 50%; animation: bh-core 0.6s ease-out forwards; }
+.bh-collapse  { transform-origin: 50% 50%; animation: bh-collapse 0.5s 0.45s ease-out forwards; }
+.bh-disk      { transform-origin: 50% 50%; animation: bh-disk 0.9s ease-out forwards; }
+.bh-disk2     { transform-origin: 50% 50%; animation: bh-disk 0.9s ease-out forwards; animation-direction: reverse; }
+.bh-disk.fast, .bh-disk2.fast { animation-duration: 0.6s; }
+.bh-lens      { transform-origin: 50% 50%; animation: bh-lens 0.7s ease-out forwards; }
+.bh-deb       { transform-box: fill-box; transform-origin: center; animation: bh-deb 0.6s 0.1s ease-in forwards; }
+.bh-deb.fast  { animation-duration: 0.4s; }
+.bh-binary    { transform-box: view-box; transform-origin: 50px 50px; animation: bh-binary 0.85s ease-in forwards; opacity: 0; }
+.bh-spin      { animation: bh-spin 0.85s linear forwards; }
+.bh-merge       { transform-origin: 50% 50%; animation: bh-merge 0.5s 0.72s ease-out forwards; }
+.bh-merge-ring  { transform-origin: 50% 50%; animation: bh-merge-ring 0.7s 0.74s ease-out forwards; }
+.bh-merge-ring2 { transform-origin: 50% 50%; animation: bh-merge-ring 0.7s 0.78s ease-out forwards; }
+.bh-ejecta    { transform-box: fill-box; transform-origin: center; animation: bh-ejecta 0.6s ease-out forwards; }
+@keyframes bh-ring     { 0% { opacity: 0; transform: scale(0.3) rotate(0deg); } 40% { opacity: 1; transform: scale(1) rotate(220deg); } 100% { opacity: 0; transform: scale(0.2) rotate(420deg); } }
+@keyframes bh-pull     { 0% { opacity: 0; transform: scale(1.15); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(0.08); } }
+@keyframes bh-core     { 0% { opacity: 0; transform: scale(0); } 40% { opacity: 1; transform: scale(1.1); } 70% { transform: scale(0.92); } 100% { opacity: 1; transform: scale(0.85); } }
+@keyframes bh-collapse { 0% { opacity: 0; transform: scale(0.2); filter: brightness(2); } 60% { opacity: 1; transform: scale(1.5); filter: brightness(5) drop-shadow(0 0 40px #fff); } 100% { opacity: 0; transform: scale(0); } }
+@keyframes bh-disk     { 0% { opacity: 0; transform: scale(0.3) rotate(0deg); } 30% { opacity: 1; } 100% { opacity: 0.7; transform: scale(1) rotate(540deg); } }
+@keyframes bh-lens     { 0% { opacity: 0; transform: scale(0.5); } 50% { opacity: 0.8; transform: scale(1.1); } 100% { opacity: 0; transform: scale(0.8); } }
+@keyframes bh-deb      { 0% { opacity: 0; transform: translate(var(--ox), var(--oy)) scale(1); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(0,0) scale(0.1); } }
+@keyframes bh-binary   { 0% { opacity: 0; transform: scale(1.15) rotate(0deg); } 12% { opacity: 1; } 70% { opacity: 1; transform: scale(0.45) rotate(560deg); } 82% { opacity: 0; transform: scale(0.15) rotate(660deg); } 100% { opacity: 0; } }
+@keyframes bh-spin     { to { transform: rotate(360deg); } }
+@keyframes bh-merge    { 0% { opacity: 0; transform: scale(0); filter: brightness(6); } 30% { opacity: 1; transform: scale(1.3); filter: brightness(4) drop-shadow(0 0 80px #fff); } 100% { opacity: 0; transform: scale(2.6); } }
+@keyframes bh-merge-ring { 0% { opacity: 0; transform: scale(0.2); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(4); } }
+@keyframes bh-ejecta   { 0% { opacity: 0; transform: translate(0,0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); } }
+
+/* ─── COSMIC — solar-system → supernova 4-level revamp ─────────── */
+.cs-orbit     { transform-origin: 50% 50%; animation: cs-orbit-in 0.7s ease-out forwards; opacity: 0; }
+.cs-sys       { transform-origin: 50% 50%; animation: cs-sys 1.0s ease-out forwards; opacity: 0; }
+.cs-sun       { transform-origin: 50% 50%; animation: cs-sun 0.9s ease-out forwards; }
+.cs-sun-core  { transform-origin: 50% 50%; animation: cs-sun 0.9s 0.04s ease-out forwards; }
+.cs-minisys   { animation: cs-minisys 1.0s ease-out forwards; opacity: 0; }
+.cs-nova-galaxy { transform-origin: 50% 50%; animation: cs-nova-galaxy 0.7s ease-in forwards; opacity: 0; }
+.cs-nova-glow { transform-origin: 50% 50%; animation: cs-nova-core 0.7s 0.6s ease-out forwards; }
+.cs-nova-core { transform-origin: 50% 50%; animation: cs-nova-core 0.6s 0.62s ease-out forwards; }
+.cs-nova-ring  { transform-origin: 50% 50%; animation: cs-nova-ring 0.8s 0.62s ease-out forwards; }
+.cs-nova-ring2 { transform-origin: 50% 50%; animation: cs-nova-ring 0.8s 0.66s ease-out forwards; }
+.cs-nova-star { transform-box: fill-box; transform-origin: center; animation: cs-nova-star 0.7s ease-out forwards; }
+@keyframes cs-orbit-in { 0% { opacity: 0; transform: scale(0.4); } 40% { opacity: 0.7; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+@keyframes cs-sys      { 0% { opacity: 0; transform: rotate(0deg) scale(0.6); } 25% { opacity: 1; transform: rotate(120deg) scale(1); } 100% { opacity: 0; transform: rotate(400deg) scale(0.9); } }
+@keyframes cs-sun      { 0% { opacity: 0; transform: scale(0); } 35% { opacity: 1; transform: scale(1.2); filter: brightness(2) drop-shadow(0 0 16px var(--c)); } 100% { opacity: 0; transform: scale(0.6); } }
+@keyframes cs-minisys  { 0% { opacity: 0; transform: rotate(0deg) scale(0.4); } 25% { opacity: 1; transform: rotate(120deg) scale(1); } 100% { opacity: 0; transform: rotate(440deg) scale(0.8); } }
+@keyframes cs-nova-galaxy { 0% { opacity: 0; transform: scale(0.4) rotate(0deg); } 30% { opacity: 1; transform: scale(1.2) rotate(280deg); filter: brightness(2) drop-shadow(0 0 40px var(--c)); } 70% { opacity: 1; transform: scale(0.2) rotate(560deg); } 100% { opacity: 0; transform: scale(0); } }
+@keyframes cs-nova-core { 0% { opacity: 0; transform: scale(0); filter: brightness(6); } 25% { opacity: 1; transform: scale(0.5); } 60% { opacity: 0.9; transform: scale(1); filter: brightness(3); } 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes cs-nova-ring { 0% { opacity: 0; transform: scale(0.15); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(5); } }
+@keyframes cs-nova-star { 0% { opacity: 0; transform: translate(0,0) scale(0.5); } 20% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.4); } }
 
 /* ─── POISON (4-band revamp) ───────────────────────────────────── */
 .ps-s-splat { transform-origin: 50% 50%; animation: ps-s-splat 0.55s ease-out forwards; }
