@@ -775,6 +775,15 @@
           <stop offset="70%"  stop-color="#7c3aed" />
           <stop offset="100%" stop-color="#c084fc" />
         </radialGradient>
+        <!-- Cursed Wheel — pulsating violet inner aura, like the Immortal
+             rainbow signature but pinned to a purple hue. Sits OVER segments
+             with screen blend so the underlying colors still read through. -->
+        <radialGradient id="cursedInnerGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="rgba(168,85,247,0)" />
+          <stop offset="55%"  stop-color="rgba(168,85,247,0.18)" />
+          <stop offset="85%"  stop-color="rgba(124,58,237,0.45)" />
+          <stop offset="100%" stop-color="rgba(59,16,102,0.6)" />
+        </radialGradient>
         <filter id="cursedGlow" x="-40%" y="-40%" width="180%" height="180%">
           <feGaussianBlur stdDeviation="4" result="b" />
           <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
@@ -885,7 +894,7 @@
           {@const segWeight = isDimmed ? 1 : (segments[i]?.weight ?? 1)}
           {@const lightness = isDimmed ? 12 : (17 + 33 * (segWeight / maxSegmentWeight))}
           {@const saturation = isDimmed ? 0 : (50 + 20 * (segWeight / maxSegmentWeight))}
-          {@const hue = cursedTheme ? (272 + (i * 11) % 28) : (categoryHue !== undefined ? categoryHue : (i * 47) % 360)}
+          {@const hue = categoryHue !== undefined ? categoryHue : (i * 47) % 360}
           {@const segTier = segments[i]?.tier}
           {@const gradId = !isDimmed && segTier ? (
             /^Cosmic[-+]?$/.test(segTier)      ? 'tg-cosmic' :
@@ -961,6 +970,10 @@
 
       <!-- Vignette overlay (non-rotating) -->
       <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS} fill="url(#vignetteGrad)" />
+      {#if cursedTheme}
+        <!-- Pulsating violet aura inside the wheel (slice colors stay intact). -->
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS - 2} fill="url(#cursedInnerGlow)" class="cursed-inner-glow" style="mix-blend-mode: screen;" pointer-events="none" />
+      {/if}
 
       <!-- Hub decoration (non-rotating) — deep stone boss with arcane jewel -->
       <!-- Outer ghost glow -->
@@ -1150,8 +1163,14 @@
     animation: cursedSpin 28s linear infinite reverse;
   }
   @keyframes cursedSpin { to { transform: rotate(360deg); } }
+  /* Pulsating violet aura inside the wheel. */
+  .cursed-inner-glow { animation: cursedInnerPulse 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes cursedInnerPulse {
+    0%, 100% { opacity: 0.55; transform: scale(0.94); }
+    50%      { opacity: 1;    transform: scale(1.02); }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .cursed-spikes-spin, .cursed-spikes-spin-rev { animation: none; }
+    .cursed-spikes-spin, .cursed-spikes-spin-rev, .cursed-inner-glow { animation: none; }
   }
   :global([data-perf="low"]) .cursed-spikes-spin,
   :global([data-perf="low"]) .cursed-spikes-spin-rev { animation: none; }
