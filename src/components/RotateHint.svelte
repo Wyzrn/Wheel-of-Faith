@@ -8,6 +8,7 @@
   let show = $state(false)
   let isFullscreen = $state(false)
   let canFullscreen = $state(false)
+  let isStandalone = $state(false)   // already installed as a PWA
 
   const mob = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
   const portrait = () => typeof matchMedia !== 'undefined' && matchMedia('(orientation: portrait)').matches
@@ -28,6 +29,8 @@
   onMount(() => {
     const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: unknown }
     canFullscreen = typeof (el.requestFullscreen ?? el.webkitRequestFullscreen) === 'function'
+    isStandalone = matchMedia('(display-mode: standalone)').matches
+      || (navigator as Navigator & { standalone?: boolean }).standalone === true
     update()
     const mq = matchMedia('(orientation: portrait)')
     mq.addEventListener('change', update)
@@ -51,6 +54,15 @@
             <span class="material-symbols-outlined" style="font-size: 18px;">fullscreen</span>
             Fullscreen
           </button>
+        </div>
+      {:else if !canFullscreen && !isStandalone}
+        <!-- iOS Safari can't do programmatic fullscreen — guide them to A2HS. -->
+        <div class="rotate-a2hs">
+          <p class="rotate-a2hs-title">For fullscreen on iPhone:</p>
+          <p class="rotate-a2hs-step">
+            <span class="material-symbols-outlined" style="font-size: 14px;">ios_share</span>
+            Tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>
+          </p>
         </div>
       {/if}
     </div>
@@ -104,5 +116,18 @@
   .rotate-btn-ghost {
     background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #9a907b;
   }
+  .rotate-a2hs {
+    margin-top: 10px; padding: 10px 14px; border-radius: 12px; width: 100%;
+    background: rgba(90,214,239,0.07); border: 1px solid rgba(90,214,239,0.25);
+  }
+  .rotate-a2hs-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: rgba(90,214,239,0.8); margin-bottom: 4px;
+  }
+  .rotate-a2hs-step {
+    font-family: 'Inter', sans-serif; font-size: 0.8rem; color: #e9dfeb;
+    display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: center;
+  }
+  .rotate-a2hs-step strong { color: #5ad6ef; font-weight: 700; }
   @media (prefers-reduced-motion: reduce) { .rotate-icon { animation: none; } }
 </style>

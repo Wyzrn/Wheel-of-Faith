@@ -1,0 +1,11 @@
+{
+  "name": "Wheel of Fate",
+  "short_name": "Wheel of Fate",
+  "description": "Spin 23 wheels to forge a character, then battle in the Arcane Coliseum.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#16121a",
+  "theme_color": "#16121a"
+}
