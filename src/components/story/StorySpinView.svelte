@@ -820,6 +820,12 @@
         if (subTypeItem?.grantedPowers?.length) {
           pendingGrantedPowers.push(...subTypeItem.grantedPowers)
         }
+        // Bonus spins (weapon / armor / weakness) granted by rarer subtypes.
+        if (subTypeItem?.bonusSpins?.length) {
+          queue.splice(currentIndex + 1, 0, ...subTypeItem.bonusSpins.map(b => ({
+            category: b.category as SpinCategory, displayName: b.displayName,
+          })))
+        }
       }
 
       if (currentDef.category === 'raceClass') {
@@ -834,6 +840,12 @@
         // Granted powers from the class entry — pushed as power results below.
         if (classItem?.grantedPowers?.length) {
           pendingGrantedPowers.push(...classItem.grantedPowers)
+        }
+        // Bonus spins (weapon / armor / weakness) granted by rarer classes.
+        if (classItem?.bonusSpins?.length) {
+          queue.splice(currentIndex + 1, 0, ...classItem.bonusSpins.map(b => ({
+            category: b.category as SpinCategory, displayName: b.displayName,
+          })))
         }
         // Class-specific power pool or granted powers
         if (classItem?.powerPool?.length) {

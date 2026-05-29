@@ -94,8 +94,8 @@ export interface Race {
   // Keys match segment labels (e.g. 'Melee', 'None'). Missing keys default to ×1.
   weaponTypeBias?: Record<string, number>
   armorTypeBias?: Record<string, number>
-  subTypePool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
-  classPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  subTypePool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  classPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
   transformationPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
 }
 

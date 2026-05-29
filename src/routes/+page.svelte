@@ -1149,6 +1149,11 @@
         pendingGrantedPowers = subTypeItem.grantedPowers
         showAnnouncement = `${resultLabel}: grants ${pendingGrantedPowers.length} power${pendingGrantedPowers.length > 1 ? 's' : ''}!`
       }
+      if (subTypeItem?.bonusSpins?.length) {
+        spinQueue.splice(currentSpinIndex + 1, 0, ...subTypeItem.bonusSpins.map(b => ({
+          category: b.category as SpinCategory, displayName: b.displayName,
+        })))
+      }
       // Mythical Beast upgrade: swap effective race to Mythological Creature
       if (resultLabel.startsWith('Mythical Beast →')) {
         raceOverride = 'Mythological Creature'
@@ -1194,6 +1199,11 @@
         pendingGrantedPowers = classItem.grantedPowers
         const msg = `${resultLabel}: grants ${pendingGrantedPowers.length} power${pendingGrantedPowers.length > 1 ? 's' : ''}!`
         showAnnouncement = showAnnouncement ? showAnnouncement + ' ' + msg : msg
+      }
+      if (classItem?.bonusSpins?.length) {
+        spinQueue.splice(currentSpinIndex + 1, 0, ...classItem.bonusSpins.map(b => ({
+          category: b.category as SpinCategory, displayName: b.displayName,
+        })))
       }
       // Splice devil fruit name spin for Devil Fruit User
       if (raceResult?.resultLabel === 'Devil Fruit User' && DEVIL_FRUIT_POOLS[resultLabel]) {
