@@ -49,7 +49,7 @@
   import { generateCharacterSummary } from '$lib/characterSummary'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
-  import { describeRacialGrants } from '$lib/game/racialGrants'
+  import { describeRacialGrants, describeTwist } from '$lib/game/racialGrants'
   import { buildIdentityCard } from '$lib/identityCard'
   import { tilt } from '$lib/actions/tilt'
   import { twistForRace, twistForArchetype, twistByKey, RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS } from '$lib/twists'
@@ -3121,12 +3121,15 @@
                 last.resultLabel ?? '',
                 raceWheelDef?.raceWheelId,
               )}
-              {@const baseDesc = raceWheelDesc || statDesc || extraDesc || ''}
+              {@const twistDef = last.category === 'twistSpin' ? spinQueue[currentSpinIndex] : undefined}
+              {@const twistInfo = describeTwist(twistDef?.twistKind, last.resultLabel ?? '')}
+              {@const baseDesc = raceWheelDesc || statDesc || extraDesc || twistInfo.flavor || ''}
+              {@const rewardNote = racialGrants || twistInfo.grants}
               {@const resolvedMeta = {
                 ...(itemMeta ? { element: itemMeta.element, grade: itemMeta.grade } : {}),
                 ...(identityCard ? { identityCard } : {}),
                 ...(baseDesc ? { description: baseDesc } : {}),
-                ...(racialGrants ? { statEffect: racialGrants } : {}),
+                ...(rewardNote ? { statEffect: rewardNote } : {}),
               } as ResolvedMeta}
               <SpinResultReveal
                 result={last}

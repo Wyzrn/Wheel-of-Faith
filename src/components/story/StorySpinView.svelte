@@ -34,7 +34,7 @@
   import { getRacesForStage, racesToSegments, getArchetypesForStage, archetypesToSegments } from '$lib/story/raceTiers'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
-  import { describeRacialGrants } from '$lib/game/racialGrants'
+  import { describeRacialGrants, describeTwist } from '$lib/game/racialGrants'
   import { buildIdentityCard } from '$lib/identityCard'
   import { twistByKey, RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS } from '$lib/twists'
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
@@ -1538,12 +1538,15 @@
     lastResult.resultLabel ?? '',
     currentDef?.raceWheelId,
   )}
+  {@const _twist = lastResult.category === 'twistSpin'
+    ? describeTwist(currentDef?.twistKind, lastResult.resultLabel ?? '')
+    : { flavor: null, grants: null }}
   {@const resolvedMeta = {
     element: pendingResult.element,
     grade:   pendingResult.grade,
     abilityType:  pendingResult.abilityType,
-    description:  pendingResult.description,
-    statEffect:   [pendingResult.statEffect, _grants].filter(Boolean).join('  ·  ') || undefined,
+    description:  pendingResult.description || _twist.flavor || undefined,
+    statEffect:   [pendingResult.statEffect, _grants, _twist.grants].filter(Boolean).join('  ·  ') || undefined,
     ...(_identityCard ? { identityCard: _identityCard } : {}),
   } as ResolvedMeta}
   <SpinResultReveal

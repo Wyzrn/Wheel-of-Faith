@@ -151,6 +151,8 @@
   let possessionRace    = $derived(get('possessionRace'))
   let possessionStrength = $derived(get('possessionStrength'))
   let redemptionOutcome = $derived(results.find(r => r.category === 'redemptionOutcome')?.resultLabel)
+  // Fate twists (Chaos Factor, Power Level, etc.). Drop the "no effect" rolls.
+  let twists            = $derived(getAll('twistSpin').filter(t => !/no chaos|no twist|base form/i.test(t)))
 
   const statCategories = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','armorStrength','potential','energyLevel'] as const
   // Per-stat block. Tier is always recomputed from score so legacy characters
@@ -981,6 +983,22 @@
         <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #a78bfa;">Redemption</p>
       </div>
       <p class="text-sm font-medium" style="color: #e9dfeb;">{redemptionOutcome}</p>
+    </div>
+  {/if}
+
+  <!-- Fate Twists (Chaos Factor, Power Level, Worshipper Count, etc.) -->
+  {#if twists.length > 0}
+    <div class="rounded-lg px-4 py-3"
+      style="background: linear-gradient(135deg, rgba(236,72,153,0.10), rgba(168,85,247,0.12)); border: 1px solid rgba(236,72,153,0.3);">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="material-symbols-outlined text-sm" style="color: #f472b6; font-variation-settings: 'FILL' 1;">cyclone</span>
+        <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #f472b6;">Fate Twists</p>
+      </div>
+      <div class="flex flex-wrap gap-1.5">
+        {#each twists as t}
+          <span class="text-xs px-2 py-1 rounded-md" style="background: rgba(236,72,153,0.12); border: 1px solid rgba(236,72,153,0.28); color: #e9dfeb;">{t}</span>
+        {/each}
+      </div>
     </div>
   {/if}
 
