@@ -12,7 +12,7 @@
   let confirmId   = $state<string | null>(null)
   let buyResult   = $state<string | null>(null)
 
-  const CATEGORIES: GamepassCategory[] = ['combat', 'spinning', 'roster', 'prestige']
+  const CATEGORIES: GamepassCategory[] = ['cosmetic', 'combat', 'spinning', 'roster', 'prestige']
 
   onMount(async () => {
     if (isSuccess && auth.loggedIn) {

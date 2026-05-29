@@ -1624,6 +1624,34 @@
     .stage-side-2 { right: 2%; top: 5%; }
   }
 
+  /* Touch devices: lay the two teams out left vs right (vertically centered)
+     so fighter cards don't overlap on narrower screens. Cards shrink so both
+     sides fit. Keyed on pointer:coarse since the mobile CSS zoom inflates the
+     layout viewport width, making max-width queries unreliable. */
+  @media (pointer: coarse) {
+    .stage-side-1 {
+      top: 50%; bottom: auto; left: 1%;
+      transform: translateY(-50%);
+      align-items: flex-start;
+    }
+    .stage-side-2 {
+      top: 50%; bottom: auto; right: 1%;
+      transform: translateY(-50%);
+      align-items: flex-end;
+    }
+    .fighter {
+      width: min(44vw, 260px);
+      gap: 10px;
+      padding: 8px 10px;
+    }
+    .hp-ring { width: 52px; height: 52px; }
+    .character-sigil { width: 42px; height: 42px; }
+    .fighter-name { font-size: 0.95rem; }
+    .fighter-sub  { font-size: 0.6rem; }
+    .fighter-hp   { font-size: 0.72rem; }
+    .fighter-stats { gap: 2px 6px; }
+  }
+
   /* Rune-flash dodge — panel phases through reality. Inherited from
      the per-view CSS so the look is identical. */
   @keyframes panel-dodge {

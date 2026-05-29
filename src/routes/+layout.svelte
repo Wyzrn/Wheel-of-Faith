@@ -44,8 +44,10 @@
           applyingZoom = true
           root.style.zoom = ''       // read the true (unscaled) width first
           const w = window.innerWidth
-          const landscape = matchMedia('(orientation: landscape)').matches
-          if (landscape && w > 0 && w < DESIGN_W) {
+          // Apply the shrink-to-design zoom in EITHER orientation — temporary
+          // change while the rotate-to-landscape gate is disabled. Without
+          // this, portrait would render desktop-sized CSS at narrow widths.
+          if (w > 0 && w < DESIGN_W) {
             root.style.zoom = String(Math.max(0.4, w / DESIGN_W))
           }
           requestAnimationFrame(() => { applyingZoom = false })
@@ -208,7 +210,9 @@
 <ChallengeBattleOverlay />
 
 <!-- Mobile landscape gate — blocks portrait play on touch devices -->
-<RotateHint />
+<!-- RotateHint temporarily disabled while we let the game render in any
+     orientation. Restore by re-mounting once the rotate flow is wanted again. -->
+<!-- <RotateHint /> -->
 
 <style>
   /* Stone fortress floor — the nav bar is a carved obsidian shelf */
