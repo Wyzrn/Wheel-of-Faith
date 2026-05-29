@@ -2896,8 +2896,9 @@
     </div>
   {/if}
 
-  <!-- Main game: two-column layout -->
-  {#if !showCard && !showResumePrompt && !showNameScreen && !(rivalMode && rivalPhase === 'battle')}
+  <!-- Main game: two-column layout. Gated on !showMenu so the z-[60] wheel
+       doesn't poke through the menu overlay (which sits lower). -->
+  {#if !showMenu && !showCard && !showResumePrompt && !showNameScreen && !(rivalMode && rivalPhase === 'battle')}
     <div class="flex pt-14 min-h-screen">
 
       <!-- LEFT SIDEBAR: Destiny Log -->
