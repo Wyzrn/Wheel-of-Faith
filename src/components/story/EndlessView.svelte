@@ -767,25 +767,29 @@
      used to be hand-coded here: cards, HP bars, status badges, battle
      log, VFX overlay, floating damage indicators, intro splash. -->
 {#if phase === 'fight' && arenaTeams && controller}
-  {#key `${currentWave}-${subWaveIdx}`}
-    <BattleArena
-      bind:phase={arenaPhase}
-      teams={arenaTeams}
-      controller={controller}
-      manualMode={manualMode}
-      onManualToggle={(m) => manualMode = m}
-      modeTitle={`Wave ${currentWave} — ${currentGrade}`}
-      modeSubtitle={allSubWaves.length > 1
-        ? `Sub-wave ${subWaveIdx + 1} / ${allSubWaves.length}`
-        : 'Endless Mode'}
-      modeAccent={ec}
-      speedFactor={settings.battleSpeed}
-      effectsEnabled={settings.effectsEnabled}
-      canInstant={canInstant}
-      introMs={subWaveIdx === 0 ? 1100 : 350}
-      onRoundEnd={handleArenaRoundEnd}
-      onBattleEnd={handleArenaEnd}/>
-  {/key}
+  <!-- Padded, width-capped, nav-safe wrapper (matches story BattleView). Without
+       it the arena was full-bleed and clipped under the top nav + at the edges. -->
+  <div class="pt-20 px-4 w-full flex flex-col" style="max-width: 560px; margin: 0 auto; min-height: 100dvh; padding-bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 96px));">
+    {#key `${currentWave}-${subWaveIdx}`}
+      <BattleArena
+        bind:phase={arenaPhase}
+        teams={arenaTeams}
+        controller={controller}
+        manualMode={manualMode}
+        onManualToggle={(m) => manualMode = m}
+        modeTitle={`Wave ${currentWave} — ${currentGrade}`}
+        modeSubtitle={allSubWaves.length > 1
+          ? `Sub-wave ${subWaveIdx + 1} / ${allSubWaves.length}`
+          : 'Endless Mode'}
+        modeAccent={ec}
+        speedFactor={settings.battleSpeed}
+        effectsEnabled={settings.effectsEnabled}
+        canInstant={canInstant}
+        introMs={subWaveIdx === 0 ? 1100 : 350}
+        onRoundEnd={handleArenaRoundEnd}
+        onBattleEnd={handleArenaEnd}/>
+    {/key}
+  </div>
 {/if}
 
 <!-- ══ Wave result overlay ═════════════════════════════════════════════════ -->
