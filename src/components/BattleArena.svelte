@@ -1018,33 +1018,7 @@
     </div>
   {/if}
 
-  <!-- ── Command rail ────────────────────────────────────────────────── -->
-  <header class="arena-rail">
-    <div class="flex items-center gap-3 min-w-0">
-      <h1 class="font-cinzel arena-mode">{modeName ?? (modeSubtitle || 'Arcane Coliseum')}</h1>
-      <div class="arena-rail-div"></div>
-      <span class="font-jetbrains arena-rail-detail">{modeTitle}</span>
-    </div>
-    <div class="flex items-center gap-4 shrink-0">
-      {#if controllerMode && onManualToggle}
-        <button class="arena-auto" class:arena-auto-on={!manualMode}
-          onclick={() => flipManual(!manualMode)}
-          aria-pressed={!manualMode} aria-label="{manualMode ? 'Enable' : 'Disable'} auto battle">
-          <span class="arena-auto-label">Auto</span>
-          <span class="arena-auto-track"><span class="arena-auto-dot"></span></span>
-        </button>
-      {/if}
-      {#if canInstant && phase === 'battle'}
-        <button class="arena-skip" onclick={instantResolve} title="Instant Battle — skip to result">
-          <span class="material-symbols-outlined" style="font-size: 13px; font-variation-settings: 'FILL' 1;">fast_forward</span>
-          SKIP
-        </button>
-      {/if}
-    </div>
-    <div class="rune-seam"></div>
-  </header>
-
-  <!-- ── Stage ───────────────────────────────────────────────────────── -->
+  <!-- ── Stage (full screen — battle controls live in the dock now) ───── -->
   <main class="arena-stage">
     <div class="arena-seam"></div>
     <!-- Team 1 (player) — bottom-left -->
@@ -1143,6 +1117,30 @@
 
   <!-- ── Action dock ─────────────────────────────────────────────────── -->
   <footer class="arena-dock">
+    <!-- Control strip (moved off the old top rail): gamemode + auto + skip -->
+    <div class="dock-bar">
+      <div class="dock-bar-mode">
+        <span class="font-cinzel arena-mode">{modeName ?? (modeSubtitle || 'Arcane Coliseum')}</span>
+        <span class="dock-bar-div"></span>
+        <span class="font-jetbrains arena-rail-detail">{modeTitle}</span>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        {#if controllerMode && onManualToggle}
+          <button class="arena-auto" class:arena-auto-on={!manualMode}
+            onclick={() => flipManual(!manualMode)}
+            aria-pressed={!manualMode} aria-label="{manualMode ? 'Enable' : 'Disable'} auto battle">
+            <span class="arena-auto-label">Auto</span>
+            <span class="arena-auto-track"><span class="arena-auto-dot"></span></span>
+          </button>
+        {/if}
+        {#if canInstant && phase === 'battle'}
+          <button class="arena-skip" onclick={instantResolve} title="Instant Battle — skip to result">
+            <span class="material-symbols-outlined" style="font-size: 13px; font-variation-settings: 'FILL' 1;">fast_forward</span>
+            SKIP
+          </button>
+        {/if}
+      </div>
+    </div>
     <div class="arena-dock-inner">
       <!-- Turn counter + roster avatars -->
       <div class="dock-turn">
@@ -1199,8 +1197,8 @@
     position: fixed; inset: 0; z-index: 40;
     display: flex; flex-direction: column;
     overflow: hidden;
-    background: radial-gradient(circle at center, #1f1b14 0%, #110e07 100%);
-    color: #ebe1d5;
+    background: radial-gradient(circle at 50% 42%, #221d2b 0%, #16121a 70%, #100d14 100%);
+    color: #e9dfeb;
     font-family: 'Inter', sans-serif;
   }
   .void-grain {
@@ -1260,9 +1258,9 @@
   .arena-skip:hover { background: rgba(90,214,239,0.1); }
 
   /* ── Stage ────────────────────────────────────────────────────────── */
-  .arena-stage { position: relative; flex: 1 1 auto; overflow: hidden; }
+  .arena-stage { position: relative; flex: 1 1 auto; overflow: hidden; padding-top: env(safe-area-inset-top); }
   .arena-seam {
-    position: absolute; left: 50%; top: 8%; bottom: 16%; width: 2px; transform: translateX(-50%);
+    position: absolute; left: 50%; top: 6%; bottom: 8%; width: 2px; transform: translateX(-50%);
     background: linear-gradient(to bottom, transparent, #5ad6ef, #ff7b52, transparent);
     box-shadow: 0 0 20px rgba(90,214,239,0.4); z-index: 5;
     animation: arena-seam-pulse 3s infinite ease-in-out;
@@ -1272,14 +1270,14 @@
     50%      { opacity: 0.75; filter: brightness(1.5); }
   }
   .stage-side { position: absolute; z-index: 10; display: flex; flex-direction: column; gap: 12px; }
-  .stage-side-1 { bottom: 8%; left: 4%; align-items: flex-start; }
-  .stage-side-2 { top: 6%; right: 4%; align-items: flex-end; }
+  .stage-side-1 { bottom: 6%; left: 3%; align-items: flex-start; }
+  .stage-side-2 { top: calc(env(safe-area-inset-top, 0px) + 12px); right: 3%; align-items: flex-end; }
 
   .fighter {
-    width: min(78vw, 340px);
+    width: min(82vw, 340px);
     display: flex; align-items: center; gap: 16px; padding: 12px 16px;
     clip-path: polygon(7% 0, 100% 0, 93% 100%, 0 100%);
-    background: linear-gradient(135deg, rgba(46,41,33,0.92) 0%, rgba(23,19,12,0.92) 100%);
+    background: linear-gradient(135deg, rgba(45,40,49,0.94) 0%, rgba(20,17,26,0.94) 100%);
     border-right: 2px solid var(--accent-color, #5ad6ef);
     box-shadow: 0 12px 30px rgba(0,0,0,0.6);
     transition: transform 0.3s ease, filter 0.2s ease;
@@ -1304,11 +1302,11 @@
     box-shadow: 0 0 10px rgba(0,0,0,0.5);
     transition: --hp 0.45s ease;
   }
-  .hp-ring::after { content: ''; position: absolute; inset: 3px; background: #110e07; border-radius: 50%; z-index: 1; }
+  .hp-ring::after { content: ''; position: absolute; inset: 3px; background: #16121a; border-radius: 50%; z-index: 1; }
   .character-sigil {
     position: relative; z-index: 2; width: 52px; height: 52px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(23,19,12,0.9); border: 1px solid rgba(255,255,255,0.1); overflow: hidden;
+    background: rgba(20,17,26,0.95); border: 1px solid rgba(255,255,255,0.1); overflow: hidden;
   }
   .fighter-info { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
   .fighter-name {
@@ -1339,13 +1337,20 @@
   /* ── Action dock ──────────────────────────────────────────────────── */
   .arena-dock {
     position: relative; z-index: 30; flex: 0 0 auto;
-    min-height: 92px; background: rgba(17,19,12,0.96);
-    border-top: 1px solid rgba(255,255,255,0.06); box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+    background: rgba(34,30,38,0.97);
+    border-top: 2px solid rgba(240,192,82,0.4); box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /* Control strip: gamemode + auto + skip (formerly the top rail) */
+  .dock-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 5px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .dock-bar-mode { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .dock-bar-div { width: 1px; height: 11px; background: rgba(255,255,255,0.14); flex-shrink: 0; }
   .arena-dock-inner {
-    max-width: 720px; margin: 0 auto; height: 100%; min-height: 92px;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 16px;
+    max-width: 720px; margin: 0 auto; min-height: 84px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 16px;
   }
   .dock-turn { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
   .dock-turn-n { display: flex; flex-direction: column; align-items: center; }
