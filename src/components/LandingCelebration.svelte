@@ -555,11 +555,11 @@
     position: fixed;
     inset: 0;
     pointer-events: none;
-    /* Sits ABOVE the reveal modal (z-50) so the celebration layers OVER
-       the result card — the player sees fireworks crash on top of the
-       label rather than the card hiding the VFX. pointer-events: none
-       keeps the Continue button below clickable through the overlay. */
-    z-index: 60;
+    /* Sits ABOVE the wheel container (z-[60]) and reveal modal so the
+       celebration layers OVER the result card — the player sees fireworks
+       crash on top of the label rather than the card hiding the VFX.
+       pointer-events: none keeps everything below clickable through it. */
+    z-index: 70;
     overflow: hidden;
   }
 

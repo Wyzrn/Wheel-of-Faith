@@ -2836,7 +2836,7 @@
        radial energy bolts, hue-cycling text glitch, expanding shock rings.
        The compositor-only animations live in app.css (.wc-*). -->
   {#if wildcardPhase === 'flashing'}
-    <div class="fixed inset-0 z-50 flex items-center justify-center overflow-hidden wc-overlay" aria-hidden="true">
+    <div class="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden wc-overlay" aria-hidden="true">
       <!-- Outer counter-rotating sigil rings (SVG, GPU-friendly) -->
       <svg class="absolute inset-0 m-auto wc-vortex-cw" style="width: min(95vw, 720px); height: min(95vw, 720px); opacity: 0.45;" viewBox="0 0 200 200" fill="none">
         <circle cx="100" cy="100" r="92" stroke="#f0c040" stroke-width="1.2" stroke-dasharray="6 8" opacity="0.7"/>
@@ -2870,7 +2870,7 @@
 
   <!-- Wildcard reveal overlay — outcome card with dramatic entrance -->
   {#if wildcardPhase === 'reveal'}
-    <div class="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-hidden"
+    <div class="fixed inset-0 z-[70] flex items-center justify-center px-4 overflow-hidden"
          style="background: radial-gradient(circle at 50% 50%, rgba(40,12,80,0.85) 0%, rgba(0,0,0,0.95) 70%); backdrop-filter: blur(12px);">
       <!-- Background sigil that keeps spinning behind the card -->
       <svg class="absolute inset-0 m-auto wc-vortex-cw" style="width: min(80vw, 600px); height: min(80vw, 600px); opacity: 0.18; pointer-events: none;" viewBox="0 0 200 200" fill="none" aria-hidden="true">

@@ -702,12 +702,12 @@
   }
 </script>
 
-<div class="flex flex-col items-center gap-5 w-full mx-auto select-none" style="contain: layout style;">
+<div class="sw-root flex flex-col items-center gap-5 w-full mx-auto select-none" style="contain: layout style;">
 
   <!-- Shake wrapper — GSAP applies translate() here during spin -->
-  <div bind:this={shakeEl} class="flex justify-center w-full">
+  <div bind:this={shakeEl} class="sw-stage flex justify-center w-full">
   <!-- Wheel + canvas wrapper — CSS Grid overlay so canvas and SVG share identical pixel bounds -->
-  <div style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${cursedTheme ? 'drop-shadow(0 0 32px rgba(139,92,246,0.5)) drop-shadow(0 0 16px rgba(100,0,200,0.4))' : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(90,214,239,0.15))'}`}; {cursedTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
+  <div class="sw-wheel-box" style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${cursedTheme ? 'drop-shadow(0 0 32px rgba(139,92,246,0.5)) drop-shadow(0 0 16px rgba(100,0,200,0.4))' : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(90,214,239,0.15))'}`}; {cursedTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
     <svg
       bind:this={svgEl}
       viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
@@ -1018,7 +1018,7 @@
     onclick={handleSpin}
     disabled={!canSpin}
     data-fx="big"
-    class="{canSpin ? 'metal-stamp-gold spin-fx spin-btn-idle' : 'obsidian-slab'} px-10 py-3 rounded-lg relative disabled:opacity-40 disabled:cursor-not-allowed"
+    class="sw-spin-btn {canSpin ? 'metal-stamp-gold spin-fx spin-btn-idle' : 'obsidian-slab'} px-10 py-3 rounded-lg relative disabled:opacity-40 disabled:cursor-not-allowed"
     style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; {!canSpin ? 'color: #9a907b; border: 1px solid #4e4635;' : ''}"
   >
     {#if canSpin}<div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>{/if}
@@ -1028,7 +1028,7 @@
   <!-- Segment count + max-weight peek — small data badge under the button so
        users always know how many possible outcomes are on this wheel. -->
   {#if spinStatus === 'IDLE'}
-    <p class="font-mono text-[10px] tracking-[0.16em] uppercase" style="color: #4e4635;">
+    <p class="sw-outcomes font-mono text-[10px] tracking-[0.16em] uppercase" style="color: #4e4635;">
       {activeSegments.length} possible outcomes
     </p>
   {/if}
@@ -1051,6 +1051,29 @@
 {/if}
 
 <style>
+  /* Mobile (touch) only: the game is landscape-locked and vertical space is
+     tight, so lay the wheel out as a row with the Spin Fate button to the
+     LEFT of the wheel. This frees vertical room so the progress dots (rendered
+     by the parent right after this component) sit directly below the wheel.
+     Keyed on pointer:coarse because the mobile CSS `zoom` inflates the layout
+     viewport width, making max-width media queries unreliable. */
+  @media (pointer: coarse) {
+    .sw-root {
+      flex-direction: row;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+    }
+    .sw-stage { width: auto; flex: 0 0 auto; }
+    .sw-spin-btn { order: -1; flex: 0 0 auto; }   /* sits left of the wheel */
+    .sw-outcomes { display: none; }               /* declutter the row */
+    /* Shrink the wheel so the button fits beside it within the parent
+       container, and so the top isn't clipped on short landscape screens.
+       !important overrides the inline clamp() width. */
+    .sw-wheel-box { width: min(62vh, 360px) !important; }
+  }
+
   @keyframes runeRingPulse {
     0%, 100% { opacity: 0.70; }
     50%       { opacity: 1.00; }
