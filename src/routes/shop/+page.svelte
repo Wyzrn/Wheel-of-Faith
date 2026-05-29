@@ -4,6 +4,7 @@
   import { auth } from '$lib/stores/auth.svelte'
   import { shop, gamepasses } from '$lib/stores/shop.svelte'
   import { SHARD_PACKS, GAMEPASSES, CATEGORY_LABELS, type GamepassCategory } from '$lib/shop/gamepasses'
+  import { settings } from '$lib/settings.svelte'
 
   let isSuccess = $derived($page.url.searchParams.get('success') === '1')
   let successShards = $state(0)
@@ -189,6 +190,16 @@
                     style="background: rgba(30,28,48,0.4); border: 1px solid rgba(48,44,64,0.5);">
                     <span class="font-mono text-xs font-bold" style="color: #2e2b45;">—</span>
                   </div>
+                {:else if alreadyOwned && gp.id === 'cursed_wheel'}
+                  <!-- Owned cosmetic with an on/off toggle. -->
+                  <button
+                    onclick={() => { settings.cursedWheelEnabled = !settings.cursedWheelEnabled; settings.save() }}
+                    class="flex items-center gap-1.5 px-3 py-2 rounded-lg font-mono text-xs font-bold transition-all"
+                    style="background: {settings.cursedWheelEnabled ? 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(124,58,237,0.1))' : 'rgba(255,255,255,0.04)'}; border: 1px solid {settings.cursedWheelEnabled ? 'rgba(168,85,247,0.45)' : 'rgba(78,70,53,0.3)'}; color: {settings.cursedWheelEnabled ? '#c084fc' : '#9a907b'};"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px; font-variation-settings: 'FILL' 1;">{settings.cursedWheelEnabled ? 'toggle_on' : 'toggle_off'}</span>
+                    {settings.cursedWheelEnabled ? 'Enabled' : 'Disabled'}
+                  </button>
                 {:else if alreadyOwned}
                   <div class="flex items-center gap-1 px-3 py-2 rounded-lg"
                     style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.2);">

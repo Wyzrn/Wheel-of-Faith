@@ -40,6 +40,7 @@
   import { gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS } from '$lib/game/scoreTier'
   import type { ElementType, ItemGrade } from '$lib/content/types'
   import { settings } from '$lib/settings.svelte'
+  import { auth } from '$lib/stores/auth.svelte'
   import { gamepasses } from '$lib/stores/shop.svelte'
   import { randomCharacterName } from '$lib/story/naming'
   import {
@@ -1419,6 +1420,7 @@
           soundEnabled={settings.soundEnabled}
           effectsEnabled={settings.effectsEnabled}
           spinSpeedMultiplier={settings.spinSpeed}
+          cursedTheme={(auth.user?.gamepasses?.includes('cursed_wheel') ?? false) && settings.cursedWheelEnabled}
           replayTrigger={replayTriggerKey}
           wheelSignature={results.find(r => r.category === 'race')?.resultLabel ?? null}
           resolveLandingColors={(_i, label) => resolveLandingForCategory(currentDef?.category, label)}

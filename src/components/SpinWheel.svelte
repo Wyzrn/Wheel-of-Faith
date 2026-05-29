@@ -14,6 +14,24 @@
   const WHEEL_RADIUS = 230
   const POINTER_SIZE = 24
 
+  // Cursed Wheel gamepass — jagged spike ring drawn around the rim. Each spike
+  // is a triangle: two base points on the inner circle, one tip on the outer.
+  function buildSpikeRing(inner: number, outer: number, count: number): string {
+    let d = ''
+    for (let i = 0; i < count; i++) {
+      const a0 = (i / count) * 2 * Math.PI
+      const a1 = ((i + 0.5) / count) * 2 * Math.PI
+      const a2 = ((i + 1) / count) * 2 * Math.PI
+      const x0 = CENTER + inner * Math.cos(a0), y0 = CENTER + inner * Math.sin(a0)
+      const xt = CENTER + outer * Math.cos(a1), yt = CENTER + outer * Math.sin(a1)
+      const x2 = CENTER + inner * Math.cos(a2), y2 = CENTER + inner * Math.sin(a2)
+      d += `M ${x0.toFixed(1)} ${y0.toFixed(1)} L ${xt.toFixed(1)} ${yt.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)} Z `
+    }
+    return d
+  }
+  const CURSED_SPIKES_LONG  = buildSpikeRing(WHEEL_RADIUS + 2, WHEEL_RADIUS + 30, 28)
+  const CURSED_SPIKES_SHORT = buildSpikeRing(WHEEL_RADIUS + 2, WHEEL_RADIUS + 16, 56)
+
   // Pointer geometry — computed from wheel constants
   const PTR_TIP_Y   = CENTER - WHEEL_RADIUS - 3   // 17  blade tip (at wheel rim)
   const PTR_BASE_Y  = PTR_TIP_Y - 28              // -11 guard bottom
@@ -751,6 +769,16 @@
           <feGaussianBlur stdDeviation="2.5" result="blur" />
           <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
+        <!-- Cursed Wheel — violet spike gradient + glow -->
+        <radialGradient id="cursedSpikeGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#3b1066" />
+          <stop offset="70%"  stop-color="#7c3aed" />
+          <stop offset="100%" stop-color="#c084fc" />
+        </radialGradient>
+        <filter id="cursedGlow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="4" result="b" />
+          <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
         <!-- Stronger glow for hub center jewel -->
         <filter id="hubGlow" x="-60%" y="-60%" width="220%" height="220%">
           <feGaussianBlur stdDeviation="5" result="blur" />
@@ -818,12 +846,23 @@
         </linearGradient>
       </defs>
 
-      <!-- Outer decorative rings — layered bronze-gold rim with arcane ghost -->
-      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 20} fill="none" stroke="#5ad6ef"  stroke-width="1.0" opacity="0.05" />
-      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 14} fill="none" stroke="#e8b84b"  stroke-width="0.6" opacity="0.18" class="rune-ring-slow" />
-      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 8}  fill="none" stroke="#f0c040"  stroke-width="2.2" opacity="0.70" filter="url(#runeGlow)" class="rune-ring-main" />
-      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 4}  fill="none" stroke="#ffdf96"  stroke-width="1.0" opacity="0.40" />
-      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 1}  fill="none" stroke="#b88d2a"  stroke-width="0.5" opacity="0.22" />
+      {#if cursedTheme}
+        <!-- ── Cursed Wheel: jagged violet spike crown ringing the rim ── -->
+        <path d={CURSED_SPIKES_LONG} fill="url(#cursedSpikeGrad)" stroke="#1a0533" stroke-width="0.6"
+              filter="url(#cursedGlow)" class="cursed-spikes-spin" opacity="0.95" />
+        <path d={CURSED_SPIKES_SHORT} fill="#2a0a4d" stroke="#c084fc" stroke-width="0.4"
+              class="cursed-spikes-spin-rev" opacity="0.8" />
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 8} fill="none" stroke="#a855f7" stroke-width="2.6" opacity="0.85" filter="url(#cursedGlow)" class="rune-ring-main" />
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 3} fill="none" stroke="#e9d5ff" stroke-width="1.0" opacity="0.45" />
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 15} fill="none" stroke="#7c3aed" stroke-width="0.7" opacity="0.3" stroke-dasharray="3 7" class="rune-ring-slow" />
+      {:else}
+        <!-- Outer decorative rings — layered bronze-gold rim with arcane ghost -->
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 20} fill="none" stroke="#5ad6ef"  stroke-width="1.0" opacity="0.05" />
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 14} fill="none" stroke="#e8b84b"  stroke-width="0.6" opacity="0.18" class="rune-ring-slow" />
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 8}  fill="none" stroke="#f0c040"  stroke-width="2.2" opacity="0.70" filter="url(#runeGlow)" class="rune-ring-main" />
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 4}  fill="none" stroke="#ffdf96"  stroke-width="1.0" opacity="0.40" />
+        <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 1}  fill="none" stroke="#b88d2a"  stroke-width="0.5" opacity="0.22" />
+      {/if}
       <!-- Runic tick marks — 8 major (cardinal+diagonal) + 16 minor -->
       {#each Array.from({length: 24}, (_, i) => i) as i}
         {@const isMajor = i % 3 === 0}
@@ -846,7 +885,7 @@
           {@const segWeight = isDimmed ? 1 : (segments[i]?.weight ?? 1)}
           {@const lightness = isDimmed ? 12 : (17 + 33 * (segWeight / maxSegmentWeight))}
           {@const saturation = isDimmed ? 0 : (50 + 20 * (segWeight / maxSegmentWeight))}
-          {@const hue = categoryHue !== undefined ? categoryHue : (i * 47) % 360}
+          {@const hue = cursedTheme ? (272 + (i * 11) % 28) : (categoryHue !== undefined ? categoryHue : (i * 47) % 360)}
           {@const segTier = segments[i]?.tier}
           {@const gradId = !isDimmed && segTier ? (
             /^Cosmic[-+]?$/.test(segTier)      ? 'tg-cosmic' :
@@ -1101,6 +1140,21 @@
   .rune-ring-main { animation: runeRingPulse 3.5s ease-in-out infinite; }
   .rune-ring-slow  { animation: runeRingPulse 7s   ease-in-out infinite 2s; }
   .hub-jewel       { animation: hubJewelPulse 2.4s ease-in-out infinite; }
+  /* Cursed Wheel — counter-rotating violet spike crowns. */
+  .cursed-spikes-spin {
+    transform-box: view-box; transform-origin: 250px 250px;
+    animation: cursedSpin 20s linear infinite;
+  }
+  .cursed-spikes-spin-rev {
+    transform-box: view-box; transform-origin: 250px 250px;
+    animation: cursedSpin 28s linear infinite reverse;
+  }
+  @keyframes cursedSpin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .cursed-spikes-spin, .cursed-spikes-spin-rev { animation: none; }
+  }
+  :global([data-perf="low"]) .cursed-spikes-spin,
+  :global([data-perf="low"]) .cursed-spikes-spin-rev { animation: none; }
 
   /* Mobile / low-tier devices: kill the always-running cosmetic
      animations that contribute to constant GPU usage even when idle.

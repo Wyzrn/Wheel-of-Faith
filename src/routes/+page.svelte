@@ -3051,7 +3051,7 @@
               soundEnabled={settings.soundEnabled}
               effectsEnabled={settings.effectsEnabled}
               spinSpeedMultiplier={settings.spinSpeed}
-              cursedTheme={auth.user?.gamepasses?.includes('cursed_wheel') ?? false}
+              cursedTheme={(auth.user?.gamepasses?.includes('cursed_wheel') ?? false) && settings.cursedWheelEnabled}
               spinTrigger={spinTriggerKey}
               replayTrigger={replayTriggerKey}
               resolveLandingColors={resolveLandingColors}
