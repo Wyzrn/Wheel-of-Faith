@@ -59,7 +59,7 @@
 </script>
 
 <main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
-  <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14" style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(240,192,64,0.13); backdrop-filter: blur(16px);">
+  <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14" style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(240,192,64,0.13); backdrop-filter: blur(16px);">
     <a href="/character/{$page.params.id}" class="flex items-center gap-1 transition-all active:scale-95" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-decoration: none; padding: 4px 6px; border-radius: 6px;">
       <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span>
       <span>Back</span>
@@ -98,7 +98,7 @@
 
       <!-- Current spin card -->
       {#if currentSpin}
-        <div class="rounded-2xl px-6 py-6 mb-6 text-center" style="background: linear-gradient(180deg, #13121c, #0c0b14); border: 1px solid rgba(240,192,64,0.25); box-shadow: 0 0 40px rgba(0,0,0,0.8);">
+        <div class="rounded-2xl px-6 py-6 mb-6 text-center" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(240,192,64,0.25); box-shadow: 0 0 40px rgba(0,0,0,0.8);">
           <p class="font-mono text-xs tracking-widest uppercase mb-3" style="color: #9a907b;">{currentSpin.category ?? currentSpin.spinType ?? 'Spin'}</p>
           <p class="font-bold mb-2" style="font-family: 'Cinzel', serif; font-size: 1.3rem; color: #ffdf96; line-height: 1.3;">{currentSpin.resultLabel ?? currentSpin.label ?? currentSpin.result ?? '—'}</p>
           {#if currentSpin.tier}
@@ -113,11 +113,11 @@
       <!-- Controls -->
       <div class="flex items-center justify-center gap-3 mb-4">
         <button onclick={reset} class="px-3 py-2 rounded-lg font-mono text-xs" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #9a907b;">Reset</button>
-        <button onclick={prev} disabled={currentStep === 0} class="px-4 py-2.5 rounded-lg font-bold text-sm disabled:opacity-30" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee;">‹ Prev</button>
+        <button onclick={prev} disabled={currentStep === 0} class="px-4 py-2.5 rounded-lg font-bold text-sm disabled:opacity-30" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb;">‹ Prev</button>
         <button onclick={toggleAuto} class="px-4 py-2.5 rounded-lg font-bold text-sm" style="background: {autoPlay ? 'rgba(239,68,68,0.15)' : 'rgba(240,192,64,0.15)'}; border: 1px solid {autoPlay ? 'rgba(239,68,68,0.3)' : 'rgba(240,192,64,0.3)'}; color: {autoPlay ? '#f87171' : '#f0c040'};">
           {autoPlay ? '⏸ Pause' : '▶ Auto'}
         </button>
-        <button onclick={next} disabled={isLast} class="px-4 py-2.5 rounded-lg font-bold text-sm disabled:opacity-30" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee;">Next ›</button>
+        <button onclick={next} disabled={isLast} class="px-4 py-2.5 rounded-lg font-bold text-sm disabled:opacity-30" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb;">Next ›</button>
       </div>
 
       {#if isLast}

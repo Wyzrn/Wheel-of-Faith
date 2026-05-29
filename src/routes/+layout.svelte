@@ -13,12 +13,16 @@
   import { auth } from '$lib/stores/auth.svelte'
   import { presence } from '$lib/stores/presence.svelte'
   import { settings } from '$lib/settings.svelte'
-  import { setPerfTierOverride } from '$lib/perf'
+  import { setPerfTierOverride, getPerfTier } from '$lib/perf'
 
   let { children } = $props()
   let showSettings = $state(false)
 
-  onMount(() => { auth.init() })
+  onMount(() => {
+    auth.init()
+    // Expose perf tier to CSS so heavy ambient effects can be gated declaratively.
+    try { document.documentElement.dataset.perf = getPerfTier() } catch { /* ssr */ }
+  })
 
   // Keep the perf-tier override in sync with the High Quality settings
   // toggle. Default 'auto' = use device detection; 'high' = force every

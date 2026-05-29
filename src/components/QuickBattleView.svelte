@@ -159,7 +159,7 @@
   <button onclick={onBack}
     style="background: none; border: none; cursor: pointer; color: #9a907b; font-size: 20px; line-height: 1; padding: 8px;">←</button>
   <h2 class="font-bold flex-1 text-center truncate"
-    style="font-family: 'Cinzel', serif; font-size: 15px; color: #e4e1ee;">
+    style="font-family: 'Cinzel', serif; font-size: 15px; color: #e9dfeb;">
     {title}
   </h2>
   <div style="width: 52px;"></div>

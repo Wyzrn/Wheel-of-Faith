@@ -1421,7 +1421,7 @@
     text-transform: uppercase;
     cursor: pointer;
   }
-  .ba-target-cancel:hover { color: #e4e1ee; background: rgba(255,255,255,0.08); }
+  .ba-target-cancel:hover { color: #e9dfeb; background: rgba(255,255,255,0.08); }
 
   /* Instant-Battle Skip button (Skip ⏭ pill — top-left twin of the toggle) */
   .ba-skip-btn {

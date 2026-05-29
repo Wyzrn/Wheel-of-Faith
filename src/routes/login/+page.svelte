@@ -46,7 +46,7 @@
             autocomplete="username"
             required
             class="carved-groove w-full rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
-            style="color: #e4e1ee; font-family: 'JetBrains Mono', monospace;"
+            style="color: #e9dfeb; font-family: 'JetBrains Mono', monospace;"
             placeholder="your_username"
           />
         </div>
@@ -59,7 +59,7 @@
               type="email"
               autocomplete="email"
               class="carved-groove w-full rounded-lg px-3 py-2.5 text-sm outline-none"
-              style="color: #e4e1ee; font-family: 'JetBrains Mono', monospace;"
+              style="color: #e9dfeb; font-family: 'JetBrains Mono', monospace;"
               placeholder="you@example.com"
             />
           </div>
@@ -74,7 +74,7 @@
             required
             minlength={6}
             class="carved-groove w-full rounded-lg px-3 py-2.5 text-sm outline-none"
-            style="color: #e4e1ee; font-family: 'JetBrains Mono', monospace;"
+            style="color: #e9dfeb; font-family: 'JetBrains Mono', monospace;"
             placeholder="••••••••"
           />
         </div>

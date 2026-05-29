@@ -15,7 +15,7 @@
 </script>
 
 {#if battle}
-  <div class="fixed inset-0 z-[70]" style="background: #07070d;">
+  <div class="fixed inset-0 z-[70]" style="background: #16121a;">
     <QuickBattleView
       team1={[{ results: battle.you.results, name: battle.you.name }]}
       team2={[{ results: battle.opponent.results, name: battle.opponent.name }]}

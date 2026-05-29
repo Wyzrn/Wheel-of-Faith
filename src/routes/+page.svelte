@@ -2549,7 +2549,7 @@
         <div class="flex gap-2">
           <a href="/characters" style="text-decoration: none; flex: 1;">
             <div class="metal-stamp-slate w-full py-3 rounded-lg relative text-center cursor-pointer"
-              style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #e4e1ee;">
+              style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #e9dfeb;">
               <div class="l-bracket" style="color: rgba(200,192,220,0.25);"></div>
               Characters
             </div>
@@ -2575,7 +2575,7 @@
           <a href="/challenges" style="text-decoration: none; flex: 1;">
             <div class="metal-stamp-teal w-full py-3 rounded-lg relative text-center cursor-pointer"
               style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.13em; text-transform: uppercase; font-weight: 700; color: #042f2e;">
-              <div class="l-bracket" style="color: rgba(72,200,224,0.3);"></div>
+              <div class="l-bracket" style="color: rgba(90,214,239,0.3);"></div>
               Challenges
             </div>
           </a>
@@ -2708,7 +2708,7 @@
           <span class="material-symbols-outlined block text-4xl mb-3" style="color: #f0c040; font-variation-settings: 'FILL' 1;">history</span>
           <p style="font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 700; color: #ffdf96; margin-bottom: 6px; text-shadow: 0 0 12px rgba(240,192,64,0.3);">Saved Session Found</p>
           <p class="text-sm mb-6" style="color: #9a907b;">
-            Last: <span style="color: #e4e1ee;">{currentSession.completedSpins.at(-1)?.resultLabel ?? ''}</span>
+            Last: <span style="color: #e9dfeb;">{currentSession.completedSpins.at(-1)?.resultLabel ?? ''}</span>
             &nbsp;·&nbsp;
             {currentSession.completedSpins.length} spin{currentSession.completedSpins.length === 1 ? '' : 's'} done
           </p>
@@ -2781,7 +2781,7 @@
               placeholder="Enter a name…"
               maxlength="40"
               class="flex-1 carved-groove rounded-lg px-4 py-3 text-center text-lg outline-none transition-all"
-              style="border: 1px solid rgba(240,192,64,0.25); color: #e4e1ee; font-family: 'Cinzel', serif; caret-color: #f0c040;"
+              style="border: 1px solid rgba(240,192,64,0.25); color: #e9dfeb; font-family: 'Cinzel', serif; caret-color: #f0c040;"
               onkeydown={(e) => e.key === 'Enter' && handleNameSubmit()}
             />
             {#if !rivalMode}
@@ -2943,7 +2943,7 @@
               <div class="flex-1 min-w-0">
                 <p class="text-xs truncate mb-0.5"
                   style="font-family: 'JetBrains Mono', monospace; color: #9a907b; font-size: 10px;">{result.category}</p>
-                <p class="text-xs truncate" style="color: #e4e1ee; line-height: 1.3;">{result.resultLabel}{result.category === 'archetype' && archetypeTypeFor(result.resultLabel) ? ` · ${archetypeTypeFor(result.resultLabel)}` : ''}</p>
+                <p class="text-xs truncate" style="color: #e9dfeb; line-height: 1.3;">{result.resultLabel}{result.category === 'archetype' && archetypeTypeFor(result.resultLabel) ? ` · ${archetypeTypeFor(result.resultLabel)}` : ''}</p>
               </div>
               {#if tier}
                 <span class="text-xs font-bold shrink-0 self-center px-1.5 py-0.5 rounded"

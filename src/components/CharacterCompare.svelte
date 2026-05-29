@@ -67,13 +67,13 @@
 
     <!-- Headers row: two character cards -->
     <div class="grid grid-cols-2 gap-3 px-5 pt-5">
-      <div class="rounded-xl px-4 py-3 text-center" style="background: linear-gradient(160deg, rgba(125,211,252,0.10), #0c0b14 80%); border: 1px solid rgba(125,211,252,0.32);">
+      <div class="rounded-xl px-4 py-3 text-center" style="background: linear-gradient(160deg, rgba(125,211,252,0.10), #1e1a22 80%); border: 1px solid rgba(125,211,252,0.32);">
         <p class="font-bold text-base truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{left.name}</p>
         <p class="text-xs mt-0.5" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">{left.race} · {left.archetype}</p>
         <div class="mt-2 flex justify-center"><TierBadge grade={left.overallTier} interactive={false} /></div>
         <p class="font-mono text-xs mt-2 font-bold" style="color: #f0c040;">PWR {formatPower(lPwr)}</p>
       </div>
-      <div class="rounded-xl px-4 py-3 text-center" style="background: linear-gradient(200deg, rgba(249,168,212,0.10), #0c0b14 80%); border: 1px solid rgba(249,168,212,0.32);">
+      <div class="rounded-xl px-4 py-3 text-center" style="background: linear-gradient(200deg, rgba(249,168,212,0.10), #1e1a22 80%); border: 1px solid rgba(249,168,212,0.32);">
         <p class="font-bold text-base truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{right.name}</p>
         <p class="text-xs mt-0.5" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">{right.race} · {right.archetype}</p>
         <div class="mt-2 flex justify-center"><TierBadge grade={right.overallTier} interactive={false} /></div>

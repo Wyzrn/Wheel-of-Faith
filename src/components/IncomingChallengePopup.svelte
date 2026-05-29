@@ -77,7 +77,7 @@
                 <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
                   style="background: rgba(249,168,212,0.15); color: #f9a8d4; font-family: 'Cinzel', serif;">{char.overallTier}</div>
                 <div class="flex-1 min-w-0">
-                  <p class="font-semibold truncate text-sm" style="font-family: 'Cinzel', serif; color: #e4e1ee;">{char.name}</p>
+                  <p class="font-semibold truncate text-sm" style="font-family: 'Cinzel', serif; color: #e9dfeb;">{char.name}</p>
                   <p class="text-xs truncate" style="font-family: 'JetBrains Mono', monospace; color: #6b7280;">{char.race} · {char.archetype}</p>
                 </div>
               </button>

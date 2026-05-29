@@ -346,7 +346,7 @@
               <span class="material-symbols-outlined" style="color: #9a907b; font-size: 20px;">group</span>
             </div>
             <div>
-              <p class="font-semibold text-sm" style="color: #e4e1ee; font-family: 'Cinzel', serif;">Pass &amp; Play</p>
+              <p class="font-semibold text-sm" style="color: #e9dfeb; font-family: 'Cinzel', serif;">Pass &amp; Play</p>
               <p class="text-xs mt-0.5" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Two players, one device — take turns spinning</p>
             </div>
           </div>

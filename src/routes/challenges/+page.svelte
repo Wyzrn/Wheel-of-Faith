@@ -72,7 +72,7 @@
 </script>
 
 <main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
-  <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14" style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(240,192,64,0.2); backdrop-filter: blur(16px);">
+  <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14" style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(240,192,64,0.2); backdrop-filter: blur(16px);">
     <a href="/" class="flex items-center gap-1 transition-all active:scale-95" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-decoration: none; padding: 4px 6px; border-radius: 6px;">
       <span class="material-symbols-outlined" style="font-size: 15px;">home</span>
       <span>Menu</span>
@@ -125,7 +125,7 @@
             ? 'linear-gradient(135deg, rgba(52,211,153,0.08), rgba(52,211,153,0.03))'
             : isReady
               ? 'linear-gradient(135deg, rgba(240,192,64,0.10), rgba(240,192,64,0.03))'
-              : 'linear-gradient(180deg, #13121c, #0c0b14)'}
+              : 'linear-gradient(180deg, #13121c, #1e1a22)'}
           {@const showProgress = ch.threshold > 1 && !isClaimed}
           {@const pct = ch.threshold > 0 ? Math.min(100, Math.round((ch.progress / ch.threshold) * 100)) : 0}
           <div class="rounded-2xl px-5 py-4" style="background: {bg}; border: 1px solid {accent}33;">

@@ -82,7 +82,7 @@
 <main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
 
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"
-    style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(167,139,250,0.18); backdrop-filter: blur(16px);"
+    style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(167,139,250,0.18); backdrop-filter: blur(16px);"
   >
     <div class="flex items-center" style="min-width: 80px;">
       <a href="/friends" class="flex items-center gap-1 transition-all active:scale-95"
@@ -116,7 +116,7 @@
           {data.user.username[0].toUpperCase()}
         </div>
         <div class="text-center">
-          <h1 style="font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 700; color: #e4e1ee;">{data.user.username}</h1>
+          <h1 style="font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 700; color: #e9dfeb;">{data.user.username}</h1>
           <p class="text-xs mt-0.5" style="font-family: 'JetBrains Mono', monospace; color: #7c6fa0;">{rank(data.user.rivalsWins)}</p>
         </div>
       </div>
@@ -145,7 +145,7 @@
             {#each data.characters as char}
               {@const tierColor = TIER_COLORS[char.overall_tier] ?? '#6b7280'}
               <a href="/character/{char.shareId}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:brightness-110"
-                style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(167,139,250,0.1); text-decoration: none;">
+                style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(167,139,250,0.1); text-decoration: none;">
                 <div class="shrink-0 w-12 h-10 rounded-lg flex items-center justify-center"
                   style="background: {tierColor}18; border: 1px solid {tierColor}28;">
                   <span class="text-xs font-black" style="font-family: 'Cinzel', serif; color: {tierColor};">{char.overall_tier}</span>

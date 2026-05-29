@@ -353,7 +353,7 @@
     isStar: boolean
   }
 
-  const SPARKLE_COLORS = ['#f0c040', '#ffdf96', '#ffffff', '#ffd700', '#ff9f43', '#fff0a0', '#48c8e0', '#b47aec', '#e8b84b']
+  const SPARKLE_COLORS = ['#f0c040', '#ffdf96', '#ffffff', '#ffd700', '#ff9f43', '#fff0a0', '#5ad6ef', '#b47aec', '#e8b84b']
   let particles: Particle[] = []
   let rafId: number | null = null
   let lastFrameTime = 0
@@ -703,7 +703,7 @@
   <!-- Shake wrapper — GSAP applies translate() here during spin -->
   <div bind:this={shakeEl} class="flex justify-center w-full">
   <!-- Wheel + canvas wrapper — CSS Grid overlay so canvas and SVG share identical pixel bounds -->
-  <div style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${cursedTheme ? 'drop-shadow(0 0 32px rgba(139,92,246,0.5)) drop-shadow(0 0 16px rgba(100,0,200,0.4))' : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(72,200,224,0.15))'}`}; {cursedTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
+  <div style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${cursedTheme ? 'drop-shadow(0 0 32px rgba(139,92,246,0.5)) drop-shadow(0 0 16px rgba(100,0,200,0.4))' : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(90,214,239,0.15))'}`}; {cursedTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
     <svg
       bind:this={svgEl}
       viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
@@ -734,7 +734,7 @@
         <!-- Center gem: arcane teal jewel -->
         <radialGradient id="jewelGrad" cx="38%" cy="32%" r="58%">
           <stop offset="0%"   stop-color="#b8f0ff" />
-          <stop offset="40%"  stop-color="#48c8e0" />
+          <stop offset="40%"  stop-color="#5ad6ef" />
           <stop offset="100%" stop-color="#0e4858" />
         </radialGradient>
         <!-- Vignette: edge darkening on wheel face -->
@@ -815,7 +815,7 @@
       </defs>
 
       <!-- Outer decorative rings — layered bronze-gold rim with arcane ghost -->
-      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 20} fill="none" stroke="#48c8e0"  stroke-width="1.0" opacity="0.05" />
+      <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 20} fill="none" stroke="#5ad6ef"  stroke-width="1.0" opacity="0.05" />
       <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 14} fill="none" stroke="#e8b84b"  stroke-width="0.6" opacity="0.18" class="rune-ring-slow" />
       <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 8}  fill="none" stroke="#f0c040"  stroke-width="2.2" opacity="0.70" filter="url(#runeGlow)" class="rune-ring-main" />
       <circle cx={CENTER} cy={CENTER} r={WHEEL_RADIUS + 4}  fill="none" stroke="#ffdf96"  stroke-width="1.0" opacity="0.40" />
@@ -884,7 +884,7 @@
             <path
               d={slicePath(CENTER, CENTER, WHEEL_RADIUS, seg.startDeg, seg.endDeg)}
               fill="none"
-              stroke="#48c8e0"
+              stroke="#5ad6ef"
               stroke-width="1.0"
               opacity="0.45"
             />
@@ -910,7 +910,7 @@
 
       <!-- Hub decoration (non-rotating) — deep stone boss with arcane jewel -->
       <!-- Outer ghost glow -->
-      <circle cx={CENTER} cy={CENTER} r="46" fill="none" stroke="#48c8e0" stroke-width="1.2" opacity="0.07" filter="url(#hubGlow)" />
+      <circle cx={CENTER} cy={CENTER} r="46" fill="none" stroke="#5ad6ef" stroke-width="1.2" opacity="0.07" filter="url(#hubGlow)" />
       <!-- Hub stone body -->
       <circle cx={CENTER} cy={CENTER} r="42" fill="url(#hubGrad)" />
       <!-- Outer hub ring (animated gold) -->
@@ -974,10 +974,10 @@
       />
       <!-- Guard end gems (arcane teal) -->
       <circle cx={CENTER - PTR_GW + 4.5} cy={(PTR_GUARD_Y + PTR_BASE_Y) / 2} r={2.8}
-        fill="#48c8e0" stroke="rgba(200,255,255,0.35)" stroke-width="0.5"
+        fill="#5ad6ef" stroke="rgba(200,255,255,0.35)" stroke-width="0.5"
       />
       <circle cx={CENTER + PTR_GW - 4.5} cy={(PTR_GUARD_Y + PTR_BASE_Y) / 2} r={2.8}
-        fill="#48c8e0" stroke="rgba(200,255,255,0.35)" stroke-width="0.5"
+        fill="#5ad6ef" stroke="rgba(200,255,255,0.35)" stroke-width="0.5"
       />
       <!-- Center guard gem (gold) -->
       <circle cx={CENTER} cy={(PTR_GUARD_Y + PTR_BASE_Y) / 2} r={3.5}

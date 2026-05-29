@@ -557,7 +557,7 @@
   }
   .tut-collapse-btn:hover, .tut-skip-btn:hover {
     background: rgba(255, 255, 255, 0.08);
-    color: #e4e1ee;
+    color: #e9dfeb;
   }
   .tut-skip-btn { margin-left: 4px; }
 

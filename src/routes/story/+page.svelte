@@ -1890,7 +1890,7 @@
           { key: 'all',     label: 'All',     color: '#f0c040' },
           { key: 'Combat',  label: '⚔ Combat',  color: '#f87171' },
           { key: 'Magic',   label: '✨ Magic',  color: '#a78bfa' },
-          { key: 'Stealth', label: '◐ Stealth', color: '#48c8e0' },
+          { key: 'Stealth', label: '◐ Stealth', color: '#5ad6ef' },
           { key: 'Support', label: '✚ Support', color: '#34d399' },
           { key: 'Chaos',   label: '◈ Chaos',   color: '#fb923c' },
         ] as f}

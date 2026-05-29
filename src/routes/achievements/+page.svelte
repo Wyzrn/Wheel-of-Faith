@@ -139,7 +139,7 @@
         {@const met = a.condition.met}
         <div class="rounded-xl px-4 py-3" style="background: {met
           ? `linear-gradient(135deg, ${color}14, ${color}04)`
-          : 'linear-gradient(180deg, #13121c, #0c0b14)'};
+          : 'linear-gradient(180deg, #13121c, #1e1a22)'};
           border: 1px solid {met ? `${color}55` : 'rgba(78,70,53,0.3)'};
           box-shadow: {met ? `0 0 12px ${color}20` : 'none'};
           opacity: {met ? 1 : 0.7};">

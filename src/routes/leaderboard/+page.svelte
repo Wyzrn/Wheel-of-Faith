@@ -57,7 +57,7 @@
 
   <!-- Nav -->
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"
-    style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(240,192,64,0.2); backdrop-filter: blur(16px);"
+    style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(240,192,64,0.2); backdrop-filter: blur(16px);"
   >
     <div class="flex items-center" style="min-width: 80px;">
       <a href="/" class="flex items-center gap-1 transition-all active:scale-95"
@@ -85,7 +85,7 @@
     <!-- Tab switcher -->
     <div class="flex gap-2 mb-6">
       <button onclick={() => activeTab = 'rivals'} class="flex-1 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-widest transition-all" style="background: {activeTab === 'rivals' ? 'rgba(240,192,64,0.15)' : 'rgba(255,255,255,0.04)'}; border: 1px solid {activeTab === 'rivals' ? 'rgba(240,192,64,0.35)' : 'rgba(255,255,255,0.06)'}; color: {activeTab === 'rivals' ? '#f0c040' : '#9a907b'};">⚔ Rivals</button>
-      <button onclick={() => { activeTab = 'endless'; loadEndless() }} class="flex-1 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-widest transition-all" style="background: {activeTab === 'endless' ? 'rgba(72,200,224,0.15)' : 'rgba(255,255,255,0.04)'}; border: 1px solid {activeTab === 'endless' ? 'rgba(72,200,224,0.35)' : 'rgba(255,255,255,0.06)'}; color: {activeTab === 'endless' ? '#48c8e0' : '#9a907b'};">♾ Endless</button>
+      <button onclick={() => { activeTab = 'endless'; loadEndless() }} class="flex-1 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-widest transition-all" style="background: {activeTab === 'endless' ? 'rgba(90,214,239,0.15)' : 'rgba(255,255,255,0.04)'}; border: 1px solid {activeTab === 'endless' ? 'rgba(90,214,239,0.35)' : 'rgba(255,255,255,0.06)'}; color: {activeTab === 'endless' ? '#5ad6ef' : '#9a907b'};">♾ Endless</button>
     </div>
 
     {#if activeTab === 'endless'}
@@ -100,17 +100,17 @@
         <div class="flex flex-col gap-2">
           {#each endlessEntries as entry, i}
             {@const isMe = auth.user?.username === entry.username}
-            <a href="/users/{entry.username}" class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.99]" style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(72,200,224,0.06)' : 'linear-gradient(180deg, #161520, #0c0b14)'}; border: 1px solid {isMe ? 'rgba(72,200,224,0.3)' : 'rgba(72,200,224,0.08)'};" title="View {entry.username}'s profile">
+            <a href="/users/{entry.username}" class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.99]" style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(90,214,239,0.06)' : 'linear-gradient(180deg, #2d2831, #1e1a22)'}; border: 1px solid {isMe ? 'rgba(90,214,239,0.3)' : 'rgba(90,214,239,0.08)'};" title="View {entry.username}'s profile">
               <div class="shrink-0 w-8 flex items-center justify-center">
                 {#if i < 3}<span style="font-size: 1.2rem;">{['🥇','🥈','🥉'][i]}</span>{:else}<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #4e4635; font-weight: 700;">#{i+1}</span>{/if}
               </div>
-              <div class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm" style="background: rgba(72,200,224,0.12); color: #48c8e0; font-family: 'Cinzel', serif;">{entry.username?.[0]?.toUpperCase() ?? '?'}</div>
+              <div class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm" style="background: rgba(90,214,239,0.12); color: #5ad6ef; font-family: 'Cinzel', serif;">{entry.username?.[0]?.toUpperCase() ?? '?'}</div>
               <div class="flex-1 min-w-0">
-                <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: {isMe ? '#48c8e0' : '#e4e1ee'}; font-size: 0.9rem;">{entry.username}</p>
+                <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: {isMe ? '#5ad6ef' : '#e9dfeb'}; font-size: 0.9rem;">{entry.username}</p>
                 <p class="text-xs mt-0.5 truncate" style="font-family: 'JetBrains Mono', monospace; color: #6b7280;">{entry.characterName} · {entry.race} · {entry.tier}</p>
               </div>
               <div class="shrink-0 text-right">
-                <p class="font-black" style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: #48c8e0;">{entry.wave}</p>
+                <p class="font-black" style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: #5ad6ef;">{entry.wave}</p>
                 <p class="font-mono text-xs" style="color: #4e4635;">waves</p>
               </div>
             </a>
@@ -172,7 +172,7 @@
           <a
             href="/users/{entry.username}"
             class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.99]"
-            style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(240,192,64,0.06)' : 'linear-gradient(180deg, #161520 0%, #0c0b14 100%)'}; border: 1px solid {isMe ? 'rgba(240,192,64,0.3)' : 'rgba(167,139,250,0.1)'};"
+            style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(240,192,64,0.06)' : 'linear-gradient(180deg, #2d2831 0%, #1e1a22 100%)'}; border: 1px solid {isMe ? 'rgba(240,192,64,0.3)' : 'rgba(167,139,250,0.1)'};"
             title="View {entry.username}'s profile"
           >
             <!-- Rank badge -->
@@ -193,7 +193,7 @@
             <!-- Info -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
-                <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: {isMe ? '#fde047' : '#e4e1ee'}; font-size: 0.9rem;">{entry.username}</p>
+                <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: {isMe ? '#fde047' : '#e9dfeb'}; font-size: 0.9rem;">{entry.username}</p>
                 {#if isMe}
                   <span class="text-xs px-1.5 py-0.5 rounded" style="background: rgba(240,192,64,0.12); color: #f0c040; font-family: 'JetBrains Mono', monospace; font-size: 9px;">YOU</span>
                 {/if}

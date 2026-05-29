@@ -4,7 +4,7 @@
 
 <main
   class="min-h-screen flex flex-col items-center justify-center px-6 text-center"
-  style="background: #07070d; color: #e4e1ee;"
+  style="background: #16121a; color: #e9dfeb;"
 >
   <!-- Decorative icon -->
   <div class="mb-6" style="color: #f0c040; opacity: 0.6;">

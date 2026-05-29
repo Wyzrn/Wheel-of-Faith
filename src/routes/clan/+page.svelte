@@ -283,7 +283,7 @@
   const ROLE_META: Record<ClanRole, { label: string; color: string; icon: string }> = {
     leader:   { label: 'Leader',    color: '#f0c040', icon: 'workspace_premium' },
     coLeader: { label: 'Co-Leader', color: '#a78bfa', icon: 'military_tech' },
-    elder:    { label: 'Elder',     color: '#48c8e0', icon: 'shield' },
+    elder:    { label: 'Elder',     color: '#5ad6ef', icon: 'shield' },
     member:   { label: 'Member',    color: '#9a907b', icon: 'person' },
     none:     { label: '—',         color: '#4e4635', icon: 'person' },
   }
@@ -306,7 +306,7 @@
 </script>
 
 <main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
-  <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14" style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(240,192,64,0.2); backdrop-filter: blur(16px);">
+  <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14" style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(240,192,64,0.2); backdrop-filter: blur(16px);">
     <a href="/" class="flex items-center gap-1 transition-all active:scale-95" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-decoration: none; padding: 4px 6px; border-radius: 6px;">
       <span class="material-symbols-outlined" style="font-size: 15px;">home</span>
       <span>Menu</span>
@@ -325,7 +325,7 @@
     <!-- Tab bar -->
     <div class="flex gap-1.5 mb-5">
       <button onclick={() => { view = 'mine'; loadMyClan() }} data-fx="big" class="flex-1 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-widest" style="background: {view === 'mine' ? 'rgba(240,192,64,0.15)' : 'rgba(255,255,255,0.04)'}; border: 1px solid {view === 'mine' ? 'rgba(240,192,64,0.35)' : 'rgba(255,255,255,0.06)'}; color: {view === 'mine' ? '#f0c040' : '#9a907b'};">My Clan</button>
-      <button onclick={browseClans} data-fx="big" class="flex-1 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-widest" style="background: {view === 'browse' ? 'rgba(72,200,224,0.15)' : 'rgba(255,255,255,0.04)'}; border: 1px solid {view === 'browse' ? 'rgba(72,200,224,0.35)' : 'rgba(255,255,255,0.06)'}; color: {view === 'browse' ? '#48c8e0' : '#9a907b'};">Browse</button>
+      <button onclick={browseClans} data-fx="big" class="flex-1 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-widest" style="background: {view === 'browse' ? 'rgba(90,214,239,0.15)' : 'rgba(255,255,255,0.04)'}; border: 1px solid {view === 'browse' ? 'rgba(90,214,239,0.35)' : 'rgba(255,255,255,0.06)'}; color: {view === 'browse' ? '#5ad6ef' : '#9a907b'};">Browse</button>
       <button onclick={loadLeaderboard} data-fx="big" class="flex-1 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-widest" style="background: {view === 'leaderboard' ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.04)'}; border: 1px solid {view === 'leaderboard' ? 'rgba(167,139,250,0.35)' : 'rgba(255,255,255,0.06)'}; color: {view === 'leaderboard' ? '#a78bfa' : '#9a907b'};">Top</button>
     </div>
 
@@ -387,7 +387,7 @@
               </button>
             {/if}
             {#if canManageMembers && myClan.joinRequests.length > 0}
-              <button onclick={() => view = 'requests'} data-fx="big" class="text-xs px-3 py-1.5 rounded-lg font-mono font-bold relative" style="background: rgba(72,200,224,0.10); border: 1px solid rgba(72,200,224,0.30); color: #48c8e0;">
+              <button onclick={() => view = 'requests'} data-fx="big" class="text-xs px-3 py-1.5 rounded-lg font-mono font-bold relative" style="background: rgba(90,214,239,0.10); border: 1px solid rgba(90,214,239,0.30); color: #5ad6ef;">
                 <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: -2px;">mail</span>
                 Requests
                 <span class="absolute -top-1 -right-1 px-1.5 rounded-full text-[9px] font-bold" style="background: #f0c040; color: #1a0e00;">{myClan.joinRequests.length}</span>
@@ -407,7 +407,7 @@
                          decisions before challenging). -->
                     <a href={`/users/${encodeURIComponent(m.username)}`}
                       class="font-mono text-xs truncate"
-                      style="color: #e4e1ee; text-decoration: none;"
+                      style="color: #e9dfeb; text-decoration: none;"
                       onclick={(e) => e.stopPropagation()}>{m.username}</a>
                     <span class="font-mono text-[9px] px-1 rounded" style="background: {meta.color}1f; color: {meta.color};">{meta.label}</span>
                   </div>
@@ -476,13 +476,13 @@
           <p style="font-family: 'Cinzel', serif; color: #9a907b; margin-bottom: 8px;">You are not in a clan.</p>
           <div class="flex gap-3 justify-center mt-4">
             <button onclick={() => view = 'create'} data-fx="big" class="px-5 py-2.5 rounded-lg font-bold text-sm" style="font-family: 'Cinzel', serif; background: rgba(240,192,64,0.12); border: 1px solid rgba(240,192,64,0.3); color: #f0c040;">Create Clan</button>
-            <button onclick={browseClans} data-fx="big" class="px-5 py-2.5 rounded-lg font-bold text-sm" style="font-family: 'Cinzel', serif; background: rgba(72,200,224,0.08); border: 1px solid rgba(72,200,224,0.2); color: #48c8e0;">Browse Clans</button>
+            <button onclick={browseClans} data-fx="big" class="px-5 py-2.5 rounded-lg font-bold text-sm" style="font-family: 'Cinzel', serif; background: rgba(90,214,239,0.08); border: 1px solid rgba(90,214,239,0.2); color: #5ad6ef;">Browse Clans</button>
           </div>
         </div>
       {/if}
 
     {:else if view === 'create'}
-      <div class="rounded-2xl px-5 py-5" style="background: linear-gradient(180deg, #13121c, #0c0b14); border: 1px solid rgba(78,70,53,0.35);">
+      <div class="rounded-2xl px-5 py-5" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(78,70,53,0.35);">
         <h2 class="mb-5" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Found a Clan</h2>
         {#if createError}
           <p class="text-xs mb-3 px-3 py-2 rounded-lg" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #f87171;">{createError}</p>
@@ -490,12 +490,12 @@
         <div class="flex flex-col gap-3">
           <div>
             <label for="cl-name" class="font-mono text-xs block mb-1" style="color: #9a907b;">Clan Name (3–32 chars)</label>
-            <input id="cl-name" bind:value={createName} maxlength={32} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none;" placeholder="The Chosen Few" />
+            <input id="cl-name" bind:value={createName} maxlength={32} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none;" placeholder="The Chosen Few" />
           </div>
           <div class="flex gap-3">
             <div class="flex-1">
               <label for="cl-tag" class="font-mono text-xs block mb-1" style="color: #9a907b;">Tag (2–5 chars)</label>
-              <input id="cl-tag" bind:value={createTag} maxlength={5} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm uppercase" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none;" placeholder="TCF" />
+              <input id="cl-tag" bind:value={createTag} maxlength={5} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm uppercase" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none;" placeholder="TCF" />
             </div>
             <div>
               <label for="cl-badge" class="font-mono text-xs block mb-1" style="color: #9a907b;">Badge</label>
@@ -510,16 +510,16 @@
           </div>
           <div>
             <label for="cl-motd" class="font-mono text-xs block mb-1" style="color: #9a907b;">Motto / MOTD (optional, 80 chars)</label>
-            <input id="cl-motd" bind:value={createMotd} maxlength={80} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none;" placeholder="We spin. We win." />
+            <input id="cl-motd" bind:value={createMotd} maxlength={80} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none;" placeholder="We spin. We win." />
           </div>
           <div>
             <label for="cl-desc" class="font-mono text-xs block mb-1" style="color: #9a907b;">Description (optional, 200 chars)</label>
-            <textarea id="cl-desc" bind:value={createDesc} maxlength={200} rows={2} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none; resize: none;" placeholder="Long-form clan blurb…"></textarea>
+            <textarea id="cl-desc" bind:value={createDesc} maxlength={200} rows={2} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none; resize: none;" placeholder="Long-form clan blurb…"></textarea>
           </div>
           <div class="flex gap-3">
             <div class="flex-1">
               <label for="cl-jt" class="font-mono text-xs block mb-1" style="color: #9a907b;">Join Type</label>
-              <select id="cl-jt" bind:value={createJoinType} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none;">
+              <select id="cl-jt" bind:value={createJoinType} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none;">
                 <option value="open">Open — anyone qualified can join</option>
                 <option value="invite">Invite Only — approve requests</option>
                 <option value="closed">Closed — no new members</option>
@@ -527,7 +527,7 @@
             </div>
             <div>
               <label for="cl-mw" class="font-mono text-xs block mb-1" style="color: #9a907b;">Min Wins</label>
-              <input id="cl-mw" type="number" bind:value={createMinWins} min={0} max={9999} class="w-24 px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none;" />
+              <input id="cl-mw" type="number" bind:value={createMinWins} min={0} max={9999} class="w-24 px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none;" />
             </div>
           </div>
           <div class="flex gap-3 mt-2">
@@ -541,8 +541,8 @@
       <!-- Filters -->
       <div class="flex flex-col gap-2 mb-4">
         <div class="flex gap-2">
-          <input bind:value={search} onkeydown={(e) => e.key === 'Enter' && browseClans()} class="flex-1 px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none;" placeholder="Search clans..." />
-          <button onclick={browseClans} data-fx="big" class="px-4 py-2.5 rounded-lg font-mono text-xs font-bold" style="background: rgba(72,200,224,0.12); border: 1px solid rgba(72,200,224,0.25); color: #48c8e0;">Search</button>
+          <input bind:value={search} onkeydown={(e) => e.key === 'Enter' && browseClans()} class="flex-1 px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none;" placeholder="Search clans..." />
+          <button onclick={browseClans} data-fx="big" class="px-4 py-2.5 rounded-lg font-mono text-xs font-bold" style="background: rgba(90,214,239,0.12); border: 1px solid rgba(90,214,239,0.25); color: #5ad6ef;">Search</button>
         </div>
         <div class="flex gap-1.5">
           {#each ['any', 'open', 'invite', 'closed'] as jt}
@@ -563,12 +563,12 @@
                the public clan page so the click intent stays predictable. -->
           <a href={`/clans/${clan._id}`} data-fx="big"
             class="rounded-xl px-3 py-3 flex items-center gap-3 transition-all active:scale-98"
-            style="background: linear-gradient(180deg, #13121c, #0c0b14); border: 1px solid rgba(78,70,53,0.3); text-decoration: none;">
+            style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(78,70,53,0.3); text-decoration: none;">
             <div class="shrink-0 flex items-center justify-center rounded-lg" style="width: 38px; height: 38px; background: linear-gradient(135deg, rgba(240,192,64,0.10), rgba(240,192,64,0.03)); border: 1px solid rgba(240,192,64,0.18); font-size: 18px;">{clan.badge || '⚔'}</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="font-mono font-black text-[10px] px-1.5 py-0.5 rounded" style="background: rgba(240,192,64,0.10); border: 1px solid rgba(240,192,64,0.20); color: #f0c040;">[{clan.tag}]</span>
-                <p class="font-semibold text-sm truncate" style="font-family: 'Cinzel', serif; color: #e4e1ee;">{clan.name}</p>
+                <p class="font-semibold text-sm truncate" style="font-family: 'Cinzel', serif; color: #e9dfeb;">{clan.name}</p>
               </div>
               <div class="flex gap-2 items-center mt-1 flex-wrap">
                 <span class="font-mono text-[10px]" style="color: #4e4635;">Lv {clan.level} · {clan.memberCount}/{clan.maxMembers}</span>
@@ -591,7 +591,7 @@
           <!-- Leaderboard tile → public clan page. -->
           <a href={`/clans/${clan._id}`} data-fx="big"
             class="flex items-center gap-3 rounded-xl px-3 py-3 transition-all active:scale-98"
-            style="background: linear-gradient(180deg, #161520, #0c0b14); border: 1px solid rgba(167,139,250,0.1); text-decoration: none;">
+            style="background: linear-gradient(180deg, #2d2831, #1e1a22); border: 1px solid rgba(167,139,250,0.1); text-decoration: none;">
             <div class="shrink-0 w-8 flex items-center justify-center">
               {#if i < 3}<span style="font-size: 1.2rem;">{['🥇','🥈','🥉'][i]}</span>{:else}<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #4e4635; font-weight: 700;">#{i+1}</span>{/if}
             </div>
@@ -599,7 +599,7 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <span class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded" style="background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.2); color: #a78bfa;">[{clan.tag}]</span>
-                <p class="font-semibold text-sm truncate" style="font-family: 'Cinzel', serif; color: #e4e1ee;">{clan.name}</p>
+                <p class="font-semibold text-sm truncate" style="font-family: 'Cinzel', serif; color: #e9dfeb;">{clan.name}</p>
               </div>
               <p class="font-mono text-[10px] mt-0.5" style="color: #4e4635;">Lv {clan.level} · {clan.memberCount} members</p>
             </div>
@@ -621,7 +621,7 @@
         <h2 style="font-family: 'Cinzel', serif; font-size: 1.05rem; color: #ffdf96;">[{myClan.tag}] Chat</h2>
         {#if chatLoading}<span class="font-mono text-[10px]" style="color: #4e4635;">syncing…</span>{/if}
       </div>
-      <div bind:this={chatEl} class="rounded-xl px-4 py-3 mb-3" style="background: #0c0b14; border: 1px solid rgba(52,211,153,0.18); height: 52vh; max-height: 480px; overflow-y: auto; box-shadow: inset 0 2px 12px rgba(0,0,0,0.55);">
+      <div bind:this={chatEl} class="rounded-xl px-4 py-3 mb-3" style="background: #1e1a22; border: 1px solid rgba(52,211,153,0.18); height: 52vh; max-height: 480px; overflow-y: auto; box-shadow: inset 0 2px 12px rgba(0,0,0,0.55);">
         {#if chatMessages.length === 0}
           <p class="text-sm text-center py-8" style="color: #4e4635; font-style: italic;">No messages yet. Say hello.</p>
         {/if}
@@ -639,12 +639,12 @@
           {:else}
             <div class="mb-1 flex flex-col" style="align-items: {isSelf ? 'flex-end' : 'flex-start'};">
               {#if showAuthor}
-                <p class="font-mono text-[10px] mb-0.5" style="color: {isSelf ? '#a78bfa' : '#48c8e0'};">
+                <p class="font-mono text-[10px] mb-0.5" style="color: {isSelf ? '#a78bfa' : '#5ad6ef'};">
                   {msg.authorUsername} <span style="color: #4e4635;">· {time}</span>
                 </p>
               {/if}
               <p class="rounded-2xl px-3 py-1.5 text-xs max-w-[80%] break-words"
-                style="background: {isSelf ? 'rgba(167,139,250,0.10)' : 'rgba(72,200,224,0.08)'}; border: 1px solid {isSelf ? 'rgba(167,139,250,0.25)' : 'rgba(72,200,224,0.2)'}; color: #e4e1ee;">
+                style="background: {isSelf ? 'rgba(167,139,250,0.10)' : 'rgba(90,214,239,0.08)'}; border: 1px solid {isSelf ? 'rgba(167,139,250,0.25)' : 'rgba(90,214,239,0.2)'}; color: #e9dfeb;">
                 {msg.text}
               </p>
             </div>
@@ -658,7 +658,7 @@
           maxlength={240}
           placeholder="Message your clan…"
           class="flex-1 px-3 py-2.5 rounded-lg font-mono text-sm"
-          style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); color: #e4e1ee; outline: none;"
+          style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); color: #e9dfeb; outline: none;"
         />
         <button onclick={sendChat} disabled={!chatInput.trim() || chatSending} data-fx="big"
           class="px-4 py-2.5 rounded-lg font-mono text-xs font-bold disabled:opacity-40"
@@ -672,10 +672,10 @@
       <h2 class="mb-4" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Join Requests ({myClan.joinRequests.length})</h2>
       <div class="flex flex-col gap-2">
         {#each myClan.joinRequests as r}
-          <div class="rounded-xl px-3 py-3 flex items-center gap-3" style="background: linear-gradient(180deg, #13121c, #0c0b14); border: 1px solid rgba(78,70,53,0.3);">
+          <div class="rounded-xl px-3 py-3 flex items-center gap-3" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(78,70,53,0.3);">
             <span class="material-symbols-outlined" style="font-size: 18px; color: #9a907b; font-variation-settings: 'FILL' 1;">person</span>
             <div class="flex-1 min-w-0">
-              <p class="font-mono text-sm" style="color: #e4e1ee;">{r.username}</p>
+              <p class="font-mono text-sm" style="color: #e9dfeb;">{r.username}</p>
               <p class="font-mono text-[10px]" style="color: #4e4635;">{r.rivalsWins}W · {relTime(r.requestedAt)}</p>
             </div>
             <button onclick={() => respondRequest(r.userId, 'accept')} disabled={actionPending !== null} data-fx="big" class="px-3 py-1.5 rounded-lg font-mono text-xs font-bold disabled:opacity-40" style="background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.30); color: #34d399;">Accept</button>
@@ -688,7 +688,7 @@
 
     {:else if view === 'settings' && myClan && canEdit}
       <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back</button>
-      <div class="rounded-2xl px-5 py-5" style="background: linear-gradient(180deg, #13121c, #0c0b14); border: 1px solid rgba(78,70,53,0.35);">
+      <div class="rounded-2xl px-5 py-5" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(78,70,53,0.35);">
         <h2 class="mb-5" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Clan Settings</h2>
         <div class="flex flex-col gap-3">
           <div>
@@ -703,16 +703,16 @@
           </div>
           <div>
             <label for="s-motd" class="font-mono text-xs block mb-1" style="color: #9a907b;">Motto / MOTD</label>
-            <input id="s-motd" bind:value={settingsMotd} maxlength={80} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none;" />
+            <input id="s-motd" bind:value={settingsMotd} maxlength={80} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none;" />
           </div>
           <div>
             <label for="s-desc" class="font-mono text-xs block mb-1" style="color: #9a907b;">Description</label>
-            <textarea id="s-desc" bind:value={settingsDesc} maxlength={200} rows={2} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none; resize: none;"></textarea>
+            <textarea id="s-desc" bind:value={settingsDesc} maxlength={200} rows={2} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none; resize: none;"></textarea>
           </div>
           <div class="flex gap-3">
             <div class="flex-1">
               <label for="s-jt" class="font-mono text-xs block mb-1" style="color: #9a907b;">Join Type</label>
-              <select id="s-jt" bind:value={settingsJoinType} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none;">
+              <select id="s-jt" bind:value={settingsJoinType} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none;">
                 <option value="open">Open</option>
                 <option value="invite">Invite Only</option>
                 <option value="closed">Closed</option>
@@ -720,7 +720,7 @@
             </div>
             <div>
               <label for="s-mw" class="font-mono text-xs block mb-1" style="color: #9a907b;">Min Wins</label>
-              <input id="s-mw" type="number" bind:value={settingsMinWins} min={0} max={9999} class="w-24 px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e4e1ee; outline: none;" />
+              <input id="s-mw" type="number" bind:value={settingsMinWins} min={0} max={9999} class="w-24 px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none;" />
             </div>
           </div>
           <div class="flex gap-3 mt-2">

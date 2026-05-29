@@ -151,7 +151,7 @@
     if (t === 'heal')   return '#34d399'
     if (t === 'buff')   return '#a78bfa'
     if (t === 'debuff') return '#9a907b'
-    if (t === 'summon') return '#48c8e0'
+    if (t === 'summon') return '#5ad6ef'
     if (t === 'passive')return '#7dd3fc'
     return '#f0c040'
   }

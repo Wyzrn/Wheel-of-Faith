@@ -62,7 +62,7 @@
   const ROLE_META: Record<ClanRole, { label: string; color: string; icon: string }> = {
     leader:   { label: 'Leader',    color: '#f0c040', icon: 'workspace_premium' },
     coLeader: { label: 'Co-Leader', color: '#a78bfa', icon: 'military_tech' },
-    elder:    { label: 'Elder',     color: '#48c8e0', icon: 'shield' },
+    elder:    { label: 'Elder',     color: '#5ad6ef', icon: 'shield' },
     member:   { label: 'Member',    color: '#9a907b', icon: 'person' },
     none:     { label: '—',         color: '#4e4635', icon: 'person' },
   }
@@ -74,7 +74,7 @@
 </script>
 
 <main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
-  <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14" style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(240,192,64,0.20); backdrop-filter: blur(16px);">
+  <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14" style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(240,192,64,0.20); backdrop-filter: blur(16px);">
     <a href="/clan" class="flex items-center gap-1 transition-all active:scale-95" style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-decoration: none; padding: 4px 6px; border-radius: 6px;">
       <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span>
       <span>Clans</span>
@@ -166,7 +166,7 @@
             style="background: rgba(255,255,255,0.03); border: 1px solid {meta.color}1a; text-decoration: none;">
             <span class="material-symbols-outlined" style="font-size: 16px; color: {meta.color}; font-variation-settings: 'FILL' 1;">{meta.icon}</span>
             <div class="flex-1 min-w-0">
-              <p class="font-mono text-sm truncate" style="color: #e4e1ee;">{m.username}</p>
+              <p class="font-mono text-sm truncate" style="color: #e9dfeb;">{m.username}</p>
               <p class="font-mono text-[10px]" style="color: {meta.color};">{meta.label} · {m.rivalsWins}W</p>
             </div>
             <span class="material-symbols-outlined" style="font-size: 16px; color: #4e4635;">chevron_right</span>

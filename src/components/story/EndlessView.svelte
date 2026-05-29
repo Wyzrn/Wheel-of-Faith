@@ -652,7 +652,7 @@
       <div>
         <p class="font-bold text-lg" style="font-family: var(--font-cinzel); color: #a78bfa;">Resume Endless Run?</p>
         <p class="text-sm mt-1" style="color: #9a907b;">
-          You have a run in progress — <span style="color: #e4e1ee;">Wave {slot.endlessRun.currentWave}</span>,
+          You have a run in progress — <span style="color: #e9dfeb;">Wave {slot.endlessRun.currentWave}</span>,
           {slot.endlessRun.wavesCleared} wave{slot.endlessRun.wavesCleared === 1 ? '' : 's'} cleared,
           <span style="color: #34d399;">{slot.endlessRun.accGems.toLocaleString()} gems banked</span>.
         </p>
@@ -700,7 +700,7 @@
       <div class="flex items-center gap-2.5">
         <span class="material-symbols-outlined" style="font-size: 18px; color: {autoplay ? '#34d399' : '#9a907b'}; font-variation-settings: 'FILL' 1;">{autoplay ? 'play_circle' : 'pause_circle'}</span>
         <div class="text-left">
-          <p class="font-bold text-sm" style="font-family: 'Cinzel', serif; color: {autoplay ? '#34d399' : '#e4e1ee'};">Autoplay</p>
+          <p class="font-bold text-sm" style="font-family: 'Cinzel', serif; color: {autoplay ? '#34d399' : '#e9dfeb'};">Autoplay</p>
           <p class="font-mono text-[10px]" style="color: #9a907b;">Auto-advance to next wave after a 3s breather</p>
         </div>
       </div>

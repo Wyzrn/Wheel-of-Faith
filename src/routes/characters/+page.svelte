@@ -254,7 +254,7 @@
 
   <!-- Nav -->
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"
-    style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(240,192,64,0.13); backdrop-filter: blur(16px);"
+    style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(240,192,64,0.13); backdrop-filter: blur(16px);"
   >
     <div class="flex items-center" style="min-width: 80px;">
       <a href="/" class="flex items-center gap-1 transition-all active:scale-95"
@@ -346,7 +346,7 @@
                 placeholder="Username"
                 autocomplete="username"
                 class="w-full px-3 py-2 rounded-md outline-none"
-                style="background:rgba(255,255,255,0.04);border:1px solid rgba(240,192,64,0.15);color:#e4e1ee;font-family:'JetBrains Mono',monospace;font-size:0.78rem;"
+                style="background:rgba(255,255,255,0.04);border:1px solid rgba(240,192,64,0.15);color:#e9dfeb;font-family:'JetBrains Mono',monospace;font-size:0.78rem;"
               />
               <input
                 bind:value={loginPassword}
@@ -354,7 +354,7 @@
                 placeholder="Password"
                 autocomplete={showRegister ? 'new-password' : 'current-password'}
                 class="w-full px-3 py-2 rounded-md outline-none"
-                style="background:rgba(255,255,255,0.04);border:1px solid rgba(240,192,64,0.15);color:#e4e1ee;font-family:'JetBrains Mono',monospace;font-size:0.78rem;"
+                style="background:rgba(255,255,255,0.04);border:1px solid rgba(240,192,64,0.15);color:#e9dfeb;font-family:'JetBrains Mono',monospace;font-size:0.78rem;"
                 onkeydown={(e) => { if (e.key === 'Enter') showRegister ? register() : login() }}
               />
               {#if authError}
@@ -422,7 +422,7 @@
           {@const borderColor = isT1 ? 'rgba(240,192,64,0.65)' : isT2 ? 'rgba(232,121,249,0.65)' : char.error ? 'rgba(240,192,64,0.06)' : 'rgba(240,192,64,0.18)'}
           {@const glowColor   = isT1 ? 'rgba(240,192,64,0.14)' : isT2 ? 'rgba(232,121,249,0.14)' : 'none'}
           <div class="flex items-center gap-0 rounded-lg overflow-hidden"
-            style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid {borderColor}; box-shadow: {isSelected ? `0 0 20px ${glowColor}, inset 1px 1px 0 rgba(255,223,150,0.07)` : 'inset 1px 1px 0 rgba(255,223,150,0.05)'}; transition: border-color 0.2s, box-shadow 0.2s;"
+            style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid {borderColor}; box-shadow: {isSelected ? `0 0 20px ${glowColor}, inset 1px 1px 0 rgba(255,223,150,0.07)` : 'inset 1px 1px 0 rgba(255,223,150,0.05)'}; transition: border-color 0.2s, box-shadow 0.2s;"
           >
             <!-- Battle select button: cycles unselected → T1 → T2 → unselected -->
             <button

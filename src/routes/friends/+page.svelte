@@ -167,7 +167,7 @@
 
   <!-- Nav -->
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"
-    style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(167,139,250,0.18); backdrop-filter: blur(16px);"
+    style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(167,139,250,0.18); backdrop-filter: blur(16px);"
   >
     <div class="flex items-center" style="min-width: 80px;">
       <a href="/" class="flex items-center gap-1 transition-all active:scale-95"
@@ -207,7 +207,7 @@
             placeholder="Enter username…"
             onkeydown={(e) => e.key === 'Enter' && sendRequest()}
             class="carved-groove flex-1 rounded-lg px-3 py-2.5 text-sm outline-none"
-            style="color: #e4e1ee; font-family: 'JetBrains Mono', monospace; font-size: 12px;"
+            style="color: #e9dfeb; font-family: 'JetBrains Mono', monospace; font-size: 12px;"
           />
           <button
             onclick={sendRequest}
@@ -262,7 +262,7 @@
           <div class="flex flex-col gap-3">
             {#each friends as friend}
               {@const online = presence.isOnline(friend._id)}
-              <div class="flex items-center gap-3 rounded-xl px-4 py-3" style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(167,139,250,0.12);">
+              <div class="flex items-center gap-3 rounded-xl px-4 py-3" style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(167,139,250,0.12);">
                 <!-- Avatar + info → tap to open profile -->
                 <a href="/users/{friend.username}" class="flex items-center gap-3 flex-1 min-w-0 transition-all active:scale-[0.98]"
                   style="text-decoration: none; color: inherit;" title="View {friend.username}'s profile">
@@ -270,11 +270,11 @@
                     style="background: rgba(167,139,250,0.15); color: #c4b5fd; font-family: 'Cinzel', serif;">
                     {friend.username[0].toUpperCase()}
                     <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full"
-                      style="background: {online ? '#34d399' : '#4e4635'}; border: 2px solid #0c0b14; box-shadow: {online ? '0 0 6px rgba(52,211,153,0.7)' : 'none'};"
+                      style="background: {online ? '#34d399' : '#4e4635'}; border: 2px solid #1e1a22; box-shadow: {online ? '0 0 6px rgba(52,211,153,0.7)' : 'none'};"
                       title={online ? 'Online' : 'Offline'}></span>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: #e4e1ee; font-size: 0.9rem;">{friend.username}</p>
+                    <p class="font-semibold truncate" style="font-family: 'Cinzel', serif; color: #e9dfeb; font-size: 0.9rem;">{friend.username}</p>
                     <div class="flex items-center gap-2 mt-0.5">
                       <span class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: {online ? '#34d399' : '#7c6fa0'};">{online ? 'Online' : rank(friend.rivalsWins)}</span>
                       {#if friend.rivalsWins > 0}
@@ -329,7 +329,7 @@
                     {req.requester.username[0].toUpperCase()}
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-semibold" style="font-family: 'Cinzel', serif; color: #e4e1ee; font-size: 0.9rem;">{req.requester.username}</p>
+                    <p class="font-semibold" style="font-family: 'Cinzel', serif; color: #e9dfeb; font-size: 0.9rem;">{req.requester.username}</p>
                     {#if req.requester.rivalsWins > 0}
                       <p class="text-xs flex items-center gap-1 mt-0.5" style="color: #f0c040;">
                         <span class="material-symbols-outlined" style="font-size: 11px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
@@ -407,7 +407,7 @@
                   <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
                     style="background: rgba(249,168,212,0.15); color: #f9a8d4; font-family: 'Cinzel', serif;">{char.overallTier}</div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-semibold truncate text-sm" style="font-family: 'Cinzel', serif; color: #e4e1ee;">{char.name}</p>
+                    <p class="font-semibold truncate text-sm" style="font-family: 'Cinzel', serif; color: #e9dfeb;">{char.name}</p>
                     <p class="text-xs truncate" style="font-family: 'JetBrains Mono', monospace; color: #6b7280;">{char.race} · {char.archetype}</p>
                   </div>
                 </button>

@@ -55,7 +55,7 @@
 
   <!-- Nav -->
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"
-    style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(240,192,64,0.13); backdrop-filter: blur(16px);">
+    style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(240,192,64,0.13); backdrop-filter: blur(16px);">
     <div class="flex items-center" style="min-width: 80px;">
       <a href="/" class="flex items-center gap-1 transition-all active:scale-95"
         style="color: #9a907b; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-decoration: none; padding: 4px 6px; border-radius: 6px;">
@@ -126,7 +126,7 @@
                 <TierBadge grade={entry.overallTier} />
               </div>
 
-              <p class="text-sm font-mono font-bold truncate pr-14" style="color: #e4e1ee; {entry.spinClass ? 'padding-top: 14px;' : ''}">
+              <p class="text-sm font-mono font-bold truncate pr-14" style="color: #e9dfeb; {entry.spinClass ? 'padding-top: 14px;' : ''}">
                 {entry.name}
               </p>
               <p class="text-xs font-mono truncate" style="color: #9a907b;">{entry.race}</p>

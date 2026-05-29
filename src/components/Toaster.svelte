@@ -13,7 +13,7 @@
   const COLOR: Record<string, string> = {
     success: '#34d399',
     error:   '#f87171',
-    info:    '#48c8e0',
+    info:    '#5ad6ef',
     reward:  '#f0c040',
   }
 </script>
@@ -62,7 +62,7 @@
     width: 100%;
     background: rgba(9, 9, 15, 0.96);
     backdrop-filter: blur(16px);
-    border: 1px solid var(--c, #48c8e0);
+    border: 1px solid var(--c, #5ad6ef);
     border-radius: 10px;
     padding: 10px 14px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 12px var(--c, transparent);
@@ -80,7 +80,7 @@
   .toast-message {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.74rem;
-    color: #e4e1ee;
+    color: #e9dfeb;
     letter-spacing: 0.04em;
     line-height: 1.4;
   }

@@ -1593,7 +1593,7 @@
           placeholder="Enter a name…"
           maxlength="40"
           class="flex-1 carved-groove rounded-lg px-4 py-3 text-center text-base outline-none transition-all"
-          style="border: 1px solid rgba(240,192,64,0.30); color: #e4e1ee; font-family: var(--font-cinzel); caret-color: #f0c040; background: linear-gradient(180deg, rgba(22,17,38,0.92), rgba(10,8,18,0.96)); box-shadow: inset 0 2px 10px rgba(0,0,0,0.6), 0 0 0 0 transparent;"
+          style="border: 1px solid rgba(240,192,64,0.30); color: #e9dfeb; font-family: var(--font-cinzel); caret-color: #f0c040; background: linear-gradient(180deg, rgba(22,17,38,0.92), rgba(10,8,18,0.96)); box-shadow: inset 0 2px 10px rgba(0,0,0,0.6), 0 0 0 0 transparent;"
           onkeydown={(e) => e.key === 'Enter' && handleNamingSubmit()}
         />
         <button

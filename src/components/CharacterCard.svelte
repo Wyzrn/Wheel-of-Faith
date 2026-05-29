@@ -516,7 +516,7 @@
               </span>
             {/if}
             <span class="text-xs capitalize shrink-0" style="color: #9a907b; width: 5rem;">{stat.cat.replace(/([A-Z])/g, ' $1').trim()}</span>
-            <span class="text-xs truncate" style="color: #e4e1ee;">{stat.label}</span>
+            <span class="text-xs truncate" style="color: #e9dfeb;">{stat.label}</span>
           </div>
         {/if}
       {/each}
@@ -538,7 +538,7 @@
             {@const abType = classifyAbility(ab, abMeta?.element)}
             <li>
               <button onclick={() => toggleItem(abKey)} class="w-full text-left" style="background: none; border: none; cursor: pointer; padding: 0;">
-                <div class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e4e1ee; border: 1px solid rgba(240,192,64,{abExpanded ? '0.25' : '0.12'}); border-left: 2px solid {abColor}55; transition: border-color 0.15s;">
+                <div class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e9dfeb; border: 1px solid rgba(240,192,64,{abExpanded ? '0.25' : '0.12'}); border-left: 2px solid {abColor}55; transition: border-color 0.15s;">
                   {#if abMeta?.element}
                     <img src={ELEMENT_ICONS[abMeta.element]} class="w-4 h-4 object-contain shrink-0" alt={abMeta.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[abMeta.element]});" />
                   {/if}
@@ -576,7 +576,7 @@
             {@const abType = classifyAbility(ab, abMeta?.element)}
             <li>
               <button onclick={() => toggleItem(abKey)} class="w-full text-left" style="background: none; border: none; cursor: pointer; padding: 0;">
-                <div class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e4e1ee; border: 1px solid rgba(139,92,246,{abExpanded ? '0.3' : '0.15'}); border-left: 2px solid {abColor}55; transition: border-color 0.15s;">
+                <div class="obsidian-slab text-xs rounded px-3 py-2 flex flex-wrap items-center gap-1.5" style="color: #e9dfeb; border: 1px solid rgba(139,92,246,{abExpanded ? '0.3' : '0.15'}); border-left: 2px solid {abColor}55; transition: border-color 0.15s;">
                   {#if abMeta?.element}
                     <img src={ELEMENT_ICONS[abMeta.element]} class="w-4 h-4 object-contain shrink-0" alt={abMeta.element} style="filter: drop-shadow(0 0 3px {ELEMENT_COLORS[abMeta.element]});" />
                   {/if}
@@ -737,7 +737,7 @@
                 {#if wi === 0 && weaponType !== '—'}
                   <span class="text-xs px-2 py-1 rounded" style="background: rgba(240,192,64,0.08); color: #9a907b; border: 1px solid rgba(240,192,64,0.15);">{weaponType}</span>
                 {/if}
-                <span class="text-sm font-medium flex-1" style="color: #e4e1ee;">{w}</span>
+                <span class="text-sm font-medium flex-1" style="color: #e9dfeb;">{w}</span>
                 {#if wi === 0}
                   {#each weaponEnchs as ench}
                     <span class="text-xs" style="color: #f0c040;">✦ {ench}</span>
@@ -780,7 +780,7 @@
                     {ewElement}
                   </span>
                 {/if}
-                <span class="text-sm font-medium flex-1" style="color: #e4e1ee;">{ew.name}</span>
+                <span class="text-sm font-medium flex-1" style="color: #e9dfeb;">{ew.name}</span>
                 <span class="text-[8px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style="background: #34d39920; color: #34d399; border: 1px solid #34d39944;">EQUIPPED</span>
                 <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #4e4635; transform: rotate({ewExpanded ? 180 : 0}deg); transition: transform 0.15s;">expand_more</span>
               </div>
@@ -842,7 +842,7 @@
                 {#if armorType !== '—'}
                   <span class="text-xs px-2 py-1 rounded" style="background: rgba(251,146,60,0.08); color: #9a907b; border: 1px solid rgba(251,146,60,0.15);">{armorType}</span>
                 {/if}
-                <span class="text-sm font-medium flex-1" style="color: #e4e1ee;">{armor}</span>
+                <span class="text-sm font-medium flex-1" style="color: #e9dfeb;">{armor}</span>
                 {#each armorEnchs as ench}
                   <span class="text-xs" style="color: #fb923c;">✦ {ench}</span>
                 {/each}
@@ -890,7 +890,7 @@
                     {eaElement}
                   </span>
                 {/if}
-                <span class="text-sm font-medium flex-1" style="color: #e4e1ee;">{ea.name}</span>
+                <span class="text-sm font-medium flex-1" style="color: #e9dfeb;">{ea.name}</span>
                 <span class="text-[8px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style="background: #34d39920; color: #34d399; border: 1px solid #34d39944;">EQUIPPED</span>
                 <span class="material-symbols-outlined shrink-0" style="font-size: 12px; color: #4e4635; transform: rotate({eaExpanded ? 180 : 0}deg); transition: transform 0.15s;">expand_more</span>
               </div>
@@ -946,7 +946,7 @@
         <span class="material-symbols-outlined text-sm" style="color: #c084fc; font-variation-settings: 'FILL' 1;">psychology</span>
         <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #c084fc;">Possessed By</p>
       </div>
-      <p class="text-sm font-medium" style="color: #e4e1ee;">{possessionRace}</p>
+      <p class="text-sm font-medium" style="color: #e9dfeb;">{possessionRace}</p>
       {#if possessionStrength !== '—'}
         <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">{possessionStrength}</p>
       {/if}
@@ -980,7 +980,7 @@
         <span class="material-symbols-outlined text-sm" style="color: #a78bfa; font-variation-settings: 'FILL' 1;">auto_awesome</span>
         <p class="text-xs tracking-[0.15em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #a78bfa;">Redemption</p>
       </div>
-      <p class="text-sm font-medium" style="color: #e4e1ee;">{redemptionOutcome}</p>
+      <p class="text-sm font-medium" style="color: #e9dfeb;">{redemptionOutcome}</p>
     </div>
   {/if}
 
@@ -1056,7 +1056,7 @@
             onclick={handleSaveAndShare}
             disabled={saving}
             class="hammered-gold flex-1 py-3 rounded-lg relative"
-            style="font-family: 'Cinzel', serif; font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #f0c040; background: linear-gradient(180deg, #13121c 0%, #0c0b14 100%); opacity: {saving ? '0.7' : '1'};"
+            style="font-family: 'Cinzel', serif; font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #f0c040; background: linear-gradient(180deg, #13121c 0%, #1e1a22 100%); opacity: {saving ? '0.7' : '1'};"
           >
             <div class="l-bracket" style="color: rgba(240,192,64,0.35);"></div>
             {saving ? 'Saving…' : 'Save & Share'}

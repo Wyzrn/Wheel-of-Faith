@@ -283,7 +283,7 @@
 
   <!-- Nav -->
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"
-    style="background: rgba(7,7,13,0.94); border-bottom: 1px solid rgba(240,192,64,0.13); backdrop-filter: blur(16px);"
+    style="background: rgba(22,18,26,0.92); border-bottom: 1px solid rgba(240,192,64,0.13); backdrop-filter: blur(16px);"
   >
     <div class="flex items-center" style="min-width: 80px;">
       <a href="/" class="flex items-center gap-1 transition-all active:scale-95"
@@ -322,7 +322,7 @@
         value={searchInput}
         oninput={onSearchInput}
         class="w-full rounded-lg pl-9 pr-9 py-2.5 text-sm outline-none transition-all"
-        style="background: rgba(255,255,255,0.04); border: 1px solid rgba(167,139,250,0.18); color: #e4e1ee; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.02em;"
+        style="background: rgba(255,255,255,0.04); border: 1px solid rgba(167,139,250,0.18); color: #e9dfeb; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.02em;"
         style:border-color={searchInput ? 'rgba(167,139,250,0.45)' : 'rgba(167,139,250,0.18)'}
       />
       {#if searchInput}
@@ -381,7 +381,7 @@
     {#if loading}
       <div class="flex flex-col gap-3">
         {#each [1, 2, 3, 4, 5] as _}
-          <div class="rounded-lg animate-pulse" style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(255,223,150,0.06); height: 80px;"></div>
+          <div class="rounded-lg animate-pulse" style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(255,223,150,0.06); height: 80px;"></div>
         {/each}
       </div>
 
@@ -419,7 +419,7 @@
           {@const tierGrad = tierGradient(charTier)}
           <div
             class="flex rounded-lg overflow-hidden transition-all hover:brightness-110"
-            style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(167,139,250,0.18); box-shadow: inset 1px 1px 0 rgba(167,139,250,0.05);"
+            style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(167,139,250,0.18); box-shadow: inset 1px 1px 0 rgba(167,139,250,0.05);"
           >
             <!-- Main link area -->
             <a
@@ -517,7 +517,7 @@
 
     <!-- Sheet -->
     <div class="fixed bottom-0 inset-x-0 z-50 rounded-t-2xl pb-8 max-h-[80vh] flex flex-col"
-      style="background: linear-gradient(180deg, #13121c 0%, #0c0b14 100%); border-top: 1px solid rgba(244,63,94,0.3); box-shadow: 0 -8px 40px rgba(244,63,94,0.1), inset 1px 1px 0 rgba(255,223,150,0.04); animation: slideInBottom 0.28s cubic-bezier(0.25,0.46,0.45,0.94) both;"
+      style="background: linear-gradient(180deg, #13121c 0%, #1e1a22 100%); border-top: 1px solid rgba(244,63,94,0.3); box-shadow: 0 -8px 40px rgba(244,63,94,0.1), inset 1px 1px 0 rgba(255,223,150,0.04); animation: slideInBottom 0.28s cubic-bezier(0.25,0.46,0.45,0.94) both;"
     >
       <!-- Handle -->
       <div class="flex justify-center pt-3 pb-1 shrink-0">
@@ -587,7 +587,7 @@
             <button
               onclick={() => startBattle(mine.shareId)}
               class="flex items-center gap-3 w-full rounded-lg px-4 py-3 text-left transition-all active:scale-[0.98]"
-              style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(255,223,150,0.1); cursor: pointer; box-shadow: inset 1px 1px 0 rgba(255,223,150,0.04);"
+              style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(255,223,150,0.1); cursor: pointer; box-shadow: inset 1px 1px 0 rgba(255,223,150,0.04);"
               onmouseenter={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(244,63,94,0.4)'}
               onmouseleave={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,223,150,0.1)'}
             >

@@ -58,7 +58,7 @@
     </div>
     <button onclick={onClose}
       style="color: #9a907b; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; cursor: pointer; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: color 0.15s, background 0.15s; -webkit-tap-highlight-color: transparent;"
-      onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.color = '#e4e1ee'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'; }}
+      onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.color = '#e9dfeb'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'; }}
       onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.color = '#9a907b'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
     >&times;</button>
   </div>
@@ -69,10 +69,10 @@
     <!-- ─ Sound ─ -->
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-semibold" style="color: #e4e1ee;">Sound Effects</p>
+        <p class="text-sm font-semibold" style="color: #e9dfeb;">Sound Effects</p>
         <p class="text-xs mt-0.5" style="color: #9a907b;">Spin ticks &amp; battle audio</p>
       </div>
-      <button onclick={() => toggle('soundEnabled')} class="toggle-btn" style="background: {settings.soundEnabled ? '#f0c040' : '#0c0b14'}; box-shadow: {settings.soundEnabled ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.soundEnabled ? '#f0c040' : 'rgba(78,70,53,0.5)'};" aria-label="Toggle sound">
+      <button onclick={() => toggle('soundEnabled')} class="toggle-btn" style="background: {settings.soundEnabled ? '#f0c040' : '#1e1a22'}; box-shadow: {settings.soundEnabled ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.soundEnabled ? '#f0c040' : 'rgba(78,70,53,0.5)'};" aria-label="Toggle sound">
         <span class="toggle-knob" style="left: {settings.soundEnabled ? '22px' : '2px'}; background: {settings.soundEnabled ? '#0d0d16' : '#3a3848'};"></span>
       </button>
     </div>
@@ -82,10 +82,10 @@
     <!-- ─ Effects ─ -->
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-semibold" style="color: #e4e1ee;">Visual Effects</p>
+        <p class="text-sm font-semibold" style="color: #e9dfeb;">Visual Effects</p>
         <p class="text-xs mt-0.5" style="color: #9a907b;">Particles, shakes &amp; flashes</p>
       </div>
-      <button onclick={() => toggle('effectsEnabled')} class="toggle-btn" style="background: {settings.effectsEnabled ? '#f0c040' : '#0c0b14'}; box-shadow: {settings.effectsEnabled ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.effectsEnabled ? '#f0c040' : 'rgba(78,70,53,0.5)'};" aria-label="Toggle effects">
+      <button onclick={() => toggle('effectsEnabled')} class="toggle-btn" style="background: {settings.effectsEnabled ? '#f0c040' : '#1e1a22'}; box-shadow: {settings.effectsEnabled ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.effectsEnabled ? '#f0c040' : 'rgba(78,70,53,0.5)'};" aria-label="Toggle effects">
         <span class="toggle-knob" style="left: {settings.effectsEnabled ? '22px' : '2px'}; background: {settings.effectsEnabled ? '#0d0d16' : '#3a3848'};"></span>
       </button>
     </div>
@@ -95,7 +95,7 @@
     <!-- ─ High Quality override ─ -->
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-semibold" style="color: #e4e1ee;">High Quality</p>
+        <p class="text-sm font-semibold" style="color: #e9dfeb;">High Quality</p>
         <p class="text-xs mt-0.5" style="color: #9a907b;">
           Force full-fidelity VFX on this device. May lag on phones.
           <span class="ml-1 opacity-70">(detected: <span style="color: {detectedTier === 'high' ? '#34d399' : detectedTier === 'mid' ? '#f0c040' : '#fb923c'}">{detectedTier}</span>)</span>
@@ -104,7 +104,7 @@
       <button
         onclick={() => { settings.highQualityOverride = settings.highQualityOverride === 'high' ? 'auto' : 'high'; settings.save() }}
         class="toggle-btn"
-        style="background: {settings.highQualityOverride === 'high' ? '#f0c040' : '#0c0b14'}; box-shadow: {settings.highQualityOverride === 'high' ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.highQualityOverride === 'high' ? '#f0c040' : 'rgba(78,70,53,0.5)'};"
+        style="background: {settings.highQualityOverride === 'high' ? '#f0c040' : '#1e1a22'}; box-shadow: {settings.highQualityOverride === 'high' ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.highQualityOverride === 'high' ? '#f0c040' : 'rgba(78,70,53,0.5)'};"
         aria-label="Toggle high quality"
         aria-pressed={settings.highQualityOverride === 'high'}
       >
@@ -116,13 +116,13 @@
 
     <!-- ─ Spin Speed ─ -->
     <div>
-      <p class="text-sm font-semibold mb-1" style="color: #e4e1ee;">Spin Speed</p>
+      <p class="text-sm font-semibold mb-1" style="color: #e9dfeb;">Spin Speed</p>
       <p class="text-xs mb-3" style="color: #9a907b;">Wheel animation rate</p>
       <div class="flex gap-1.5 flex-wrap">
         {#each SPIN_SPEED_OPTIONS as opt}
           <button onclick={() => { settings.spinSpeed = opt.value; settings.save() }}
             class="speed-chip"
-            style="background: {settings.spinSpeed === opt.value ? 'linear-gradient(135deg, #f0c040, #b88d00)' : 'linear-gradient(180deg, #13121c, #0c0b14)'}; color: {settings.spinSpeed === opt.value ? '#0d0d16' : '#9a907b'}; border-color: {settings.spinSpeed === opt.value ? '#ffdf97' : 'rgba(78,70,53,0.35)'}; box-shadow: {settings.spinSpeed === opt.value ? '0 3px 0 #796125, inset 0 1px 2px rgba(255,255,255,0.3)' : 'inset 1px 1px 0 rgba(255,223,150,0.06)'};"
+            style="background: {settings.spinSpeed === opt.value ? 'linear-gradient(135deg, #f0c040, #b88d00)' : 'linear-gradient(180deg, #13121c, #1e1a22)'}; color: {settings.spinSpeed === opt.value ? '#0d0d16' : '#9a907b'}; border-color: {settings.spinSpeed === opt.value ? '#ffdf97' : 'rgba(78,70,53,0.35)'}; box-shadow: {settings.spinSpeed === opt.value ? '0 3px 0 #796125, inset 0 1px 2px rgba(255,255,255,0.3)' : 'inset 1px 1px 0 rgba(255,223,150,0.06)'};"
           >{opt.label}</button>
         {/each}
       </div>
@@ -132,14 +132,14 @@
 
     <!-- ─ Auto-Continue ─ -->
     <div>
-      <p class="text-sm font-semibold mb-1" style="color: #e4e1ee;">Auto-Continue</p>
+      <p class="text-sm font-semibold mb-1" style="color: #e9dfeb;">Auto-Continue</p>
       <p class="text-xs mb-3" style="color: #9a907b;">Skip the Continue tap after each spin</p>
       <div class="flex flex-col gap-1.5">
         {#each AUTO_CONTINUE_OPTIONS as opt}
           {@const active = settings.autoContinueMs === opt.value}
           <button onclick={() => { settings.autoContinueMs = opt.value; settings.save() }}
             class="battle-speed-chip"
-            style="background: {active ? 'linear-gradient(180deg, rgba(240,192,64,0.14), rgba(240,192,64,0.06))' : 'linear-gradient(180deg, #13121c, #0c0b14)'}; border-color: {active ? '#f0c040' : 'rgba(78,70,53,0.3)'}; box-shadow: {active ? '0 0 12px rgba(240,192,64,0.12), inset 1px 1px 0 rgba(255,223,150,0.08)' : 'inset 1px 1px 0 rgba(255,223,150,0.05)'};"
+            style="background: {active ? 'linear-gradient(180deg, rgba(240,192,64,0.14), rgba(240,192,64,0.06))' : 'linear-gradient(180deg, #13121c, #1e1a22)'}; border-color: {active ? '#f0c040' : 'rgba(78,70,53,0.3)'}; box-shadow: {active ? '0 0 12px rgba(240,192,64,0.12), inset 1px 1px 0 rgba(255,223,150,0.08)' : 'inset 1px 1px 0 rgba(255,223,150,0.05)'};"
           >
             <span style="font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 700; color: {active ? '#f0c040' : '#9a907b'};">{opt.label}</span>
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: {active ? '#d4a020' : '#4e4635'};">{opt.desc}</span>
@@ -153,11 +153,11 @@
     <!-- ─ Auto Battle ─ -->
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-semibold" style="color: #e4e1ee;">Auto Battle</p>
+        <p class="text-sm font-semibold" style="color: #e9dfeb;">Auto Battle</p>
         <p class="text-xs mt-0.5" style="color: #9a907b;">Off = pick each move manually</p>
       </div>
       <button onclick={() => toggle('autoBattle')} class="toggle-btn"
-        style="background: {settings.autoBattle ? '#f0c040' : '#0c0b14'}; box-shadow: {settings.autoBattle ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.autoBattle ? '#f0c040' : 'rgba(78,70,53,0.5)'};"
+        style="background: {settings.autoBattle ? '#f0c040' : '#1e1a22'}; box-shadow: {settings.autoBattle ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.autoBattle ? '#f0c040' : 'rgba(78,70,53,0.5)'};"
         aria-label="Toggle auto battle">
         <span class="toggle-knob" style="left: {settings.autoBattle ? '22px' : '2px'}; background: {settings.autoBattle ? '#0d0d16' : '#3a3848'};"></span>
       </button>
@@ -166,14 +166,14 @@
     {#if settings.autoBattle}
       <!-- ─ Auto Battle Speed (only when auto is on) ─ -->
       <div>
-        <p class="text-sm font-semibold mb-1" style="color: #e4e1ee;">Battle Speed</p>
+        <p class="text-sm font-semibold mb-1" style="color: #e9dfeb;">Battle Speed</p>
         <p class="text-xs mb-3" style="color: #9a907b;">Playback rate while auto-battling</p>
         <div class="flex flex-col gap-1.5">
           {#each AUTO_SPEED_OPTIONS as opt}
             {@const active = settings.autoBattleSpeed === opt.value}
             <button onclick={() => { settings.autoBattleSpeed = opt.value; settings.save() }}
               class="battle-speed-chip"
-              style="background: {active ? 'linear-gradient(180deg, rgba(240,192,64,0.14), rgba(240,192,64,0.06))' : 'linear-gradient(180deg, #13121c, #0c0b14)'}; border-color: {active ? '#f0c040' : 'rgba(78,70,53,0.3)'}; box-shadow: {active ? '0 0 12px rgba(240,192,64,0.12), inset 1px 1px 0 rgba(255,223,150,0.08)' : 'inset 1px 1px 0 rgba(255,223,150,0.05)'};"
+              style="background: {active ? 'linear-gradient(180deg, rgba(240,192,64,0.14), rgba(240,192,64,0.06))' : 'linear-gradient(180deg, #13121c, #1e1a22)'}; border-color: {active ? '#f0c040' : 'rgba(78,70,53,0.3)'}; box-shadow: {active ? '0 0 12px rgba(240,192,64,0.12), inset 1px 1px 0 rgba(255,223,150,0.08)' : 'inset 1px 1px 0 rgba(255,223,150,0.05)'};"
             >
               <span style="font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 700; color: {active ? '#f0c040' : '#9a907b'};">{opt.label}</span>
               <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: {active ? '#d4a020' : '#4e4635'};">{opt.desc}</span>

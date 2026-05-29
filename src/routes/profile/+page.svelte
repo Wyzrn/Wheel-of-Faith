@@ -226,7 +226,7 @@
             {@const tc = TIER_COLORS[c.overall_tier] ?? '#9a907b'}
             <a href="/character/{c.shareId}"
               class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:brightness-110"
-              style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid {tc}22; box-shadow: inset 1px 1px 0 rgba(255,223,150,0.04); text-decoration: none;">
+              style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid {tc}22; box-shadow: inset 1px 1px 0 rgba(255,223,150,0.04); text-decoration: none;">
               <div class="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center" style="background: {tc}18; border: 1px solid {tc}44;">
                 <span class="text-xs font-black" style="color: {tc}; font-family: 'Cinzel', serif;">{c.overall_tier}</span>
               </div>
@@ -279,7 +279,7 @@
               {@const resultColor = opp.myResult === 'won' ? '#34d399' : opp.myResult === 'lost' ? '#f87171' : '#9a907b'}
               <a href={`/users/${encodeURIComponent(opp.username)}`}
                 class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all hover:brightness-110"
-                style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid {resultColor}33; text-decoration: none;">
+                style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid {resultColor}33; text-decoration: none;">
                 <span class="material-symbols-outlined" style="font-size: 16px; color: {resultColor}; font-variation-settings: 'FILL' 1;">
                   {opp.myResult === 'won' ? 'emoji_events' : opp.myResult === 'lost' ? 'sentiment_dissatisfied' : 'handshake'}
                 </span>
@@ -411,7 +411,7 @@
               {@const tc = TIER_COLORS[entry.overallTier] ?? '#9a907b'}
               <div
                 class="flex items-center gap-3 px-4 py-3 rounded-xl"
-                style="background: linear-gradient(180deg, #161520 0%, #0c0b14 100%); border: 1px solid rgba(255,223,150,0.06); box-shadow: inset 1px 1px 0 rgba(255,223,150,0.03);"
+                style="background: linear-gradient(180deg, #2d2831 0%, #1e1a22 100%); border: 1px solid rgba(255,223,150,0.06); box-shadow: inset 1px 1px 0 rgba(255,223,150,0.03);"
               >
                 <!-- Tier badge -->
                 <div class="shrink-0 px-2 py-1 rounded text-[11px] font-black" style="background: {tc}18; border: 1px solid {tc}44; color: {tc}; min-width: 2.5rem; text-align: center; font-family: 'JetBrains Mono', monospace;">
@@ -420,7 +420,7 @@
 
                 <!-- Name + race/archetype -->
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-semibold truncate" style="color: #e4e1ee; font-family: 'Cinzel', serif;">{entry.name}</p>
+                  <p class="text-sm font-semibold truncate" style="color: #e9dfeb; font-family: 'Cinzel', serif;">{entry.name}</p>
                   <p class="text-[11px] truncate mt-0.5" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">{entry.race} · {entry.archetype}</p>
                 </div>
 

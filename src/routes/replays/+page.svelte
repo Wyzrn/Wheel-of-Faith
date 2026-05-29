@@ -145,7 +145,7 @@
             {@const accent = e.playerWon ? '#34d399' : '#f87171'}
             <button onclick={() => openReplay(e.id)} data-fx="big"
               class="text-left rounded-xl px-4 py-3 flex items-center gap-3 transition-all active:scale-98"
-              style="background: linear-gradient(180deg, #13121c, #0c0b14); border: 1px solid {accent}33; cursor: pointer;">
+              style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid {accent}33; cursor: pointer;">
               <span class="material-symbols-outlined" style="font-size: 22px; color: {accent}; font-variation-settings: 'FILL' 1;">{e.playerWon ? 'emoji_events' : 'sentiment_dissatisfied'}</span>
               <div class="flex-1 min-w-0">
                 <p class="font-bold text-sm" style="font-family: 'Cinzel', serif; color: #ffdf96;">
@@ -177,7 +177,7 @@
       <!-- Team panels — mimic the battle UI style. Both teams shown as static
            rosters so you can see who fought without HP-tracking complexity. -->
       <div class="grid grid-cols-2 gap-2 mb-3">
-        <div class="rounded-xl p-3" style="background: linear-gradient(160deg, rgba(125,211,252,0.10), #0c0b14 80%); border: 1px solid rgba(125,211,252,0.32);">
+        <div class="rounded-xl p-3" style="background: linear-gradient(160deg, rgba(125,211,252,0.10), #1e1a22 80%); border: 1px solid rgba(125,211,252,0.32);">
           <p class="font-mono text-[10px] tracking-[0.18em] uppercase mb-2" style="color: #7dd3fc;">{viewing.team1Label}</p>
           {#each viewing.team1Chars as c}
             <div class="rounded-lg px-2 py-1.5 mb-1.5 last:mb-0" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
@@ -188,7 +188,7 @@
             </div>
           {/each}
         </div>
-        <div class="rounded-xl p-3" style="background: linear-gradient(200deg, rgba(249,168,212,0.10), #0c0b14 80%); border: 1px solid rgba(249,168,212,0.32);">
+        <div class="rounded-xl p-3" style="background: linear-gradient(200deg, rgba(249,168,212,0.10), #1e1a22 80%); border: 1px solid rgba(249,168,212,0.32);">
           <p class="font-mono text-[10px] tracking-[0.18em] uppercase mb-2 text-right" style="color: #f9a8d4;">{viewing.team2Label}</p>
           {#each viewing.team2Chars as c}
             <div class="rounded-lg px-2 py-1.5 mb-1.5 last:mb-0" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">

@@ -79,7 +79,7 @@
   <div class="flex items-stretch gap-3 w-full max-w-2xl">
     <!-- Team 1 column -->
     <div class="flex-1 rounded-2xl px-4 py-4 relative overflow-hidden"
-      style="background: linear-gradient(160deg, {team1Color}10, #0c0b14 70%); border: 1px solid {team1Color}55; box-shadow: 0 0 30px {team1Color}22; animation: rpSlideRight 0.45s cubic-bezier(0.22, 0.8, 0.3, 1) both;">
+      style="background: linear-gradient(160deg, {team1Color}10, #1e1a22 70%); border: 1px solid {team1Color}55; box-shadow: 0 0 30px {team1Color}22; animation: rpSlideRight 0.45s cubic-bezier(0.22, 0.8, 0.3, 1) both;">
       <p class="font-mono text-[10px] tracking-[0.22em] uppercase mb-2" style="color: {team1Color};">{team1Label}</p>
       {#each t1.members as m, i}
         <div class="mb-3 last:mb-0" style="animation: rpFadeIn 0.4s {0.2 + i * 0.1}s both;">
@@ -97,7 +97,7 @@
 
     <!-- Team 2 column -->
     <div class="flex-1 rounded-2xl px-4 py-4 text-right relative overflow-hidden"
-      style="background: linear-gradient(200deg, {team2Color}10, #0c0b14 70%); border: 1px solid {team2Color}55; box-shadow: 0 0 30px {team2Color}22; animation: rpSlideLeft 0.45s cubic-bezier(0.22, 0.8, 0.3, 1) both;">
+      style="background: linear-gradient(200deg, {team2Color}10, #1e1a22 70%); border: 1px solid {team2Color}55; box-shadow: 0 0 30px {team2Color}22; animation: rpSlideLeft 0.45s cubic-bezier(0.22, 0.8, 0.3, 1) both;">
       <p class="font-mono text-[10px] tracking-[0.22em] uppercase mb-2" style="color: {team2Color};">{team2Label}</p>
       {#each t2.members as m, i}
         <div class="mb-3 last:mb-0" style="animation: rpFadeIn 0.4s {0.2 + i * 0.1}s both;">
