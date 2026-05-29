@@ -173,6 +173,17 @@
     charEls.set(args.name, node)
     return { destroy() { charEls.delete(args.name) } }
   }
+  // On mobile the layout sets CSS `zoom` on <html> to shrink the UI. Under
+  // zoom, getBoundingClientRect() returns POST-zoom screen pixels, but the
+  // absolutely-positioned VFX children interpret their left/top in PRE-zoom
+  // local pixels. So every rect-derived delta must be divided by the active
+  // zoom to land on-card. On PC (no zoom) this is 1 and a no-op.
+  function rootZoom(): number {
+    try {
+      const z = parseFloat(getComputedStyle(document.documentElement).zoom as string)
+      return z && isFinite(z) && z > 0 ? z : 1
+    } catch { return 1 }
+  }
   function memberOrigin(name: string | null): { x: number; y: number } | undefined {
     if (!name || !wrapperEl) return undefined
     const el = charEls.get(name)
@@ -180,19 +191,21 @@
     const cardRect = el.getBoundingClientRect()
     const wrapRect = wrapperEl.getBoundingClientRect()
     if (cardRect.width === 0 || wrapRect.width === 0) return undefined
+    const z = rootZoom()
     return {
-      x: cardRect.left - wrapRect.left + cardRect.width / 2,
-      y: cardRect.top  - wrapRect.top  + cardRect.height / 2,
+      x: (cardRect.left - wrapRect.left + cardRect.width / 2) / z,
+      y: (cardRect.top  - wrapRect.top  + cardRect.height / 2) / z,
     }
   }
   function wrapperOrigin(dir: AnimDir): { x: number; y: number } | undefined {
     if (!wrapperEl) return undefined
     const wr = wrapperEl.getBoundingClientRect()
     if (wr.width === 0) return undefined
+    const z = rootZoom()
     const xRel = dir === 'rtl' ? 0.75 : dir === 'ltr' ? 0.25 : 0.5
     return {
-      x: wr.width * xRel,
-      y: wr.height / 2,
+      x: (wr.width / z) * xRel,
+      y: (wr.height / z) / 2,
     }
   }
 
@@ -289,16 +302,17 @@
     const cardRect = el.getBoundingClientRect()
     const wrapRect = wrapperEl.getBoundingClientRect()
     if (cardRect.width === 0 || wrapRect.width === 0) return
-    // Wrapper-relative coords. DamageIndicator is rendered absolutely
-    // inside the wrapper so positioning stays glued to the card across
-    // scroll / transform / mobile viewport changes.
+    const z = rootZoom()
+    // Wrapper-relative coords (divided by zoom — see rootZoom). DamageIndicator
+    // is rendered absolutely inside the wrapper so positioning stays glued to
+    // the card across scroll / transform / mobile viewport changes.
     const ev: DamageEvent = {
       id: ++dmgIdCounter,
-      x: cardRect.left - wrapRect.left + cardRect.width / 2,
+      x: (cardRect.left - wrapRect.left + cardRect.width / 2) / z,
       // Anchor at the TOP of the card so the floating number reads clearly
       // above the character art instead of half-occluded by it. The float
       // keyframe still drifts further up + fades while travelling.
-      y: cardRect.top  - wrapRect.top  + 8,
+      y: (cardRect.top  - wrapRect.top) / z + 8,
       value, kind,
     }
     damageEvents = [...damageEvents.slice(-29), ev]
@@ -1124,12 +1138,15 @@
       {@const ox = activeAnim.origin?.x}
       {@const oy = activeAnim.origin?.y}
       {@const wr = wrapperEl?.getBoundingClientRect()}
+      {@const wz = rootZoom()}
+      {@const ww = wr ? wr.width / wz : 0}
+      {@const wh = wr ? wr.height / wz : 0}
       <div style="position: absolute;
                   left: {ox != null ? ox + 'px'
-                         : (activeAnim.direction === 'rtl' ? (wr ? wr.width * 0.75 : 0) + 'px'
-                            : activeAnim.direction === 'ltr' ? (wr ? wr.width * 0.25 : 0) + 'px'
-                            : (wr ? wr.width / 2 : 0) + 'px')};
-                  top:  {oy != null ? oy + 'px' : (wr ? wr.height / 2 : 0) + 'px'};
+                         : (activeAnim.direction === 'rtl' ? ww * 0.75 + 'px'
+                            : activeAnim.direction === 'ltr' ? ww * 0.25 + 'px'
+                            : ww / 2 + 'px')};
+                  top:  {oy != null ? oy + 'px' : wh / 2 + 'px'};
                   transform: translate(-50%, -50%);
                   z-index: 30; pointer-events: none;">
         <AttackFX type={activeAnim.type} color={activeAnim.color}
