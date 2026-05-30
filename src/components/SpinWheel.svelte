@@ -727,7 +727,7 @@
   <!-- Shake wrapper — GSAP applies translate() here during spin -->
   <div bind:this={shakeEl} class="sw-stage flex justify-center w-full">
   <!-- Wheel + canvas wrapper — CSS Grid overlay so canvas and SVG share identical pixel bounds -->
-  <div class="sw-wheel-box {_hasTheme ? wheelTheme!.cssClass : ''}" style="display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${_hasTheme ? `drop-shadow(0 0 32px ${wheelTheme!.glow}) drop-shadow(0 0 16px ${wheelTheme!.glow})` : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(90,214,239,0.15))'}`}; {_hasTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
+  <div class="sw-wheel-box {_hasTheme ? wheelTheme!.cssClass : ''}" style="position: relative; display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${_hasTheme ? `drop-shadow(0 0 32px ${wheelTheme!.glow}) drop-shadow(0 0 16px ${wheelTheme!.glow})` : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(90,214,239,0.15))'}`}; {_hasTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
     <svg
       bind:this={svgEl}
       viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
@@ -1184,6 +1184,253 @@
   }
   :global([data-perf="low"]) .cursed-spikes-spin,
   :global([data-perf="low"]) .cursed-spikes-spin-rev { animation: none; }
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     Per-theme unique cosmetic treatments. Each wheel skin adds layered
+     pseudo-elements outside the wheel rim so the slice colors stay intact
+     while the surrounding aesthetic changes dramatically. Roughly tiered to
+     price: cheap skins get a single understated layer, expensive skins get
+     two stacked layers, distinct animations, and stronger glow chains.
+
+     Common positioning: .sw-wheel-box is position: relative (set inline),
+     so ::before / ::after are absolutely positioned at -Npx insets to spill
+     outside the rim. All are pointer-events: none so the spin button still
+     receives clicks. -------------------------------------------------------*/
+
+  /* ── Glowing (500) — pulsing cyan halo */
+  :global(.wt-glowing)::before {
+    content: ''; position: absolute; inset: -22px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle at center, transparent 56%, rgba(90,214,239,0.32) 66%, transparent 82%);
+    animation: glowingPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes glowingPulse {
+    0%, 100% { transform: scale(1);    opacity: 0.55; }
+    50%      { transform: scale(1.06); opacity: 1; }
+  }
+
+  /* ── Nature (500) — rotating green vine ring */
+  :global(.wt-nature)::before {
+    content: ''; position: absolute; inset: -14px; border-radius: 50%; pointer-events: none;
+    background:
+      conic-gradient(from 0deg,
+        rgba(34,197,94,0.55) 0deg, transparent 18deg, transparent 72deg,
+        rgba(34,197,94,0.55) 90deg, transparent 108deg, transparent 162deg,
+        rgba(34,197,94,0.55) 180deg, transparent 198deg, transparent 252deg,
+        rgba(34,197,94,0.55) 270deg, transparent 288deg);
+    mask: radial-gradient(circle, transparent 52%, black 56%, black 70%, transparent 76%);
+    filter: blur(4px);
+    animation: natureSpin 24s linear infinite;
+  }
+  @keyframes natureSpin { to { transform: rotate(360deg); } }
+
+  /* ── Guilded (1000) — gold dust shimmer + slow rotating beams */
+  :global(.wt-guilded)::before {
+    content: ''; position: absolute; inset: -14px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(circle at 28% 32%, rgba(255,215,0,0.6) 0%, transparent 14%),
+      radial-gradient(circle at 72% 68%, rgba(255,215,0,0.5) 0%, transparent 12%),
+      radial-gradient(circle at 50% 86%, rgba(255,215,0,0.45) 0%, transparent 11%),
+      radial-gradient(circle at 18% 76%, rgba(255,215,0,0.4)  0%, transparent 10%);
+    filter: blur(2px);
+    mix-blend-mode: screen;
+    animation: guildedShimmer 5s ease-in-out infinite;
+  }
+  :global(.wt-guilded)::after {
+    content: ''; position: absolute; inset: -32px; border-radius: 50%; pointer-events: none;
+    background: conic-gradient(from 0deg,
+      transparent 0deg, rgba(251,191,36,0.55) 5deg, transparent 14deg,
+      transparent 90deg, rgba(251,191,36,0.55) 95deg, transparent 104deg,
+      transparent 180deg, rgba(251,191,36,0.55) 185deg, transparent 194deg,
+      transparent 270deg, rgba(251,191,36,0.55) 275deg, transparent 284deg);
+    mask: radial-gradient(circle, transparent 48%, black 53%, black 70%, transparent 76%);
+    animation: guildedBeams 20s linear infinite;
+  }
+  @keyframes guildedShimmer {
+    0%, 100% { filter: blur(2px) brightness(1); }
+    50%      { filter: blur(3px) brightness(1.5); }
+  }
+  @keyframes guildedBeams { to { transform: rotate(360deg); } }
+
+  /* ── Aquatic (1000) — refracting water ring with subtle drift */
+  :global(.wt-aquatic)::before {
+    content: ''; position: absolute; inset: -12px; border-radius: 50%; pointer-events: none;
+    border: 1.5px solid rgba(56,189,248,0.45);
+    box-shadow:
+      inset 0 0 30px rgba(56,189,248,0.5),
+      0 0 38px rgba(56,189,248,0.45),
+      0 0 70px rgba(14,116,144,0.35);
+    animation: aquaticDrift 4s ease-in-out infinite;
+  }
+  :global(.wt-aquatic)::after {
+    content: ''; position: absolute; inset: -24px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(2px 2px at 30% 20%, rgba(186,230,253,0.85) 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 70% 35%, rgba(186,230,253,0.7) 100%, transparent 0),
+      radial-gradient(2px 2px at 55% 80%, rgba(186,230,253,0.8) 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 20% 65%, rgba(186,230,253,0.7) 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 88% 78%, rgba(186,230,253,0.7) 100%, transparent 0);
+    animation: aquaticBubbles 5s ease-in-out infinite;
+    filter: drop-shadow(0 0 3px #38bdf8);
+  }
+  @keyframes aquaticDrift {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-4px) scale(1.02); }
+  }
+  @keyframes aquaticBubbles {
+    0%, 100% { transform: translateY(0); opacity: 0.85; }
+    50%      { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* ── Holy (1500) — radiating sun rays + bright halo */
+  :global(.wt-holy)::before {
+    content: ''; position: absolute; inset: -36px; border-radius: 50%; pointer-events: none;
+    background: conic-gradient(from 0deg,
+      rgba(253,224,71,0.7) 0deg, transparent 6deg, transparent 24deg,
+      rgba(253,224,71,0.7) 30deg, transparent 36deg, transparent 54deg,
+      rgba(253,224,71,0.7) 60deg, transparent 66deg, transparent 84deg,
+      rgba(253,224,71,0.7) 90deg, transparent 96deg, transparent 114deg,
+      rgba(253,224,71,0.7) 120deg, transparent 126deg, transparent 144deg,
+      rgba(253,224,71,0.7) 150deg, transparent 156deg, transparent 174deg,
+      rgba(253,224,71,0.7) 180deg, transparent 186deg, transparent 204deg,
+      rgba(253,224,71,0.7) 210deg, transparent 216deg, transparent 234deg,
+      rgba(253,224,71,0.7) 240deg, transparent 246deg, transparent 264deg,
+      rgba(253,224,71,0.7) 270deg, transparent 276deg, transparent 294deg,
+      rgba(253,224,71,0.7) 300deg, transparent 306deg, transparent 324deg,
+      rgba(253,224,71,0.7) 330deg, transparent 336deg);
+    mask: radial-gradient(circle, transparent 50%, black 54%, black 90%, transparent 96%);
+    filter: blur(2px);
+    animation: holyRays 24s linear infinite;
+  }
+  :global(.wt-holy)::after {
+    content: ''; position: absolute; inset: -10px; border-radius: 50%; pointer-events: none;
+    border: 2px solid #fef3c7;
+    box-shadow:
+      0 0 55px rgba(253,224,71,0.9),
+      0 0 110px rgba(253,224,71,0.55),
+      inset 0 0 24px rgba(253,224,71,0.4);
+    animation: holyHalo 3s ease-in-out infinite;
+  }
+  @keyframes holyRays { to { transform: rotate(360deg); } }
+  @keyframes holyHalo {
+    0%, 100% { opacity: 0.7;  transform: scale(1);    }
+    50%      { opacity: 1;    transform: scale(1.04); }
+  }
+
+  /* ── Arcane (1500) — orbiting rune lights on two counter-rotating rings */
+  :global(.wt-arcane)::before {
+    content: ''; position: absolute; inset: -22px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(2.5px 2.5px at 50% 0%,    #c7d2fe 100%, transparent 0),
+      radial-gradient(2px   2px   at 93.3% 25%, #818cf8 100%, transparent 0),
+      radial-gradient(2.5px 2.5px at 93.3% 75%, #c7d2fe 100%, transparent 0),
+      radial-gradient(2px   2px   at 50% 100%,  #818cf8 100%, transparent 0),
+      radial-gradient(2.5px 2.5px at 6.7% 75%,  #c7d2fe 100%, transparent 0),
+      radial-gradient(2px   2px   at 6.7% 25%,  #818cf8 100%, transparent 0);
+    filter: drop-shadow(0 0 5px #818cf8) drop-shadow(0 0 10px rgba(99,102,241,0.6));
+    animation: arcaneOrbit 14s linear infinite;
+  }
+  :global(.wt-arcane)::after {
+    content: ''; position: absolute; inset: -8px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(1.5px 1.5px at 50% 0%, #ddd6fe 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 100% 50%, #c4b5fd 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 50% 100%, #ddd6fe 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 0% 50%, #c4b5fd 100%, transparent 0);
+    filter: drop-shadow(0 0 4px #a78bfa);
+    animation: arcaneOrbitRev 9s linear infinite;
+  }
+  @keyframes arcaneOrbit    { to { transform: rotate(360deg); } }
+  @keyframes arcaneOrbitRev { to { transform: rotate(-360deg); } }
+
+  /* ── Hellfire (2000) — flame tongues, ember pulse, and a subtle quake */
+  :global(.wt-hellfire) { animation: hellfireQuake 0.55s ease-in-out infinite; }
+  :global(.wt-hellfire)::before {
+    content: ''; position: absolute; inset: -30px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(circle at 22% 50%, rgba(251,146,60,0.65) 0%, transparent 18%),
+      radial-gradient(circle at 78% 28%, rgba(220,38,38,0.65) 0%, transparent 16%),
+      radial-gradient(circle at 68% 78%, rgba(251,146,60,0.6)  0%, transparent 15%),
+      radial-gradient(circle at 32% 80%, rgba(220,38,38,0.6)   0%, transparent 16%),
+      radial-gradient(circle at 50% 12%, rgba(254,215,170,0.55) 0%, transparent 14%);
+    filter: blur(7px);
+    mix-blend-mode: screen;
+    animation: hellfireFlicker 0.65s ease-in-out infinite alternate;
+  }
+  :global(.wt-hellfire)::after {
+    content: ''; position: absolute; inset: -12px; border-radius: 50%; pointer-events: none;
+    box-shadow:
+      inset 0 0 70px rgba(220,38,38,0.7),
+      0 0 90px rgba(251,146,60,0.75),
+      0 0 130px rgba(220,38,38,0.55);
+    animation: hellfireGlow 1.3s ease-in-out infinite;
+  }
+  @keyframes hellfireQuake {
+    0%, 100% { transform: translate(0, 0); }
+    25%      { transform: translate(-1.2px, 1px); }
+    50%      { transform: translate(1px, -1.2px); }
+    75%      { transform: translate(-1px, -1px); }
+  }
+  @keyframes hellfireFlicker {
+    from { opacity: 0.6; filter: blur(6px) brightness(1.0); }
+    to   { opacity: 1;   filter: blur(9px) brightness(1.4); }
+  }
+  @keyframes hellfireGlow {
+    0%, 100% { opacity: 0.7; }
+    50%      { opacity: 1; }
+  }
+
+  /* ── Cosmic (2000) — slowly rotating starfield + drifting nebula */
+  :global(.wt-cosmic)::before {
+    content: ''; position: absolute; inset: -36px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(1px 1px at 18% 12%, white 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 82% 31%, #c4b5fd 100%, transparent 0),
+      radial-gradient(1px 1px at 24% 73%, white 100%, transparent 0),
+      radial-gradient(2px 2px at 76% 85%, #a78bfa 100%, transparent 0),
+      radial-gradient(1px 1px at 50% 50%, white 100%, transparent 0),
+      radial-gradient(1px 1px at 39% 42%, #fbcfe8 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 65% 19%, white 100%, transparent 0),
+      radial-gradient(1px 1px at 12% 55%, #f9a8d4 100%, transparent 0),
+      radial-gradient(1px 1px at 92% 62%, white 100%, transparent 0),
+      radial-gradient(1px 1px at 7%  35%, white 100%, transparent 0),
+      radial-gradient(1px 1px at 60% 8%, #c4b5fd 100%, transparent 0);
+    filter: drop-shadow(0 0 3px white);
+    animation: cosmicSpin 45s linear infinite, cosmicTwinkle 3.5s ease-in-out infinite;
+  }
+  :global(.wt-cosmic)::after {
+    content: ''; position: absolute; inset: -18px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(circle at 30% 35%, rgba(236,72,153,0.45), transparent 38%),
+      radial-gradient(circle at 70% 75%, rgba(99,102,241,0.55), transparent 40%);
+    filter: blur(12px);
+    mix-blend-mode: screen;
+    animation: cosmicNebula 14s ease-in-out infinite;
+  }
+  @keyframes cosmicSpin    { to { transform: rotate(360deg); } }
+  @keyframes cosmicTwinkle { 50% { opacity: 0.75; } }
+  @keyframes cosmicNebula {
+    0%, 100% { transform: rotate(0)      scale(1);   opacity: 0.75; }
+    50%      { transform: rotate(180deg) scale(1.1); opacity: 1;    }
+  }
+
+  /* Reduced motion + low-perf: kill the always-on theme layers entirely. */
+  @media (prefers-reduced-motion: reduce) {
+    :global(.wt-glowing)::before, :global(.wt-nature)::before,
+    :global(.wt-guilded)::before, :global(.wt-guilded)::after,
+    :global(.wt-aquatic)::before, :global(.wt-aquatic)::after,
+    :global(.wt-holy)::before,    :global(.wt-holy)::after,
+    :global(.wt-arcane)::before,  :global(.wt-arcane)::after,
+    :global(.wt-hellfire),        :global(.wt-hellfire)::before, :global(.wt-hellfire)::after,
+    :global(.wt-cosmic)::before,  :global(.wt-cosmic)::after { animation: none; }
+  }
+  :global([data-perf="low"] .wt-glowing)::before,
+  :global([data-perf="low"] .wt-nature)::before,
+  :global([data-perf="low"] .wt-guilded)::before, :global([data-perf="low"] .wt-guilded)::after,
+  :global([data-perf="low"] .wt-aquatic)::before, :global([data-perf="low"] .wt-aquatic)::after,
+  :global([data-perf="low"] .wt-holy)::before,    :global([data-perf="low"] .wt-holy)::after,
+  :global([data-perf="low"] .wt-arcane)::before,  :global([data-perf="low"] .wt-arcane)::after,
+  :global([data-perf="low"] .wt-hellfire)::before, :global([data-perf="low"] .wt-hellfire)::after,
+  :global([data-perf="low"] .wt-cosmic)::before,  :global([data-perf="low"] .wt-cosmic)::after { animation: none; }
 
   /* Mobile / low-tier devices: kill the always-running cosmetic
      animations that contribute to constant GPU usage even when idle.
