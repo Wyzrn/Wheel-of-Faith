@@ -40,9 +40,11 @@
     team2Label = 'Opponent',
     title = 'Battle',
     team2Color = '#f9a8d4',
+    forceManual = false,
     onComplete,
     onRematch,
     onBack,
+    onSaveCharacter,
     backLabel = 'Back',
   }: {
     team1: BattleTeamMember[]
@@ -51,11 +53,33 @@
     team2Label?: string
     title?: string
     team2Color?: string
+    // When true, manual mode is forced on regardless of the autoBattle setting.
+    // Rivals battles use this so PvP fights are always pick-your-attack.
+    forceManual?: boolean
     onComplete?: (winner: 'team1' | 'team2' | 'draw') => void
     onRematch: () => void
     onBack: () => void
+    // When provided, surfaces a "Save Character" button in the result modal.
+    // Returns a promise so the button can show a saving state until it
+    // resolves. Caller is responsible for the actual persistence.
+    onSaveCharacter?: () => Promise<void> | void
     backLabel?: string
   } = $props()
+
+  // Saving state for the optional post-battle save action. Once the save
+  // resolves successfully the button locks in a "Saved" state so accidental
+  // double-taps don't re-persist the same character.
+  let saveState = $state<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  async function handleSaveCharacter() {
+    if (!onSaveCharacter || saveState === 'saving' || saveState === 'saved') return
+    saveState = 'saving'
+    try {
+      await onSaveCharacter()
+      saveState = 'saved'
+    } catch {
+      saveState = 'error'
+    }
+  }
 
   let phase = $state<'intro' | 'battle' | 'result'>('intro')
   let battleWinner = $state<ArenaWinner | null>(null)
@@ -70,9 +94,12 @@
   let finalT1Hp = $state<number[]>([])
   let finalT2Hp = $state<number[]>([])
 
-  // Manual / Auto preference for this battle, seeded from settings and
-  // flippable via the in-arena switch.
-  let manualMode = $state(!settings.autoBattle)
+  // Manual / Auto preference for this battle. Seeded from settings unless
+  // forceManual is set (rivals battles always start manual so PvP fights
+  // are interactive). Player can still flip mid-fight via the arena switch
+  // unless we explicitly want to lock it — for now we keep the switch
+  // available so a player can opt back into auto if they want.
+  let manualMode = $state(forceManual || !settings.autoBattle)
 
   let showCritSurge = $state(false)
   let canInstant = $derived((auth.user?.gamepasses ?? []).includes('instant_battle'))
@@ -292,6 +319,18 @@
 
               <!-- Action buttons -->
               <div class="mt-5 flex flex-col gap-2">
+                {#if onSaveCharacter}
+                  <button
+                    onclick={handleSaveCharacter}
+                    disabled={saveState === 'saving' || saveState === 'saved'}
+                    class="w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest"
+                    style="background: {saveState === 'saved' ? 'rgba(52,211,153,0.18)' : 'rgba(52,211,153,0.12)'};
+                           border: 1px solid {saveState === 'saved' ? 'rgba(52,211,153,0.6)' : 'rgba(52,211,153,0.35)'};
+                           color: {saveState === 'saved' ? '#bbf7d0' : '#34d399'};
+                           cursor: {saveState === 'saving' || saveState === 'saved' ? 'default' : 'pointer'};">
+                    {#if saveState === 'idle'}+ Save Character{:else if saveState === 'saving'}Saving…{:else if saveState === 'saved'}✓ Saved to Roster{:else}Save Failed — Tap to Retry{/if}
+                  </button>
+                {/if}
                 <button onclick={onRematch}
                   class="w-full metal-stamp-gold py-3 rounded-xl font-bold font-mono text-sm tracking-widest">
                   ↺ Rematch

@@ -67,38 +67,39 @@
   // Flag: WS was stored for main-game relay — prevent onDestroy from closing it
   let storedWsForSpin = false
 
-  // Save the player's winning character to their roster and credit a per-
-  // character Rivals win (the medal shown on the character card). Mirrors the
-  // old TeamBattleScreen champions-record flow that was lost when Rivals moved
-  // to QuickBattleView — fresh-spun winners are persisted, then PATCHed.
+  // Save the player's freshly-spun rivals character to their roster. The
+  // win medal (PATCH /rivals-win) is credited only when this player won
+  // the fight; on a loss or draw the character still lands in the roster
+  // but without a medal increment.
+  let lastBattleWon = $state<boolean | null>(null)
   async function saveRivalsWin() {
-    if (!auth.loggedIn || myResults.length === 0) return
+    if (!auth.loggedIn || myResults.length === 0) throw new Error('not logged in')
+    const race      = myResults.find(r => r.category === 'race')?.resultLabel      ?? ''
+    const archetype = myResults.find(r => r.category === 'archetype')?.resultLabel ?? ''
+    const STAT_CATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','potential','energyLevel']
+    const statScores = Object.fromEntries(STAT_CATS.map(c => [c, myResults.find(r => r.category === c)?.score ?? 0]))
+    const overall = computeOverallScore(statScores)
+    const res = await fetch('/api/characters', {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: myCharName || race, race, archetype,
+        overall_score: overall, overall_tier: scoreTier(overall),
+        spins: myResults,
+        elementWeaknesses: myResults
+          .filter(r => r.category === 'weakness')
+          .map(r => detectWeaknessElement(r.resultLabel))
+          .filter((e): e is NonNullable<typeof e> => !!e),
+      }),
+    })
+    if (!res.ok) throw new Error('save failed')
+    const { shareId } = await res.json() as { shareId: string }
     try {
-      const race      = myResults.find(r => r.category === 'race')?.resultLabel      ?? ''
-      const archetype = myResults.find(r => r.category === 'archetype')?.resultLabel ?? ''
-      const STAT_CATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','potential','energyLevel']
-      const statScores = Object.fromEntries(STAT_CATS.map(c => [c, myResults.find(r => r.category === c)?.score ?? 0]))
-      const overall = computeOverallScore(statScores)
-      const res = await fetch('/api/characters', {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: myCharName || race, race, archetype,
-          overall_score: overall, overall_tier: scoreTier(overall),
-          spins: myResults,
-          elementWeaknesses: myResults
-            .filter(r => r.category === 'weakness')
-            .map(r => detectWeaknessElement(r.resultLabel))
-            .filter((e): e is NonNullable<typeof e> => !!e),
-        }),
-      })
-      if (!res.ok) return
-      const { shareId } = await res.json() as { shareId: string }
-      try {
-        const ex: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
-        if (!ex.includes(shareId)) localStorage.setItem('wof_saved_chars', JSON.stringify([shareId, ...ex].slice(0, 50)))
-      } catch { /* ignore */ }
+      const ex: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
+      if (!ex.includes(shareId)) localStorage.setItem('wof_saved_chars', JSON.stringify([shareId, ...ex].slice(0, 50)))
+    } catch { /* ignore */ }
+    if (lastBattleWon === true) {
       await fetch(`/api/characters/${shareId}/rivals-win`, { method: 'PATCH', credentials: 'include' })
-    } catch { /* network — the win still counts at the user level */ }
+    }
   }
 
   const WS_URL = (() => {
@@ -700,8 +701,11 @@
       team2Label={partnerName || 'Opponent'}
       title={isBotBattle ? `${myCharName ?? 'You'} vs BOT` : `${myCharName ?? auth.user?.username ?? 'You'} vs ${partnerName}`}
       team2Color={isBotBattle ? '#34d399' : '#f9a8d4'}
+      forceManual={true}
+      onSaveCharacter={() => saveRivalsWin()}
       onComplete={(winner) => {
         const iWon = winner === 'team1'
+        lastBattleWon = winner === 'draw' ? null : iWon
         // Tell the server which side this client thinks won; server credits the win
         // only when both clients report agreeing results. See rivals-ws.ts 'battle_result'.
         const wsData = getRivalsWs()
@@ -709,9 +713,8 @@
           try { wsData.ws.send(JSON.stringify({ type: 'battle_result', won: iWon })) } catch { /* socket closed */ }
         }
         if (auth.loggedIn) auth.recordBattleResult(iWon)
-        // Persist the winning character + credit its per-character Rivals win
-        // (the medal on the roster card). Only on a win.
-        if (iWon) saveRivalsWin()
+        // Character is no longer auto-saved on a win — the player now picks
+        // explicitly via the "Save Character" button in the result modal.
         // Record opponent locally so the profile page can show "play again /
         // view profile" links for recent battles. Strips bot/anon usernames.
         recordOpponent({
