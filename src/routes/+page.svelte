@@ -2639,15 +2639,19 @@
        pattern: the outer handles scroll + background, the inner handles
        centering with at least viewport height. -->
   {#if showMenu}
-    <div class="menu-bg fixed inset-0 z-30 overflow-y-auto" style="background: #16121a;">
-      <!-- Decorative glows: gold haze up top, arcane teal swell at the base.
-           Sticky-positioned so they ride along with the viewport rather than
-           scrolling with content — otherwise on tall menus the bottom swell
-           drops off-screen while the top haze leaves a gap above content. -->
+    <!-- True viewport-pinned overlay. Inline position: fixed on the style
+         attribute beats any class-selector override (the .menu-bg rule in
+         app.css was previously setting position: relative because Tailwind's
+         `fixed` utility lost the specificity war against the bare .menu-bg
+         selector, which collapsed this whole overlay into normal flow). -->
+    <div class="menu-bg z-30 overflow-y-auto"
+         style="position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: #16121a;">
+      <!-- Decorative glows: gold haze up top, arcane teal swell at the base. -->
       <div class="absolute top-0 inset-x-0 h-48 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240,192,82,0.12), transparent);"></div>
       <div class="absolute bottom-0 inset-x-0 h-56 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(90,214,239,0.10), transparent);"></div>
 
-      <div class="relative z-[1] min-h-full w-full flex flex-col items-center justify-center px-5 py-10">
+      <div class="relative z-[1] w-full flex flex-col items-center justify-center px-5 py-10"
+           style="min-height: 100dvh;">
 
       <!-- Logo mark -->
       <div class="menu-entry mb-4 flex flex-col items-center gap-3" style="--menu-delay: 0ms;">

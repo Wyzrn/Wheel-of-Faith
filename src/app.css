@@ -292,12 +292,15 @@
 
 /* Background ember field — purely decorative dots that drift upward
    on a slow loop. Painted into the menu's existing backdrop layer via
-   a single pseudo-element on .menu-bg. NOTE: must NOT add a blanket
-   `.menu-bg > * { position: relative }` rule here — that would
-   override the existing `class="absolute"` on the decorative gold
-   haze + teal swell divs and turn them into flex items, breaking
-   centering. Stacking is handled per-element instead. */
-.menu-bg { position: relative; }
+   a single pseudo-element on .menu-bg.
+   IMPORTANT: this stylesheet must NOT set `position:` on .menu-bg
+   itself. The markup applies `position: fixed` inline; any
+   class-selector position rule here would lose the specificity war
+   only against ID selectors but would override Tailwind utilities
+   in the same layer — and originally collapsed the overlay into
+   normal document flow. ::before's positioning works fine because
+   the inline `position: fixed` on the host already provides a
+   positioning context for it. */
 .menu-bg::before {
   content: '';
   position: absolute; inset: 0; pointer-events: none;
