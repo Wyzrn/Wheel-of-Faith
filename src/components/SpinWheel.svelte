@@ -1158,27 +1158,8 @@
     50%      { opacity: 1;    transform: scale(1.02); }
   }
 
-  /* ── Void Wheel: blacks out the center via multiply blend and the aura
-       contracts INWARD while rotating, so the wheel reads as a black hole
-       pulling everything in. The spike crown drifts inward in counter-step. */
-  :global(.wt-void) .cursed-inner-glow {
-    animation-name: voidSuck !important;
-    mix-blend-mode: multiply !important;
-  }
-  @keyframes voidSuck {
-    0%, 100% { opacity: 0.75; transform: scale(1.06) rotate(0deg); }
-    50%      { opacity: 1;    transform: scale(0.78) rotate(160deg); }
-  }
-  :global(.wt-void) .cursed-spikes-spin,
-  :global(.wt-void) .cursed-spikes-spin-rev {
-    transform-origin: 250px 250px;
-    animation-name: voidSpikeDrift !important;
-  }
-  @keyframes voidSpikeDrift {
-    0%   { transform: rotate(0deg)   scale(1); }
-    50%  { transform: rotate(180deg) scale(0.95); }
-    100% { transform: rotate(360deg) scale(1); }
-  }
+  /* (Void-wheel overrides moved next to the rest of the theme treatments
+     below, where they live alongside Cosmic for tier parity.) */
   @media (prefers-reduced-motion: reduce) {
     .cursed-spikes-spin, .cursed-spikes-spin-rev, .cursed-inner-glow { animation: none; }
   }
@@ -1379,38 +1360,97 @@
     50%      { opacity: 1; }
   }
 
-  /* ── Cosmic (2000) — slowly rotating starfield + drifting nebula */
+  /* ── Cosmic (2000) — deep-space window: indigo/violet nebula behind a
+     slow-rotating starfield. White stars carry a faint blue-tinted glow so
+     the whole composition stays in cool tones — no warm magenta accents. */
   :global(.wt-cosmic)::before {
     content: ''; position: absolute; inset: -36px; border-radius: 50%; pointer-events: none;
     background:
-      radial-gradient(1px 1px at 18% 12%, white 100%, transparent 0),
-      radial-gradient(1.5px 1.5px at 82% 31%, #c4b5fd 100%, transparent 0),
-      radial-gradient(1px 1px at 24% 73%, white 100%, transparent 0),
-      radial-gradient(2px 2px at 76% 85%, #a78bfa 100%, transparent 0),
-      radial-gradient(1px 1px at 50% 50%, white 100%, transparent 0),
-      radial-gradient(1px 1px at 39% 42%, #fbcfe8 100%, transparent 0),
-      radial-gradient(1.5px 1.5px at 65% 19%, white 100%, transparent 0),
-      radial-gradient(1px 1px at 12% 55%, #f9a8d4 100%, transparent 0),
-      radial-gradient(1px 1px at 92% 62%, white 100%, transparent 0),
-      radial-gradient(1px 1px at 7%  35%, white 100%, transparent 0),
-      radial-gradient(1px 1px at 60% 8%, #c4b5fd 100%, transparent 0);
-    filter: drop-shadow(0 0 3px white);
+      radial-gradient(1.2px 1.2px at 18% 12%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.8px 1.8px at 82% 31%, #c4b5fd 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 24% 73%, #e0e7ff 100%, transparent 0),
+      radial-gradient(2px 2px at 76% 85%, #a5b4fc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 50% 50%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 39% 42%, #818cf8 100%, transparent 0),
+      radial-gradient(1.8px 1.8px at 65% 19%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 12% 55%, #a5b4fc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 92% 62%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 7%  35%, #c7d2fe 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 60% 8%,  #c4b5fd 100%, transparent 0),
+      radial-gradient(1px 1px at 45% 90%,  #e0e7ff 100%, transparent 0),
+      radial-gradient(1px 1px at 88% 12%,  #f8fafc 100%, transparent 0);
+    filter: drop-shadow(0 0 3px #818cf8);
     animation: cosmicSpin 45s linear infinite, cosmicTwinkle 3.5s ease-in-out infinite;
   }
   :global(.wt-cosmic)::after {
     content: ''; position: absolute; inset: -18px; border-radius: 50%; pointer-events: none;
     background:
-      radial-gradient(circle at 30% 35%, rgba(236,72,153,0.45), transparent 38%),
-      radial-gradient(circle at 70% 75%, rgba(99,102,241,0.55), transparent 40%);
-    filter: blur(12px);
+      radial-gradient(circle at 28% 32%, rgba(67,56,202,0.6), transparent 40%),
+      radial-gradient(circle at 72% 70%, rgba(76,29,149,0.7),  transparent 42%),
+      radial-gradient(circle at 50% 50%, rgba(15,23,42,0.55),  transparent 60%);
+    filter: blur(14px);
     mix-blend-mode: screen;
-    animation: cosmicNebula 14s ease-in-out infinite;
+    animation: cosmicNebula 16s ease-in-out infinite;
   }
   @keyframes cosmicSpin    { to { transform: rotate(360deg); } }
-  @keyframes cosmicTwinkle { 50% { opacity: 0.75; } }
+  @keyframes cosmicTwinkle { 50% { opacity: 0.72; } }
   @keyframes cosmicNebula {
-    0%, 100% { transform: rotate(0)      scale(1);   opacity: 0.75; }
-    50%      { transform: rotate(180deg) scale(1.1); opacity: 1;    }
+    0%, 100% { transform: rotate(0)      scale(1);    opacity: 0.7; }
+    50%      { transform: rotate(180deg) scale(1.12); opacity: 1;   }
+  }
+
+  /* ── Void (2500) — singularity at the center of the wheel.
+     Layer stack:
+       1. inner pseudo-element  = pure pitch-black core that contracts and
+          rotates (voidSuck), making the wheel look like it's being pulled
+          into the middle.
+       2. ::before               = event-horizon ring with a faint blue
+          accretion-disk glow that orbits the rim.
+       3. ::after                = outer warp / lensing halo that dims the
+          surroundings via mix-blend-mode: multiply.
+     The themed inner aura still renders (innerStops are pitch-black) but
+     gets repurposed by the wt-void override below. */
+  :global(.wt-void) .cursed-inner-glow {
+    animation-name: voidSuck !important;
+    mix-blend-mode: normal !important;
+  }
+  @keyframes voidSuck {
+    0%, 100% { opacity: 1;    transform: scale(1)    rotate(0deg);   }
+    50%      { opacity: 0.92; transform: scale(0.72) rotate(180deg); }
+  }
+  :global(.wt-void)::before {
+    content: ''; position: absolute; inset: -10px; border-radius: 50%; pointer-events: none;
+    /* Event horizon ring — thin bright arc on an otherwise black orbit,
+       sweeping around to suggest accretion-disk material being whipped
+       past at relativistic speed. */
+    background: conic-gradient(from 0deg,
+      transparent 0deg,
+      rgba(96,165,250,0.05) 30deg,
+      rgba(96,165,250,0.45) 70deg,
+      rgba(186,230,253,0.75) 90deg,
+      rgba(96,165,250,0.45) 110deg,
+      rgba(96,165,250,0.05) 150deg,
+      transparent 180deg);
+    mask: radial-gradient(circle, transparent 49%, black 51%, black 56%, transparent 60%);
+    filter: blur(2px) drop-shadow(0 0 8px rgba(125,211,252,0.55));
+    animation: voidEventHorizon 7s linear infinite;
+  }
+  :global(.wt-void)::after {
+    content: ''; position: absolute; inset: -36px; border-radius: 50%; pointer-events: none;
+    /* Lensing halo + gravitational dimming around the wheel — dark vignette
+       on a multiply blend so whatever is behind the wheel reads as fading
+       into the singularity. The faint blue tinge keeps it from looking like
+       just a drop-shadow. */
+    background:
+      radial-gradient(circle, transparent 52%, rgba(8,8,18,0.55) 60%, rgba(0,0,0,0.85) 78%, rgba(0,0,0,0) 100%),
+      radial-gradient(circle, transparent 50%, rgba(30,58,138,0.25) 55%, transparent 65%);
+    mix-blend-mode: multiply;
+    animation: voidWarp 9s ease-in-out infinite;
+  }
+  @keyframes voidEventHorizon { to { transform: rotate(360deg); } }
+  @keyframes voidWarp {
+    0%, 100% { transform: scale(1);    opacity: 0.85; }
+    50%      { transform: scale(1.04); opacity: 1;    }
   }
 
   /* Reduced motion + low-perf: kill the always-on theme layers entirely. */
@@ -1421,7 +1461,8 @@
     :global(.wt-holy)::before,    :global(.wt-holy)::after,
     :global(.wt-arcane)::before,  :global(.wt-arcane)::after,
     :global(.wt-hellfire),        :global(.wt-hellfire)::before, :global(.wt-hellfire)::after,
-    :global(.wt-cosmic)::before,  :global(.wt-cosmic)::after { animation: none; }
+    :global(.wt-cosmic)::before,  :global(.wt-cosmic)::after,
+    :global(.wt-void)::before,    :global(.wt-void)::after { animation: none; }
   }
   :global([data-perf="low"] .wt-glowing)::before,
   :global([data-perf="low"] .wt-nature)::before,
@@ -1430,7 +1471,8 @@
   :global([data-perf="low"] .wt-holy)::before,    :global([data-perf="low"] .wt-holy)::after,
   :global([data-perf="low"] .wt-arcane)::before,  :global([data-perf="low"] .wt-arcane)::after,
   :global([data-perf="low"] .wt-hellfire)::before, :global([data-perf="low"] .wt-hellfire)::after,
-  :global([data-perf="low"] .wt-cosmic)::before,  :global([data-perf="low"] .wt-cosmic)::after { animation: none; }
+  :global([data-perf="low"] .wt-cosmic)::before,  :global([data-perf="low"] .wt-cosmic)::after,
+  :global([data-perf="low"] .wt-void)::before,    :global([data-perf="low"] .wt-void)::after { animation: none; }
 
   /* Mobile / low-tier devices: kill the always-running cosmetic
      animations that contribute to constant GPU usage even when idle.

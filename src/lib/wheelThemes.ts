@@ -111,21 +111,24 @@ export const WHEEL_THEMES: Record<WheelThemeId, WheelTheme> = {
   }),
   cosmic_wheel: T({
     id: 'cosmic_wheel', name: 'Cosmic', gamepass: 'cosmic_wheel',
-    innerStops: ['rgba(167,139,250,0)', 'rgba(99,102,241,0.28)', 'rgba(236,72,153,0.45)', 'rgba(15,23,42,0.85)'],
+    // Deep-space palette: midnight indigo bleeding into rich violet, with
+    // a starlit fringe. No magenta — the wheel should read as a window
+    // into outer space rather than a galaxy filter.
+    innerStops: ['rgba(30,27,75,0)', 'rgba(49,46,129,0.32)', 'rgba(76,29,149,0.48)', 'rgba(15,15,35,0.85)'],
     spikeStops: null,
-    rimStroke: '#a78bfa', rimAccent: '#c4b5fd', glow: 'rgba(167,139,250,0.7)',
-    cssClass: 'wt-cosmic', innerPulseS: 5.0,
+    rimStroke: '#6366f1', rimAccent: '#a5b4fc', glow: 'rgba(99,102,241,0.65)',
+    cssClass: 'wt-cosmic', innerPulseS: 6.0,
   }),
   void_wheel: T({
     id: 'void_wheel', name: 'Void', gamepass: 'void_wheel',
-    // Pitch-black scheme. Center is pure void that darkens segments through
-    // mix-blend-mode: multiply (overridden per wt-void CSS); the animation
-    // suckss INWARD instead of pulsing outward, so the wheel reads as a black
-    // hole consuming everything around it.
-    innerStops: ['rgba(0,0,0,1)', 'rgba(5,5,10,0.92)', 'rgba(15,12,22,0.55)', 'rgba(0,0,0,0.1)'],
-    spikeStops: ['#000000', '#0a0a10', '#1f1f2a'],
-    rimStroke: '#1a1a22', rimAccent: '#3f3f4d', glow: 'rgba(0,0,0,0.95)',
-    cssClass: 'wt-void', spikeSpinS: 28, innerPulseS: 3.2,
+    // Black-hole scheme. The inner aura is opaque pitch black at the core
+    // and falls to fully transparent at the rim so it reads as a singularity
+    // sitting at the wheel's center. The CSS overrides add an event horizon
+    // ring, accretion-disk glow, and inward spiral animation.
+    innerStops: ['rgba(0,0,0,1)', 'rgba(0,0,0,0.95)', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0)'],
+    spikeStops: null,
+    rimStroke: '#0a0a12', rimAccent: '#2a2a35', glow: 'rgba(0,0,0,0.98)',
+    cssClass: 'wt-void', innerPulseS: 4.0,
   }),
 }
 
