@@ -1323,27 +1323,81 @@
   @keyframes arcaneOrbit    { to { transform: rotate(360deg); } }
   @keyframes arcaneOrbitRev { to { transform: rotate(-360deg); } }
 
-  /* ── Hellfire (2000) — flame tongues, ember pulse, and a subtle quake */
+  /* ── Hellfire (2000) — the wheel is literally on fire.
+     Layer stack:
+       parent  — heat-shimmer quake (translate jitter).
+       ::before — flame tongues around the rim (conic-gradient with
+                  many tapered bright wedges, masked to a band just
+                  outside the wheel rim), screen-blended so the rim
+                  segments stay readable through them. A wraparound
+                  inset+outer box-shadow gives the wheel a hot-core
+                  glow, and rapid flicker animates blur + brightness.
+       ::after  — floating embers: ~14 hot pixels positioned around
+                  the perimeter that rise upward and fade out on
+                  loop, with a soft orange→crimson glow trailing them. */
   :global(.wt-hellfire) { animation: hellfireQuake 0.55s ease-in-out infinite; }
   :global(.wt-hellfire)::before {
-    content: ''; position: absolute; inset: -30px; border-radius: 50%; pointer-events: none;
+    content: ''; position: absolute; inset: -42px; border-radius: 50%; pointer-events: none;
     background:
-      radial-gradient(circle at 22% 50%, rgba(251,146,60,0.65) 0%, transparent 18%),
-      radial-gradient(circle at 78% 28%, rgba(220,38,38,0.65) 0%, transparent 16%),
-      radial-gradient(circle at 68% 78%, rgba(251,146,60,0.6)  0%, transparent 15%),
-      radial-gradient(circle at 32% 80%, rgba(220,38,38,0.6)   0%, transparent 16%),
-      radial-gradient(circle at 50% 12%, rgba(254,215,170,0.55) 0%, transparent 14%);
-    filter: blur(7px);
+      conic-gradient(from 0deg,
+        transparent 0deg,   rgba(254,215,170,0.95) 4deg,  rgba(251,146,60,0.9) 7deg, rgba(220,38,38,0.6)  10deg, transparent 13deg,
+        transparent 18deg,  rgba(254,215,170,0.85) 22deg, rgba(251,146,60,0.85) 25deg, transparent 28deg,
+        transparent 33deg,  rgba(254,215,170,0.95) 37deg, rgba(251,146,60,0.9) 40deg, rgba(220,38,38,0.65) 44deg, transparent 47deg,
+        transparent 53deg,  rgba(254,215,170,0.85) 57deg, rgba(251,146,60,0.85) 60deg, transparent 63deg,
+        transparent 68deg,  rgba(254,215,170,0.95) 72deg, rgba(251,146,60,0.9) 75deg, rgba(220,38,38,0.55) 78deg, transparent 82deg,
+        transparent 87deg,  rgba(254,215,170,0.85) 91deg, rgba(251,146,60,0.85) 94deg, transparent 98deg,
+        transparent 103deg, rgba(254,215,170,0.95) 107deg, rgba(251,146,60,0.9) 110deg, rgba(220,38,38,0.6) 113deg, transparent 116deg,
+        transparent 122deg, rgba(254,215,170,0.85) 126deg, rgba(251,146,60,0.85) 129deg, transparent 132deg,
+        transparent 138deg, rgba(254,215,170,0.95) 142deg, rgba(251,146,60,0.9) 145deg, rgba(220,38,38,0.65) 148deg, transparent 151deg,
+        transparent 157deg, rgba(254,215,170,0.85) 161deg, rgba(251,146,60,0.85) 164deg, transparent 167deg,
+        transparent 173deg, rgba(254,215,170,0.95) 177deg, rgba(251,146,60,0.9) 180deg, rgba(220,38,38,0.55) 183deg, transparent 187deg,
+        transparent 192deg, rgba(254,215,170,0.85) 196deg, rgba(251,146,60,0.85) 199deg, transparent 202deg,
+        transparent 208deg, rgba(254,215,170,0.95) 212deg, rgba(251,146,60,0.9) 215deg, rgba(220,38,38,0.6) 218deg, transparent 221deg,
+        transparent 227deg, rgba(254,215,170,0.85) 231deg, rgba(251,146,60,0.85) 234deg, transparent 237deg,
+        transparent 243deg, rgba(254,215,170,0.95) 247deg, rgba(251,146,60,0.9) 250deg, rgba(220,38,38,0.55) 253deg, transparent 257deg,
+        transparent 262deg, rgba(254,215,170,0.85) 266deg, rgba(251,146,60,0.85) 269deg, transparent 272deg,
+        transparent 278deg, rgba(254,215,170,0.95) 282deg, rgba(251,146,60,0.9) 285deg, rgba(220,38,38,0.65) 288deg, transparent 291deg,
+        transparent 297deg, rgba(254,215,170,0.85) 301deg, rgba(251,146,60,0.85) 304deg, transparent 307deg,
+        transparent 313deg, rgba(254,215,170,0.95) 317deg, rgba(251,146,60,0.9) 320deg, rgba(220,38,38,0.6) 323deg, transparent 326deg,
+        transparent 332deg, rgba(254,215,170,0.85) 336deg, rgba(251,146,60,0.85) 339deg, transparent 342deg,
+        transparent 348deg, rgba(254,215,170,0.95) 352deg, rgba(251,146,60,0.9) 355deg, rgba(220,38,38,0.55) 358deg, transparent 360deg);
+    /* Mask to a wide flame band that sits clear of the wheel rim and
+       fades outward into a soft tail — keeps the slice colours visible
+       and gives the flames a tapered "tongue" silhouette. */
+    mask: radial-gradient(circle,
+      transparent 58%,
+      black 62%, black 66%, rgba(0,0,0,0.7) 72%, rgba(0,0,0,0.3) 80%, transparent 88%);
+    filter: blur(3.5px) brightness(1.1);
+    box-shadow:
+      inset 0 0 80px rgba(220,38,38,0.7),
+      0 0 100px rgba(251,146,60,0.75),
+      0 0 160px rgba(220,38,38,0.5);
     mix-blend-mode: screen;
-    animation: hellfireFlicker 0.65s ease-in-out infinite alternate;
+    animation: hellfireFlicker 0.55s ease-in-out infinite alternate;
   }
   :global(.wt-hellfire)::after {
-    content: ''; position: absolute; inset: -12px; border-radius: 50%; pointer-events: none;
-    box-shadow:
-      inset 0 0 70px rgba(220,38,38,0.7),
-      0 0 90px rgba(251,146,60,0.75),
-      0 0 130px rgba(220,38,38,0.55);
-    animation: hellfireGlow 1.3s ease-in-out infinite;
+    content: ''; position: absolute; inset: -64px; border-radius: 50%; pointer-events: none;
+    /* 14 bright ember pixels seeded all around the wheel perimeter and
+       interior airspace. translateY + opacity animation rises them up
+       and fades them out, looping continuously so the ember cloud
+       never stops. */
+    background:
+      radial-gradient(2px   2px   at 12% 88%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 25% 95%, #fb923c 100%, transparent 0),
+      radial-gradient(2px   2px   at 50% 96%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 78% 92%, #fb923c 100%, transparent 0),
+      radial-gradient(2px   2px   at 90% 80%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 95% 55%, #fb923c 100%, transparent 0),
+      radial-gradient(2px   2px   at 5%  60%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 8%  30%, #fb923c 100%, transparent 0),
+      radial-gradient(2px   2px   at 30% 10%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 55% 5%,  #fb923c 100%, transparent 0),
+      radial-gradient(2px   2px   at 80% 18%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 38% 70%, #fb923c 100%, transparent 0),
+      radial-gradient(1.8px 1.8px at 62% 85%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 18% 45%, #fb923c 100%, transparent 0);
+    filter: drop-shadow(0 0 4px #fb923c) drop-shadow(0 0 8px #dc2626);
+    animation: hellfireEmberRise 2.4s ease-out infinite;
   }
   @keyframes hellfireQuake {
     0%, 100% { transform: translate(0, 0); }
@@ -1352,12 +1406,17 @@
     75%      { transform: translate(-1px, -1px); }
   }
   @keyframes hellfireFlicker {
-    from { opacity: 0.6; filter: blur(6px) brightness(1.0); }
-    to   { opacity: 1;   filter: blur(9px) brightness(1.4); }
+    from { opacity: 0.8; filter: blur(3px)   brightness(1.05); }
+    to   { opacity: 1;   filter: blur(5.5px) brightness(1.5);  }
   }
-  @keyframes hellfireGlow {
-    0%, 100% { opacity: 0.7; }
-    50%      { opacity: 1; }
+  /* Embers drift upward + fade. translateY composes with the parent's
+     quake animation (different elements) so the embers still rise even
+     while the wheel jitters. */
+  @keyframes hellfireEmberRise {
+    0%   { transform: translateY(8px)  scale(1.05); opacity: 0;    }
+    20%  { transform: translateY(0)     scale(1);    opacity: 0.95; }
+    80%  { transform: translateY(-32px) scale(0.9);  opacity: 0.6;  }
+    100% { transform: translateY(-44px) scale(0.7);  opacity: 0;    }
   }
 
   /* ── Cosmic (2000) — deep-space window: indigo/violet nebula with a
