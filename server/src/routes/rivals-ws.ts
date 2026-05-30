@@ -13,6 +13,20 @@ interface Player {
   // Each player self-reports their own won/lost flag once battle resolves client-side.
   // Server credits the win/loss only when both reports arrive and agree (one wins, one loses).
   battleReport?: { won: boolean }
+  // Last spin index this player advanced to (highest seen on a 'spin_result').
+  // Relayed to the opponent so the waiting UI shows a live progress bar.
+  currentSpinIndex?: number
+  // Wall-clock ms of the last forward action (spin_result or spins_complete).
+  // The inactivity sweep kicks players whose lastActiveAt is more than
+  // INACTIVITY_LIMIT_MS old. Bonus/wildcard spins also send spin_result so
+  // they reset this timer naturally — only true idling fails the check.
+  lastActiveAt?: number
+  // Once the player has reported spins_complete OR the room has resolved a
+  // winner, idle ticks are exempted (they're just waiting on the other side).
+  idleExempt?: boolean
+  // Set when the inactivity sweep kicks this player so the close handler
+  // doesn't double-credit the opponent as a DC win.
+  inactivityKicked?: boolean
 }
 
 interface Room {
@@ -112,8 +126,17 @@ function createRoom(p1: Player, p2: Player | null): Room {
   while (rooms.has(code)) code = generateCode()
   const room: Room = { code, p1, p2, createdAt: Date.now() }
   rooms.set(code, room)
+  // Seed activity timers immediately so the inactivity sweep can start
+  // catching idle players from the moment the room exists.
+  const now = Date.now()
   p1.room = room
-  if (p2) p2.room = room
+  p1.lastActiveAt = now
+  p1.currentSpinIndex = p1.currentSpinIndex ?? -1
+  if (p2) {
+    p2.room = room
+    p2.lastActiveAt = now
+    p2.currentSpinIndex = p2.currentSpinIndex ?? -1
+  }
   return room
 }
 
@@ -124,6 +147,66 @@ setInterval(() => {
     if (room.createdAt < cutoff) rooms.delete(code)
   }
 }, 10 * 60 * 1000)
+
+// Inactivity sweep — if a player hasn't progressed in 60s, kick them as
+// inactive and award the room to their opponent. Bonus/wildcard spins
+// reset the timer via 'spin_result', so only true idling triggers this.
+// Once a player reports spins_complete OR battle_result has fired, they're
+// idle-exempt and just waiting on their partner.
+const INACTIVITY_LIMIT_MS = 60_000
+function inactivityKick(player: Player) {
+  const room = player.room
+  if (!room || room.resolved) return
+  if (player.inactivityKicked) return
+  player.inactivityKicked = true
+  const other = room.p1 === player ? room.p2 : room.p1
+  send(player.ws, { type: 'you_timed_out' })
+  if (other) send(other.ws, { type: 'opponent_timed_out' })
+  // Mark the room resolved so battle_result, partner_disconnected, and a
+  // second inactivity kick all become no-ops.
+  room.resolved = true
+}
+setInterval(() => {
+  const now = Date.now()
+  for (const room of rooms.values()) {
+    if (room.resolved) continue
+    for (const player of [room.p1, room.p2]) {
+      if (!player) continue
+      if (player.idleExempt) continue
+      if (player.lastActiveAt === undefined) continue
+      if (now - player.lastActiveAt > INACTIVITY_LIMIT_MS) {
+        inactivityKick(player)
+        // The kick already marked the room resolved and notified both
+        // sides; credit the win/loss asynchronously so account stats track
+        // forfeits the same as agreed battle outcomes.
+        creditRivalsResultBg(room.p1 === player ? room.p2 : room.p1, player)
+      }
+    }
+  }
+}, 5_000)
+
+// Fire-and-forget account-stat credit (rivalsWins/Losses + gamesPlayed +
+// rivals_win challenge mark) for any non-mutual outcome — battle agreement,
+// inactivity timeout, or mid-match disconnect. Uses console for failure
+// telemetry because it runs outside any request scope.
+function creditRivalsResultBg(winner: Player | null, loser: Player | null) {
+  if (!winner || !loser) return
+  ;(async () => {
+    try {
+      if (winner.userId) {
+        await User.findByIdAndUpdate(winner.userId, { $inc: { rivalsWins: 1, gamesPlayed: 1 } })
+        const winUser = await User.findById(winner.userId)
+        if (winUser) await markEvent(winUser, 'rivals_win')
+      }
+      if (loser.userId) {
+        await User.findByIdAndUpdate(loser.userId, { $inc: { rivalsLosses: 1, gamesPlayed: 1 } })
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[rivals] Failed to credit forfeit result', err)
+    }
+  })()
+}
 
 // Expire unanswered friend challenges after 60 seconds.
 setInterval(() => {
@@ -327,14 +410,31 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
         }
 
         case 'spin_result': {
+          // Refresh the activity timer + record current progress. Bonus and
+          // wildcard sub-spins also push spin_result, so the player can't
+          // time out mid-bonus-chain.
+          player.lastActiveAt = Date.now()
+          const idx = typeof msg.spinIndex === 'number' ? msg.spinIndex : undefined
+          if (idx !== undefined) player.currentSpinIndex = Math.max(player.currentSpinIndex ?? -1, idx)
           const other = getOther(player)
-          if (other) send(other.ws, { type: 'partner_spin', spinIndex: msg.spinIndex, result: msg.result })
+          if (other) {
+            send(other.ws, { type: 'partner_spin', spinIndex: msg.spinIndex, result: msg.result })
+            // Progress tick so the opponent's waiting UI can show how far
+            // along you are without parsing the full spin payload.
+            send(other.ws, {
+              type: 'partner_progress',
+              spinIndex: player.currentSpinIndex,
+              totalSpins: typeof msg.totalSpins === 'number' ? msg.totalSpins : undefined,
+            })
+          }
           break
         }
 
         case 'spins_complete': {
           if (!player.room) break
           player.done = true
+          player.idleExempt = true
+          player.lastActiveAt = Date.now()
           player.results = (msg.results as object[]) ?? []
           if (msg.name) player.username = msg.name as string
           const other = getOther(player)
@@ -402,11 +502,20 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
         }
       }
       if (player.room) {
+        const room = player.room
         const other = getOther(player)
-        if (other) send(other.ws, { type: 'partner_disconnected' })
-        if (player.room.p1 === player) player.room.p1 = null
-        if (player.room.p2 === player) player.room.p2 = null
-        if (!player.room.p1 && !player.room.p2) rooms.delete(player.room.code)
+        // Only count this as a forfeit if the room hadn't already resolved
+        // (via battle agreement, inactivity kick, or a previous DC) — that
+        // way reconnect attempts and tab swaps after the match ended don't
+        // double-credit anyone.
+        if (other && !room.resolved && !player.inactivityKicked) {
+          send(other.ws, { type: 'partner_disconnected' })
+          room.resolved = true
+          creditRivalsResultBg(other, player)
+        }
+        if (room.p1 === player) room.p1 = null
+        if (room.p2 === player) room.p2 = null
+        if (!room.p1 && !room.p2) rooms.delete(room.code)
         player.room = undefined
       }
     })

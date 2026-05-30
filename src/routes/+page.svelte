@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
   import { getRivalsWs, clearRivalsWs, patchRivalsWs } from '$lib/stores/rivalsWs'
+  import { pushRecentlySpun } from '$lib/recentlySpun'
   import { isOfflineRivalsActive, setOfflineRivalsResult } from '$lib/stores/offlineRivals'
   import SpinWheel from '../components/SpinWheel.svelte'
   import SpinProgressDots from '../components/SpinProgressDots.svelte'
@@ -183,6 +184,43 @@
   let rivalsOnlineMode    = $state(false)
   let rivalsOnlineWaiting = $state(false)
   let rivalsBotMode       = $state(false)
+  // Live opponent progress + 60s inactivity countdown.
+  // opponentSpinIndex is the highest spinIndex the server has relayed for the
+  // opponent (-1 = not started). totalSpins is best-effort; we fall back to
+  // our own spin queue length when the opponent omits it.
+  let opponentSpinIndex = $state(-1)
+  let opponentTotalSpins = $state<number | undefined>(undefined)
+  let inactivityRemaining = $state(60)  // seconds
+  let inactivityTimer: ReturnType<typeof setInterval> | null = null
+  function resetInactivityTimer() {
+    inactivityRemaining = 60
+    if (inactivityTimer) clearInterval(inactivityTimer)
+    inactivityTimer = setInterval(() => {
+      inactivityRemaining = Math.max(0, inactivityRemaining - 1)
+    }, 1000)
+  }
+  function stopInactivityTimer() {
+    if (inactivityTimer) { clearInterval(inactivityTimer); inactivityTimer = null }
+  }
+
+  // Stash the player's in-progress character to the rolling "Recently Spun"
+  // list (cap 10) so a DC or timeout doesn't lose the run. Reads the current
+  // results array directly so it picks up however far the player got.
+  function stashCurrentCharacter(reason: string) {
+    if (results.length === 0) return
+    const race = results.find(r => r.category === 'race')?.resultLabel
+    const archetype = results.find(r => r.category === 'archetype')?.resultLabel
+    const name = characterName?.trim() || race || 'Unsaved Rival'
+    try {
+      pushRecentlySpun({
+        name,
+        race,
+        archetype,
+        results: $state.snapshot(results) as typeof results,
+        reason,
+      })
+    } catch { /* localStorage quota or shape mismatch — best effort */ }
+  }
   // showLastChar removed — the history carousel below replaces it; index 0 of
   // charHistory is the last character. Keeping the legacy variable would orphan
   // dead branches in the menu.
@@ -841,23 +879,60 @@
       rivalsOnlineMode = true
       showMenu = false
       tutorialStep = -1
-      // Replace rivals page's onmessage — we own the WS now; handle battle_start
+      resetInactivityTimer()
       const wsData = getRivalsWs()!
+      // Replace rivals page's onmessage — we own the WS now; handle battle_start,
+      // opponent progress, inactivity kicks, and partner disconnects inline.
       wsData.ws.onmessage = (event: MessageEvent) => {
         try {
           const msg = JSON.parse(event.data) as { type: string; [k: string]: unknown }
-          if (msg.type === 'battle_start') {
-            const you = msg.you as { username?: string; results: unknown[] }
-            const opp = msg.opponent as { username?: string; results: unknown[] }
-            patchRivalsWs({
-              pendingBattle: {
-                myResults: you.results,
-                opponentResults: opp.results,
-                myName: you.username,
-                opponentName: opp.username,
-              }
-            })
-            goto('/rivals')
+          switch (msg.type) {
+            case 'partner_progress': {
+              const idx = typeof msg.spinIndex === 'number' ? msg.spinIndex : -1
+              opponentSpinIndex = Math.max(opponentSpinIndex, idx)
+              const t = typeof msg.totalSpins === 'number' ? msg.totalSpins : undefined
+              if (t) opponentTotalSpins = t
+              break
+            }
+            case 'partner_spin': {
+              // Bonus/wildcard spin_results also push the player's spinIndex up.
+              const idx = typeof msg.spinIndex === 'number' ? msg.spinIndex : -1
+              opponentSpinIndex = Math.max(opponentSpinIndex, idx)
+              break
+            }
+            case 'partner_complete':
+              opponentSpinIndex = Math.max(opponentSpinIndex, opponentTotalSpins ?? spinQueue.length)
+              break
+            case 'opponent_timed_out':
+            case 'partner_disconnected': {
+              // The room's already credited the win server-side. Stash the
+              // player's in-progress character to "recently spun" so a long
+              // session of spins isn't lost, then bail to the rivals menu.
+              stashCurrentCharacter(msg.type === 'opponent_timed_out' ? 'Opponent timed out' : 'Opponent disconnected')
+              stopInactivityTimer()
+              goto('/rivals?dc_win=1')
+              break
+            }
+            case 'you_timed_out': {
+              stopInactivityTimer()
+              goto('/rivals?timed_out=1')
+              break
+            }
+            case 'battle_start': {
+              stopInactivityTimer()
+              const you = msg.you as { username?: string; results: unknown[] }
+              const opp = msg.opponent as { username?: string; results: unknown[] }
+              patchRivalsWs({
+                pendingBattle: {
+                  myResults: you.results,
+                  opponentResults: opp.results,
+                  myName: you.username,
+                  opponentName: opp.username,
+                }
+              })
+              goto('/rivals')
+              break
+            }
           }
         } catch { /* ignore */ }
       }
@@ -1940,12 +2015,20 @@
     // so it shows the right card even when grantedPowers spawn extra rows.
     primarySpinResultIndex = results.length - 1
 
-    // Relay spin to rivals partner when in online rivals mode
+    // Relay spin to rivals partner when in online rivals mode. Each forward
+    // spin also refreshes the 60s inactivity countdown so the player has a
+    // full minute from this landing before they're at risk of being kicked.
     if (rivalsOnlineMode) {
       const wsData = getRivalsWs()
       if (wsData?.ws && wsData.ws.readyState === WebSocket.OPEN) {
-        wsData.ws.send(JSON.stringify({ type: 'spin_result', spinIndex: currentSpinIndex, result: $state.snapshot(spinResult) }))
+        wsData.ws.send(JSON.stringify({
+          type: 'spin_result',
+          spinIndex: currentSpinIndex,
+          totalSpins: spinQueue.length,
+          result: $state.snapshot(spinResult),
+        }))
       }
+      resetInactivityTimer()
     }
 
     // Re-apply saved bonus offsets so rerolled stats keep their previously earned shifts
@@ -2330,7 +2413,10 @@
       rivalsBotMode = false
       goto('/rivals?bot_done=1')
     } else if (rivalsOnlineMode) {
-      // Online rivals: send results + character name, wait for battle_start
+      // Online rivals: send results + character name, wait for battle_start.
+      // Stop the inactivity countdown — we're idle by design now, the server
+      // will exempt us until the opponent finishes too.
+      stopInactivityTimer()
       const wsData = getRivalsWs()
       if (wsData?.ws && wsData.ws.readyState === WebSocket.OPEN) {
         wsData.ws.send(JSON.stringify({
@@ -2785,16 +2871,55 @@
     </div>
   {/if}
 
+  <!-- Rivals live HUD: opponent progress bar + 60-second inactivity countdown.
+       Pinned top-center under the global nav (z-[55] sits between the nav
+       z-50 and the wheel z-[60]) so it overlays the wheel without covering
+       the spin button. Hidden once the player finishes their own spins (the
+       full waiting overlay takes over from there). -->
+  {#if rivalsOnlineMode && !rivalsOnlineWaiting && !showNameScreen && !showCard}
+    {@const oppMax = opponentTotalSpins ?? spinQueue.length}
+    {@const oppPct = oppMax > 0 ? Math.min(1, Math.max(0, (opponentSpinIndex + 1) / oppMax)) : 0}
+    {@const tickColor = inactivityRemaining > 20 ? '#34d399' : inactivityRemaining > 10 ? '#f0c040' : '#ef4444'}
+    <div class="fixed left-1/2 -translate-x-1/2 z-[55] flex flex-col items-stretch gap-1.5 px-3 py-2 rounded-xl pointer-events-none"
+         style="top: 70px; width: min(92vw, 360px); background: rgba(15,12,22,0.85); border: 1px solid rgba(249,168,212,0.2); box-shadow: 0 6px 24px rgba(0,0,0,0.5); backdrop-filter: blur(8px);">
+      <div class="flex items-center justify-between text-[10px] tracking-[0.2em] uppercase" style="font-family: 'JetBrains Mono', monospace;">
+        <span style="color: #f9a8d4;">Opponent</span>
+        <span style="color: #c9bfb0;">{Math.max(0, opponentSpinIndex + 1)} / {oppMax || '?'}</span>
+      </div>
+      <div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden;">
+        <div style="height: 100%; width: {oppPct * 100}%; background: linear-gradient(90deg, #f9a8d4, #c084fc); transition: width 0.4s ease-out;"></div>
+      </div>
+      <div class="flex items-center justify-between text-[10px] tracking-[0.2em] uppercase mt-1" style="font-family: 'JetBrains Mono', monospace;">
+        <span style="color: {tickColor};">Your timer</span>
+        <span style="color: {tickColor};">0:{String(inactivityRemaining).padStart(2, '0')}</span>
+      </div>
+      <div style="height: 4px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden;">
+        <div style="height: 100%; width: {(inactivityRemaining / 60) * 100}%; background: {tickColor}; transition: width 1s linear;"></div>
+      </div>
+    </div>
+  {/if}
+
   <!-- Online rivals waiting screen. z-[65] sits above the wheel subtree (z-[60])
        so the wheel doesn't bleed through after the player finishes their last
        spin and is just waiting for the opponent. Stays below celebration
        overlays (z-[70]) so wildcard reveals can still pop on top. -->
   {#if rivalsOnlineWaiting}
+    {@const oppMax = opponentTotalSpins ?? spinQueue.length}
+    {@const oppPct = oppMax > 0 ? Math.min(1, Math.max(0, (opponentSpinIndex + 1) / oppMax)) : 0}
     <div class="fixed inset-0 z-[65] flex items-center justify-center px-4" style="background: #16121a;">
-      <div class="text-center">
+      <div class="text-center w-full max-w-sm">
         <div class="animate-spin mb-6 mx-auto" style="width: 48px; height: 48px; border: 3px solid rgba(240,192,64,0.2); border-top-color: #f0c040; border-radius: 50%;"></div>
         <p style="font-family: 'Cinzel', serif; font-size: 1.15rem; font-weight: 700; color: #ffdf96; letter-spacing: 0.08em;">Waiting for opponent…</p>
         <p class="mt-2 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Battle begins when they finish spinning</p>
+        <div class="mt-6 px-4 py-3 rounded-xl text-left" style="background: rgba(249,168,212,0.06); border: 1px solid rgba(249,168,212,0.2);">
+          <div class="flex items-center justify-between text-[10px] tracking-[0.22em] uppercase mb-1.5" style="font-family: 'JetBrains Mono', monospace;">
+            <span style="color: #f9a8d4;">Opponent progress</span>
+            <span style="color: #c9bfb0;">{Math.max(0, opponentSpinIndex + 1)} / {oppMax || '?'}</span>
+          </div>
+          <div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden;">
+            <div style="height: 100%; width: {oppPct * 100}%; background: linear-gradient(90deg, #f9a8d4, #c084fc); transition: width 0.4s ease-out;"></div>
+          </div>
+        </div>
       </div>
     </div>
   {/if}

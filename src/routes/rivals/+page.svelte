@@ -8,6 +8,7 @@
   import QuickBattleView from '../../components/QuickBattleView.svelte'
   import RivalsPreviewIntro from '../../components/RivalsPreviewIntro.svelte'
   import { recordOpponent } from '$lib/recentOpponents'
+  import { getRecentlySpun, removeRecentlySpun, type RecentlySpunEntry } from '$lib/recentlySpun'
   import type { SpinResult } from '$lib/session/types'
   import { setRivalsWs, getRivalsWs, clearRivalsWs } from '$lib/stores/rivalsWs'
   import { startOfflineRivals, getOfflineRivalsResult, clearOfflineRivals } from '$lib/stores/offlineRivals'
@@ -16,9 +17,12 @@
   // ── Phase state machine ────────────────────────────────────────────────────
   // 'preview' is a 4-second pre-battle screen showing both characters before
   // the fight begins. Auto-advances to 'battle' but can be skipped.
-  type Phase = 'menu' | 'searching' | 'create_or_join' | 'waiting' | 'battle_ready' | 'preview' | 'battle'
+  // 'forfeit_result' shows after a mid-match DC or 60s timeout — server has
+  // already credited the win/loss so we just acknowledge the outcome.
+  type Phase = 'menu' | 'searching' | 'create_or_join' | 'waiting' | 'battle_ready' | 'preview' | 'battle' | 'forfeit_result'
 
   let phase = $state<Phase>('menu')
+  let forfeitOutcome = $state<'win' | 'loss' | null>(null)
   let ws    = $state<WebSocket | null>(null)
 
   // Room / match state
@@ -44,6 +48,11 @@
   // Clan challenge — set when /clan navigates here with ?challenge=create
   type PendingClanChallenge = { clanId: string; targetUsername: string }
   let pendingClanChallenge = $state<PendingClanChallenge | null>(null)
+
+  // Recently Spun — characters preserved from DCs / timeouts. Refreshed
+  // whenever the menu re-mounts so a brand-new forfeit shows up immediately.
+  let recentlySpun = $state<RecentlySpunEntry[]>([])
+  function refreshRecentlySpun() { recentlySpun = getRecentlySpun() }
 
   // Matchmaking timer
   let searchSeconds = $state(0)
@@ -101,6 +110,7 @@
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   onMount(() => {
+    refreshRecentlySpun()
     // Bot battle: returning from spin with bot_done flag
     const botDone = $page.url.searchParams.get('bot_done')
     if (botDone) {
@@ -137,6 +147,22 @@
       } else {
         phase = 'battle_ready'
       }
+      return
+    }
+
+    // DC/timeout return: the main page navigates here with ?dc_win=1 (opponent
+    // forfeited) or ?timed_out=1 (this player ran the 60s clock out). The
+    // server has already credited the result; just acknowledge it.
+    if ($page.url.searchParams.get('dc_win') === '1') {
+      forfeitOutcome = 'win'
+      if (auth.loggedIn) auth.recordBattleResult(true)
+      phase = 'forfeit_result'
+      return
+    }
+    if ($page.url.searchParams.get('timed_out') === '1') {
+      forfeitOutcome = 'loss'
+      if (auth.loggedIn) auth.recordBattleResult(false)
+      phase = 'forfeit_result'
       return
     }
 
@@ -468,6 +494,35 @@
         </a>
       </div>
 
+      <!-- Recently Spun — capped at 10, populated from DC/timeout forfeits
+           so a long spin session isn't lost if the opponent flakes out. -->
+      {#if recentlySpun.length > 0}
+        <div class="mt-6">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-xs tracking-widest uppercase" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Recently Spun</p>
+            <span class="text-[10px]" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">{recentlySpun.length} / 10</span>
+          </div>
+          <div class="flex flex-col gap-2">
+            {#each recentlySpun as entry (entry.id)}
+              <div class="flex items-center justify-between gap-2 px-4 py-3 rounded-xl" style="background: rgba(240,192,64,0.05); border: 1px solid rgba(240,192,64,0.18);">
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{entry.name}</p>
+                  <p class="text-[10px] truncate" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">
+                    {entry.race ?? '—'}{entry.archetype ? ` · ${entry.archetype}` : ''}{entry.reason ? ` · ${entry.reason}` : ''}
+                  </p>
+                </div>
+                <button
+                  onclick={() => { removeRecentlySpun(entry.id); refreshRecentlySpun() }}
+                  class="text-xs px-2 py-1 rounded-md shrink-0"
+                  style="font-family: 'JetBrains Mono', monospace; color: #6b7280; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); cursor: pointer;"
+                  title="Discard"
+                >✕</button>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
       <!-- Pending challenges -->
       {#if pendingChallenges.length > 0}
         <div class="mt-6">
@@ -580,6 +635,29 @@
           </button>
         {/if}
         <button onclick={() => { ws?.close(); phase = 'menu' }} class="text-xs" style="color: #4e4635; font-family: 'JetBrains Mono', monospace; cursor: pointer;">← Back to menu</button>
+      </div>
+
+    <!-- ── Forfeit result: shown after server-credited DC/timeout outcomes ──── -->
+    {:else if phase === 'forfeit_result'}
+      <div class="text-center mt-16 flex flex-col items-center gap-5">
+        {#if forfeitOutcome === 'win'}
+          <div class="text-5xl">🏆</div>
+          <h2 style="font-family: 'Cinzel', serif; font-size: 1.5rem; color: #34d399;">Victory by Forfeit</h2>
+          <p class="text-sm max-w-xs" style="color: #c9bfb0; font-family: 'JetBrains Mono', monospace; line-height: 1.6;">
+            Your opponent disconnected or timed out. The win has been credited and your in-progress character is saved to <span style="color: #f0c040;">Recently Spun</span> so you can finish it later.
+          </p>
+        {:else}
+          <div class="text-5xl">⌛</div>
+          <h2 style="font-family: 'Cinzel', serif; font-size: 1.5rem; color: #ef4444;">Timed Out</h2>
+          <p class="text-sm max-w-xs" style="color: #c9bfb0; font-family: 'JetBrains Mono', monospace; line-height: 1.6;">
+            You didn't advance to the next spin within 60 seconds. The match was forfeited to your opponent.
+          </p>
+        {/if}
+        <button
+          onclick={() => { phase = 'menu'; forfeitOutcome = null; history.replaceState(null, '', '/rivals') }}
+          class="mt-2 px-6 py-2.5 rounded-xl text-sm tracking-widest uppercase font-bold"
+          style="font-family: 'Cinzel', serif; color: #ffdf96; background: rgba(240,192,64,0.12); border: 1px solid rgba(240,192,64,0.3); cursor: pointer;"
+        >Back to Menu</button>
       </div>
 
     <!-- ── Battle ready (both done, waiting for server to send battle_start) ─── -->
