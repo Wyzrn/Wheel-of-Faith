@@ -36,6 +36,10 @@ interface QueueEntry {
 interface ChallengeCharacter {
   name: string
   spins: object[]
+  // Optional roster shareId — when present and the picked fighter wins, the
+  // overlay PATCHes /api/characters/:shareId/rivals-win so the medal lands
+  // on the actual roster character (not just the user-level rivalsWins).
+  shareId?: string
 }
 
 interface PendingChallenge {
@@ -271,13 +275,13 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
             // Each side gets "you" = self, "opponent" = the other fighter.
             send(challenger.ws, {
               type: 'challenge_battle_start', roomCode: room.code, mode: 'character',
-              you: { name: challengerChar.name, results: challengerChar.spins },
-              opponent: { name: responderChar.name, results: responderChar.spins },
+              you:      { name: challengerChar.name, results: challengerChar.spins, shareId: challengerChar.shareId },
+              opponent: { name: responderChar.name,  results: responderChar.spins,  shareId: responderChar.shareId  },
             })
             send(player.ws, {
               type: 'challenge_battle_start', roomCode: room.code, mode: 'character',
-              you: { name: responderChar.name, results: responderChar.spins },
-              opponent: { name: challengerChar.name, results: challengerChar.spins },
+              you:      { name: responderChar.name,  results: responderChar.spins,  shareId: responderChar.shareId  },
+              opponent: { name: challengerChar.name, results: challengerChar.spins, shareId: challengerChar.shareId },
             })
           } else {
             // rivals (fresh-spin) mode — mirror the matchmaking 'matched' flow

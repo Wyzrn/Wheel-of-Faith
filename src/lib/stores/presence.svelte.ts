@@ -26,8 +26,8 @@ export interface IncomingChallenge {
 
 export interface ChallengeBattle {
   roomCode: string
-  you: { name: string; results: SpinResult[] }
-  opponent: { name: string; results: SpinResult[] }
+  you: { name: string; results: SpinResult[]; shareId?: string }
+  opponent: { name: string; results: SpinResult[]; shareId?: string }
 }
 
 function wsUrl(): string {
@@ -170,14 +170,14 @@ export const presence = {
   },
 
   // Challenge a friend. For 'character' mode, pass the chosen fighter.
-  sendChallenge(targetUserId: string, mode: 'rivals' | 'character', character?: { name: string; spins: SpinResult[] }) {
+  sendChallenge(targetUserId: string, mode: 'rivals' | 'character', character?: { name: string; spins: SpinResult[]; shareId?: string }) {
     if (!_ws || _ws.readyState !== WebSocket.OPEN) return
     _ws.send(JSON.stringify({ type: 'challenge_send', targetUserId, mode, character }))
   },
 
   // Accept or decline an incoming challenge. For 'character' mode, the accepter
   // supplies their own fighter alongside accept=true.
-  respond(challengeId: string, accept: boolean, character?: { name: string; spins: SpinResult[] }) {
+  respond(challengeId: string, accept: boolean, character?: { name: string; spins: SpinResult[]; shareId?: string }) {
     if (_ws && _ws.readyState === WebSocket.OPEN) {
       _ws.send(JSON.stringify({ type: 'challenge_respond', challengeId, accept, character }))
     }

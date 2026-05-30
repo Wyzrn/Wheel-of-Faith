@@ -147,6 +147,21 @@
       finalT1Hp = t1Chars.map((_, i) => controller!.getHp(`t1-${i}`))
       finalT2Hp = t2Chars.map((_, i) => controller!.getHp(`t2-${i}`))
     }
+    // Credit a per-character rivals-win medal for every team1 fighter that has
+    // a known shareId. Rivals fresh-spun characters don't have one yet and are
+    // credited separately by /rivals once their character is POSTed; story
+    // characters don't get routed through QuickBattleView at all. This is the
+    // unified path for /battle (roster vs roster) and friend character duels.
+    if (w === 'team1' && auth.loggedIn) {
+      for (const m of team1) {
+        if (m.shareId) {
+          fetch(`/api/characters/${m.shareId}/rivals-win`, {
+            method: 'PATCH',
+            credentials: 'include',
+          }).catch(() => { /* best-effort — the user-level credit still lands */ })
+        }
+      }
+    }
     onComplete?.(w === 'draw' ? 'draw' : w)
   }
 

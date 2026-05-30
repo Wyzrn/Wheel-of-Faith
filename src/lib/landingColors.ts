@@ -43,6 +43,28 @@ function raceRarity(weight: number): { label: string; intensity: number } {
   if (weight <= 11) return { label: 'Uncommon',    intensity: 0.38 }  // good
   return { label: 'Common', intensity: 0.20 }                          // basic
 }
+
+// Public rarity bucket lookup so other systems (e.g. stat-bonus caps) can
+// align with the same rarity tiers shown on the landing celebration.
+export function raceRarityLabel(weight: number | undefined): string {
+  return raceRarity(weight ?? 99).label
+}
+
+// Maximum +/- a race may shift any single stat. Higher rarity races unlock
+// the bigger bonus/penalty rolls; Common races are capped at ±5 so a lucky
+// stat-bonus reroll can't push a baseline race into legend territory.
+// Mythological and Divine share the +20 ceiling per the design spec.
+export function raceStatBonusCap(weight: number | undefined): number {
+  const label = raceRarityLabel(weight)
+  switch (label) {
+    case 'Divine':
+    case 'Mythological': return 20
+    case 'Legendary':    return 15
+    case 'Rare':         return 12
+    case 'Uncommon':     return 8
+    default:             return 5
+  }
+}
 function archetypeRarity(weight: number): { label: string; intensity: number } {
   if (weight <= 1) return { label: 'Mythological', intensity: 0.85 }  // mythic
   if (weight <= 2) return { label: 'Legendary',    intensity: 0.60 }  // great

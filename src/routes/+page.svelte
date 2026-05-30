@@ -48,7 +48,7 @@
   import { randomCharacterName } from '$lib/story/naming'
   import { generateCharacterSummary } from '$lib/characterSummary'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
-  import { resolveLandingForCategory } from '$lib/landingColors'
+  import { resolveLandingForCategory, raceStatBonusCap } from '$lib/landingColors'
   import { describeRacialGrants, describeTwist } from '$lib/game/racialGrants'
   import { resolveActiveTheme } from '$lib/wheelThemes'
   import { buildIdentityCard } from '$lib/identityCard'
@@ -668,9 +668,22 @@
       if (race?.customGenderPool) return race.customGenderPool
     }
 
-    // statBonus/statPenalty: use tier-shift segments from spinQueue defaults
+    // statBonus/statPenalty: use tier-shift segments from spinQueue defaults,
+    // then clamp the magnitude to the race-rarity cap so a Common race can't
+    // roll +20 from a chained stat bonus. Caps: Common 5 · Uncommon 8 · Rare
+    // 12 · Legendary 15 · Mythological/Divine 20.
     if (def.category === 'statBonus' || def.category === 'statPenalty') {
-      return getSegmentsForCategory(def.category)
+      const segs = getSegmentsForCategory(def.category)
+      const raceResult = results.find(r => r.category === 'race')
+      const race = getRace(raceResult?.resultLabel)
+      const cap = raceStatBonusCap(race?.weight)
+      const filtered = segs.filter(s => {
+        const n = Math.abs(parseInt(s.label.replace(/[^\-0-9]/g, ''), 10))
+        return Number.isFinite(n) && n <= cap
+      })
+      // Defensive: if rounding/parsing somehow drops every segment, fall back
+      // to the lowest available step so the wheel never lands on nothing.
+      return filtered.length > 0 ? filtered : segs.slice(0, 1)
     }
 
     // Weapon type: apply race + archetype bias multipliers
@@ -2772,9 +2785,12 @@
     </div>
   {/if}
 
-  <!-- Online rivals waiting screen -->
+  <!-- Online rivals waiting screen. z-[65] sits above the wheel subtree (z-[60])
+       so the wheel doesn't bleed through after the player finishes their last
+       spin and is just waiting for the opponent. Stays below celebration
+       overlays (z-[70]) so wildcard reveals can still pop on top. -->
   {#if rivalsOnlineWaiting}
-    <div class="fixed inset-0 z-40 flex items-center justify-center px-4" style="background: #16121a;">
+    <div class="fixed inset-0 z-[65] flex items-center justify-center px-4" style="background: #16121a;">
       <div class="text-center">
         <div class="animate-spin mb-6 mx-auto" style="width: 48px; height: 48px; border: 3px solid rgba(240,192,64,0.2); border-top-color: #f0c040; border-radius: 50%;"></div>
         <p style="font-family: 'Cinzel', serif; font-size: 1.15rem; font-weight: 700; color: #ffdf96; letter-spacing: 0.08em;">Waiting for opponent…</p>

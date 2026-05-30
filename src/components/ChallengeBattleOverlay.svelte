@@ -17,8 +17,8 @@
 {#if battle}
   <div class="fixed inset-0 z-[70]" style="background: #16121a;">
     <QuickBattleView
-      team1={[{ results: battle.you.results, name: battle.you.name }]}
-      team2={[{ results: battle.opponent.results, name: battle.opponent.name }]}
+      team1={[{ results: battle.you.results, name: battle.you.name, shareId: battle.you.shareId }]}
+      team2={[{ results: battle.opponent.results, name: battle.opponent.name, shareId: battle.opponent.shareId }]}
       team1Label={battle.you.name}
       team2Label={battle.opponent.name}
       title={`${battle.you.name} vs ${battle.opponent.name}`}
