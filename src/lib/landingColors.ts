@@ -9,7 +9,7 @@ import { powers as powersPool } from '$lib/content/powers'
 import { weapons as weaponsPool } from '$lib/content/weapons'
 import { armors as armorsPool } from '$lib/content/armors'
 import { enchantments as enchantmentsPool } from '$lib/content/enchantments'
-import { racePoolLookup, abilityLookup, racesByLabel } from '$lib/content/races'
+import { racePoolLookup, abilityLookup, racePowerLookup, racesByLabel } from '$lib/content/races'
 import { archetypesByLabel } from '$lib/content/archetypes'
 import { ELEMENT_COLORS, ITEM_GRADE_INFO } from '$lib/content/elements'
 import type { ElementType, ItemGrade } from '$lib/content/types'
@@ -99,6 +99,14 @@ export function resolveLandingForCategory(
     case 'power': {
       const m = _powerLookup.get(label)
       element = m?.element; grade = m?.grade
+      // Race-pooled powers (e.g. "Goblin Engine", "Spirit Guide") aren't in
+      // the global powers content. Fall back to the race-aware lookup which
+      // inherits element/grade from the parent class/subtype/transformation
+      // when the powerPool entry itself doesn't supply them.
+      if (!element && !grade) {
+        const rm = racePowerLookup.get(label)
+        if (rm) { element = rm.element; grade = rm.grade }
+      }
       break
     }
     case 'weapon': {

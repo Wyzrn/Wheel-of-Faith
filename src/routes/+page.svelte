@@ -26,7 +26,7 @@
   import { computeOverallScore, scoreTier, gradeToScore, TIER_THRESHOLDS, NO_NEGATIVE_STATS, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import type { TierGrade } from '$lib/game/scoreTier'
   import { redemptionProbability } from '$lib/game/redemption'
-  import { races, getRace, racePoolLookup as _racePoolLookup, abilityLookup as _abilityLookup } from '$lib/content/races'
+  import { races, getRace, racePoolLookup as _racePoolLookup, abilityLookup as _abilityLookup, racePowerLookup } from '$lib/content/races'
   import { archetypes, getArchetype } from '$lib/content/archetypes'
   import { DEVIL_FRUIT_POOLS } from '$lib/content/devil-fruits'
   import { weapons as weaponsPool, weaponsByCategory } from '$lib/content/weapons'
@@ -779,7 +779,19 @@
     // If a twist locked an element (Bender, Demi-God, Cursed Sorcerer
     // domain, etc.), boost matching-element powers 3x so they win more often.
     if (def.category === 'power') {
-      const pool = (def.useRacialPowerPool && activePowerPool.length > 0) ? activePowerPool : baseSegments
+      const rawPool = (def.useRacialPowerPool && activePowerPool.length > 0) ? activePowerPool : baseSegments
+      // Project element/grade onto every race-pool segment so the wheel can
+      // colour the slice and the landing celebration can subtitle the rarity.
+      // racePowerLookup inherits from the parent class/subtype when the pool
+      // entry itself doesn't carry element/grade.
+      const pool = def.useRacialPowerPool
+        ? rawPool.map(s => {
+            const cur = s as { label: string; weight: number; element?: string; grade?: string }
+            if (cur.element && cur.grade) return cur
+            const m = racePowerLookup.get(cur.label)
+            return { ...cur, element: cur.element ?? m?.element, grade: cur.grade ?? m?.grade }
+          })
+        : rawPool
       const usedPowerLabels = new Set(results.filter(r => r.category === 'power').map(r => r.resultLabel))
       let segs = pool.filter(s => !usedPowerLabels.has(s.label))
       if (lockedElement) {

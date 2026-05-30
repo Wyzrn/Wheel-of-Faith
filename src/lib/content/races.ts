@@ -5493,23 +5493,82 @@ export const racePoolLookup: Map<string, _PoolEntry> = (() => {
   return m
 })()
 
-// Flat lookup for ability labels across all races (top-level + nested in pool entries).
-// Archetype abilities are appended in archetypes.ts via mergeAbilityLookup() so each
-// content module can populate the shared map without circular imports.
-export const abilityLookup: Map<string, _PoolEntry> = (() => {
+// Canonical label → element/grade for the global powers content. Populated
+// by powers.ts via _registerPowersForLookup once that module's `powers`
+// constant has finished initializing — pulling powers directly here would
+// load the (very large) absurd/epic chunks just to build a map that the
+// race-pooled lookup might never read. The map is module-scoped, so any
+// subsequent racePowerLookup .get() sees the registered entries.
+const _powersGlobalLookup = new Map<string, _PoolEntry>()
+export function _registerPowersForLookup(
+  list: { label: string; element?: import('./types').ElementType; grade?: import('./types').ItemGrade }[],
+) {
+  for (const p of list) {
+    if ((p.element || p.grade) && !_powersGlobalLookup.has(p.label)) {
+      _powersGlobalLookup.set(p.label, { element: p.element, grade: p.grade })
+    }
+  }
+}
+
+// Race-pooled power label → element/grade. Inherits in this priority order:
+//   1. The entry's own element/grade (if it supplied them).
+//   2. The global powers content pool (canonical source for shared labels).
+//   3. The parent class/subtype/transformation's element/grade.
+// Lazy-built on first read because the global powers pool registers itself
+// via _registerPowersForLookup AFTER this module has finished initializing
+// (powers.ts imports from races.ts but not vice-versa). Building eagerly
+// would miss every global-pool match.
+let _racePowerMap: Map<string, _PoolEntry> | null = null
+function _buildRacePowerLookup(): Map<string, _PoolEntry> {
   const m = new Map<string, _PoolEntry>()
   for (const race of races) {
-    const all: { label: string; element?: import('./types').ElementType; grade?: import('./types').ItemGrade }[] = [
-      ...race.abilities,
-      ...(race.subTypePool ?? []).flatMap(e => e.abilities ?? []),
-      ...(race.classPool ?? []).flatMap(e => e.abilities ?? []),
-      ...(race.transformationPool ?? []).flatMap(e => e.abilities ?? []),
-    ]
-    for (const entry of all) {
-      if ((entry.element || entry.grade) && !m.has(entry.label)) {
-        m.set(entry.label, { element: entry.element, grade: entry.grade })
+    const pools: { parent: _PoolEntry; entries: { label: string; element?: import('./types').ElementType; grade?: import('./types').ItemGrade }[] }[] = []
+    for (const e of (race.subTypePool ?? []))         pools.push({ parent: e, entries: e.powerPool ?? [] })
+    for (const e of (race.classPool ?? []))           pools.push({ parent: e, entries: e.powerPool ?? [] })
+    for (const e of (race.transformationPool ?? []))  pools.push({ parent: e, entries: e.powerPool ?? [] })
+    for (const { parent, entries } of pools) {
+      for (const p of entries) {
+        if (m.has(p.label)) continue
+        const fromGlobal = _powersGlobalLookup.get(p.label)
+        const element = p.element ?? fromGlobal?.element ?? parent.element
+        const grade   = p.grade   ?? fromGlobal?.grade   ?? parent.grade
+        if (element || grade) m.set(p.label, { element, grade })
       }
     }
+  }
+  return m
+}
+export const racePowerLookup: Pick<Map<string, _PoolEntry>, 'get' | 'has'> = {
+  get(label: string) {
+    if (!_racePowerMap) _racePowerMap = _buildRacePowerLookup()
+    return _racePowerMap.get(label)
+  },
+  has(label: string) {
+    if (!_racePowerMap) _racePowerMap = _buildRacePowerLookup()
+    return _racePowerMap.has(label)
+  },
+}
+
+// Flat lookup for ability labels across all races (top-level + nested in pool entries).
+// Nested abilities now inherit their parent class/subtype/transformation's
+// element + grade when their own entry omits them — older race data left
+// many abilities bare (e.g. ["Opportunist's Edge", weight: 1]) and the
+// lookup previously skipped them entirely. Archetype abilities are
+// appended in archetypes.ts via mergeAbilityLookup() so each content
+// module can populate the shared map without circular imports.
+export const abilityLookup: Map<string, _PoolEntry> = (() => {
+  const m = new Map<string, _PoolEntry>()
+  function add(label: string, entry: _PoolEntry, parent?: _PoolEntry) {
+    if (m.has(label)) return
+    const element = entry.element ?? parent?.element
+    const grade   = entry.grade   ?? parent?.grade
+    if (element || grade) m.set(label, { element, grade })
+  }
+  for (const race of races) {
+    for (const a of race.abilities) add(a.label, a)
+    for (const e of (race.subTypePool ?? []))        for (const a of (e.abilities ?? [])) add(a.label, a, e)
+    for (const e of (race.classPool ?? []))          for (const a of (e.abilities ?? [])) add(a.label, a, e)
+    for (const e of (race.transformationPool ?? [])) for (const a of (e.abilities ?? [])) add(a.label, a, e)
   }
   return m
 })()

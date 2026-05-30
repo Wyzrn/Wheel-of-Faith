@@ -94,9 +94,13 @@ export interface Race {
   // Keys match segment labels (e.g. 'Melee', 'None'). Missing keys default to ×1.
   weaponTypeBias?: Record<string, number>
   armorTypeBias?: Record<string, number>
-  subTypePool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
-  classPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
-  transformationPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  // powerPool entries accept element/grade so the wheel can themed-color
+  // race-granted power spins and the landing celebration can subtitle them
+  // with the proper rarity. When an entry omits them, races.ts inherits from
+  // the global powers pool or the parent class/subtype/transformation.
+  subTypePool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  classPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  transformationPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
 }
 
 // Archetype definition — drives archetype ability spin count and special effects.
