@@ -2625,12 +2625,24 @@
     <SettingsPanel onClose={() => showSettings = false} />
   {/if}
 
-  <!-- Main Menu — fixed overlay so game content beneath can't be scrolled to -->
+  <!-- Main Menu — fixed overlay so game content beneath can't be scrolled to.
+       Outer is the bg + scroll container; inner is a min-h-full flex centering
+       wrapper. Plain `flex items-center` on a fixed container with overflow
+       doesn't actually centre when content is taller than the viewport — it
+       pushes everything to the top and shows overflow at the bottom. Splitting
+       the two responsibilities is the standard "scrollable centred overlay"
+       pattern: the outer handles scroll + background, the inner handles
+       centering with at least viewport height. -->
   {#if showMenu}
-    <div class="menu-bg fixed inset-0 z-30 flex flex-col items-center justify-center px-5 overflow-y-auto" style="background: #16121a;">
-      <!-- Decorative glows: gold haze up top, arcane teal swell at the base -->
+    <div class="menu-bg fixed inset-0 z-30 overflow-y-auto" style="background: #16121a;">
+      <!-- Decorative glows: gold haze up top, arcane teal swell at the base.
+           Sticky-positioned so they ride along with the viewport rather than
+           scrolling with content — otherwise on tall menus the bottom swell
+           drops off-screen while the top haze leaves a gap above content. -->
       <div class="absolute top-0 inset-x-0 h-48 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240,192,82,0.12), transparent);"></div>
       <div class="absolute bottom-0 inset-x-0 h-56 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(90,214,239,0.10), transparent);"></div>
+
+      <div class="relative z-[1] min-h-full w-full flex flex-col items-center justify-center px-5 py-10">
 
       <!-- Logo mark -->
       <div class="menu-entry mb-4 flex flex-col items-center gap-3" style="--menu-delay: 0ms;">
@@ -2758,9 +2770,11 @@
             </div>
           </a>
         </div>
-      </div>
+      </div><!-- end buttons grid -->
 
-    </div>
+      </div><!-- end min-h-full centering wrapper -->
+
+    </div><!-- end menu-bg -->
   {/if}
 
   <!-- Character history carousel — paginates through last 5 locally-completed runs.
