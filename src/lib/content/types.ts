@@ -55,9 +55,19 @@ export interface RaceWheel {
   segments: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; description?: string }[]
 }
 
+// Six-bucket rarity classifier. Previously derived from `weight` via
+// threshold ranges (≤1 Divine / ≤2 Mythological / ≤4 Legendary / ≤7 Rare /
+// ≤11 Uncommon / 12+ Common), but the wheel-distribution rebalance broke
+// the assumption that weight uniquely determines bucket — multiple buckets
+// now share weight ranges. This field is the source of truth for rarity
+// classification (celebration tier, stat-bonus cap, tier-shift modifier);
+// `weight` is now purely the wheel-selection probability.
+export type RaceRarity = 'Common' | 'Uncommon' | 'Rare' | 'Legendary' | 'Mythological' | 'Divine'
+
 export interface Race {
   label: string                       // display name shown on wheel and in results
-  weight: number                      // for weightedRandom(); determines rarity
+  weight: number                      // for weightedRandom(); pure selection probability
+  rarity: RaceRarity                  // celebration tier + stat-cap + tier-modifier bucket
   abilitySpinCount: number            // 1–4; determines how many racialAbility slots are spliced
   weaknessProbabilityModifier: number // kept for backward compat; used to derive weaknessCount when explicit count absent
   weaknessCount?: number              // explicit weakness slots spliced at race resolution; derived from modifier if absent

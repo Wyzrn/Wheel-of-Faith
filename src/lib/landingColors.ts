@@ -12,7 +12,7 @@ import { enchantments as enchantmentsPool } from '$lib/content/enchantments'
 import { racePoolLookup, abilityLookup, racePowerLookup, racesByLabel } from '$lib/content/races'
 import { archetypesByLabel } from '$lib/content/archetypes'
 import { ELEMENT_COLORS, ITEM_GRADE_INFO } from '$lib/content/elements'
-import type { ElementType, ItemGrade } from '$lib/content/types'
+import type { ElementType, ItemGrade, Race, RaceRarity } from '$lib/content/types'
 
 // Built once per process. These cover power/weapon/armor/enchantment label
 // → element/grade lookups. Race subtype/class and ability lookups live in
@@ -35,34 +35,66 @@ const _GRADE_INTENSITY: Record<ItemGrade, number> = {
 // rarity. Weight bands: Divine 1 · Mythological 2 · Legendary 3-4 · Rare 5-7 ·
 // Uncommon 8-11 · Common 12+. (LandingCelebration thresholds: divine ≥1.0,
 // mythic ≥0.70, great ≥0.50, good ≥0.30, basic ≥0.10.)
-function raceRarity(weight: number): { label: string; intensity: number } {
-  if (weight <= 1) return { label: 'Divine',       intensity: 1.05 }  // divine (new top tier)
-  if (weight <= 2) return { label: 'Mythological', intensity: 0.88 }  // mythic
-  if (weight <= 4) return { label: 'Legendary',    intensity: 0.72 }  // mythic
-  if (weight <= 7) return { label: 'Rare',         intensity: 0.55 }  // great
-  if (weight <= 11) return { label: 'Uncommon',    intensity: 0.38 }  // good
-  return { label: 'Common', intensity: 0.20 }                          // basic
+// Celebration intensity per rarity bucket. Drives the landing animation
+// from a quiet "basic" pop on Common up to the full "divine" cinematic
+// for the top tier.
+const _RACE_INTENSITY: Record<RaceRarity, number> = {
+  Divine: 1.05, Mythological: 0.88, Legendary: 0.72,
+  Rare: 0.55, Uncommon: 0.38, Common: 0.20,
+}
+
+// Resolve the rarity bucket from a Race object. Reads the explicit
+// `rarity` field — the wheel-distribution rebalance broke the
+// assumption that weight thresholds could be used as a discriminator.
+// Falls back to weight thresholds only when an older Race entry is
+// missing the field (defensive — every race in races.ts should set it).
+function raceRarity(race: Race | undefined | null): { label: RaceRarity; intensity: number } {
+  if (race?.rarity) return { label: race.rarity, intensity: _RACE_INTENSITY[race.rarity] }
+  const w = race?.weight ?? 99
+  if (w <= 1)  return { label: 'Divine',       intensity: _RACE_INTENSITY.Divine }
+  if (w <= 2)  return { label: 'Mythological', intensity: _RACE_INTENSITY.Mythological }
+  if (w <= 4)  return { label: 'Legendary',    intensity: _RACE_INTENSITY.Legendary }
+  if (w <= 7)  return { label: 'Rare',         intensity: _RACE_INTENSITY.Rare }
+  if (w <= 11) return { label: 'Uncommon',     intensity: _RACE_INTENSITY.Uncommon }
+  return { label: 'Common', intensity: _RACE_INTENSITY.Common }
 }
 
 // Public rarity bucket lookup so other systems (e.g. stat-bonus caps) can
 // align with the same rarity tiers shown on the landing celebration.
-export function raceRarityLabel(weight: number | undefined): string {
-  return raceRarity(weight ?? 99).label
+// Accepts either a Race or a weight (latter for backward-compat shims).
+export function raceRarityLabel(race: Race | undefined | null): RaceRarity {
+  return raceRarity(race).label
 }
 
 // Maximum +/- a race may shift any single stat. Higher rarity races unlock
 // the bigger bonus/penalty rolls; Common races are capped at ±5 so a lucky
 // stat-bonus reroll can't push a baseline race into legend territory.
 // Mythological and Divine share the +20 ceiling per the design spec.
-export function raceStatBonusCap(weight: number | undefined): number {
-  const label = raceRarityLabel(weight)
-  switch (label) {
+export function raceStatBonusCap(race: Race | undefined | null): number {
+  switch (raceRarityLabel(race)) {
     case 'Divine':
     case 'Mythological': return 20
     case 'Legendary':    return 15
     case 'Rare':         return 12
     case 'Uncommon':     return 8
     default:             return 5
+  }
+}
+
+// Stat-tier weight multiplier applied during stat-spin generation. Rarer
+// races bias the wheel toward higher-tier outcomes; Common races get a
+// slight penalty. Tuned so Legendary lands around Z- to ZZ+ on average,
+// Mythological reaches ZZZ+/Cosmic, and Divine averages Cosmic+/Immortal.
+// Replaces the old linear `3.0 - raceWeight * 0.17` formula in +page.svelte
+// which was overshooting Legendary into Cosmic-Immortal territory.
+export function raceTierModifier(race: Race | undefined | null): number {
+  switch (raceRarityLabel(race)) {
+    case 'Divine':       return 2.4
+    case 'Mythological': return 2.1
+    case 'Legendary':    return 1.7
+    case 'Rare':         return 1.3
+    case 'Uncommon':     return 1.0
+    default:             return 0.6  // Common
   }
 }
 function archetypeRarity(weight: number): { label: string; intensity: number } {
@@ -146,7 +178,7 @@ export function resolveLandingForCategory(
       // bias, etc. — falls back to a neutral gold accent.
       const race = racesByLabel.get(label)
       if (race) {
-        weightIntensity = raceRarity(race.weight).intensity
+        weightIntensity = raceRarity(race).intensity
         // Pull a representative element from the race's class pool if any
         // class entry carries one. We prefer the highest-grade class's
         // element so the tint reads as "the legendary class of this race."
@@ -188,7 +220,7 @@ export function resolveLandingForCategory(
   let subtitle: string | null = null
   if (category === 'race') {
     const race = racesByLabel.get(label)
-    if (race) subtitle = raceRarity(race.weight).label + ' Race'
+    if (race) subtitle = raceRarity(race).label + ' Race'
   } else if (category === 'archetype') {
     const arc = archetypesByLabel.get(label)
     if (arc) subtitle = archetypeRarity(arc.weight).label + ' Archetype'

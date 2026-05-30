@@ -49,7 +49,7 @@
   import { randomCharacterName } from '$lib/story/naming'
   import { generateCharacterSummary } from '$lib/characterSummary'
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
-  import { resolveLandingForCategory, raceStatBonusCap } from '$lib/landingColors'
+  import { resolveLandingForCategory, raceStatBonusCap, raceTierModifier } from '$lib/landingColors'
   import { describeRacialGrants, describeTwist } from '$lib/game/racialGrants'
   import { resolveActiveTheme } from '$lib/wheelThemes'
   import { buildIdentityCard } from '$lib/identityCard'
@@ -714,7 +714,7 @@
       const segs = getSegmentsForCategory(def.category)
       const raceResult = results.find(r => r.category === 'race')
       const race = getRace(raceResult?.resultLabel)
-      const cap = raceStatBonusCap(race?.weight)
+      const cap = raceStatBonusCap(race)
       const filtered = segs.filter(s => {
         const n = Math.abs(parseInt(s.label.replace(/[^\-0-9]/g, ''), 10))
         return Number.isFinite(n) && n <= cap
@@ -807,11 +807,12 @@
     if (STAT_CATEGORIES.has(def.category)) {
       const raceResult = results.find(r => r.category === 'race')
       const race = getRace(raceResult?.resultLabel)
-      // Global tier modifier: rarer races (low weight) get significantly better stats.
-      // weight 3 (Kryptonian) → ~2.1x capped at 2.0, weight 10 → ~1.8x, weight 20 → ~1.4x, weight 38 → ~0.7x (floored)
-      const raceWeight = race?.weight ?? 20
-      // Steeper curve: rare races (low weight) feel significantly more powerful
-      const globalModifier = Math.max(0.3, Math.min(3.2, 3.0 - raceWeight * 0.17))
+      // Global tier modifier from the race's rarity bucket. Replaces the
+      // old linear `3.0 - raceWeight * 0.17` formula which overshot
+      // Legendary into Cosmic-Immortal. New target outcomes: Common ≈ D/C,
+      // Uncommon ≈ B/A baseline, Rare ≈ A+/S, Legendary ≈ Z-/ZZ+,
+      // Mythological ≈ ZZZ+/Cosmic, Divine ≈ Cosmic+/Immortal.
+      const globalModifier = raceTierModifier(race)
       // Stat-specific race modifier, falling back to global
       const raceMod = race?.statModifiers?.[def.category] ?? globalModifier
       // Archetype modifier: shapes stat probability on top of race
