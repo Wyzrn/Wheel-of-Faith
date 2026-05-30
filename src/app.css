@@ -292,11 +292,15 @@
 
 /* Background ember field — purely decorative dots that drift upward
    on a slow loop. Painted into the menu's existing backdrop layer via
-   a single pseudo-element on .menu-bg. */
-.menu-bg { position: relative; isolation: isolate; }
+   a single pseudo-element on .menu-bg. NOTE: must NOT add a blanket
+   `.menu-bg > * { position: relative }` rule here — that would
+   override the existing `class="absolute"` on the decorative gold
+   haze + teal swell divs and turn them into flex items, breaking
+   centering. Stacking is handled per-element instead. */
+.menu-bg { position: relative; }
 .menu-bg::before {
   content: '';
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  position: absolute; inset: 0; pointer-events: none;
   background:
     radial-gradient(2px 2px at 8% 92%,  rgba(240,192,64,0.55) 100%, transparent 0),
     radial-gradient(1.5px 1.5px at 22% 78%, rgba(240,192,64,0.45) 100%, transparent 0),
@@ -313,7 +317,6 @@
   filter: drop-shadow(0 0 4px rgba(240,192,64,0.4));
   animation: menuEmberDrift 12s linear infinite, menuEmberFade 4s ease-in-out infinite;
 }
-.menu-bg > * { position: relative; z-index: 1; }
 @keyframes menuEmberDrift {
   from { transform: translateY(0); }
   to   { transform: translateY(-60px); }
@@ -373,8 +376,13 @@
 
 /* Staggered button entry — each row reads a --menu-delay CSS var
    inline and animates in from below with a soft pop. Combine with
-   the existing popIn keyframe so the timing matches other reveals. */
+   the existing popIn keyframe so the timing matches other reveals.
+   position: relative + z-index: 1 lifts the row above the ember
+   ::before layer (which sits at z auto) without disturbing the
+   absolute decorative gradient divs that are siblings of .menu-bg. */
 .menu-entry {
+  position: relative;
+  z-index: 1;
   opacity: 0;
   animation: popIn 0.55s cubic-bezier(0.22, 0.85, 0.3, 1) forwards;
   animation-delay: var(--menu-delay, 0ms);
