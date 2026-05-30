@@ -1360,16 +1360,20 @@
     50%      { opacity: 1; }
   }
 
-  /* ── Cosmic (2000) — deep-space window: indigo/violet nebula behind a
-     slow-rotating starfield. White stars carry a faint blue-tinted glow so
-     the whole composition stays in cool tones — no warm magenta accents. */
+  /* ── Cosmic (2000) — deep-space window: indigo/violet nebula with a
+     pulsing supernova burst behind a dense slow-rotating starfield. White
+     stars carry a faint blue-tinted glow so the whole composition stays
+     in cool tones — no warm magenta accents. */
   :global(.wt-cosmic)::before {
+    /* Starfield — ~24 stars in white / pale blue / violet, sized from
+       small twinklers up to larger 2-3px focal stars. The whole layer
+       slow-rotates so the night sky drifts across the wheel. */
     content: ''; position: absolute; inset: -36px; border-radius: 50%; pointer-events: none;
     background:
       radial-gradient(1.2px 1.2px at 18% 12%, #f8fafc 100%, transparent 0),
       radial-gradient(1.8px 1.8px at 82% 31%, #c4b5fd 100%, transparent 0),
       radial-gradient(1.2px 1.2px at 24% 73%, #e0e7ff 100%, transparent 0),
-      radial-gradient(2px 2px at 76% 85%, #a5b4fc 100%, transparent 0),
+      radial-gradient(2px   2px   at 76% 85%, #a5b4fc 100%, transparent 0),
       radial-gradient(1.2px 1.2px at 50% 50%, #f8fafc 100%, transparent 0),
       radial-gradient(1.2px 1.2px at 39% 42%, #818cf8 100%, transparent 0),
       radial-gradient(1.8px 1.8px at 65% 19%, #f8fafc 100%, transparent 0),
@@ -1377,26 +1381,77 @@
       radial-gradient(1.2px 1.2px at 92% 62%, #f8fafc 100%, transparent 0),
       radial-gradient(1.2px 1.2px at 7%  35%, #c7d2fe 100%, transparent 0),
       radial-gradient(1.2px 1.2px at 60% 8%,  #c4b5fd 100%, transparent 0),
-      radial-gradient(1px 1px at 45% 90%,  #e0e7ff 100%, transparent 0),
-      radial-gradient(1px 1px at 88% 12%,  #f8fafc 100%, transparent 0);
+      radial-gradient(1px   1px   at 45% 90%, #e0e7ff 100%, transparent 0),
+      radial-gradient(1px   1px   at 88% 12%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.4px 1.4px at 33% 22%, #ddd6fe 100%, transparent 0),
+      radial-gradient(0.9px 0.9px at 57% 67%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 4%  82%, #c4b5fd 100%, transparent 0),
+      radial-gradient(1px   1px   at 96% 88%, #e0e7ff 100%, transparent 0),
+      radial-gradient(1.6px 1.6px at 27% 58%, #f8fafc 100%, transparent 0),
+      radial-gradient(0.9px 0.9px at 73% 9%,  #c4b5fd 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 81% 48%, #f8fafc 100%, transparent 0),
+      radial-gradient(0.8px 0.8px at 14% 92%, #ddd6fe 100%, transparent 0),
+      radial-gradient(2px   2px   at 86% 6%,  #f8fafc 100%, transparent 0),
+      radial-gradient(1.4px 1.4px at 47% 16%, #c7d2fe 100%, transparent 0),
+      radial-gradient(0.9px 0.9px at 67% 78%, #f8fafc 100%, transparent 0);
     filter: drop-shadow(0 0 3px #818cf8);
     animation: cosmicSpin 45s linear infinite, cosmicTwinkle 3.5s ease-in-out infinite;
   }
   :global(.wt-cosmic)::after {
+    /* Layer stack (bottom → top in stacking order, but listed in
+       background painting order, last is bottom):
+         1. supernova rays   — 8 thin radiating spokes that rotate
+                               counter to the starfield, mask-cut to a
+                               donut so they emanate from the supernova
+                               core outward.
+         2. supernova core   — bright white→indigo→violet burst sitting
+                               at 28%/32% (upper-left quadrant) with a
+                               huge gaussian glow, pulses brightness.
+         3. nebula clouds    — soft indigo / violet blobs + a deep-navy
+                               central void, blurred and screen-blended.
+       Single mix-blend-mode: screen keeps every layer additive over the
+       wheel's slice colours. */
     content: ''; position: absolute; inset: -18px; border-radius: 50%; pointer-events: none;
     background:
-      radial-gradient(circle at 28% 32%, rgba(67,56,202,0.6), transparent 40%),
+      /* Supernova rays — 8 thin bright spokes */
+      conic-gradient(from 0deg,
+        rgba(224,231,255,0.7) 0deg,  transparent 4deg,  transparent 41deg,
+        rgba(199,210,254,0.6) 45deg, transparent 49deg, transparent 86deg,
+        rgba(224,231,255,0.7) 90deg, transparent 94deg, transparent 131deg,
+        rgba(199,210,254,0.6) 135deg, transparent 139deg, transparent 176deg,
+        rgba(224,231,255,0.7) 180deg, transparent 184deg, transparent 221deg,
+        rgba(199,210,254,0.6) 225deg, transparent 229deg, transparent 266deg,
+        rgba(224,231,255,0.7) 270deg, transparent 274deg, transparent 311deg,
+        rgba(199,210,254,0.6) 315deg, transparent 319deg, transparent 356deg),
+      /* Supernova bright core */
+      radial-gradient(circle at 28% 30%,
+        rgba(248,250,252,0.95) 0%,
+        rgba(199,210,254,0.78)  3%,
+        rgba(129,140,248,0.55)  7%,
+        rgba(76,29,149,0.35)   13%,
+        transparent 22%),
+      /* Nebula clouds */
+      radial-gradient(circle at 28% 32%, rgba(67,56,202,0.6),  transparent 40%),
       radial-gradient(circle at 72% 70%, rgba(76,29,149,0.7),  transparent 42%),
       radial-gradient(circle at 50% 50%, rgba(15,23,42,0.55),  transparent 60%);
-    filter: blur(14px);
+    filter: blur(2px);
     mix-blend-mode: screen;
-    animation: cosmicNebula 16s ease-in-out infinite;
+    /* Nebula rotation carries the supernova rays around with it (single
+       transform timeline — composing two transform-animations on the same
+       element doesn't actually layer in CSS). Supernova pulse is filter-
+       only so it doesn't fight for the transform slot. */
+    animation: cosmicNebula 16s ease-in-out infinite,
+               cosmicSupernova 4.5s ease-in-out infinite;
   }
   @keyframes cosmicSpin    { to { transform: rotate(360deg); } }
   @keyframes cosmicTwinkle { 50% { opacity: 0.72; } }
   @keyframes cosmicNebula {
     0%, 100% { transform: rotate(0)      scale(1);    opacity: 0.7; }
     50%      { transform: rotate(180deg) scale(1.12); opacity: 1;   }
+  }
+  @keyframes cosmicSupernova {
+    0%, 100% { filter: blur(2px)   brightness(1);    }
+    50%      { filter: blur(2.5px) brightness(1.55); }
   }
 
   /* ── Void (2500) — singularity at the center of the wheel.
@@ -1419,20 +1474,33 @@
     50%      { opacity: 0.92; transform: scale(0.72) rotate(180deg); }
   }
   :global(.wt-void)::before {
-    content: ''; position: absolute; inset: -10px; border-radius: 50%; pointer-events: none;
-    /* Event horizon ring — thin bright arc on an otherwise black orbit,
-       sweeping around to suggest accretion-disk material being whipped
-       past at relativistic speed. */
+    content: ''; position: absolute; inset: -28px; border-radius: 50%; pointer-events: none;
+    /* Accretion ring stack — four concentric annuli (innermost = event
+       horizon, outermost = halo edge) carrying the same rotating bright
+       sweep so the wheel reads as a black hole nested inside multiple
+       lensed light rings. The mask is a multi-band radial gradient
+       defining where each ring shows. The conic-gradient supplies the
+       sweep colour, which appears identically across every band so the
+       rings rotate together like gravitational frame-dragging. */
     background: conic-gradient(from 0deg,
       transparent 0deg,
-      rgba(96,165,250,0.05) 30deg,
-      rgba(96,165,250,0.45) 70deg,
-      rgba(186,230,253,0.75) 90deg,
-      rgba(96,165,250,0.45) 110deg,
-      rgba(96,165,250,0.05) 150deg,
+      rgba(125,211,252,0.10) 30deg,
+      rgba(125,211,252,0.55) 70deg,
+      rgba(224,242,254,0.95) 90deg,
+      rgba(125,211,252,0.55) 110deg,
+      rgba(125,211,252,0.10) 150deg,
       transparent 180deg);
-    mask: radial-gradient(circle, transparent 49%, black 51%, black 56%, transparent 60%);
-    filter: blur(2px) drop-shadow(0 0 8px rgba(125,211,252,0.55));
+    /* All four rings sit OUTSIDE the wheel rim (rim ≈ 62% of corner
+       distance once inset is applied). Bands are ~2% thick with ~3%
+       gaps, producing four crisp light circles. */
+    mask:
+      radial-gradient(circle,
+        transparent 63%,
+        black 64%, black 66%, transparent 67%,   /* event horizon */
+        black 69%, black 71%, transparent 72%,   /* inner halo */
+        black 74%, black 76%, transparent 77%,   /* mid halo */
+        black 79%, black 81%, transparent 82%);  /* outer photon ring */
+    filter: blur(1.4px) drop-shadow(0 0 6px rgba(125,211,252,0.55)) drop-shadow(0 0 12px rgba(96,165,250,0.35));
     animation: voidEventHorizon 7s linear infinite;
   }
   :global(.wt-void)::after {
