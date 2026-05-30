@@ -2588,7 +2588,11 @@
 
 <main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
 
-  <!-- Fixed top nav -->
+  <!-- Fixed top nav — hidden while the main menu is open so it doesn't paint
+       its own dark strip over the top of the menu's full-page background.
+       The menu provides its own navigation; the nav has nothing to show in
+       this state anyway (every slot inside is already gated by !showMenu). -->
+  {#if !showMenu}
   <nav class="fixed top-0 inset-x-0 z-50 flex items-center px-4 h-14"
     style="background: rgba(22,18,26,0.92); border-bottom: 2px solid rgba(240,192,82,0.45); backdrop-filter: blur(16px); box-shadow: 0 4px 20px rgba(90,214,239,0.12);"
   >
@@ -2620,6 +2624,7 @@
       {/if}
     </div>
   </nav>
+  {/if}
 
   {#if showSettings}
     <SettingsPanel onClose={() => showSettings = false} />
