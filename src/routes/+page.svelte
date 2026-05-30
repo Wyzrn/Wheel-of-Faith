@@ -2627,42 +2627,42 @@
 
   <!-- Main Menu — fixed overlay so game content beneath can't be scrolled to -->
   {#if showMenu}
-    <div class="fixed inset-0 z-30 flex flex-col items-center justify-center px-5 overflow-y-auto" style="background: #16121a;">
+    <div class="menu-bg fixed inset-0 z-30 flex flex-col items-center justify-center px-5 overflow-y-auto" style="background: #16121a;">
       <!-- Decorative glows: gold haze up top, arcane teal swell at the base -->
-      <div class="absolute top-0 inset-x-0 h-48 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240,192,82,0.09), transparent);"></div>
-      <div class="absolute bottom-0 inset-x-0 h-56 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(90,214,239,0.08), transparent);"></div>
+      <div class="absolute top-0 inset-x-0 h-48 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240,192,82,0.12), transparent);"></div>
+      <div class="absolute bottom-0 inset-x-0 h-56 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(90,214,239,0.10), transparent);"></div>
 
       <!-- Logo mark -->
-      <div class="mb-4 flex flex-col items-center gap-3">
+      <div class="menu-entry mb-4 flex flex-col items-center gap-3" style="--menu-delay: 0ms;">
         <div class="relative flex items-center justify-center" style="width: 84px; height: 84px;">
-          <div class="absolute inset-0 rounded-full" style="border: 1px solid rgba(240,192,64,0.15); transform: scale(1.28);"></div>
-          <div class="absolute inset-0 rounded-full" style="border: 1px solid rgba(240,192,64,0.25); transform: scale(1.14);"></div>
-          <div class="obsidian-slab rounded-full w-full h-full flex items-center justify-center relative overflow-hidden" style="border: 1px solid rgba(240,192,64,0.3);">
+          <div class="menu-orbit-cw absolute inset-0 rounded-full" style="border: 1px dashed rgba(240,192,64,0.22);"></div>
+          <div class="menu-orbit-ccw absolute inset-0 rounded-full" style="border: 1px solid rgba(240,192,64,0.32);"></div>
+          <div class="menu-logo-core obsidian-slab rounded-full w-full h-full flex items-center justify-center relative overflow-hidden" style="border: 1px solid rgba(240,192,64,0.45);">
             <div class="noise-overlay"></div>
-            <span class="material-symbols-outlined relative z-10" style="font-size: 40px; color: #f0c040; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 12px rgba(240,192,64,0.6));">casino</span>
+            <span class="material-symbols-outlined relative z-10" style="font-size: 40px; color: #f0c040; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 12px rgba(240,192,64,0.7));">casino</span>
           </div>
         </div>
         <div class="text-center">
-          <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 6vw, 2.2rem); font-weight: 900; color: #f0c040; letter-spacing: 0.18em; line-height: 1.1; text-shadow: 2px 2px 0 rgba(0,0,0,0.8), 0 0 16px rgba(240,192,64,0.4);">WHEEL OF FATE</h1>
+          <h1 class="menu-title" style="font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 6vw, 2.2rem); font-weight: 900; color: #f0c040; letter-spacing: 0.18em; line-height: 1.1; text-shadow: 2px 2px 0 rgba(0,0,0,0.8), 0 0 16px rgba(240,192,64,0.4);">WHEEL OF FATE</h1>
           <p class="mt-1.5 text-xs tracking-[0.22em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Spin your destiny. Accept the consequences.</p>
         </div>
       </div>
 
       <!-- Divider -->
-      <div class="flex items-center gap-3 mb-5" style="width: min(260px, 80vw);">
-        <div class="flex-1 h-px" style="background: linear-gradient(90deg, transparent, rgba(240,192,64,0.35));"></div>
-        <span style="color: #f0c040; font-size: 11px; opacity: 0.7;">✦</span>
-        <div class="flex-1 h-px" style="background: linear-gradient(90deg, rgba(240,192,64,0.35), transparent);"></div>
+      <div class="menu-entry flex items-center gap-3 mb-5" style="width: min(260px, 80vw); --menu-delay: 80ms;">
+        <div class="menu-rune-line flex-1 h-px"></div>
+        <span class="menu-star" style="color: #f0c040; font-size: 11px;">✦</span>
+        <div class="menu-rune-line flex-1 h-px"></div>
       </div>
 
       <!-- Buttons -->
       <div class="flex flex-col gap-2.5 w-full max-w-[260px]">
         <!-- Spin Your Fate + recent characters (one button, paginates through last 5) -->
-        <div class="flex items-center gap-2">
+        <div class="menu-entry flex items-center gap-2" style="--menu-delay: 160ms;">
           <button
             onclick={() => { showMenu = false; if (tutorialStep === 0) tutorialStep = 1 }}
             data-fx="big"
-            class="metal-stamp-gold flex-1 py-3 rounded-lg relative" use:tilt={{ max: 5 }}
+            class="menu-cta metal-stamp-gold flex-1 py-3 rounded-lg relative" use:tilt={{ max: 5 }}
             style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;"
           >
             <div class="l-bracket" style="color: rgba(255,255,255,0.3);"></div>
@@ -2670,7 +2670,7 @@
           </button>
           <button
             onclick={() => { if (charHistory.length > 0) { viewingHistoryIdx = 0; showHistory = true; showMenu = false } }}
-            class="flex items-center justify-center rounded-lg shrink-0 transition-all relative"
+            class="menu-cta flex items-center justify-center rounded-lg shrink-0 transition-all relative"
             style="width: 44px; height: 44px; background: rgba(167,139,250,{charHistory.length > 0 ? '0.10' : '0.02'}); border: 1px solid rgba(167,139,250,{charHistory.length > 0 ? '0.32' : '0.08'}); color: {charHistory.length > 0 ? '#a78bfa' : '#2a3a4a'}; cursor: {charHistory.length > 0 ? 'pointer' : 'default'}; opacity: {charHistory.length > 0 ? '1' : '0.35'};"
             title={charHistory.length > 0 ? `Recent characters (${charHistory.length})` : 'Spin a character to start your history'}
             aria-label="Recent characters"
@@ -2685,16 +2685,16 @@
         <!-- Rivals Mode -->
         <button
           onclick={() => { showMenu = false; goto('/rivals') }}
-          class="metal-stamp-crimson w-full py-3 rounded-lg relative" use:tilt={{ max: 5 }}
-          style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: #ffdad6;"
+          class="menu-entry menu-cta metal-stamp-crimson w-full py-3 rounded-lg relative" use:tilt={{ max: 5 }}
+          style="--menu-delay: 220ms; font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: #ffdad6;"
         >
           <div class="l-bracket" style="color: rgba(255,180,171,0.35);"></div>
           ⚔ Rivals Mode
         </button>
 
         <!-- Story Mode -->
-        <a href="/story" style="text-decoration: none;">
-          <div class="metal-stamp-green w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
+        <a href="/story" class="menu-entry block" style="text-decoration: none; --menu-delay: 280ms;">
+          <div class="menu-cta metal-stamp-green w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
             style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: #052e16;">
             <div class="l-bracket" style="color: rgba(110,231,183,0.35);"></div>
             📖 Story Mode
@@ -2702,16 +2702,16 @@
         </a>
 
         <!-- Two-col row: Gallery + Characters -->
-        <div class="flex gap-2">
+        <div class="menu-entry flex gap-2" style="--menu-delay: 340ms;">
           <a href="/characters" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-slate w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
+            <div class="menu-cta metal-stamp-slate w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #e9dfeb;">
               <div class="l-bracket" style="color: rgba(200,192,220,0.25);"></div>
               Characters
             </div>
           </a>
           <a href="/gallery" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-purple w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
+            <div class="menu-cta metal-stamp-purple w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: #1e0a3c;">
               <div class="l-bracket" style="color: rgba(167,139,250,0.35);"></div>
               Gallery
@@ -2720,16 +2720,16 @@
         </div>
 
         <!-- Two-col row: Arcane Shop + Challenges -->
-        <div class="flex gap-2">
+        <div class="menu-entry flex gap-2" style="--menu-delay: 400ms;">
           <a href="/shop" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-gold w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
+            <div class="menu-cta metal-stamp-gold w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.13em; text-transform: uppercase; font-weight: 700; color: #1a0e00;">
               <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
               ◆ Shop
             </div>
           </a>
           <a href="/challenges" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-teal w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
+            <div class="menu-cta metal-stamp-teal w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.13em; text-transform: uppercase; font-weight: 700; color: #042f2e;">
               <div class="l-bracket" style="color: rgba(90,214,239,0.3);"></div>
               Challenges
@@ -2738,21 +2738,21 @@
         </div>
 
         <!-- Clan + Achievements + Replays row -->
-        <div class="flex gap-2">
+        <div class="menu-entry flex gap-2" style="--menu-delay: 460ms;">
           <a href="/clan" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-amber w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
+            <div class="menu-cta metal-stamp-amber w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: #1c0a00;">
               ⚑ Clan
             </div>
           </a>
           <a href="/achievements" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-gold w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
+            <div class="menu-cta metal-stamp-gold w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: #1a0e00;">
               ★ Badges
             </div>
           </a>
           <a href="/replays" style="text-decoration: none; flex: 1;">
-            <div class="metal-stamp-purple w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
+            <div class="menu-cta metal-stamp-purple w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: #1e0a3c;">
               ↻ Replays
             </div>
