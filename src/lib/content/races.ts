@@ -1086,13 +1086,6 @@ export const races: Race[] = [
         { label: 'Crimson', weight: 3, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, description: 'Blood obeys. Iron forgets which way it should fall.' },
         { label: 'Ancient', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' }, description: 'Older than the empire that named them.' },
       ]},
-      { id: 'age', displayName: 'Age', order: 2, segments: [
-        { label: 'Fledgling', weight: 5, description: 'Decades, at most. Still learning the hunger.' },
-        { label: 'Mature', weight: 4, statBonusGrants: { charisma: 'statBonus', fightingSkill: 'statBonus' }, description: 'A century or two. Comfortable in the night.' },
-        { label: 'Elder', weight: 3, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', charisma: 'statBonus' }, description: 'Saw empires rise. Outlasts them.' },
-        { label: 'Ancestor', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' }, description: 'Predates language as you know it.' },
-        { label: 'Primordial Vampire', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statPenalty' }, description: 'There were vampires before there was night.' },
-      ]},
       { id: 'corruption', displayName: 'Corruption', order: 3, segments: [
         { label: 'Composed', weight: 5, description: 'The hunger is leashed.' },
         { label: 'Slipping', weight: 4, statBonusGrants: { strength: 'statBonus', charisma: 'statPenalty' }, description: 'The face changes around blood.' },
@@ -1137,13 +1130,6 @@ export const races: Race[] = [
     minStatTier: 'C-',
     description: 'Full moon not required, full anger is.',
     injectedWheels: [
-      { id: 'moon', displayName: 'Moon Phase', order: 1, segments: [
-        { label: 'New Moon', weight: 3, statBonusGrants: { agility: 'statBonus' }, description: 'Smallest form. Easiest to hide.' },
-        { label: 'Crescent', weight: 3, statBonusGrants: { speed: 'statBonus', agility: 'statBonus' }, description: 'The wolf stirs.' },
-        { label: 'Half Moon', weight: 4, description: 'Balanced. Could go either way.' },
-        { label: 'Gibbous', weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Hunger sharpens.' },
-        { label: 'Full Moon', weight: 2, statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus', iq: 'statPenalty' }, description: 'All wolf. All hunger.' },
-      ]},
       { id: 'alpha', displayName: 'Pack Rank', order: 2, segments: [
         { label: 'Lone', weight: 4, statBonusGrants: { agility: 'statBonus', charisma: 'statPenalty' }, description: 'No pack. No leash. No safety.' },
         { label: 'Omega', weight: 3, statBonusGrants: { speed: 'statBonus', durability: 'statBonus' }, description: 'Last in line. Knows every escape.' },
@@ -1248,13 +1234,6 @@ export const races: Race[] = [
         { label: 'Elder Wyrm', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', iq: 'statBonus' }, description: 'Saw the first kingdom. Watched it fall.' },
         { label: 'Primal Drake', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' }, description: 'Older than dragons. Older than the word for dragon.' },
       ]},
-      { id: 'hoard', displayName: 'Hoard', order: 2, segments: [
-        { label: 'Modest', weight: 5, description: 'A few choice pieces.' },
-        { label: 'Treasure Pile', weight: 4, statBonusGrants: { charisma: 'statBonus', potential: 'statBonus' }, description: 'Sleeps on it. Wakes counting.' },
-        { label: 'Reliquary', weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, description: "Each piece a piece of someone's history." },
-        { label: 'Cursed Wealth', weight: 2, statBonusGrants: { powerMastery: 'statBonus', durability: 'statBonus', charisma: 'statPenalty' }, description: 'Bad things happen to thieves. Slow ones.' },
-        { label: 'World-Hoard', weight: 1, statBonusGrants: { strength: 'statBonus', iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'More wealth than nations.' },
-      ]},
       { id: 'catastrophe', displayName: 'Catastrophe', order: 3, segments: [
         { label: 'Slumbering', weight: 6, description: 'The world has not provoked them yet.' },
         { label: 'Stirring', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Eyes opening. Tail twitching.' },
@@ -1316,13 +1295,6 @@ export const races: Race[] = [
         { label: 'Volatile',          weight: 4, statBonusGrants: { strength: 'statBonus', charisma: 'statPenalty' }, description: 'Powers up quickly — but loses control.' },
         { label: 'Berserker Heart',   weight: 2, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', iq: 'statPenalty' }, description: 'Always one bad day from Oozaru.' },
         { label: 'Battle-Lust',       weight: 1, statBonusGrants: { strength: 'statBonus', potential: 'statBonus' }, description: 'Lives for the next fight. Each near-death pushes the curve.' },
-      ]},
-      { id: 'powerLevel', displayName: 'Power Level', order: 3, segments: [
-        { label: 'Low Reading',    weight: 5, statBonusGrants: { fightingSkill: 'statBonus' }, description: 'Scouters dismiss them. A mistake.' },
-        { label: 'Mid-Tier Class', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Read by scouters as solid. Saiyan-pride.' },
-        { label: 'Elite Tier',     weight: 3, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'Top of the standard scouter range. Scouters break.' },
-        { label: 'Off the Charts', weight: 2, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', potential: 'statBonus' }, description: 'Reading is impossible. Scouters explode trying.' },
-        { label: 'Legendary',      weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Legendary Super Saiyan — born once every thousand years.' },
       ]},
     ],
     classPool: [
@@ -1768,13 +1740,6 @@ export const races: Race[] = [
     description: "A non-Euclidean entity whose existence defies comprehension. You are the bad ending of someone else's story.",
     statModifiers: { iq: 2.0, powerMastery: 2.0, potential: 1.8, strength: 0.7, charisma: 0.3 },
     injectedWheels: [
-      { id: 'madness', displayName: 'Madness Touch', order: 1, segments: [
-        { label: 'Subtle', weight: 5, statBonusGrants: { iq: 'statBonus', charisma: 'statPenalty' }, description: 'Faint wrongness. Others stay away without knowing why.' },
-        { label: 'Visible', weight: 4, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statPenalty' }, description: 'Reality bends in nearby objects.' },
-        { label: 'Overwhelming', weight: 3, statBonusGrants: { powerMastery: 'statBonus', iq: 'statBonus', durability: 'statBonus', charisma: 'statPenalty' }, description: 'Witnesses crack. Architecture warps.' },
-        { label: 'Ego Death', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', charisma: 'statPenalty' }, description: 'Anyone who meets their eye loses themselves a little.' },
-        { label: 'Reality Solvent', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', energyLevel: 'statBonus', charisma: 'statPenalty' }, description: 'Nearby reality goes liquid. Slowly.' },
-      ]},
       { id: 'voidAspect', displayName: 'Void Aspect', order: 2, segments: [
         { label: 'Hollow', weight: 5, statBonusGrants: { durability: 'statBonus', iq: 'statBonus' }, description: 'Empty inside. The empty is not weakness.' },
         { label: 'Echo of Void', weight: 4, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Sound dampens. Light dampens. Hope dampens.' },
@@ -1917,8 +1882,8 @@ export const races: Race[] = [
     statModifiers: { strength: 2.8, durability: 2.6, speed: 2.5, fightingSkill: 2.8, potential: 1.8 },
     classPool: [
       { label: 'Viltrum Soldier',   weight: 4, element: 'Neutral', grade: 'A', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Viltrum Combat Doctrine', weight: 2, element: 'Neutral', grade: 'A' }, { label: 'Conqueror Mentality', weight: 2, element: 'Neutral', grade: 'A' }, { label: 'Endurance Beyond Limit', weight: 2, element: 'Neutral', grade: 'A' }, { label: 'Atmospheric Combat Mastery', weight: 2, element: 'Wind', grade: 'A' }, { label: 'Physical Perfection Drive', weight: 2, element: 'Neutral', grade: 'SS' }, { label: 'Immortal Body', weight: 1, element: 'Neutral', grade: 'SSS' }], powerPool: [{ label: 'Super Strength', weight: 3 }, { label: 'Flight', weight: 3 }, { label: 'Invulnerability', weight: 2 }, { label: 'Regeneration (Total)', weight: 2 }, { label: 'Combat Flow State', weight: 1 }] },
-      { label: 'High Commander',    weight: 3, element: 'Neutral', grade: 'S', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Planetary Threat Level', weight: 2, element: 'Neutral', grade: 'S' }, { label: 'War Doctrine Master', weight: 2, element: 'Neutral', grade: 'S' }, { label: 'Viltrum Elite Combat', weight: 2, element: 'Neutral', grade: 'SS' }, { label: 'Sovereign Strike', weight: 2, element: 'Neutral', grade: 'SS' }, { label: 'Authority Aura', weight: 2, element: 'Psychic', grade: 'S' }, { label: "Empire's Champion", weight: 1, element: 'Neutral', grade: 'SS' }], powerPool: [{ label: 'Kryptonian Martial Arts', weight: 3 }, { label: 'Super Strength', weight: 3 }, { label: 'Invulnerability', weight: 2 }, { label: 'War God Strike', weight: 2 }, { label: 'Solar Flare', weight: 1 }] },
-      { label: 'Grand Regent',      weight: 2, element: 'Neutral', grade: 'SS', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', speed: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Apex Combat Mastery', weight: 2, element: 'Neutral', grade: 'SS' }, { label: "Empire's Will (Absolute)", weight: 2, element: 'Psychic', grade: 'SS' }, { label: 'Sovereignty Aura', weight: 2, element: 'Neutral', grade: 'SSS' }, { label: 'Planetary Submission', weight: 2, element: 'Psychic', grade: 'SS' }, { label: 'Viltrum Legend', weight: 2, element: 'Neutral', grade: 'SSS' }, { label: "Conqueror's Birthright", weight: 1, element: 'Neutral', grade: 'SSS' }], powerPool: [{ label: 'Solar Flare', weight: 3 }, { label: 'Kryptonian Martial Arts', weight: 3 }, { label: 'Invulnerability', weight: 2 }, { label: 'War God Strike', weight: 2 }, { label: 'True Immortality', weight: 1 }] },
+      { label: 'High Commander',    weight: 3, element: 'Neutral', grade: 'S', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Planetary Threat Level', weight: 2, element: 'Neutral', grade: 'S' }, { label: 'War Doctrine Master', weight: 2, element: 'Neutral', grade: 'S' }, { label: 'Viltrum Elite Combat', weight: 2, element: 'Neutral', grade: 'SS' }, { label: 'Sovereign Strike', weight: 2, element: 'Neutral', grade: 'SS' }, { label: 'Authority Aura', weight: 2, element: 'Psychic', grade: 'S' }, { label: "Empire's Champion", weight: 1, element: 'Neutral', grade: 'SS' }], powerPool: [{ label: 'Viltrum Combat Doctrine', weight: 3 }, { label: 'Super Strength', weight: 3 }, { label: 'Invulnerability', weight: 2 }, { label: 'War God Strike', weight: 2 }, { label: 'Solar Flare', weight: 1 }] },
+      { label: 'Grand Regent',      weight: 2, element: 'Neutral', grade: 'SS', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', speed: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Apex Combat Mastery', weight: 2, element: 'Neutral', grade: 'SS' }, { label: "Empire's Will (Absolute)", weight: 2, element: 'Psychic', grade: 'SS' }, { label: 'Sovereignty Aura', weight: 2, element: 'Neutral', grade: 'SSS' }, { label: 'Planetary Submission', weight: 2, element: 'Psychic', grade: 'SS' }, { label: 'Viltrum Legend', weight: 2, element: 'Neutral', grade: 'SSS' }, { label: "Conqueror's Birthright", weight: 1, element: 'Neutral', grade: 'SSS' }], powerPool: [{ label: 'Solar Flare', weight: 3 }, { label: 'Viltrum Combat Doctrine', weight: 3 }, { label: 'Invulnerability', weight: 2 }, { label: 'War God Strike', weight: 2 }, { label: 'True Immortality', weight: 1 }] },
       { label: 'Viltrumite Anomaly (Invincible-Level)', weight: 1, element: 'Cosmic', grade: 'SSS', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', speed: 'statBonus', durability: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Beyond Viltrum Peak', weight: 2, element: 'Cosmic', grade: 'SSS' }, { label: 'Emotional Power Surge', weight: 2, element: 'Chaos', grade: 'SSS' }, { label: 'Inheritor of Two Worlds', weight: 2, element: 'Cosmic', grade: 'SSS' }, { label: 'Unstoppable Growth', weight: 2, element: 'Cosmic', grade: 'SSS' }, { label: 'Fight Through Anything', weight: 2, element: 'Neutral', grade: 'SSS' }, { label: 'Atom Eve Bond (Power Multiplier)', weight: 1, element: 'Cosmic', grade: 'God' }], powerPool: [{ label: 'True Immortality', weight: 3 }, { label: 'Invulnerability', weight: 3 }, { label: 'War God Strike', weight: 2 }, { label: 'Reality Warping', weight: 2 }, { label: 'Omnipotence (Weekend Only)', weight: 1 }] },
     ],
     transformationPool: [
@@ -2197,14 +2162,6 @@ export const races: Race[] = [
     minStatTier: 'S-',
     description: 'Half mortal, half divine. Fully aware of which half is better.',
     injectedWheels: [
-      { id: 'divineParent', displayName: 'Divine Parent', order: 1, segments: [
-        { label: 'Minor Deity', weight: 5, statBonusGrants: { powerMastery: 'statBonus' }, description: 'A small god. A local one.' },
-        { label: 'War God', weight: 4, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' }, description: 'Ares. Tyr. Sekhmet. Take your pick.' },
-        { label: 'Trickster', weight: 3, statBonusGrants: { iq: 'statBonus', charisma: 'statBonus', agility: 'statBonus' }, description: 'Loki. Hermes. Anansi. Chaos by inheritance.' },
-        { label: 'Storm/Sky', weight: 3, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Zeus. Thor. Indra. Lightning is the heritage.' },
-        { label: 'Death/Underworld', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', durability: 'statBonus' }, description: 'Hades. Hel. Anubis. Walks the dark.' },
-        { label: 'All-Father', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Direct child of the chief god. Inheritance maximal.' },
-      ]},
       { id: 'blessing', displayName: 'Divine Blessing', order: 2, segments: [
         { label: 'Quiet', weight: 4, statBonusGrants: { potential: 'statBonus' }, description: 'The god watches. Sometimes.' },
         { label: 'Direct', weight: 4, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'The god intervenes regularly.' },
@@ -2259,13 +2216,6 @@ export const races: Race[] = [
         { label: 'Storm', weight: 3, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus', speed: 'statBonus' }, description: 'Thunder answers to them.' },
         { label: 'Knowledge', weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Libraries answer to them.' },
         { label: 'Fate', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', charisma: 'statBonus' }, description: 'Outcomes answer to them. Can override weaknesses.' },
-      ]},
-      { id: 'worship', displayName: 'Worship', order: 2, segments: [
-        { label: 'Forgotten', weight: 4, statBonusGrants: { durability: 'statBonus', iq: 'statBonus' }, description: 'Cult disbanded. Power waning but not gone.' },
-        { label: 'Cult', weight: 4, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus' }, description: 'Small, devoted. Power proportional.' },
-        { label: 'Faith', weight: 3, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Established religion. Power constant.' },
-        { label: 'Pantheon-Held', weight: 2, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Major god. Multiple nations worship.' },
-        { label: 'Universal', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus', energyLevel: 'statBonus' }, description: 'Worshipped across worlds. Power approaches absolute.' },
       ]},
     ],
     statModifiers: { strength: 2.0, durability: 2.0, iq: 2.0, potential: 2.0, charisma: 2.0, powerMastery: 2.0, armorStrength: 1.8 },

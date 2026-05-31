@@ -545,11 +545,15 @@ export const RACE_TWIST_TRIGGERS: Record<string, string> = {
   // Cosmic / divine
   'God':              'worshipperCount',
   'Demi-god':         'divineParent',
-  'Primordial':       'divineParent',
+  // Primordial removed — they predate parentage; divineParent twist is
+  // conceptually wrong. Their own injectedWheels (creationElement,
+  // primordialCatastrophe) carry the identity weight.
   'Creator':          'cosmicScope',
   // Power-tier escalation
   'Saiyan':           'powerLevel',
-  'Viltrumite':       'powerLevel',
+  // Viltrumite removed — they don't transform on the Super Saiyan ladder;
+  // their growth is centuries of training, not stage-shift transformations.
+  // Their classPool (Soldier → Commander → Regent → Anomaly) carries it.
   // Element-locks
   'Bender':           'benderElement',
   // Insanity / cosmic horror
