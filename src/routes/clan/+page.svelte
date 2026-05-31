@@ -247,6 +247,23 @@
   let teamAttack      = $state<string[]>([])  // shareIds chosen for attack
   let teamDefense     = $state<string[]>([])  // shareIds chosen for defense
   let teamsSaving     = $state(false)
+  // Pagination — show the strongest 10 first, then 10 more per "Load More".
+  // Resets to 10 every time the teams view opens so the user sees their
+  // top picks immediately. Always keeps any character already picked on
+  // either team visible regardless of pagination so the player can see
+  // (and tap to remove) the current selection.
+  const TEAM_PAGE_SIZE = 10
+  let visibleChars = $state(TEAM_PAGE_SIZE)
+  let visibleCharList = $derived.by<MyChar[]>(() => {
+    const sliced = myChars.slice(0, visibleChars)
+    const picked = new Set([...teamAttack, ...teamDefense])
+    // Pull any picked characters that fell outside the slice into the
+    // visible list — otherwise toggling them off would be impossible.
+    for (const c of myChars) {
+      if (picked.has(c.shareId) && !sliced.includes(c)) sliced.push(c)
+    }
+    return sliced
+  })
 
   async function loadMyCharacters() {
     if (myCharsLoading) return
@@ -272,16 +289,26 @@
   function openTeamsView() {
     teamAttack  = [...(myClan?.myAttackTeam  ?? [])]
     teamDefense = [...(myClan?.myDefenseTeam ?? [])]
+    visibleChars = TEAM_PAGE_SIZE   // re-start from the top 10 each entry
     view = 'teams'
     if (myChars.length === 0) loadMyCharacters()
   }
 
   function toggleTeamPick(team: 'attack' | 'defense', shareId: string) {
     const list = team === 'attack' ? teamAttack : teamDefense
+    const otherList = team === 'attack' ? teamDefense : teamAttack
     const setList = (next: string[]) => { if (team === 'attack') teamAttack = next; else teamDefense = next }
     const idx = list.indexOf(shareId)
     if (idx !== -1) {
+      // De-selecting always works.
       setList(list.filter(id => id !== shareId))
+      return
+    }
+    // Block double-assignment — a fighter can be on Attack OR Defense, not both.
+    // The UI greys these out, but the click handler refuses too so quick taps
+    // can't sneak around it. Renders as a clear error toast.
+    if (otherList.includes(shareId)) {
+      showToast('err', `Already on ${team === 'attack' ? 'Defense' : 'Attack'} team`)
       return
     }
     if (list.length >= 3) { showToast('err', 'Teams cap at 3 fighters'); return }
@@ -1166,13 +1193,16 @@
               <span class="font-mono text-[10px] ml-auto" style="color: #9a907b;">{list.length}/3</span>
             </div>
             <div class="flex flex-col gap-1.5">
-              {#each myChars as c (c.shareId)}
+              {#each visibleCharList as c (c.shareId)}
                 {@const picked = list.includes(c.shareId)}
+                {@const onOther = (side === 'attack' ? teamDefense : teamAttack).includes(c.shareId)}
                 <button onclick={() => toggleTeamPick(side as 'attack' | 'defense', c.shareId)}
-                  class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-left"
-                  style="background: {picked ? color + '1a' : 'rgba(255,255,255,0.03)'}; border: 1px solid {picked ? color + '88' : 'rgba(255,255,255,0.06)'}; cursor: pointer;">
+                  disabled={onOther}
+                  class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-left disabled:cursor-not-allowed"
+                  style="background: {picked ? color + '1a' : onOther ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.03)'}; border: 1px solid {picked ? color + '88' : 'rgba(255,255,255,0.06)'}; cursor: {onOther ? 'not-allowed' : 'pointer'}; opacity: {onOther ? 0.35 : 1};"
+                  title={onOther ? `Already on ${side === 'attack' ? 'Defense' : 'Attack'} team` : ''}>
                   <span class="font-mono text-[10px] font-black w-6 text-center"
-                    style="color: {picked ? color : '#9a907b'};">{picked ? '✓' : '+'}</span>
+                    style="color: {picked ? color : onOther ? '#4e4635' : '#9a907b'};">{picked ? '✓' : onOther ? '·' : '+'}</span>
                   <span class="font-mono text-[11px] flex-1 truncate" style="color: #e9dfeb;">{c.name}</span>
                   <span class="font-mono text-[9px] px-1 rounded" style="background: rgba(240,192,64,0.18); color: #f0c040;">{c.overall_tier}</span>
                   <span class="font-mono text-[9px]" style="color: #4e4635;">{c.race}</span>
@@ -1181,6 +1211,16 @@
             </div>
           </div>
         {/each}
+        <!-- Pagination — defaults to the top 10 strongest characters; tap to
+             reveal the next 10. Picked characters always stay visible
+             regardless of pagination via the visibleCharList derived. -->
+        {#if visibleChars < myChars.length}
+          <button onclick={() => visibleChars = Math.min(myChars.length, visibleChars + TEAM_PAGE_SIZE)}
+            class="w-full mb-4 py-2 rounded-lg font-mono text-[11px] font-bold uppercase tracking-widest"
+            style="background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa;">
+            Load 10 More ({myChars.length - visibleChars} remaining)
+          </button>
+        {/if}
         <button onclick={saveTeams} disabled={teamsSaving}
           data-fx="big"
           class="w-full py-3 rounded-lg font-mono text-xs font-bold uppercase tracking-widest disabled:opacity-40"
