@@ -17,7 +17,14 @@ export interface MmrRank {
   badge: string | null       // path to PNG badge image; null for unranked text glyph
 }
 
-const BADGE_DIR = '/images/rank_badges_bundle/rank_badges_png'
+// asset() prepends the document's subpath. Required on itch.io where the
+// game lives under html-classic.itch.zone/html/<id>/<hash>/ — a plain
+// /images/... URL would resolve to itch.zone's root and 403 every badge.
+// On Heroku where the app lives at domain root, asset() is a pass-through.
+// The <base href> tag in app.html is injected pre-hydration so baseURI
+// reflects the subpath by the time this module loads.
+import { asset } from './api'
+const BADGE_DIR = asset('/images/rank_badges_bundle/rank_badges_png')
 
 export const MMR_RANKS: MmrRank[] = [
   { id: 'copper',   label: 'Copper',    threshold: 100,  color: '#a16f4f', icon: '🥉', badge: `${BADGE_DIR}/01_copper.png` },
