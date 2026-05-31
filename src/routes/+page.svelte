@@ -3140,9 +3140,12 @@
          column off the actual visible centre. -->
     <div class="flex pt-14" style="min-height: calc(100vh / var(--app-zoom, 1));">
 
-      <!-- LEFT SIDEBAR: Destiny Log -->
+      <!-- LEFT SIDEBAR: Destiny Log. Shrunk from 260→200px so the wheel
+           column sits closer to centre, plus a matching 200px invisible
+           spacer on the right (further down) so the wheel visually
+           centres in the viewport regardless of sidebar width. -->
       <aside class="hidden md:flex flex-col shrink-0 sticky top-14 overflow-hidden"
-        style="width: 260px; height: calc(100vh - 3.5rem); background: linear-gradient(180deg, #0f0e1a 0%, #09090f 100%); border-right: 1px solid rgba(240,192,64,0.1); box-shadow: inset -1px 0 0 rgba(255,223,150,0.04);"
+        style="width: 200px; height: calc(100vh - 3.5rem); background: linear-gradient(180deg, #0f0e1a 0%, #09090f 100%); border-right: 1px solid rgba(240,192,64,0.1); box-shadow: inset -1px 0 0 rgba(255,223,150,0.04);"
       >
         <!-- Sidebar header -->
         <div class="flex items-center gap-2 px-4 py-3 shrink-0"
@@ -3364,6 +3367,12 @@
 
 
       </div><!-- end right column -->
+
+      <!-- Right-side spacer that mirrors the sidebar width on md+ so the
+           middle (wheel) column sits in the visual centre of the viewport
+           instead of off-centre to the right. Hidden on mobile where the
+           sidebar is also hidden. -->
+      <div class="hidden md:block shrink-0" style="width: 200px;" aria-hidden="true"></div>
 
     </div><!-- end two-column layout -->
   {/if}

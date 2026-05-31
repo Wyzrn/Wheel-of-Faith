@@ -122,11 +122,13 @@ export const LIMIT_BREAK_SHIFT: Record<string, number> = {
 // skip the splice entirely.
 export function limitBreakSegmentsFor(odds: number | undefined | null): WeightedSegment[] | null {
   if (!odds || odds < 2) return null
-  // "Limit Break" weighted 2 (vs odds-2) makes it land ~2× as often as the
-  // natural 1/odds chance — i.e. ≈ 2/odds.
+  // "Limit Break" weighted 4 (vs odds-4) makes it land ~4× as often as the
+  // natural 1/odds chance — i.e. ≈ 4/odds. That's 2× the previous tuning
+  // (which used weight 2). For Human (odds 20) this is ~20% per spin; for
+  // Viltrumite (odds 70) it's ~5.7%.
   return [
-    { label: 'No Limit Break', weight: Math.max(1, odds - 2) },
-    { label: 'Limit Break',    weight: 2, tier: 'Infinite', color: 'var(--tier-infinite)' },
+    { label: 'No Limit Break', weight: Math.max(1, odds - 4) },
+    { label: 'Limit Break',    weight: 4, tier: 'Infinite', color: 'var(--tier-infinite)' },
   ]
 }
 
