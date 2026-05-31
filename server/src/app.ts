@@ -15,6 +15,7 @@ import { shopRoutes } from './routes/shop.js'
 import { challengeRoutes } from './routes/challenges.js'
 import { endlessRoutes } from './routes/endless.js'
 import { clanRoutes } from './routes/clans.js'
+import { warRoutes } from './routes/wars.js'
 
 export async function createApp() {
   const app = Fastify({
@@ -97,6 +98,7 @@ export async function createApp() {
   await app.register(challengeRoutes, { prefix: '/api' })
   await app.register(endlessRoutes, { prefix: '/api' })
   await app.register(clanRoutes, { prefix: '/api' })
+  await app.register(warRoutes,  { prefix: '/api' })
 
   if (process.env.NODE_ENV === 'production') {
     const handlerPath = new URL('../../build/handler.js', import.meta.url).href

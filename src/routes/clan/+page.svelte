@@ -24,7 +24,117 @@
   }
 
   // ── State ──────────────────────────────────────────────────────────────────
-  let view = $state<'mine' | 'browse' | 'create' | 'leaderboard' | 'requests' | 'settings' | 'chat' | 'topChars' | 'teams' | 'ranks'>('mine')
+  let view = $state<'mine' | 'browse' | 'create' | 'leaderboard' | 'requests' | 'settings' | 'chat' | 'topChars' | 'teams' | 'ranks' | 'war' | 'warStart'>('mine')
+
+  // ── Guild war (Phase 2) ────────────────────────────────────────────────
+  type WarSize = 5 | 10 | 15 | 20
+  type WarStatus = 'searching' | 'prep' | 'active' | 'resolved' | 'cancelled'
+  type WarMember = { userId: string; username: string; attackTeam: string[]; defenseTeam: string[]; attacksRemaining: number }
+  type CurrentWar = {
+    _id: string; size: WarSize; status: WarStatus
+    createdAt: string; matchedAt?: string; prepStartAt?: string; warStartAt?: string; warEndAt?: string
+    myClanId: string; myMembers: WarMember[]; myScore: number
+    enemyClan?: { _id: string; name: string; tag: string; badge: string; mmr: number; rank: string; rankLabel: string }
+    enemyMembers: WarMember[]; enemyScore: number
+  }
+  let currentWar  = $state<CurrentWar | null>(null)
+  let warLoading  = $state(false)
+  let warSize     = $state<WarSize>(5)
+  let warPicks    = $state<Set<string>>(new Set())
+  let warStarting = $state(false)
+
+  async function loadWar() {
+    if (!myClan) { currentWar = null; return }
+    warLoading = true
+    try {
+      const res = await fetch(apiUrl(`/api/clans/${myClan._id}/war/current`), { credentials: 'include' })
+      if (res.ok) {
+        const d = await res.json()
+        currentWar = d.war
+      } else {
+        currentWar = null
+      }
+    } catch { currentWar = null }
+    finally { warLoading = false }
+  }
+
+  function openWarView() {
+    view = 'war'
+    loadWar()
+  }
+
+  function openWarStart() {
+    warSize = 5
+    warPicks = new Set()
+    view = 'warStart'
+  }
+
+  function toggleWarPick(memberId: string) {
+    const next = new Set(warPicks)
+    if (next.has(memberId)) next.delete(memberId)
+    else if (next.size >= warSize) { showToast('err', `Pick exactly ${warSize} members`); return }
+    else next.add(memberId)
+    warPicks = next
+  }
+
+  async function startWar() {
+    if (!myClan || warStarting) return
+    if (warPicks.size !== warSize) { showToast('err', `Pick exactly ${warSize} members`); return }
+    warStarting = true
+    try {
+      const res = await fetch(apiUrl(`/api/clans/${myClan._id}/war/start`), {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ size: warSize, memberIds: Array.from(warPicks) }),
+      })
+      const data = await res.json()
+      if (!res.ok) { showToast('err', data.error ?? 'Failed to start war'); return }
+      showToast('ok', 'Searching for an opponent…')
+      currentWar = data.war
+      view = 'war'
+    } finally { warStarting = false }
+  }
+
+  async function cancelWar() {
+    if (!myClan || !currentWar || currentWar.status !== 'searching') return
+    const res = await fetch(apiUrl(`/api/clans/${myClan._id}/war/cancel`), {
+      method: 'DELETE', credentials: 'include',
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) { showToast('err', data.error ?? 'Cancel failed'); return }
+    showToast('ok', 'War search cancelled')
+    currentWar = null
+  }
+
+  // Countdown for prep + active phases. Re-runs every second while the war
+  // view is open so the timer is live.
+  let warClockTick = $state(0)
+  let warClockInterval: ReturnType<typeof setInterval> | null = null
+  function startWarClock() {
+    stopWarClock()
+    warClockInterval = setInterval(() => { warClockTick++ }, 1000)
+  }
+  function stopWarClock() {
+    if (warClockInterval) { clearInterval(warClockInterval); warClockInterval = null }
+  }
+  function formatCountdown(target: string | undefined): string {
+    if (!target) return '—'
+    void warClockTick   // tick dependency so $derived re-evaluates
+    const ms = new Date(target).getTime() - Date.now()
+    if (ms <= 0) return '0s'
+    const s = Math.floor(ms / 1000)
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const sec = s % 60
+    if (h > 0) return `${h}h ${m}m`
+    if (m > 0) return `${m}m ${sec}s`
+    return `${sec}s`
+  }
+
+  $effect(() => {
+    if (view === 'war') startWarClock()
+    else stopWarClock()
+  })
 
   // ── Guild-war teams (Phase 1) ───────────────────────────────────────────
   // The player picks up to 3 attack-team + 3 defense-team shareIds from
@@ -591,6 +701,11 @@
               <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: -2px;">workspace_premium</span>
               Top Characters
             </button>
+            <!-- Guild War tab — visible to every member; gated controls inside. -->
+            <button onclick={openWarView} data-fx="big" class="text-xs px-3 py-1.5 rounded-lg font-mono font-bold" style="background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.30); color: #f87171;">
+              <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: -2px;">swords</span>
+              Guild War
+            </button>
           </div>
 
           <!-- Member list -->
@@ -1002,6 +1117,142 @@
           </div>
         {/each}
       </div>
+
+    {:else if view === 'war' && myClan}
+      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to guild</button>
+      <h2 class="mb-1" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Guild War</h2>
+      {#if warLoading && !currentWar}
+        <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">Loading…</p>
+      {:else if !currentWar}
+        <!-- No active war. Leader / coLeader sees a Start CTA; everyone
+             else just sees the explanation. -->
+        <p class="mb-4 font-mono text-[10px]" style="color: #4e4635;">
+          Pit your guild against another for 24 hours. Both clans pick a roster,
+          attack each other's defenders, and the higher score wins. Winners gain
+          15-20 MMR; losers drop 10-20 depending on margin.
+        </p>
+        {#if myClan.memberCount < 5}
+          <div class="rounded-xl px-3 py-3 text-center font-mono text-xs" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #f87171;">
+            Need at least 5 guild members to start a war ({myClan.memberCount}/5).
+          </div>
+        {:else if canEdit}
+          <button onclick={openWarStart} data-fx="big"
+            class="w-full py-3 rounded-lg font-mono text-xs font-bold uppercase tracking-widest"
+            style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35); color: #f87171;">
+            ⚔ Start a War
+          </button>
+        {:else}
+          <div class="rounded-xl px-3 py-3 text-center font-mono text-xs" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: #9a907b;">
+            Only the leader or co-leaders can start a war.
+          </div>
+        {/if}
+      {:else if currentWar.status === 'searching'}
+        <p class="mb-4 font-mono text-[10px]" style="color: #4e4635;">
+          Looking for another {currentWar.size}v{currentWar.size} guild near your MMR ({myClan.mmr ?? 0}).
+          You can leave this open — matching continues even if everyone in your guild logs off.
+        </p>
+        <div class="rounded-xl px-4 py-6 text-center mb-3" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(239,68,68,0.25);">
+          <div class="animate-spin mb-4 mx-auto" style="width: 36px; height: 36px; border: 2px solid rgba(239,68,68,0.2); border-top-color: #f87171; border-radius: 50%;"></div>
+          <p class="font-mono text-xs mb-1" style="color: #f87171; font-weight: 700;">Searching for an opponent…</p>
+          <p class="font-mono text-[10px]" style="color: #9a907b;">{currentWar.size}v{currentWar.size} · waiting</p>
+        </div>
+        {#if canEdit}
+          <button onclick={cancelWar}
+            class="w-full py-2.5 rounded-lg font-mono text-xs font-bold"
+            style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #9a907b;">
+            Cancel Search
+          </button>
+        {/if}
+      {:else if currentWar.status === 'prep'}
+        <!-- 24h prep window — opponent visible, no attacks yet. -->
+        {@const prepLeft = formatCountdown(currentWar.warStartAt)}
+        <div class="rounded-xl px-3 py-3 mb-3" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(240,192,64,0.25);">
+          <p class="font-mono text-[10px] uppercase tracking-widest mb-1" style="color: #f0c040;">Prep Phase</p>
+          <p class="font-mono text-xs" style="color: #ffdf96;">War starts in <span style="font-weight: 700;">{prepLeft}</span></p>
+        </div>
+        {#if currentWar.enemyClan}
+          <div class="rounded-xl px-3 py-3 mb-3" style="background: linear-gradient(180deg, #1a1622, #14111a); border: 1px solid rgba(239,68,68,0.25);">
+            <div class="flex items-center gap-2 mb-2">
+              <span style="font-size: 20px;">{currentWar.enemyClan.badge ?? '⚔'}</span>
+              <span class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded" style="background: rgba(239,68,68,0.10); color: #f87171;">[{currentWar.enemyClan.tag}]</span>
+              <span class="font-semibold text-sm truncate" style="font-family: 'Cinzel', serif; color: #ffdf96;">{currentWar.enemyClan.name}</span>
+              <span class="ml-auto font-mono text-[10px]" style="color: #f87171;">{currentWar.enemyClan.rankLabel} · {currentWar.enemyClan.mmr}</span>
+            </div>
+            <p class="font-mono text-[10px]" style="color: #9a907b;">Enemy roster ({currentWar.enemyMembers.length})</p>
+            <div class="flex flex-wrap gap-1 mt-1">
+              {#each currentWar.enemyMembers as m (m.userId)}
+                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded" style="background: rgba(255,255,255,0.04); color: #c4b5fd;">{m.username}</span>
+              {/each}
+            </div>
+          </div>
+        {/if}
+        <p class="font-mono text-[10px]" style="color: #4e4635;">
+          Use prep to review the opposing teams and tweak your own attackers (defenders are locked from the moment of matching).
+        </p>
+      {:else if currentWar.status === 'active'}
+        {@const warLeft = formatCountdown(currentWar.warEndAt)}
+        <div class="rounded-xl px-3 py-3 mb-3" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(239,68,68,0.4);">
+          <p class="font-mono text-[10px] uppercase tracking-widest mb-1" style="color: #f87171;">Active War</p>
+          <p class="font-mono text-xs" style="color: #ffdf96;">Ends in <span style="font-weight: 700;">{warLeft}</span></p>
+        </div>
+        <div class="rounded-xl px-3 py-3 mb-3 flex items-center gap-4" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08);">
+          <div class="flex-1 text-center">
+            <p class="font-mono text-[10px]" style="color: #9a907b;">YOUR SCORE</p>
+            <p class="font-black text-2xl" style="font-family: 'JetBrains Mono', monospace; color: #34d399;">{currentWar.myScore}</p>
+          </div>
+          <span class="font-mono text-xs" style="color: #4e4635;">vs</span>
+          <div class="flex-1 text-center">
+            <p class="font-mono text-[10px]" style="color: #9a907b;">{currentWar.enemyClan?.tag ?? 'ENEMY'}</p>
+            <p class="font-black text-2xl" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">{currentWar.enemyScore}</p>
+          </div>
+        </div>
+        <p class="font-mono text-[10px]" style="color: #f0c040; text-align: center;">
+          Attacks land in the next update (Phase 3). For now, watch the clock.
+        </p>
+      {/if}
+
+    {:else if view === 'warStart' && myClan}
+      <button onclick={() => view = 'war'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back</button>
+      <h2 class="mb-1" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Start a War</h2>
+      <p class="mb-4 font-mono text-[10px]" style="color: #4e4635;">
+        Pick the war size, then select exactly that many members. Each member fights with their saved War Teams.
+      </p>
+      <!-- Size picker -->
+      <div class="flex gap-2 mb-4">
+        {#each [5, 10, 15, 20] as s}
+          {@const disabled = s > myClan.memberCount}
+          <button onclick={() => { warSize = s as WarSize; warPicks = new Set() }}
+            disabled={disabled}
+            class="flex-1 py-2 rounded-lg font-mono text-xs font-bold disabled:opacity-30"
+            style="background: {warSize === s ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.04)'};
+                   border: 1px solid {warSize === s ? 'rgba(239,68,68,0.45)' : 'rgba(255,255,255,0.08)'};
+                   color: {warSize === s ? '#f87171' : '#9a907b'};">
+            {s}v{s}
+          </button>
+        {/each}
+      </div>
+      <!-- Member picker -->
+      <p class="font-mono text-[10px] mb-2" style="color: #9a907b;">
+        Pick {warSize} members · {warPicks.size}/{warSize} selected
+      </p>
+      <div class="flex flex-col gap-1.5 mb-4 max-h-80 overflow-y-auto">
+        {#each myClan.members as m (m._id)}
+          {@const picked = warPicks.has(m._id)}
+          <button onclick={() => toggleWarPick(m._id)}
+            class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-left"
+            style="background: {picked ? 'rgba(239,68,68,0.10)' : 'rgba(255,255,255,0.03)'};
+                   border: 1px solid {picked ? 'rgba(239,68,68,0.40)' : 'rgba(255,255,255,0.06)'}; cursor: pointer;">
+            <span class="font-mono text-[10px] font-black w-6 text-center" style="color: {picked ? '#f87171' : '#9a907b'};">{picked ? '✓' : '+'}</span>
+            <span class="font-mono text-[11px] flex-1 truncate" style="color: #e9dfeb;">{m.username}</span>
+            <span class="font-mono text-[9px]" style="color: #9a907b;">{m.role}</span>
+          </button>
+        {/each}
+      </div>
+      <button onclick={startWar} disabled={warStarting || warPicks.size !== warSize} data-fx="big"
+        class="w-full py-3 rounded-lg font-mono text-xs font-bold uppercase tracking-widest disabled:opacity-40"
+        style="background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.45); color: #f87171;">
+        {warStarting ? 'Starting…' : `⚔ Launch ${warSize}v${warSize} War`}
+      </button>
 
     {:else if view === 'settings' && myClan && canEdit}
       <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back</button>
