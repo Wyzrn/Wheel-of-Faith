@@ -28,3 +28,31 @@ export function wsUrl(path: string): string {
   if (typeof window === 'undefined') return p
   return `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}${p}`
 }
+
+// ─── Static asset paths (separate concern from API URLs) ──────────────────
+// On Heroku the game is hosted at the origin root, so `/fx/k/spark.png`
+// resolves correctly. On itch.io the game lives at a randomized subpath
+// (html-classic.itch.zone/html/<id>/<hash>/…), so a literal `/fx/k/…`
+// resolves to the root of html-classic.itch.zone where nothing exists → 403.
+// asset() prepends the current document's subpath so root-relative paths
+// resolve to the game's hosted root in both cases. Computed once on first
+// call from document.baseURI which itch sets correctly via the iframe URL.
+
+let _assetBase: string | null = null
+function computeAssetBase(): string {
+  if (typeof document === 'undefined') return ''
+  try {
+    // baseURI ends at the document URL; new URL('.', baseURI) yields its
+    // dirname with trailing slash. Strip the slash so we can concatenate
+    // with paths that themselves start with '/'.
+    return new URL('.', document.baseURI).pathname.replace(/\/$/, '')
+  } catch { return '' }
+}
+
+/** Resolve a root-relative static asset URL (e.g. `/fx/k/spark_01.png`)
+ *  to a path that works at the game's actual hosted location.
+ *  Same-origin pass-through on Heroku; subpath-prefixed on itch.io. */
+export function asset(path: string): string {
+  if (_assetBase === null) _assetBase = computeAssetBase()
+  return _assetBase + (path.startsWith('/') ? path : '/' + path)
+}

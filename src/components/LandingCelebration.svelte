@@ -17,6 +17,7 @@
   // we mount, animate, fire onComplete, and unmount.
   import { onMount } from 'svelte'
   import { getPerfTier, effectsMultiplier, prefersReducedMotion } from '$lib/perf'
+  import { asset } from '$lib/api'
 
   let {
     intensity,
@@ -492,7 +493,7 @@
     <div class="lc-particles">
       {#each particles as p (p.id)}
         <img
-          src="/fx/p/{p.sprite}"
+          src={asset(`/fx/p/${p.sprite}`)}
           alt=""
           loading="lazy"
           decoding="async"
@@ -516,7 +517,7 @@
       <div class="lc-confetti">
         {#each confetti as c (c.id)}
           <img
-            src="/fx/p/{c.sprite}"
+            src={asset(`/fx/p/${c.sprite}`)}
             alt=""
             class="lc-confetto"
             style="

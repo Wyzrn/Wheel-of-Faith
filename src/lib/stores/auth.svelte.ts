@@ -1,5 +1,9 @@
 import { apiUrl } from '$lib/api'
-const API = apiUrl('/api').replace(/\/api$/, '')
+// Used as `${API}/auth/me` etc., so this is the API root WITHOUT a trailing
+// slash. apiUrl('') returns the configured backend origin (empty string on
+// Heroku = same-origin, absolute https URL on itch.io). Then `/api/auth/me`
+// appends correctly on both targets.
+const API = apiUrl('/api')
 
 export interface AuthUser {
   id: string

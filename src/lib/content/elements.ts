@@ -3,6 +3,7 @@
 // Used by CharacterCard, TierBadge, and battle calculations.
 
 import type { ElementType, ItemGrade } from './types'
+import { asset } from '$lib/api'
 
 export const ELEMENT_COLORS: Record<ElementType, string> = {
   Fire:        '#ff4500',
@@ -29,7 +30,9 @@ export const ELEMENT_COLORS: Record<ElementType, string> = {
   Neutral:     '#6b7280',
 }
 
-const _K = '/fx/k/'
+// asset() resolves '/fx/k/' against the document base so itch's subpath
+// hosting works. On Heroku document is at origin root, so the prefix is ''.
+const _K = asset('/fx/k/')
 export const ELEMENT_ICONS: Record<ElementType, string> = {
   Fire:        _K + 'flame_01.png',
   Ice:         _K + 'twirl_01.png',

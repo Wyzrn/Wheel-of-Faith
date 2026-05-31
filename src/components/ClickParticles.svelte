@@ -11,11 +11,13 @@
   import { getPerfTier } from '$lib/perf'
   import { rootZoom } from '$lib/zoom'
   import { settings } from '$lib/settings.svelte'
+  import { asset } from '$lib/api'
 
-  // Particle sprite pool — picked from /static/fx/k.
+  // Particle sprite pool — picked from /static/fx/k. asset() wraps each path
+  // so itch's subpath hosting resolves correctly (no-op on Heroku).
   // sparks = sharp directional bits, circles = soft glow puffs.
-  const SPARKS  = ['/fx/k/spark_01.png', '/fx/k/spark_03.png', '/fx/k/spark_05.png', '/fx/k/spark_06.png', '/fx/k/star_03.png', '/fx/k/star_05.png']
-  const CIRCLES = ['/fx/k/circle_01.png', '/fx/k/circle_02.png', '/fx/k/flare_01.png']
+  const SPARKS  = ['/fx/k/spark_01.png', '/fx/k/spark_03.png', '/fx/k/spark_05.png', '/fx/k/spark_06.png', '/fx/k/star_03.png', '/fx/k/star_05.png'].map(asset)
+  const CIRCLES = ['/fx/k/circle_01.png', '/fx/k/circle_02.png', '/fx/k/flare_01.png'].map(asset)
 
   type Particle = {
     id: number

@@ -3,7 +3,11 @@ import { toast } from '$lib/toast.svelte'
 import { GAMEPASSES, type GamepassId } from '$lib/shop/gamepasses'
 import { apiUrl } from '$lib/api'
 
-const API = apiUrl('/api').replace(/\/api$/, '')
+// API root WITHOUT trailing slash. Callsites do `${API}/shop/...` so this
+// must include the `/api` segment for the routes to resolve (server mounts
+// every route under `prefix: '/api'`). apiUrl('/api') returns `/api` on
+// Heroku and `https://.../api` on the itch build.
+const API = apiUrl('/api')
 
 // ── Gamepass helpers (reads from auth store) ───────────────────────────────────
 

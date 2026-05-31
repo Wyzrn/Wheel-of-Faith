@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getPerfTier } from '$lib/perf'
+  import { asset } from '$lib/api'
   interface Props {
     type: string
     color?: string
@@ -125,11 +126,12 @@
   )
 
   // ─── Particle sprite definitions ─────────────────────────────────────────
-  const K  = '/fx/k/'   // Kenney pack — base sprites
-  const CI = '/fx/c/'   // Complex impacts (single-shot impact discs)
-  const CF = '/fx/c/'
-  const CS = '/fx/c/'
-  const P  = '/fx/p/'   // Premium pack — colored stars, magic, spirowires,
+  // asset() wraps the base prefix so itch's subpath hosting works (no-op on Heroku).
+  const K  = asset('/fx/k/')   // Kenney pack — base sprites
+  const CI = asset('/fx/c/')   // Complex impacts (single-shot impact discs)
+  const CF = asset('/fx/c/')
+  const CS = asset('/fx/c/')
+  const P  = asset('/fx/p/')   // Premium pack — colored stars, magic, spirowires,
                         // energyballs, lightrays, complex bursts/flares.
                         // Used by the 7 new element banks below.
 
