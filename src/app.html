@@ -22,11 +22,16 @@
 		     and serves index.html from that subpath. SvelteKit's client
 		     router reads window.location.pathname, doesn't recognize the
 		     subpath as a known route, and renders a 404 on initial load.
-		     This pre-hydration script rewrites the URL to '/' when it
-		     doesn't match any known route prefix, so the router boots on
-		     the home page. No-op on Heroku where the pathname IS a real
-		     route. Safe on every page (runs once at load, before
-		     SvelteKit hydrates). -->
+		     This pre-hydration script:
+		       1. Injects a <base href> equal to the current subpath so
+		          all relative asset URLs (./_app/…, ./manifest.webmanifest,
+		          ./fx/…) keep resolving to the real hosted location even
+		          after we rewrite the URL in step 2.
+		       2. Rewrites the pathname to '/' when it isn't already a
+		          known route, so SvelteKit's client router boots on the
+		          home page instead of 404'ing.
+		     No-op on Heroku where the pathname IS a real route. Safe on
+		     every page (runs once at load, before SvelteKit hydrates). -->
 		<script>
 			(function () {
 				try {
@@ -38,7 +43,18 @@
 					var matched = path === '/' || known.some(function (r) {
 						return path === r || path.indexOf(r + '/') === 0;
 					});
-					if (!matched) history.replaceState(null, '', '/');
+					if (!matched) {
+						// Anchor relative URLs to the actual hosted subpath
+						// BEFORE rewriting pathname to '/'. Without this,
+						// ./_app/… would resolve against the new '/' pathname
+						// (i.e. html-classic.itch.zone/_app/…) and 403 every
+						// chunk request.
+						var subpath = path.replace(/[^\/]*$/, '');  // dirname with trailing /
+						var base = document.createElement('base');
+						base.setAttribute('href', subpath);
+						document.head.appendChild(base);
+						history.replaceState(null, '', '/');
+					}
 				} catch (e) { /* SSR / older browsers — fall through */ }
 			})();
 		</script>
