@@ -47,8 +47,8 @@
     {
       icon: 'menu_book',
       iconColor: '#34d399',
-      label: 'Story Mode',
-      title: 'Story Mode',
+      label: 'Ascension',
+      title: 'Ascension',
       body: 'A full progression mode with 4 independent save slots.\n\nEach slot gives you:\n• 10 free spins/day (refreshing every 3 hrs). Daily Booster gamepass doubles this to 20.\n• A roster of characters you build by spending spins — Hero and Legend spins give multiplied stats\n• 16 Worlds: F → E → D → C → B → A → S → SS → SSS → Z → ZZ → ZZZ → Celestial → Godly → Primordial → Absolute\n• 20 battles per world. Win them to earn Gems, XP, and crystal drops.\n• Crystal inventory — open grade-based crystals to get random powers, weapons, and armor to equip\n• Stat Crystals — spend Gems or Fate Shards to boost individual stats permanently\n\n⚑ Endless Mode unlocks at Level 3 — infinite scaling waves, global leaderboard by highest wave cleared.',
     },
     {
@@ -63,7 +63,7 @@
       iconColor: '#f0c040',
       label: 'Shards & Shop',
       title: 'Fate Shards, Shop & Clans',
-      body: 'Fate Shards are your global account currency — they never reset across save slots or sessions.\n\nEarn Fate Shards by:\n• Winning battles in Story Mode (chance drops, doubled with 2× Shard Drop gamepass)\n• Daily Challenges — up to 175 shards/day from 3 rotating tasks\n\nEarn Gems (per-slot currency) by:\n• Selling characters from your roster (+25% with Sell Bonus gamepass)\n• Winning battles in Story Mode worlds\n\nSpend Fate Shards in the Arcane Shop on:\n• Gamepasses — permanent upgrades: 2× Luck, Reroll Insurance, Expanded Roster, Daily Booster, Boss Magnet, Cursed Wheel, Gold Roster Frame, and more\n• Stat Crystals — buy Common (50 ◆), Elite (500 ◆), or Legendary (1,000 ◆) crystals directly, no daily limit\n\n⚑ Clans — team up with up to 9 other players. Clan leaderboard ranks by total combined Rivals wins. Join from the Clan page on the main menu.',
+      body: 'Fate Shards are your global account currency — they never reset across save slots or sessions.\n\nEarn Fate Shards by:\n• Winning battles in Ascension (chance drops, doubled with 2× Shard Drop gamepass)\n• Daily Challenges — up to 175 shards/day from 3 rotating tasks\n\nEarn Gems (per-slot currency) by:\n• Selling characters from your roster (+25% with Sell Bonus gamepass)\n• Winning battles in Ascension worlds\n\nSpend Fate Shards in the Arcane Shop on:\n• Gamepasses — permanent upgrades: 2× Luck, Reroll Insurance, Expanded Roster, Daily Booster, Boss Magnet, Cursed Wheel, Gold Roster Frame, and more\n• Stat Crystals — buy Common (50 ◆), Elite (500 ◆), or Legendary (1,000 ◆) crystals directly, no daily limit\n\n⚑ Clans — team up with up to 9 other players. Clan leaderboard ranks by total combined Rivals wins. Join from the Clan page on the main menu.',
     },
     {
       icon: 'workspace_premium',
@@ -91,14 +91,14 @@
   ])
 
   const STAT_DETAILS: Record<string, string> = {
-    strength:     'Raw physical force — how hard you hit, what you can lift, and how many walls you walk through. Determines melee damage output in Story Mode battles.',
+    strength:     'Raw physical force — how hard you hit, what you can lift, and how many walls you walk through. Determines melee damage output in Ascension battles.',
     speed:        'Reaction time, movement speed, and initiative. High Speed characters act first in combat and activate abilities faster.',
     agility:      'Flexibility, evasion, and aerial mobility. High Agility makes you harder to hit and improves dodge chance in battle.',
     durability:   'How much punishment your body absorbs. Your passive damage reduction — the difference between tanking a hit and being deleted.',
     iq:           'Intelligence and tactical depth. Affects magic complexity, ability to counter enemy powers, and how effectively you exploit openings in battle.',
     charisma:     'Social force — persuasion, intimidation, and battlefield presence. Heavily weighted in Support archetypes. Affects how quickly allies rally.',
     fightingSkill:'Combat technique and instincts. The most heavily weighted stat in your overall score. Raw power without this is just a liability.',
-    potential:    'Your untapped ceiling — how much stronger training can make you. Critical for long-term Story Mode progression scaling and character growth.',
+    potential:    'Your untapped ceiling — how much stronger training can make you. Critical for long-term Ascension progression scaling and character growth.',
     energyLevel:  'Ki, mana, chakra, aura — whatever fuels your abilities. More energy = sustained ability use without running dry in extended fights.',
     powerMastery: 'Precision and control over your powers. Low = powerful but unstable and costly. High = efficient, stable, and lethal on demand.',
     weaponMastery:'Skill with whatever weapon the wheel gives you. Your archetype and race bias which weapon types appear — this determines how well you use them.',
@@ -136,7 +136,7 @@
       id: 3,
       icon: 'auto_awesome',
       title: 'Racial Features',
-      body: 'These spins build your identity within your race:\n\nSubtype / Class — your racial variant. Berserker Orc gets +2 Strength tiers; Runic Dwarf gets +2 Power Mastery; Pure Saiyan accesses a larger transformation pool. Each subtype unlocks its own exclusive abilities on top of this.\n\nRacial Abilities — your birthright. Separate from regular Powers — these are innate to your species and are not affected by Wildcards. They appear on your card and carry into Story Mode battles.\n\nTransformation (if eligible) — picked from a tiered pool. Higher tiers multiply all your stat scores after they are calculated. A God transformation on a rare race is devastating.\n\nSynergy note: if your race + the archetype you\'ll spin next form a known combo, a bonus spin fires automatically. Watch the announcement bar at the top.',
+      body: 'These spins build your identity within your race:\n\nSubtype / Class — your racial variant. Berserker Orc gets +2 Strength tiers; Runic Dwarf gets +2 Power Mastery; Pure Saiyan accesses a larger transformation pool. Each subtype unlocks its own exclusive abilities on top of this.\n\nRacial Abilities — your birthright. Separate from regular Powers — these are innate to your species and are not affected by Wildcards. They appear on your card and carry into Ascension battles.\n\nTransformation (if eligible) — picked from a tiered pool. Higher tiers multiply all your stat scores after they are calculated. A God transformation on a rare race is devastating.\n\nSynergy note: if your race + the archetype you\'ll spin next form a known combo, a bonus spin fires automatically. Watch the announcement bar at the top.',
       cta: 'Got it — spin!',
       accent: '#a78bfa',
     }
@@ -180,7 +180,7 @@
       id: 7,
       icon: 'bolt',
       title: 'Powers & Elements',
-      body: 'You spin 1–3+ powers based on your race and archetype. Each power has two attributes:\n\nElement — determines battle type matching:\nFire, Ice, Lightning, Shadow, Arcane, Holy, Nature, Poison, Gravity, Time, Cosmic, Soul, Chaos, Blood, Psychic, Sound, Water, Metal, Earth, Void, Wind\n\nGrade — determines power level:\nD / C — functional and reliable\nB / A — strong, often fight-defining\nS / SS — exceptional and story-altering\nSSS / SSS+ — world-ending capability\nGod — you are now the problem\n\nYour race strictly gates which powers appear. Dragon-race characters access draconic power pools unavailable to Humans. Rarer races = rarer, more exclusive power pools.\n\nIn Story Mode: powers become active abilities with elemental bonus damage vs. enemy weaknesses. Higher-grade powers deal significantly more damage.',
+      body: 'You spin 1–3+ powers based on your race and archetype. Each power has two attributes:\n\nElement — determines battle type matching:\nFire, Ice, Lightning, Shadow, Arcane, Holy, Nature, Poison, Gravity, Time, Cosmic, Soul, Chaos, Blood, Psychic, Sound, Water, Metal, Earth, Void, Wind\n\nGrade — determines power level:\nD / C — functional and reliable\nB / A — strong, often fight-defining\nS / SS — exceptional and story-altering\nSSS / SSS+ — world-ending capability\nGod — you are now the problem\n\nYour race strictly gates which powers appear. Dragon-race characters access draconic power pools unavailable to Humans. Rarer races = rarer, more exclusive power pools.\n\nIn Ascension: powers become active abilities with elemental bonus damage vs. enemy weaknesses. Higher-grade powers deal significantly more damage.',
       cta: 'Got it — spin!',
       accent: '#fb923c',
     }
@@ -190,7 +190,7 @@
       id: 8,
       icon: 'swords',
       title: 'Weapons',
-      body: 'Weapon categories: Melee, Ranged, Magical, Ancient, Exotic, Cursed, and None.\n\nEach weapon has an Element and Grade — higher grade = more broken. The rarity of your race biases which weapon categories can appear.\n\nRace-weapon tendencies:\n• Dwarves → Ancient melee weapons\n• Goblins → Cursed / Exotic\n• Elves → Ranged / Magical\n• Kryptonians → None (they ARE the weapon)\n• Dragons → Ancient or Exotic\n\nWeapon Mastery (spinning very soon) determines how effectively you use whatever the wheel gives you. A God-grade sword still needs someone competent to hold it.\n\nIn Story Mode: equip weapons to roster characters from the inventory screen. Higher-grade equipped weapons raise your team\'s damage output in battle. The Gold Roster Frame gamepass adds a visual gold border to all your roster cards.',
+      body: 'Weapon categories: Melee, Ranged, Magical, Ancient, Exotic, Cursed, and None.\n\nEach weapon has an Element and Grade — higher grade = more broken. The rarity of your race biases which weapon categories can appear.\n\nRace-weapon tendencies:\n• Dwarves → Ancient melee weapons\n• Goblins → Cursed / Exotic\n• Elves → Ranged / Magical\n• Kryptonians → None (they ARE the weapon)\n• Dragons → Ancient or Exotic\n\nWeapon Mastery (spinning very soon) determines how effectively you use whatever the wheel gives you. A God-grade sword still needs someone competent to hold it.\n\nIn Ascension: equip weapons to roster characters from the inventory screen. Higher-grade equipped weapons raise your team\'s damage output in battle. The Gold Roster Frame gamepass adds a visual gold border to all your roster cards.',
       cta: 'Got it — spin!',
       accent: '#64748b',
     }
@@ -200,7 +200,7 @@
       id: 9,
       icon: 'shield',
       title: 'Armor & Armor Strength',
-      body: 'Armor types: None, Helmet Only, Half-Suit, Full-Suit, Ancient, Exotic, Cursed.\n\nArmor Grade determines enchantment slots:\n• B+ grade → 1 enchantment slot added\n• SS+ grade → multiple enchantments possible\n\nArmor Strength is a separate spin — it measures the raw protective power of your armor independently of its type. Basic Helmet at SSS+ is divine protection. Full-Suit at F– is decorative tin.\n\nRace biases:\n• Orcs → Full-Suit ancient plating\n• Elves → Half-Suit or None (they rely on agility)\n• Kryptonians → almost never wear armor\n\nIn Story Mode: equip armor to roster characters from your inventory. Equipped armor reduces incoming damage in battles. Higher-grade armor stacks meaningfully.',
+      body: 'Armor types: None, Helmet Only, Half-Suit, Full-Suit, Ancient, Exotic, Cursed.\n\nArmor Grade determines enchantment slots:\n• B+ grade → 1 enchantment slot added\n• SS+ grade → multiple enchantments possible\n\nArmor Strength is a separate spin — it measures the raw protective power of your armor independently of its type. Basic Helmet at SSS+ is divine protection. Full-Suit at F– is decorative tin.\n\nRace biases:\n• Orcs → Full-Suit ancient plating\n• Elves → Half-Suit or None (they rely on agility)\n• Kryptonians → almost never wear armor\n\nIn Ascension: equip armor to roster characters from your inventory. Equipped armor reduces incoming damage in battles. Higher-grade armor stacks meaningfully.',
       cta: 'Got it — spin!',
       accent: '#94a3b8',
     }
@@ -210,7 +210,7 @@
       id: 10,
       icon: 'broken_image',
       title: 'Weaknesses',
-      body: 'Your race determines how many weaknesses you roll: 0 to 3. More powerful races pay with more weaknesses as cosmic balance.\n\nWeaknesses are:\n• Permanent — they cannot be removed except via Redemption Spin ("Lose One Weakness" outcome)\n• Public — visible on your character card to anyone who views it\n• Thematic — some are race-specific, others are universal\n• Sometimes humiliating — the wheel makes no apologies\n\nIn Story Mode battles: enemies can deal bonus damage against you by hitting your weakness element. Boss enemies are significantly more likely to target weakness angles. A God-tier character with a weakness to salt is still weak to salt.\n\nThe Revenge Protocol gamepass softens losses — you still earn 50% of gem drops even when defeated.',
+      body: 'Your race determines how many weaknesses you roll: 0 to 3. More powerful races pay with more weaknesses as cosmic balance.\n\nWeaknesses are:\n• Permanent — they cannot be removed except via Redemption Spin ("Lose One Weakness" outcome)\n• Public — visible on your character card to anyone who views it\n• Thematic — some are race-specific, others are universal\n• Sometimes humiliating — the wheel makes no apologies\n\nIn Ascension battles: enemies can deal bonus damage against you by hitting your weakness element. Boss enemies are significantly more likely to target weakness angles. A God-tier character with a weakness to salt is still weak to salt.\n\nThe Revenge Protocol gamepass softens losses — you still earn 50% of gem drops even when defeated.',
       cta: 'Got it — spin!',
       accent: '#f87171',
     }
@@ -250,7 +250,7 @@
       id: 14,
       icon: 'stars',
       title: 'Character Complete — What Next?',
-      body: 'Your fate is decided. Here\'s what you can do with your character:\n\n⚔ Rivals Mode — battle this character against friends (local) or real opponents (online). Wins climb the Rivals leaderboard on your profile.\n\n📖 Story Mode — build a full roster. Spin more characters (including Hero and Legend-class variants), battle through Worlds, collect and equip crystal drops, and unlock Endless Mode at Level 3.\n\n◆ Fate Shards — earn from battles and Daily Challenges (up to 175/day). Spend in the Arcane Shop on permanent Gamepass upgrades.\n💎 Gems — earned by selling Story Mode characters and winning battles. Used for in-slot upgrades and crystals.\n\n⚑ Clans — team up with up to 9 players and compete on the Clan leaderboard by combined Rivals wins.\n\n🔗 Share — copy your character\'s link and send it to anyone. No account needed to view.',
+      body: 'Your fate is decided. Here\'s what you can do with your character:\n\n⚔ Rivals Mode — battle this character against friends (local) or real opponents (online). Wins climb the Rivals leaderboard on your profile.\n\n📖 Ascension — build a full roster. Spin more characters (including Hero and Legend-class variants), battle through Worlds, collect and equip crystal drops, and unlock Endless Mode at Level 3.\n\n◆ Fate Shards — earn from battles and Daily Challenges (up to 175/day). Spend in the Arcane Shop on permanent Gamepass upgrades.\n💎 Gems — earned by selling Ascension characters and winning battles. Used for in-slot upgrades and crystals.\n\n⚑ Clans — team up with up to 9 players and compete on the Clan leaderboard by combined Rivals wins.\n\n🔗 Share — copy your character\'s link and send it to anyone. No account needed to view.',
       cta: 'Done — I\'m ready!',
       accent: '#f0c040',
     }

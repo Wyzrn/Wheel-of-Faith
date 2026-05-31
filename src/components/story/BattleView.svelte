@@ -1,5 +1,5 @@
 <!--
-  story/BattleView.svelte — Story Mode battle (player team vs world wave).
+  story/BattleView.svelte — Ascension battle (player team vs world wave).
 
   Pick phase (team selection + enemy preview) and Result phase (drops +
   next-battle CTA) stay mode-specific. The Fight phase now mounts the
@@ -559,7 +559,7 @@
         controller={controller}
         manualMode={manualMode}
         onManualToggle={(m) => manualMode = m}
-        modeName="Story Mode"
+        modeName="Ascension"
         modeTitle={plusMode ? `Absolute +${absolutePlusLevel}` : `${world} World — Battle ${battleNumber}`}
         modeSubtitle={allWaves.length > 1 ? `Wave ${waveIdx + 1} / ${allWaves.length}` : 'Story Battle'}
         modeAccent={ec}

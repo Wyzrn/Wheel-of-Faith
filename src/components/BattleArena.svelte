@@ -44,7 +44,7 @@
     phase: 'intro' | 'battle' | 'result'
     modeTitle: string
     modeSubtitle?: string
-    // Game-mode label shown in the command rail (e.g. "Rivals", "Story Mode",
+    // Game-mode label shown in the command rail (e.g. "Rivals", "Ascension",
     // "Endless"). Falls back to modeSubtitle, then "Arcane Coliseum".
     modeName?: string
     modeAccent?: string
@@ -93,7 +93,7 @@
 
   // Bottom-left exit: Story/Endless → Story hub; everything else → home menu.
   let showSettings = $state(false)
-  let exitToHub = $derived(modeName === 'Story Mode' || modeName === 'Endless')
+  let exitToHub = $derived(modeName === 'Ascension' || modeName === 'Endless')
   function doExit() {
     if (onExit) { onExit(); return }
     if (exitToHub) triggerStoryHome()
@@ -156,7 +156,7 @@
   // ── DOM refs for VFX anchoring ─────────────────────────────────────────────
   //
   // Positioning model (NEW — replaces the old viewport-fixed approach that
-  // drifted off-card on Story Mode's narrow centered column and on any view
+  // drifted off-card on Ascension's narrow centered column and on any view
   // where the parent applied transforms or non-default writing modes):
   //
   //   1. The arena's outer wrapper is `position: relative`.

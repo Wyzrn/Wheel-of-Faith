@@ -63,7 +63,7 @@
       {#if incoming.mode === 'character'}
         {#if roster.length === 0}
           <p class="text-xs mb-4" style="color: #f87171; font-family: 'JetBrains Mono', monospace;">
-            You have no Story Mode characters to fight with. Build one first, then accept duels.
+            You have no Ascension characters to fight with. Build one first, then accept duels.
           </p>
         {:else}
           <p class="text-xs tracking-widest uppercase mb-2" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">Pick your fighter</p>

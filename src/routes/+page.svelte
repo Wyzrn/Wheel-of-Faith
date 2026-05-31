@@ -570,7 +570,7 @@
   }
 
   // ── Landing celebration color/intensity resolver ─────────────────────────
-  // Shared helper in $lib so Story Mode and the main game resolve celebration
+  // Shared helper in $lib so Ascension and the main game resolve celebration
   // colors identically. Maps the landed label + category → element color +
   // grade-based intensity for item spins; stat spins fall through to the
   // wheel's tier-based intensity ladder.
@@ -2544,7 +2544,7 @@
             {#each [
               { icon: 'casino', text: 'Spin 23+ sequential wheels — race, powers, stats, weapons, weaknesses' },
               { icon: 'bolt', text: '5% Wildcard chance on every stat spin — blessing, curse, or chaos' },
-              { icon: 'swords', text: 'Battle your characters in Rivals Mode or build a full roster in Story Mode' },
+              { icon: 'swords', text: 'Battle your characters in Rivals Mode or build a full roster in Ascension' },
               { icon: 'link', text: 'Share your character card with anyone — no account needed' },
             ] as feature}
               <div class="flex items-start gap-2.5">
@@ -2718,12 +2718,12 @@
           ⚔ Rivals Mode
         </button>
 
-        <!-- Story Mode -->
+        <!-- Ascension -->
         <a href="/story" class="menu-entry block" style="text-decoration: none; --menu-delay: 280ms;">
           <div class="menu-cta metal-stamp-green w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
             style="font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: #052e16;">
             <div class="l-bracket" style="color: rgba(110,231,183,0.35);"></div>
-            📖 Story Mode
+            📖 Ascension
           </div>
         </a>
 
@@ -3281,7 +3281,7 @@
           <!-- Progress dots — small row under the wheel showing where in the
                run you are. Filled dots = done, ringed = current, dim = upcoming.
                Tier-tinted on completed spins so a streak of high rolls visually
-               pops. Matches Story Mode placement. -->
+               pops. Matches Ascension placement. -->
           <div class="flex flex-col items-center gap-2 mt-2">
             <StreakBanner streak={currentStreak} />
             <SpinProgressDots
@@ -3293,7 +3293,7 @@
           </div>
 
           <!-- Result reveal overlay — shared SpinResultReveal component so the
-               main game and Story Mode render the post-spin panel identically. -->
+               main game and Ascension render the post-spin panel identically. -->
           {#if isRevealed}
             {@const last = (primarySpinResultIndex != null && results[primarySpinResultIndex]) || results.at(-1)}
             {#if last}
