@@ -1371,10 +1371,15 @@
 </script>
 
 <!-- ── Story Mode spin UI ─────────────────────────────────────────────────────── -->
-<!-- h-[100dvh] + overflow-y-auto + my-auto on the wheel block centers the wheel
-     when it fits but lets it scroll (top reachable, not clipped) on short
-     landscape-mobile viewports. justify-center would clip the top instead. -->
-<div class="h-[100dvh] overflow-y-auto flex flex-col items-center px-4 relative pt-12 pb-20">
+<!-- overflow-y-auto + my-auto on the wheel block centers the wheel when it
+     fits but lets it scroll (top reachable, not clipped) on short
+     landscape-mobile viewports. width/height use calc(100vw / --app-zoom)
+     and calc(100dvh / --app-zoom) because the layout applies html-level
+     CSS zoom (~0.8) on touch devices — without compensating, viewport
+     units are computed pre-zoom and the whole container renders at 80%
+     of the visible viewport, pulling the centered wheel off-centre. -->
+<div class="overflow-y-auto flex flex-col items-center px-4 relative pt-12 pb-20"
+     style="width: calc(100vw / var(--app-zoom, 1)); height: calc(100dvh / var(--app-zoom, 1));">
 
   <!-- Top bar: mode indicator + progress bar + exit link. The progress bar is
        new — gives the player a constant sense of "how far am I" instead of just
@@ -1419,8 +1424,12 @@
         />
       {/if}
 
-      <!-- Category heading above the wheel (matches the main game). -->
-      <div class="text-center mb-1" style="animation: fadeIn 0.25s ease-out forwards;">
+      <!-- Category heading above the wheel (matches the main game).
+           position: relative + z-index 40 lifts it above the SpinWheel's
+           themed effects (spike crowns, accretion rings, flame tongues,
+           starfields) that extend outside the rim and would otherwise
+           wash out the "spinning for X" label. -->
+      <div class="relative text-center mb-1" style="z-index: 40; animation: fadeIn 0.25s ease-out forwards;">
         <p class="text-xs tracking-[0.22em] uppercase mb-1.5"
           style="font-family: var(--font-mono, monospace); color: #9a907b;">
           {pendingResult ? 'result revealed' : 'spinning for'}

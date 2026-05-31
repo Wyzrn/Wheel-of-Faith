@@ -3133,7 +3133,11 @@
   <!-- Main game: two-column layout. Gated on !showMenu so the z-[60] wheel
        doesn't poke through the menu overlay (which sits lower). -->
   {#if !showMenu && !showCard && !showResumePrompt && !showNameScreen && !(rivalMode && rivalPhase === 'battle')}
-    <div class="flex pt-14 min-h-screen">
+    <!-- min-height pre-divides by --app-zoom so the html-level CSS zoom
+         applied on touch devices (~0.8) doesn't shrink the layout to 80%
+         of viewport — which would pull justify-center inside the right
+         column off the actual visible centre. -->
+    <div class="flex pt-14" style="min-height: calc(100vh / var(--app-zoom, 1));">
 
       <!-- LEFT SIDEBAR: Destiny Log -->
       <aside class="hidden md:flex flex-col shrink-0 sticky top-14 overflow-hidden"
@@ -3182,8 +3186,11 @@
         </div>
       </aside>
 
-      <!-- RIGHT: Category heading + wheel + overlay -->
-      <div class="flex-1 flex flex-col items-center px-4 py-8 overflow-y-auto">
+      <!-- RIGHT: Category heading + wheel + overlay.
+           justify-center groups headings + wheel around the vertical
+           midpoint so on mobile the wheel sits in the visible centre
+           instead of pinned to the top of the column. -->
+      <div class="flex-1 flex flex-col items-center justify-center px-4 py-8 overflow-y-auto">
 
         <!-- Rivals mode banner -->
         {#if rivalMode}
@@ -3216,8 +3223,12 @@
           </div>
         {/if}
 
-        <!-- Category heading (outside overlay so it stays visible) -->
-        <div class="text-center mb-3 md:mb-5" style="animation: fadeIn 0.25s ease-out forwards;">
+        <!-- Category heading (outside overlay so it stays visible).
+             z-[70] lifts it above the wheel subtree (z-[60]) so themed
+             wheel effects (spike crowns, accretion rings, flame tongues)
+             that extend outside the rim never overlap or wash out the
+             "spinning for X" label. -->
+        <div class="relative z-[70] text-center mb-3 md:mb-5" style="animation: fadeIn 0.25s ease-out forwards;">
           <p class="text-xs tracking-[0.22em] uppercase mb-1.5"
             style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">
             {isRevealed ? 'result revealed' : 'spinning for'}
