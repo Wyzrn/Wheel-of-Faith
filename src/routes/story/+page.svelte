@@ -17,7 +17,7 @@
     fuseCharactersInSlot, previewFuse, getFuseCost, FUSE_PLAYER_LEVEL_REQUIRED,
     type FuseResult,
     SHARD_COST_PER_SPIN, STAGE_LABELS, MAX_DAILY_SPINS,
-    STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, STAT_CRYSTAL_SHARD_COSTS,
+    STAT_CRYSTAL_COSTS, STAT_CRYSTAL_DAILY_LIMITS, STAT_CRYSTAL_SHARD_COSTS, STAT_LEVEL_MAX_SCORES,
     CRYSTAL_BUY_PRICES_GEMS, CRYSTAL_BUY_PRICES_SHARDS, CRYSTAL_SELL_PRICES, CRYSTAL_GRADE_LIST,
     STAT_CRYSTAL_SELL_PRICES, ENDLESS_KEY_GEM_COST,
     HERO_SPIN_SHARD_COST, LEGEND_SPIN_SHARD_COST, PARAGON_SPIN_SHARD_COST, BONUS_SPIN_SELL_PRICE,
@@ -1078,8 +1078,6 @@
   let useStatError = $state<string | null>(null)
   let useStatQty   = $state(1)
 
-  const LEVEL_MAX_SCORES = [54, 92, 99, 103, 115, Infinity] as const
-
   function openUseStatModal(type: StatCrystalType) {
     useStatModal = { type, phase: 'pickChar', charId: null }
     useStatQty = 1
@@ -1095,7 +1093,9 @@
     if (!currentSlot || !useStatModal) return 0
     const available = currentSlot.inventory.statCrystals[useStatModal.type]
     const boost = STAT_CRYSTAL_BOOST[useStatModal.type]
-    const maxScore = LEVEL_MAX_SCORES[Math.min(5, playerLevel)]
+    // Same cap table useStatCrystal() enforces — indexed by playerLevel so
+    // the UI's "room left" preview matches what actually gets applied.
+    const maxScore = STAT_LEVEL_MAX_SCORES[Math.min(STAT_LEVEL_MAX_SCORES.length - 1, playerLevel)]
     const char = currentSlot.roster.find(r => r.id === useStatModal!.charId)
     const currentScore = char?.spins.find(r => r.category === stat)?.score ?? 0
     const roomLeft = maxScore === Infinity ? available : Math.max(0, Math.floor((maxScore - currentScore) / boost))
@@ -2723,7 +2723,7 @@
 
         {:else}
           {@const selectedChar = roster.find(r => r.id === useStatModal?.charId)}
-          {@const maxStatScore = LEVEL_MAX_SCORES[Math.min(5, playerLevel)]}
+          {@const maxStatScore = STAT_LEVEL_MAX_SCORES[Math.min(STAT_LEVEL_MAX_SCORES.length - 1, playerLevel)]}
           {@const available = statCrystalInventory[useStatModal.type]}
           <h3 class="font-bold text-sm mb-1" style="font-family: var(--font-cinzel); color: var(--color-on-surface);">
             {selectedChar?.name ?? '—'}

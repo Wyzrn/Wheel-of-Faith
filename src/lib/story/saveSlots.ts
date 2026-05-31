@@ -19,9 +19,12 @@ export type SlotId = 1 | 2 | 3 | 4
 // L0 Common · L1 Uncommon · L2 Rare · L3 Legendary · L5 Mythological · L7 Divine.
 export const STAGE_LABELS = ['Common', 'Uncommon', 'Rare', 'Legendary', 'Legendary', 'Mythological', 'Mythological', 'Divine', 'Divine'] as const
 
-/** Minimum race weight allowed at each stage (index 0 = stage 1 / L0). New tier
- *  weights: Divine 1 · Mythological 2 · Legendary 3 · Rare 5 · Uncommon 8 · Common 13. */
-export const STAGE_MIN_WEIGHTS = [12, 8, 5, 3, 3, 2, 2, 1, 1] as const
+/** Minimum race weight allowed at each stage (index 0 = stage 1 / L0).
+ *  Per-race weights after the rebalance: Common 10 · Uncommon 9 · Rare 8 ·
+ *  Legendary 5 · Mythological 4 · Divine 2. The progression unlocks one
+ *  rarity tier per stage; Legendary/Mythological/Divine each take two stages
+ *  (the duplicates in STAGE_LABELS) so the late-game pacing is gradual. */
+export const STAGE_MIN_WEIGHTS = [10, 9, 8, 5, 5, 4, 4, 2, 2] as const
 
 /** Starting spin credits given to a brand-new save slot. */
 export const INITIAL_SPIN_CREDITS = 10
@@ -1309,7 +1312,11 @@ function recomputeOverall(spins: SpinResult[]): { overallScore: number; overallT
 // StorySpinView STAGE_MAX_STAT_SCORES. Caps scale through the new post-mortal
 // ladder: L3 = ZZ-, L4 = Cosmic-, L5 = Celestial-, L6 = Primordial-,
 // L7 = Transcendent-, L8 = no cap.
-const STAT_LEVEL_MAX_SCORES = [
+//
+// Exported so UI code (routes/story/+page.svelte clampStatQty) can preview
+// the same cap that useStatCrystal enforces — keeps the "room left" hint and
+// the actual apply in lockstep.
+export const STAT_LEVEL_MAX_SCORES = [
   54,        // L0 — ~F+/E-
   92,        // L1 — SS-
   99,        // L2 — SSS+

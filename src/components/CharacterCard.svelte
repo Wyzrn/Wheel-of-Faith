@@ -201,6 +201,19 @@
     Object.fromEntries(statCategories.map(cat => [cat, results.find(r => r.category === cat)?.score ?? 0]))
   ))
   let overallGrade = $derived(scoreTier(overallScore))
+  // Grade font-size scales inversely with label length so long names
+  // (Transcendent+, Primordial+, Celestial+) don't push the identity
+  // column into a sliver. Short grades (F+, SSS+) keep the dramatic
+  // 4.5rem. Each clamp's middle term is the responsive vw fallback for
+  // viewports between the min/max breakpoints.
+  let gradeFontSize = $derived.by(() => {
+    const len = overallGrade?.length ?? 0
+    if (len <= 4)  return 'clamp(2.8rem, 12vw, 4.5rem)'  // F, A+, SSS+, ZZZ+
+    if (len <= 6)  return 'clamp(2.2rem, 9vw,  3.6rem)'  // Godly+, ZZZ-
+    if (len <= 8)  return 'clamp(1.8rem, 7vw,  2.9rem)'  // Cosmic+, Absolute, Infinite
+    if (len <= 11) return 'clamp(1.4rem, 5.5vw, 2.3rem)' // Immortal+, Celestial+, Primordial+, Infinite+
+    return            'clamp(1.2rem, 4.5vw, 1.9rem)'     // Transcendent+
+  })
   // Tier-bucket the overall grade for the card aura animation strength.
   // Higher buckets get more dramatic glow + animation — F/E cards look
   // matte; God/Primordial/Absolute cards animate with rotating halo.
@@ -520,9 +533,9 @@
         {#if tierHasGradient(overallGrade)}
           {@const gradBase = overallGrade.replace(/[-+]$/, '').toLowerCase()}
           <p class="leading-none font-black"
-            style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 4.5rem); background: var(--tier-{gradBase}-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; filter: drop-shadow(0 0 14px {TIER_COLORS[overallGrade] ?? '#f0c040'}66);">{overallGrade}</p>
+            style="font-family: 'Cinzel', serif; font-size: {gradeFontSize}; background: var(--tier-{gradBase}-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; filter: drop-shadow(0 0 14px {TIER_COLORS[overallGrade] ?? '#f0c040'}66);">{overallGrade}</p>
         {:else}
-          <p class="leading-none font-black" style="font-family: 'Cinzel', serif; font-size: clamp(3rem, 12vw, 4.5rem); color: {TIER_COLORS[overallGrade] ?? '#ffdf96'}; filter: drop-shadow(0 0 12px {TIER_COLORS[overallGrade] ?? '#f0c040'}55);">{overallGrade}</p>
+          <p class="leading-none font-black" style="font-family: 'Cinzel', serif; font-size: {gradeFontSize}; color: {TIER_COLORS[overallGrade] ?? '#ffdf96'}; filter: drop-shadow(0 0 12px {TIER_COLORS[overallGrade] ?? '#f0c040'}55);">{overallGrade}</p>
         {/if}
         <p class="text-xs mt-1" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Score {overallScore} / 185</p>
       </div>

@@ -18,13 +18,14 @@ export type { Race, Archetype }
 export const ARCHETYPE_STAGE_MIN_WEIGHTS = [5, 4, 3, 2, 1, 1] as const
 
 /**
- * Returns the subset of races available at the given stage (1–6).
- * Stage 1: weight >= 12 (Common — Human, Halfling, Goblin, Gnome, Dwarf, Robot)
- * Stage 2: weight >= 7  (+ Uncommon — Elf, Orc, Half-Elf, Tiefling, Warforged, …)
- * Stage 3: weight >= 5  (+ Rare — Dragon, Vampire, Demon, Shinobi, Mutant, …)
- * Stage 4: weight >= 4  (+ Epic — Saiyan, Mindflayer, Hollow/Arrancar, Angel, …)
- * Stage 5: weight >= 2  (+ Legendary — God, Kryptonian, Asgardian, Demi-god, …)
- * Stage 6: weight >= 1  (+ Godlike — Viltrumite and all remaining)
+ * Returns the subset of races available at the given stage (1–9).
+ * Threshold ladder (matches STAGE_MIN_WEIGHTS in saveSlots.ts):
+ *   Stage 1: weight >= 10 — Common only
+ *   Stage 2: weight >=  9 — + Uncommon
+ *   Stage 3: weight >=  8 — + Rare
+ *   Stage 4–5: weight >= 5 — + Legendary
+ *   Stage 6–7: weight >= 4 — + Mythological
+ *   Stage 8–9: weight >= 2 — + Divine (everything)
  */
 export function getRacesForStage(stage: number): Race[] {
   const clamped = Math.max(1, Math.min(STAGE_MIN_WEIGHTS.length, stage))
