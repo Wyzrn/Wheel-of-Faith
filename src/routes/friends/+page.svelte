@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount, onDestroy } from 'svelte'
   import { goto } from '$app/navigation'
   import { auth } from '$lib/stores/auth.svelte'
@@ -46,7 +47,7 @@
   })
 
   async function loadFriends() {
-    const res = await fetch('/api/friends', { credentials: 'include' })
+    const res = await fetch(apiUrl('/api/friends'), { credentials: 'include' })
     if (res.ok) {
       const data = await res.json()
       friends = data.friends ?? []
@@ -54,7 +55,7 @@
   }
 
   async function loadRequests() {
-    const res = await fetch('/api/friends/requests', { credentials: 'include' })
+    const res = await fetch(apiUrl('/api/friends/requests'), { credentials: 'include' })
     if (res.ok) {
       const data = await res.json()
       requests = data.requests ?? []
@@ -66,7 +67,7 @@
     addLoading = true
     addError = null
     addSuccess = false
-    const res = await fetch('/api/friends/request', {
+    const res = await fetch(apiUrl('/api/friends/request'), {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -81,7 +82,7 @@
   }
 
   async function acceptRequest(id: string) {
-    const res = await fetch(`/api/friends/accept/${id}`, { method: 'POST', credentials: 'include' })
+    const res = await fetch(apiUrl(`/api/friends/accept/${id}`), { method: 'POST', credentials: 'include' })
     if (res.ok) {
       requests = requests.filter(r => r.id !== id)
       await loadFriends()
@@ -89,13 +90,13 @@
   }
 
   async function declineRequest(id: string) {
-    await fetch(`/api/friends/decline/${id}`, { method: 'POST', credentials: 'include' })
+    await fetch(apiUrl(`/api/friends/decline/${id}`), { method: 'POST', credentials: 'include' })
     requests = requests.filter(r => r.id !== id)
   }
 
   async function removeFriend(friendId: string) {
     removingId = friendId
-    await fetch(`/api/friends/${friendId}`, { method: 'DELETE', credentials: 'include' })
+    await fetch(apiUrl(`/api/friends/${friendId}`), { method: 'DELETE', credentials: 'include' })
     friends = friends.filter(f => f._id !== friendId)
     removingId = null
   }

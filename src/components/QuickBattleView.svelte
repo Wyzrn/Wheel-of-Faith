@@ -11,6 +11,7 @@
   BattleControllerTeam follow-up.
 -->
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import {
     buildBattleCharacter, formatHp,
@@ -182,7 +183,7 @@
     if (w === 'team1' && auth.loggedIn) {
       for (const m of team1) {
         if (m.shareId) {
-          fetch(`/api/characters/${m.shareId}/rivals-win`, {
+          fetch(apiUrl(`/api/characters/${m.shareId}/rivals-win`), {
             method: 'PATCH',
             credentials: 'include',
           }).catch(() => { /* best-effort — the user-level credit still lands */ })

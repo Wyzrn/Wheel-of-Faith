@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
   import { scoreTier } from '$lib/game/scoreTier'
@@ -65,12 +66,12 @@
 
     // 3. Check auth + load server chars
     try {
-      const meRes = await fetch('/api/auth/me', { credentials: 'include' })
+      const meRes = await fetch(apiUrl('/api/auth/me'), { credentials: 'include' })
       if (meRes.ok) {
         const { user: u } = await meRes.json() as { user: AuthUser }
         user = { id: u.id, username: u.username }
 
-        const mineRes = await fetch('/api/characters/mine', { credentials: 'include' })
+        const mineRes = await fetch(apiUrl('/api/characters/mine'), { credentials: 'include' })
         if (mineRes.ok) {
           const { characters: serverChars } = await mineRes.json() as { characters: { shareId: string }[] }
           const serverIds = serverChars.map(c => c.shareId)
@@ -97,7 +98,7 @@
     if (ids.length === 0) { loading = false; return }
 
     const settled = await Promise.allSettled(
-      ids.map(id => fetch(`/api/characters/${id}`).then(r => r.ok ? r.json() : Promise.reject()))
+      ids.map(id => fetch(apiUrl(`/api/characters/${id}`)).then(r => r.ok ? r.json() : Promise.reject()))
     )
 
     chars = ids.map((id, i) => {
@@ -131,7 +132,7 @@
   async function login() {
     loginSubmitting = true; authError = ''
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: loginUsername, password: loginPassword }),
@@ -145,7 +146,7 @@
   async function register() {
     loginSubmitting = true; authError = ''
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch(apiUrl('/api/auth/register'), {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: loginUsername, password: loginPassword }),
@@ -157,7 +158,7 @@
   }
 
   async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    await fetch(apiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' })
     window.location.reload()
   }
 
@@ -167,7 +168,7 @@
     let localIds: string[]
     try { localIds = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]') } catch { localIds = [] }
     await Promise.allSettled(
-      localIds.map(id => fetch(`/api/characters/${id}/claim`, { method: 'PATCH', credentials: 'include' }))
+      localIds.map(id => fetch(apiUrl(`/api/characters/${id}/claim`), { method: 'PATCH', credentials: 'include' }))
     )
     claimCount = 0
     claimStatus = 'done'
@@ -180,7 +181,7 @@
     const next = !char.inGallery
     chars = chars.map(c => c.id === id ? { ...c, inGallery: next } : c)
     try {
-      const res = await fetch(`/api/characters/${id}/gallery`, {
+      const res = await fetch(apiUrl(`/api/characters/${id}/gallery`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ share_in_gallery: next }),

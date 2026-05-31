@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
   import QuickBattleView from '../../components/QuickBattleView.svelte'
@@ -13,7 +14,7 @@
 
   async function fetchChar(id: string): Promise<CharData | null> {
     try {
-      const r = await fetch(`/api/characters/${id}`)
+      const r = await fetch(apiUrl(`/api/characters/${id}`))
       if (!r.ok) return null
       const d = await r.json()
       return { name: d.name ?? '—', spins: d.spins ?? [], shareId: id }

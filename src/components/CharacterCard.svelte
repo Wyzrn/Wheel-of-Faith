@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import type { SpinResult } from '$lib/session/types'
   import { computeOverallScore, scoreTier, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import { tierHasGradient } from '$lib/game/tierColor'
@@ -312,7 +313,7 @@
     saving = true
     saveError = null
     try {
-      const res = await fetch('/api/characters', {
+      const res = await fetch(apiUrl('/api/characters'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

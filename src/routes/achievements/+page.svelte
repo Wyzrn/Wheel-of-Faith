@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
   import { toast } from '$lib/toast.svelte'
@@ -54,7 +55,7 @@
     // Optimistic local update first so the header shard counter reflects it.
     auth.updateShopData((auth.user.shards ?? 0) + delta, auth.user.gamepasses ?? [])
     try {
-      const res = await fetch('/api/shop/shards/adjust', {
+      const res = await fetch(apiUrl('/api/shop/shards/adjust'), {
         method: 'PATCH', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delta }),

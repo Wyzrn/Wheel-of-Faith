@@ -12,6 +12,7 @@
   + PATCH rivals-win), team-rematch/menu hooks, and the result modal.
 -->
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import {
     buildBattleCharacter, formatHp, detectWeaknessElement,
@@ -81,7 +82,7 @@
         const archetype = winnerResults.find(r => r.category === 'archetype')?.resultLabel ?? ''
         const STAT_CATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','potential','energyLevel']
         const statScores = Object.fromEntries(STAT_CATS.map(c => [c, winnerResults.find(r => r.category === c)?.score ?? 0]))
-        const res = await fetch('/api/characters', {
+        const res = await fetch(apiUrl('/api/characters'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: winnerName || race, race, archetype,
@@ -104,7 +105,7 @@
       }
       // credentials:'include' so the server's ownership gate sees the auth
       // cookie — without it the PATCH silently 401s and the medal never lands.
-      const patchRes = await fetch(`/api/characters/${shareId}/rivals-win`, { method: 'PATCH', credentials: 'include' })
+      const patchRes = await fetch(apiUrl(`/api/characters/${shareId}/rivals-win`), { method: 'PATCH', credentials: 'include' })
       if (patchRes.ok) {
         const pd = await patchRes.json() as { rivals_wins: number }
         savedWins = pd.rivals_wins; savedShareId = shareId; saveStatus = 'saved'

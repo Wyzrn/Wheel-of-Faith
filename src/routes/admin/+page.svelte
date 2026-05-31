@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
   import { auth } from '$lib/stores/auth.svelte'
@@ -56,7 +57,7 @@
   async function patchUser(id: string, body: Record<string, unknown>) {
     userBusy = true
     try {
-      const res = await fetch(`/api/admin/users/${id}`, {
+      const res = await fetch(apiUrl(`/api/admin/users/${id}`), {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -138,7 +139,7 @@
   async function openCharacter(shareId: string) {
     charBusy = true
     try {
-      const res = await fetch(`/api/admin/characters/${shareId}`, { credentials: 'include' })
+      const res = await fetch(apiUrl(`/api/admin/characters/${shareId}`), { credentials: 'include' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? `${res.status}`)
       activeChar = data.character
@@ -193,7 +194,7 @@
         if (Number.isFinite(n)) body.overall_score = n
         if (editTier) body.overall_tier = editTier
       }
-      const res = await fetch(`/api/admin/characters/${activeChar.shareId}`, {
+      const res = await fetch(apiUrl(`/api/admin/characters/${activeChar.shareId}`), {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

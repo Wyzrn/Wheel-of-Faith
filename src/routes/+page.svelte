@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
   import { getRivalsWs, clearRivalsWs, patchRivalsWs } from '$lib/stores/rivalsWs'
@@ -293,7 +294,7 @@
       }
       const overallScore = computeOverallScore(statScores)
       const overallGrade = scoreTier(overallScore)
-      const res = await fetch('/api/characters', {
+      const res = await fetch(apiUrl('/api/characters'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

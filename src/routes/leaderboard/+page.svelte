@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
 
@@ -18,7 +19,7 @@
 
   onMount(async () => {
     try {
-      const res = await fetch('/api/leaderboard')
+      const res = await fetch(apiUrl('/api/leaderboard'))
       if (!res.ok) throw new Error()
       const data = await res.json()
       entries = data.users ?? []
@@ -33,7 +34,7 @@
     if (endlessEntries.length) return
     endlessLoading = true
     try {
-      const res = await fetch('/api/endless/leaderboard')
+      const res = await fetch(apiUrl('/api/endless/leaderboard'))
       if (res.ok) endlessEntries = (await res.json()).entries ?? []
     } finally { endlessLoading = false }
   }

@@ -30,12 +30,12 @@ export interface ChallengeBattle {
   opponent: { name: string; results: SpinResult[]; shareId?: string }
 }
 
+// Delegates to the shared wsUrl helper so the same VITE_API_URL build flag
+// switches both fetches and websockets between same-origin (Heroku) and
+// cross-origin (itch.io → Heroku) modes.
+import { wsUrl as buildWsUrl } from '$lib/api'
 function wsUrl(): string {
-  if (typeof window === 'undefined') return ''
-  const base = (import.meta.env.VITE_API_URL ?? '').replace(/^http/, 'ws')
-  return base
-    ? `${base}/api/rivals/ws`
-    : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/rivals/ws`
+  return typeof window === 'undefined' ? '' : buildWsUrl('/api/rivals/ws')
 }
 
 let _ws: WebSocket | null = null

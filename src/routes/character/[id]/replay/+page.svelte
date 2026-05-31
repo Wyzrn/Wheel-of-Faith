@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { page } from '$app/stores'
   import { onMount } from 'svelte'
 
@@ -11,7 +12,7 @@
 
   onMount(async () => {
     const id = $page.params.id
-    const res = await fetch(`/api/characters/${id}`)
+    const res = await fetch(apiUrl(`/api/characters/${id}`))
     if (!res.ok) { error = 'Character not found.'; loading = false; return }
     character = await res.json()
     loading = false

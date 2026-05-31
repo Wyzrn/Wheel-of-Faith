@@ -13,6 +13,7 @@
   • Auto Battle speed setting respected uniformly.
 -->
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onDestroy } from 'svelte'
   import {
     getBattleWaves, rollDrops, BATTLES_PER_WORLD, WORLD_GRADES, ENDLESS_KEY_DROP_RATE,
@@ -326,7 +327,7 @@
       }
       lastDrops = { ...accDrops }
       // Fire-and-forget daily-challenge tick; server rate-limits.
-      fetch('/api/challenges/progress', {
+      fetch(apiUrl('/api/challenges/progress'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

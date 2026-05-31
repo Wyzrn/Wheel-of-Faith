@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount, onDestroy, tick } from 'svelte'
   import { goto } from '$app/navigation'
   import { auth } from '$lib/stores/auth.svelte'
@@ -63,7 +64,7 @@
     await loadMyClan()
     loading = false
     if (auth.loggedIn) {
-      fetch('/api/challenges/progress', {
+      fetch(apiUrl('/api/challenges/progress'), {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'clan_visit' }),
@@ -74,7 +75,7 @@
   // ── Data loaders ───────────────────────────────────────────────────────────
   async function loadMyClan() {
     if (!auth.loggedIn) return
-    const res = await fetch('/api/clans/mine', { credentials: 'include' })
+    const res = await fetch(apiUrl('/api/clans/mine'), { credentials: 'include' })
     if (res.ok) {
       const d = await res.json()
       myClan = d.clan
@@ -93,14 +94,14 @@
     const params = new URLSearchParams()
     if (search) params.set('search', search)
     if (joinTypeFilter !== 'any') params.set('joinType', joinTypeFilter)
-    const res = await fetch(`/api/clans?${params}`)
+    const res = await fetch(apiUrl(`/api/clans?${params}`))
     if (res.ok) clans = (await res.json()).clans ?? []
   }
 
   async function loadLeaderboard() {
     view = 'leaderboard'
     if (leaderboard.length) return
-    const res = await fetch('/api/clans/leaderboard')
+    const res = await fetch(apiUrl('/api/clans/leaderboard'))
     if (res.ok) leaderboard = (await res.json()).clans ?? []
   }
 
@@ -116,7 +117,7 @@
     if (creating) return
     creating = true
     createError = null
-    const res = await fetch('/api/clans', {
+    const res = await fetch(apiUrl('/api/clans'), {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -151,7 +152,7 @@
     if (!myClan) return
     chatLoading = true
     try {
-      const res = await fetch(`/api/clans/${myClan._id}/messages`, { credentials: 'include' })
+      const res = await fetch(apiUrl(`/api/clans/${myClan._id}/messages`), { credentials: 'include' })
       if (res.ok) {
         const d = await res.json()
         chatMessages = d.messages ?? []
@@ -165,7 +166,7 @@
     chatSending = true
     const text = chatInput.trim().slice(0, 240)
     try {
-      const res = await fetch(`/api/clans/${myClan._id}/messages`, {
+      const res = await fetch(apiUrl(`/api/clans/${myClan._id}/messages`), {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
@@ -210,14 +211,14 @@
 
   async function leaveClan() {
     if (!myClan) return
-    const res = await fetch(`/api/clans/${myClan._id}/leave`, { method: 'DELETE', credentials: 'include' })
+    const res = await fetch(apiUrl(`/api/clans/${myClan._id}/leave`), { method: 'DELETE', credentials: 'include' })
     if (res.ok) { myClan = null; leaveConfirm = false; showToast('ok', 'Left clan') }
     else { const d = await res.json(); showToast('err', d.error ?? 'Failed') }
   }
 
   async function disbandClan() {
     if (!myClan) return
-    const res = await fetch(`/api/clans/${myClan._id}`, { method: 'DELETE', credentials: 'include' })
+    const res = await fetch(apiUrl(`/api/clans/${myClan._id}`), { method: 'DELETE', credentials: 'include' })
     if (res.ok) { myClan = null; disbandConfirm = false; showToast('ok', 'Clan disbanded') }
     else { const d = await res.json(); showToast('err', d.error ?? 'Failed') }
   }
@@ -225,7 +226,7 @@
   async function memberAction(action: 'promote' | 'demote' | 'kick', userId: string) {
     if (!myClan) return
     actionPending = `${action}-${userId}`
-    const res = await fetch(`/api/clans/${myClan._id}/${action}/${userId}`, { method: 'POST', credentials: 'include' })
+    const res = await fetch(apiUrl(`/api/clans/${myClan._id}/${action}/${userId}`), { method: 'POST', credentials: 'include' })
     const data = await res.json().catch(() => ({}))
     actionPending = null
     if (!res.ok) { showToast('err', data.error ?? `${action} failed`); return }
@@ -237,7 +238,7 @@
     if (!myClan) return
     if (!confirm('Transfer leadership? You become co-leader.')) return
     actionPending = `transfer-${userId}`
-    const res = await fetch(`/api/clans/${myClan._id}/transfer/${userId}`, { method: 'POST', credentials: 'include' })
+    const res = await fetch(apiUrl(`/api/clans/${myClan._id}/transfer/${userId}`), { method: 'POST', credentials: 'include' })
     const data = await res.json().catch(() => ({}))
     actionPending = null
     if (!res.ok) { showToast('err', data.error ?? 'Transfer failed'); return }
@@ -248,7 +249,7 @@
   async function respondRequest(userId: string, action: 'accept' | 'decline') {
     if (!myClan) return
     actionPending = `req-${action}-${userId}`
-    const res = await fetch(`/api/clans/${myClan._id}/requests/${userId}/${action}`, { method: 'POST', credentials: 'include' })
+    const res = await fetch(apiUrl(`/api/clans/${myClan._id}/requests/${userId}/${action}`), { method: 'POST', credentials: 'include' })
     const data = await res.json().catch(() => ({}))
     actionPending = null
     if (!res.ok) { showToast('err', data.error ?? `${action} failed`); return }
@@ -259,7 +260,7 @@
   async function saveSettings() {
     if (!myClan) return
     actionPending = 'settings'
-    const res = await fetch(`/api/clans/${myClan._id}`, {
+    const res = await fetch(apiUrl(`/api/clans/${myClan._id}`), {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

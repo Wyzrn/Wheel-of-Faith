@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl, wsUrl as buildWsUrl } from '$lib/api'
   import { onDestroy, onMount } from 'svelte'
   import { goto } from '$app/navigation'
   import { page } from '$app/stores'
@@ -79,7 +80,7 @@
     const STAT_CATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','potential','energyLevel']
     const statScores = Object.fromEntries(STAT_CATS.map(c => [c, myResults.find(r => r.category === c)?.score ?? 0]))
     const overall = computeOverallScore(statScores)
-    const res = await fetch('/api/characters', {
+    const res = await fetch(apiUrl('/api/characters'), {
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: myCharName || race, race, archetype,
@@ -98,16 +99,15 @@
       if (!ex.includes(shareId)) localStorage.setItem('wof_saved_chars', JSON.stringify([shareId, ...ex].slice(0, 50)))
     } catch { /* ignore */ }
     if (lastBattleWon === true) {
-      await fetch(`/api/characters/${shareId}/rivals-win`, { method: 'PATCH', credentials: 'include' })
+      await fetch(apiUrl(`/api/characters/${shareId}/rivals-win`), { method: 'PATCH', credentials: 'include' })
     }
   }
 
-  const WS_URL = (() => {
-    if (typeof window === 'undefined') return ''
-    const base = (import.meta.env.VITE_API_URL ?? '').replace(/^http/, 'ws')
-    return base ? `${base}/api/rivals/ws`
-      : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/rivals/ws`
-  })()
+  // Routed through the shared wsUrl helper so VITE_API_URL flips both
+  // fetches and the rivals websocket between same-origin (Heroku) and
+  // cross-origin (itch.io → Heroku) builds. SSR-safe (returns '' on the
+  // server) so the same code-path is valid for both adapters.
+  const WS_URL = typeof window === 'undefined' ? '' : buildWsUrl('/api/rivals/ws')
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   onMount(() => {
@@ -225,7 +225,7 @@
         if (pendingClanChallenge) {
           const challenge = pendingClanChallenge
           pendingClanChallenge = null
-          fetch(`/api/clans/${challenge.clanId}/messages`, {
+          fetch(apiUrl(`/api/clans/${challenge.clanId}/messages`), {
             method: 'POST', credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

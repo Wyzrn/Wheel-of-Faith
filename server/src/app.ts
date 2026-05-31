@@ -28,8 +28,34 @@ export async function createApp() {
     try { done(null, JSON.parse(body.toString())) } catch (err: any) { done(err) }
   })
 
+  // CORS — accept the canonical FRONTEND_URL plus any explicit additional
+  // origins listed in EXTRA_ORIGINS (comma-separated). The latter covers
+  // the itch.io HTML5 game host, which serves the static build from a
+  // randomized *.ssl.hwcdn.net / *.itch.zone subdomain inside an iframe.
+  // localhost dev ports stay allowed unconditionally so `npm run dev`
+  // continues to work without any env wiring.
+  const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173'
+  const extraOrigins = (process.env.EXTRA_ORIGINS ?? '')
+    .split(',').map(s => s.trim()).filter(Boolean)
+  const allowedOrigins = new Set<string>([
+    frontendUrl,
+    'http://localhost:5173',
+    'http://localhost:4173',
+    ...extraOrigins,
+  ])
+  const allowedOriginPatterns: RegExp[] = [
+    /^https:\/\/[a-z0-9-]+\.itch\.zone$/i,        // itch HTML5 iframe host
+    /^https:\/\/[a-z0-9-]+\.ssl\.hwcdn\.net$/i,   // itch CDN fallback
+    /^https:\/\/html-classic\.itch\.zone$/i,      // itch alternate host
+  ]
   await app.register(cors, {
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+    origin: (origin, cb) => {
+      // Same-origin requests (no Origin header) and tools/curl are fine.
+      if (!origin) return cb(null, true)
+      if (allowedOrigins.has(origin)) return cb(null, true)
+      if (allowedOriginPatterns.some(p => p.test(origin))) return cb(null, true)
+      cb(new Error(`Origin ${origin} not allowed by CORS`), false)
+    },
     credentials: true,
   })
 

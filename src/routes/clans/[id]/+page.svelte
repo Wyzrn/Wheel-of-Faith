@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   // Public clan profile — anyone can view (no auth required). Reached by
   // clicking a clan in /clan browse or leaderboard. Shows roster, badge,
   // motd, join type, total wins. Members can hit "Request" / "Join" from
@@ -26,13 +27,13 @@
   onMount(async () => {
     const id = $page.params.id
     try {
-      const res = await fetch(`/api/clans/public/${id}`)
+      const res = await fetch(apiUrl(`/api/clans/public/${id}`))
       if (!res.ok) { error = 'Clan not found'; return }
       const d = await res.json()
       clan = d.clan
       // Check if the viewer already has a clan (to disable Join CTA)
       if (auth.loggedIn) {
-        const mineRes = await fetch('/api/clans/mine', { credentials: 'include' })
+        const mineRes = await fetch(apiUrl('/api/clans/mine'), { credentials: 'include' })
         if (mineRes.ok) {
           const m = await mineRes.json()
           myClanId = m.clan?._id ?? null

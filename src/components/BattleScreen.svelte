@@ -7,6 +7,7 @@
   "VS" splash + champions-save flow).
 -->
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { buildBattleCharacter, formatHp, detectWeaknessElement } from '$lib/game/battle'
   import type { BattleCharacter } from '$lib/game/battle'
@@ -116,7 +117,7 @@
         const overallScore = computeOverallScore(statScores)
         const overallTier  = scoreTier(overallScore)
 
-        const res = await fetch('/api/characters', {
+        const res = await fetch(apiUrl('/api/characters'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -151,7 +152,7 @@
       // Increment wins on backend. credentials:'include' is required because the
       // server gates this PATCH by character ownership (userId match), so the
       // auth cookie has to ride along or the increment silently 401s.
-      const patchRes = await fetch(`/api/characters/${shareId}/rivals-win`, { method: 'PATCH', credentials: 'include' })
+      const patchRes = await fetch(apiUrl(`/api/characters/${shareId}/rivals-win`), { method: 'PATCH', credentials: 'include' })
       if (patchRes.ok) {
         const patchData = await patchRes.json() as { rivals_wins: number }
         savedWins    = patchData.rivals_wins

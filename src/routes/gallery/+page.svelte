@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { scoreTier } from '$lib/game/scoreTier'
 
@@ -124,7 +125,7 @@
         limit: String(LIMIT),
         ...(q ? { search: q } : {}),
       })
-      const res = await fetch(`/api/characters?${params}`)
+      const res = await fetch(apiUrl(`/api/characters?${params}`))
       if (!res.ok) throw new Error()
       const data = await res.json() as {
         characters: GalleryChar[]
@@ -253,7 +254,7 @@
 
     const results = await Promise.all(
       ids.map(id =>
-        fetch(`/api/characters/${id}`)
+        fetch(apiUrl(`/api/characters/${id}`))
           .then(r => r.ok ? r.json() : null)
           .catch(() => null)
       )

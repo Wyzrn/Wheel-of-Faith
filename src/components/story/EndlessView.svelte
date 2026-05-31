@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onDestroy } from 'svelte'
   import {
     BATTLES_PER_WORLD, specBracketForWorld, ENEMY_TYPE_NAMES,
@@ -518,7 +519,7 @@
   async function submitEndlessScore(wave: number, characterName: string, race: string, archetype: string, tier: string) {
     if (!auth.loggedIn) return
     try {
-      await fetch('/api/endless/score', {
+      await fetch(apiUrl('/api/endless/score'), {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ wave, characterName, race, archetype, tier }),

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { page } from '$app/stores'
   import { auth } from '$lib/stores/auth.svelte'
@@ -53,7 +54,7 @@
 
   onMount(async () => {
     try {
-      const res = await fetch(`/api/users/${username}/profile`)
+      const res = await fetch(apiUrl(`/api/users/${username}/profile`))
       if (!res.ok) { error = 'User not found'; return }
       data = await res.json()
     } catch {

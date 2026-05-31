@@ -5,6 +5,23 @@ import { Character } from '../models/Character.js'
 import { markEvent } from '../lib/challenges.js'
 import { isAdminUsername } from '../lib/admin.js'
 
+// Cookie attributes for the auth token. In production we set
+// SameSite=None+Secure when CROSS_ORIGIN_COOKIES=1 so the itch.io HTML5
+// build (served from a third-party origin) can still authenticate against
+// the Heroku backend. Lax stays the default for same-origin Heroku usage
+// because some browsers reject SameSite=None on insecure dev ports. */
+const cookieOpts = () => {
+  const isProd = process.env.NODE_ENV === 'production'
+  const crossOrigin = process.env.CROSS_ORIGIN_COOKIES === '1'
+  return {
+    httpOnly: true,
+    secure: isProd || crossOrigin,
+    sameSite: (crossOrigin ? 'none' : 'lax') as 'none' | 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  }
+}
+
 declare module 'fastify' {
   interface FastifyRequest {
     userId?: string
@@ -31,7 +48,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     const token = (app as any).jwt.sign({ id: user._id.toString(), username: user.username }, { expiresIn: '30d' })
     reply
-      .setCookie('wof_token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
+      .setCookie('wof_token', token, cookieOpts())
       .send({ user: { id: user._id, username: user.username, rivalsWins: 0, rivalsLosses: 0, gamesPlayed: 0 } })
   })
 
@@ -47,7 +64,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     const token = (app as any).jwt.sign({ id: user._id.toString(), username: user.username }, { expiresIn: '30d' })
     reply
-      .setCookie('wof_token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
+      .setCookie('wof_token', token, cookieOpts())
       .send({ user: { id: user._id, username: user.username, rivalsWins: user.rivalsWins, rivalsLosses: user.rivalsLosses, gamesPlayed: user.gamesPlayed } })
   })
 

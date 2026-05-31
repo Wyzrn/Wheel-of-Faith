@@ -1,8 +1,9 @@
 import { auth } from './auth.svelte'
 import { toast } from '$lib/toast.svelte'
 import { GAMEPASSES, type GamepassId } from '$lib/shop/gamepasses'
+import { apiUrl } from '$lib/api'
 
-const API = '/api'
+const API = apiUrl('/api').replace(/\/api$/, '')
 
 // ── Gamepass helpers (reads from auth store) ───────────────────────────────────
 

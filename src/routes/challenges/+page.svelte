@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
   import { toast } from '$lib/toast.svelte'
@@ -23,7 +24,7 @@
   let tickInterval: ReturnType<typeof setInterval> | null = null
 
   async function refresh() {
-    const res = await fetch('/api/challenges/daily', { credentials: 'include' })
+    const res = await fetch(apiUrl('/api/challenges/daily'), { credentials: 'include' })
     if (res.ok) challenges = (await res.json()).challenges ?? []
     loading = false
   }
@@ -50,7 +51,7 @@
     if (claiming) return
     claiming = type
     try {
-      const res = await fetch(`/api/challenges/${type}/claim`, { method: 'POST', credentials: 'include' })
+      const res = await fetch(apiUrl(`/api/challenges/${type}/claim`), { method: 'POST', credentials: 'include' })
       const data = await res.json().catch(() => ({}))
       if (res.ok) {
         challenges = challenges.map(c => c.type === type ? { ...c, status: 'claimed', completed: true, progress: c.threshold } : c)

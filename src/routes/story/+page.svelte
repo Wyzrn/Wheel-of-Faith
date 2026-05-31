@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount, onDestroy, untrack } from 'svelte'
   import { storyHomeSignal } from '$lib/menuState.svelte'
   import {
@@ -306,7 +307,7 @@
     shareSlotError = null
     shareSlotId = id
     try {
-      const res = await fetch('/api/story-slots', {
+      const res = await fetch(apiUrl('/api/story-slots'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -339,8 +340,7 @@
     isSyncing = true
     syncMessage = null
     try {
-      const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/?$/, '')
-      const res = await fetch(`${API_URL}/api/story-slots/mine`, { credentials: 'include' })
+      const res = await fetch(apiUrl('/api/story-slots/mine'), { credentials: 'include' })
       if (res.status === 401) { syncMessage = 'Log in to sync save slots.'; return }
       if (!res.ok) { syncMessage = 'Sync failed. Try again.'; return }
       const serverSlots = await res.json() as Array<{ slotData: StorySaveSlot }>
@@ -409,7 +409,7 @@
     if (!auth.loggedIn || delta === 0) return
     auth.updateShopData((auth.user?.shards ?? 0) + delta, auth.user?.gamepasses ?? [])
     try {
-      await fetch('/api/shop/shards/adjust', {
+      await fetch(apiUrl('/api/shop/shards/adjust'), {
         method: 'PATCH', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delta }),

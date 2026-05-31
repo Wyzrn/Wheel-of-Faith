@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { page } from '$app/stores'
   import { auth } from '$lib/stores/auth.svelte'
@@ -27,7 +28,7 @@
     // Fire-and-forget: mark today's 'shop_visit' daily challenge progress.
     // Server validates the user is authenticated; idempotent for the day.
     if (auth.loggedIn) {
-      fetch('/api/challenges/progress', {
+      fetch(apiUrl('/api/challenges/progress'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

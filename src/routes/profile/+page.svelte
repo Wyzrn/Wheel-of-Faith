@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
   import { auth } from '$lib/stores/auth.svelte'
@@ -34,7 +35,7 @@
     })
     if (!auth.user) { goto('/login'); return }
 
-    const res = await fetch(`/api/users/${auth.user.username}/profile`, { credentials: 'include' })
+    const res = await fetch(apiUrl(`/api/users/${auth.user.username}/profile`), { credentials: 'include' })
     if (res.ok) {
       const data = await res.json()
       characters = data.characters ?? []
@@ -58,7 +59,7 @@
     if (delta <= 0) return
     auth.updateShopData((auth.user.shards ?? 0) + delta, auth.user.gamepasses ?? [])
     try {
-      const res = await fetch('/api/shop/shards/adjust', {
+      const res = await fetch(apiUrl('/api/shop/shards/adjust'), {
         method: 'PATCH', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delta }),

@@ -1,4 +1,5 @@
-const API = '/api'
+import { apiUrl } from '$lib/api'
+const API = apiUrl('/api').replace(/\/api$/, '')
 
 export interface AuthUser {
   id: string
