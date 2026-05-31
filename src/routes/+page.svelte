@@ -2641,18 +2641,21 @@
        centering with at least viewport height. -->
   {#if showMenu}
     <!-- True viewport-pinned overlay. Inline position: fixed on the style
-         attribute beats any class-selector override (the .menu-bg rule in
-         app.css was previously setting position: relative because Tailwind's
-         `fixed` utility lost the specificity war against the bare .menu-bg
-         selector, which collapsed this whole overlay into normal flow). -->
+         attribute beats any class-selector override. The width/height use
+         calc(<vp> / var(--app-zoom, 1)) because the layout applies CSS
+         `zoom` to <html> on touch devices (~0.8) which scales every
+         descendant including a fixed 100vw/100dvh box down to 80%,
+         leaving a 20% gap. Pre-dividing by the zoom factor means the
+         post-zoom rendered size lands back at 100% of the visible
+         viewport. Falls back to 1 on desktop (no zoom applied). -->
     <div class="menu-bg z-30 overflow-y-auto"
-         style="position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: #16121a;">
+         style="position: fixed; top: 0; left: 0; width: calc(100vw / var(--app-zoom, 1)); height: calc(100dvh / var(--app-zoom, 1)); background: #16121a;">
       <!-- Decorative glows: gold haze up top, arcane teal swell at the base. -->
       <div class="absolute top-0 inset-x-0 h-48 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240,192,82,0.12), transparent);"></div>
       <div class="absolute bottom-0 inset-x-0 h-56 pointer-events-none" style="background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(90,214,239,0.10), transparent);"></div>
 
       <div class="relative z-[1] w-full flex flex-col items-center justify-center px-5 py-10"
-           style="min-height: 100dvh;">
+           style="min-height: calc(100dvh / var(--app-zoom, 1));">
 
       <!-- Logo mark -->
       <div class="menu-entry mb-4 flex flex-col items-center gap-3" style="--menu-delay: 0ms;">

@@ -47,12 +47,20 @@
           // Apply the shrink-to-design zoom in EITHER orientation — temporary
           // change while the rotate-to-landscape gate is disabled. Without
           // this, portrait would render desktop-sized CSS at narrow widths.
+          let zoom = 1
           if (w > 0 && w < DESIGN_W) {
             // Higher floor (0.8) so mobile UI doesn't shrink to a postage-stamp.
             // Some desktop-designed layouts will overflow within the wider CSS
             // viewport that results — acceptable temporary trade.
-            root.style.zoom = String(Math.max(0.8, w / DESIGN_W))
+            zoom = Math.max(0.8, w / DESIGN_W)
+            root.style.zoom = String(zoom)
           }
+          // Expose the active zoom as a CSS variable so anything that needs
+          // to fill the actual visible viewport (e.g. the main-menu overlay)
+          // can compensate via calc(100vw / var(--app-zoom)) — viewport units
+          // are computed before the zoom transform is applied, so a fixed
+          // 100vw element would otherwise render at zoom × 100% of viewport.
+          root.style.setProperty('--app-zoom', String(zoom))
           requestAnimationFrame(() => { applyingZoom = false })
         }
         applyViewport()
