@@ -32,7 +32,16 @@ const config = {
 					assets: 'build',
 					strict: false
 				})
-			: nodeAdapter()
+			: nodeAdapter(),
+		// itch.io hosts each HTML5 game under a randomized subpath
+		// (html-classic.itch.zone/html/<id>/<hash>/…). SvelteKit's default
+		// absolute asset URLs (/_app/immutable/…) would resolve to the root
+		// of html-classic.itch.zone where nothing exists, returning 403 for
+		// every chunk. Emitting relative URLs (./_app/…) makes the browser
+		// resolve them from the current document, which is the game's
+		// actual subpath. No-op for the Heroku build (same-origin), so
+		// always-on is safe.
+		paths: isItch ? { relative: true } : undefined
 	}
 };
 
