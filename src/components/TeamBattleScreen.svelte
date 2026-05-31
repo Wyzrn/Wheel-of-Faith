@@ -83,7 +83,8 @@
         const STAT_CATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','potential','energyLevel']
         const statScores = Object.fromEntries(STAT_CATS.map(c => [c, winnerResults.find(r => r.category === c)?.score ?? 0]))
         const res = await fetch(apiUrl('/api/characters'), {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: winnerName || race, race, archetype,
             overall_score: computeOverallScore(statScores),

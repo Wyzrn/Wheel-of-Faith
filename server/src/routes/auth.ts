@@ -71,7 +71,11 @@ export async function authRoutes(app: FastifyInstance) {
 
   // ── Logout ────────────────────────────────────────────────────────────────
   app.post('/auth/logout', async (req, reply) => {
-    reply.clearCookie('wof_token', { path: '/' }).send({ ok: true })
+    // Browsers treat cookies with different SameSite/Secure attrs as
+     // distinct; reuse the same options that wrote it so the cross-origin
+     // (SameSite=None; Secure) auth cookie actually clears on the itch
+     // build instead of being shadowed by a Lax sibling.
+    reply.clearCookie('wof_token', cookieOpts()).send({ ok: true })
   })
 
   // ── Get current user (me) ─────────────────────────────────────────────────

@@ -182,7 +182,7 @@
     chars = chars.map(c => c.id === id ? { ...c, inGallery: next } : c)
     try {
       const res = await fetch(apiUrl(`/api/characters/${id}/gallery`), {
-        method: 'PATCH',
+        method: 'PATCH', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ share_in_gallery: next }),
       })

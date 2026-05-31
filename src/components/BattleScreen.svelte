@@ -118,7 +118,7 @@
         const overallTier  = scoreTier(overallScore)
 
         const res = await fetch(apiUrl('/api/characters'), {
-          method: 'POST',
+          method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name:               winnerName || race,

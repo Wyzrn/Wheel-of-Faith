@@ -58,6 +58,15 @@ export async function createApp() {
       cb(new Error(`Origin ${origin} not allowed by CORS`), false)
     },
     credentials: true,
+    // @fastify/cors defaults to GET/HEAD/POST only — without an explicit
+    // methods list, browser preflights for PATCH/PUT/DELETE get refused
+    // with "Method X is not allowed by Access-Control-Allow-Methods".
+    // Every method the client actually uses must be listed here.
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    // Allowed request headers — same logic. Content-Type covers JSON
+    // bodies; Authorization is included even though we use cookies in
+    // case future endpoints take bearer tokens.
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 
   await app.register(rateLimit, {
