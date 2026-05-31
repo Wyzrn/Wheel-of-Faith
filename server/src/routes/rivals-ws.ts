@@ -37,11 +37,27 @@ interface Room {
   // True once the server has credited a result for this room. Prevents double-credit
   // if either client sends battle_result twice.
   resolved?: boolean
+  // When true the battle_result agreement also applies Ranked MMR delta to
+  // both players. Set when the room was created by the ranked matchmaker.
+  ranked?: boolean
+  // MMR snapshots taken at match time so a player can't game the system by
+  // climbing MMR between match and result. Only set on ranked rooms.
+  p1MmrAtStart?: number
+  p2MmrAtStart?: number
 }
 
 interface QueueEntry {
   player: Player
-  score: number  // rivalsWins used as skill proxy
+  score: number  // rivalsWins used as skill proxy (casual queue)
+  joinedAt: number
+}
+
+// Ranked queue entries carry the player's current MMR so the matchmaker can
+// pair closest brackets. Separate from `matchQueue` so a casual searcher can
+// run alongside a ranked searcher without cross-contamination.
+interface RankedQueueEntry {
+  player: Player
+  mmr: number
   joinedAt: number
 }
 
@@ -71,6 +87,7 @@ interface PendingChallenge {
 // In-memory stores
 const rooms = new Map<string, Room>()
 const matchQueue: QueueEntry[] = []
+const rankedQueue: RankedQueueEntry[] = []
 // Online presence: userId → set of live connections (a user may have several
 // tabs open). Powers friend online-detection + challenge delivery.
 const presence = new Map<string, Set<Player>>()
@@ -119,6 +136,33 @@ function getOther(player: Player): Player | null {
 function removeFromQueue(player: Player) {
   const idx = matchQueue.findIndex(e => e.player === player)
   if (idx !== -1) matchQueue.splice(idx, 1)
+  const ridx = rankedQueue.findIndex(e => e.player === player)
+  if (ridx !== -1) rankedQueue.splice(ridx, 1)
+}
+
+// Ranked MMR delta per match. Win = +3 to +5, loss = -3 to -5, scaled by
+// the MMR gap between players: beating someone above you is rewarded
+// more (+5), losing to someone below you costs more (-5). Capped at a
+// ±200 MMR difference so wildly mismatched outcomes don't snowball.
+function rankedMmrDelta(
+  myMmr: number, opponentMmr: number, iWon: boolean,
+): { meDelta: number; oppDelta: number } {
+  const cap = 200
+  const diff = Math.max(-cap, Math.min(cap, opponentMmr - myMmr))   // positive = opp stronger
+  const scale = Math.max(0, diff / cap)                              // 0..1 (only positive side used)
+  if (iWon) {
+    // 3 baseline, +2 if upset win over a much higher MMR opponent.
+    const meDelta = Math.round(3 + 2 * scale)
+    // Opponent loses 3..5 — heavier when they outranked us (they were
+    // expected to win and didn't).
+    const oppDelta = -Math.round(3 + 2 * scale)
+    return { meDelta, oppDelta }
+  } else {
+    // We lost. -3 baseline, -2 extra if opponent was much weaker.
+    const meDelta = -Math.round(3 + 2 * Math.max(0, -diff / cap))
+    const oppDelta = Math.round(3 + 2 * Math.max(0, -diff / cap))
+    return { meDelta, oppDelta }
+  }
 }
 
 function createRoom(p1: Player, p2: Player | null): Room {
@@ -251,6 +295,35 @@ setInterval(() => {
     // P1 = entryA, P2 = entryB
     send(entryA.player.ws, { type: 'matched', code: room.code, isP1: true,  opponentUsername: entryB.player.username })
     send(entryB.player.ws, { type: 'matched', code: room.code, isP1: false, opponentUsername: entryA.player.username })
+  }
+
+  // ── Ranked queue ─────────────────────────────────────────────────────────
+  // Pairs the two closest-MMR searchers in the ranked queue. Tolerance
+  // grows from 50 to 500 MMR over the first 10 minutes of waiting so
+  // unpopulated brackets still find someone eventually. No bot fallback
+  // for ranked — playing a bot wouldn't earn legitimate MMR.
+  if (rankedQueue.length >= 2) {
+    rankedQueue.sort((a, b) => a.mmr - b.mmr)
+    for (let i = 0; i < rankedQueue.length - 1; i++) {
+      const a = rankedQueue[i]
+      const b = rankedQueue[i + 1]
+      const ageSec = Math.max((now - a.joinedAt) / 1000, (now - b.joinedAt) / 1000)
+      const tolerance = Math.round(50 + 450 * Math.min(1, ageSec / 600))
+      const diff = Math.abs(a.mmr - b.mmr)
+      if (diff > tolerance) continue
+      // Pair them. Splice the higher index first so the lower index stays valid.
+      rankedQueue.splice(i + 1, 1)
+      rankedQueue.splice(i, 1)
+      const room = createRoom(a.player, b.player)
+      room.ranked = true
+      room.p1MmrAtStart = a.mmr
+      room.p2MmrAtStart = b.mmr
+      send(a.player.ws, { type: 'matched', code: room.code, isP1: true,  opponentUsername: b.player.username, ranked: true, opponentMmr: b.mmr })
+      send(b.player.ws, { type: 'matched', code: room.code, isP1: false, opponentUsername: a.player.username, ranked: true, opponentMmr: a.mmr })
+      // Don't restart from the same index — return so the next tick gets
+      // a fresh sweep.
+      return
+    }
   }
 }, 5000)
 
@@ -396,10 +469,36 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
 
         case 'find_match': {
           // Already in queue or room — ignore
-          if (player.room || matchQueue.some(e => e.player === player)) break
+          if (player.room || matchQueue.some(e => e.player === player) || rankedQueue.some(e => e.player === player)) break
           const score = typeof msg.score === 'number' ? msg.score : 0
           matchQueue.push({ player, score, joinedAt: Date.now() })
           send(socket, { type: 'searching', queueSize: matchQueue.length })
+          break
+        }
+
+        // Ranked queue — same flow as find_match but pairs by MMR proximity
+        // and credits +/- MMR on battle_result. Requires a logged-in user
+        // (no MMR to track for anonymous players). The handler is sync so
+        // the User lookup runs in an IIFE; the queue push lands once the
+        // current MMR resolves.
+        case 'find_ranked': {
+          if (!player.userId) { send(socket, { type: 'error', message: 'Log in to play ranked.' }); break }
+          if (player.room || matchQueue.some(e => e.player === player) || rankedQueue.some(e => e.player === player)) break
+          const userId = player.userId
+          ;(async () => {
+            try {
+              const u = await User.findById(userId).select('rankedMmr').lean()
+              // Re-check guards in case the player joined a room while we
+              // were awaiting the lookup.
+              if (player.room || rankedQueue.some(e => e.player === player)) return
+              const mmr = u?.rankedMmr ?? 0
+              rankedQueue.push({ player, mmr, joinedAt: Date.now() })
+              send(socket, { type: 'searching', queueSize: rankedQueue.length, ranked: true })
+            } catch (err) {
+              app.log.warn({ err }, 'find_ranked MMR lookup failed')
+              send(socket, { type: 'error', message: 'Ranked queue unavailable, try again.' })
+            }
+          })()
           break
         }
 
@@ -464,6 +563,13 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
             room.resolved = true
             const winner = p1.battleReport.won ? p1 : p2
             const loser  = p1.battleReport.won ? p2 : p1
+            // Ranked rooms also apply Ranked MMR delta (+/- 3 to 5, scaled
+            // by the MMR gap at match start so upsets and floor-drops both
+            // swing harder). Snapshots in p1MmrAtStart/p2MmrAtStart prevent
+            // mid-match MMR changes from gaming the formula.
+            const isRanked = room.ranked === true
+            const winnerMmrAtStart = winner === p1 ? (room.p1MmrAtStart ?? 0) : (room.p2MmrAtStart ?? 0)
+            const loserMmrAtStart  = winner === p1 ? (room.p2MmrAtStart ?? 0) : (room.p1MmrAtStart ?? 0)
             // Best-effort credit; failures here must not break the battle UX.
             ;(async () => {
               try {
@@ -474,6 +580,26 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
                 }
                 if (loser.userId) {
                   await User.findByIdAndUpdate(loser.userId, { $inc: { rivalsLosses: 1, gamesPlayed: 1 } })
+                }
+                if (isRanked && winner.userId && loser.userId) {
+                  const { meDelta: winnerDelta, oppDelta: loserDelta } = rankedMmrDelta(winnerMmrAtStart, loserMmrAtStart, true)
+                  // Floor at 0 so a player can't drop below Unranked.
+                  await User.findByIdAndUpdate(winner.userId, { $inc: { rankedMmr: winnerDelta } })
+                  await User.updateOne(
+                    { _id: loser.userId, rankedMmr: { $gte: -loserDelta } },
+                    { $inc: { rankedMmr: loserDelta } },
+                  )
+                  // For players already at 0, just clamp by setting to 0.
+                  await User.updateOne(
+                    { _id: loser.userId, rankedMmr: { $lt: -loserDelta } },
+                    { $set: { rankedMmr: 0 } },
+                  )
+                  // Push the new MMR to both clients so the UI can update
+                  // its rank chip without a refetch.
+                  const winUser = await User.findById(winner.userId).select('rankedMmr').lean()
+                  const losUser = await User.findById(loser.userId).select('rankedMmr').lean()
+                  send(winner.ws, { type: 'ranked_result', delta: winnerDelta, newMmr: winUser?.rankedMmr ?? 0 })
+                  send(loser.ws,  { type: 'ranked_result', delta: loserDelta,  newMmr: losUser?.rankedMmr ?? 0 })
                 }
               } catch (err) {
                 app.log.warn({ err, roomCode: room.code }, 'Failed to credit rivals battle result')

@@ -2,12 +2,16 @@
   import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
+  import { mmrRankFor } from '$lib/mmrRanks'
 
   type LeaderEntry = {
     username: string
     rivalsWins: number
     rivalsLosses: number
     gamesPlayed: number
+    rankedMmr: number
+    rank: string
+    rankLabel: string
   }
 
   let entries   = $state<LeaderEntry[]>([])
@@ -39,13 +43,9 @@
     } finally { endlessLoading = false }
   }
 
-  function rank(wins: number): string {
-    if (wins >= 100) return 'Legend'
-    if (wins >= 50) return 'Veteran'
-    if (wins >= 20) return 'Challenger'
-    if (wins >= 5) return 'Fighter'
-    return 'Rookie'
-  }
+  // Old win-tier label helper retained as a fallback for legacy callers; the
+  // leaderboard now displays the server-supplied rankLabel (Copper → Paragon)
+  // since the board is sorted by rankedMmr.
 
   const MEDAL: Record<number, { icon: string; color: string }> = {
     0: { icon: '🥇', color: '#fde047' },
@@ -80,7 +80,7 @@
     <div class="mb-6 text-center">
       <p class="text-xs tracking-[0.25em] uppercase mb-1" style="font-family: 'JetBrains Mono', monospace; color: #7c6fa0;">Rivals Rankings</p>
       <h1 style="font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 700; color: #fde047; letter-spacing: 0.1em;">Hall of Champions</h1>
-      <p class="mt-1 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Online rivals wins only</p>
+      <p class="mt-1 text-xs" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Ranked MMR · Copper → Paragon</p>
     </div>
 
     <!-- Tab switcher -->
@@ -124,20 +124,20 @@
     <!-- My rank highlight -->
     {#if auth.loggedIn && auth.user && !loading && entries.length > 0}
       {@const myIdx = entries.findIndex(e => e.username === auth.user!.username)}
+      {@const myMmr  = auth.user.rankedMmr ?? 0}
+      {@const myRank = mmrRankFor(myMmr)}
       {#if myIdx !== -1}
-        <div class="mb-5 px-4 py-3 rounded-xl flex items-center gap-3" style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.3);">
-          <span style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 900; color: #f0c040;">#{myIdx + 1}</span>
+        <div class="mb-5 px-4 py-3 rounded-xl flex items-center gap-3" style="background: {myRank.color}14; border: 1px solid {myRank.color}55;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 900; color: {myRank.color};">#{myIdx + 1}</span>
+          <span style="font-size: 18px;">{myRank.icon}</span>
           <div class="flex-1">
-            <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #7c6fa0;">Your rank</p>
+            <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #7c6fa0;">Your rank · {myRank.label}</p>
           </div>
-          <span class="flex items-center gap-1 text-sm font-bold" style="color: #f0c040; font-family: 'JetBrains Mono', monospace;">
-            <span class="material-symbols-outlined" style="font-size: 14px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-            {auth.user.rivalsWins}W
-          </span>
+          <span class="text-sm font-bold" style="color: {myRank.color}; font-family: 'JetBrains Mono', monospace;">{myMmr} MMR</span>
         </div>
-      {:else if auth.user.rivalsWins === 0}
+      {:else if myMmr === 0}
         <div class="mb-5 px-4 py-3 rounded-xl text-center" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
-          <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Win your first rivals match to appear here!</p>
+          <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Play a ranked match to appear on the ladder!</p>
         </div>
       {/if}
     {/if}
@@ -170,10 +170,11 @@
           {@const medal = MEDAL[i]}
           {@const isMe = auth.user?.username === entry.username}
           {@const winRate = entry.gamesPlayed > 0 ? Math.round((entry.rivalsWins / entry.gamesPlayed) * 100) : 0}
+          {@const r = mmrRankFor(entry.rankedMmr ?? 0)}
           <a
             href="/users/{entry.username}"
             class="flex items-center gap-3 rounded-xl px-4 py-3 transition-all active:scale-[0.99]"
-            style="text-decoration: none; color: inherit; background: {isMe ? 'rgba(240,192,64,0.06)' : 'linear-gradient(145deg, #241f29 0%, #14111a 100%)'}; border: 1px solid {isMe ? 'rgba(240,192,64,0.3)' : 'rgba(167,139,250,0.1)'};"
+            style="text-decoration: none; color: inherit; background: {isMe ? r.color + '14' : 'linear-gradient(145deg, #241f29 0%, #14111a 100%)'}; border: 1px solid {isMe ? r.color + '55' : r.color + '22'};"
             title="View {entry.username}'s profile"
           >
             <!-- Rank badge -->
@@ -185,11 +186,8 @@
               {/if}
             </div>
 
-            <!-- Avatar -->
-            <div class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm"
-              style="background: rgba(167,139,250,0.12); color: #c4b5fd; font-family: 'Cinzel', serif;">
-              {entry.username[0].toUpperCase()}
-            </div>
+            <!-- Rank icon glyph -->
+            <span title={r.label} style="font-size: 18px; filter: drop-shadow(0 0 4px {r.color}88);">{r.icon}</span>
 
             <!-- Info -->
             <div class="flex-1 min-w-0">
@@ -200,15 +198,14 @@
                 {/if}
               </div>
               <p class="text-xs mt-0.5" style="font-family: 'JetBrains Mono', monospace; color: #6b7280;">
-                {rank(entry.rivalsWins)} · {winRate}% WR · {entry.gamesPlayed} games
+                {r.label} · {entry.rivalsWins}-{entry.rivalsLosses ?? 0} · {winRate}% WR
               </p>
             </div>
 
-            <!-- Wins -->
-            <div class="shrink-0 flex items-center gap-1" style="color: #f0c040;">
-              <span class="material-symbols-outlined" style="font-size: 14px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-              <span class="font-black" style="font-family: 'JetBrains Mono', monospace; font-size: 1rem;">{entry.rivalsWins}</span>
-              <span class="text-xs" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">W</span>
+            <!-- MMR -->
+            <div class="shrink-0 flex flex-col items-end" style="color: {r.color};">
+              <span class="font-black" style="font-family: 'JetBrains Mono', monospace; font-size: 1rem;">{entry.rankedMmr ?? 0}</span>
+              <span class="font-mono text-[9px] tracking-widest uppercase" style="color: #4e4635;">MMR</span>
             </div>
           </a>
         {/each}

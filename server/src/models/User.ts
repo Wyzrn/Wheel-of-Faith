@@ -8,6 +8,7 @@ export interface IUser extends Document {
   rivalsWins: number
   rivalsLosses: number
   gamesPlayed: number
+  rankedMmr: number              // Ranked Rivals MMR — climbs/falls per match; drives matchmaking + rank tier
   shards: number              // account-level purchased shards (separate from slot shards)
   gamepasses: string[]        // owned gamepass IDs; stackable passes appear multiple times
   rerollInsuranceLastUsed?: Date
@@ -41,6 +42,7 @@ const UserSchema = new Schema<IUser>({
   rivalsWins:   { type: Number, default: 0 },
   rivalsLosses: { type: Number, default: 0 },
   gamesPlayed:  { type: Number, default: 0 },
+  rankedMmr:    { type: Number, default: 0, index: true },  // ranked Rivals ladder
   shards:                    { type: Number, default: 0 },
   gamepasses:                { type: [String], default: [] },
   rerollInsuranceLastUsed:   { type: Date },
@@ -57,6 +59,7 @@ const UserSchema = new Schema<IUser>({
 })
 
 UserSchema.index({ rivalsWins: -1 })
+UserSchema.index({ rankedMmr: -1 })   // leaderboard sort by ranked MMR
 
 UserSchema.methods.comparePassword = async function (plain: string): Promise<boolean> {
   if (!this.passwordHash) return false

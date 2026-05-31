@@ -4,6 +4,7 @@ import { User } from '../models/User.js'
 import { Character } from '../models/Character.js'
 import { markEvent } from '../lib/challenges.js'
 import { isAdminUsername } from '../lib/admin.js'
+import { mmrRankFor } from '../lib/mmrRanks.js'
 
 // Cookie attributes for the auth token. In production we set
 // SameSite=None+Secure when CROSS_ORIGIN_COOKIES=1 so the itch.io HTML5
@@ -102,6 +103,11 @@ export async function authRoutes(app: FastifyInstance) {
       email: user.email, shards: user.shards ?? 0, gamepasses: user.gamepasses ?? [],
       dailyStreak: user.dailyStreak ?? 0, lastVisitDate: user.lastVisitDate ?? null,
       isAdmin: isAdminUsername(user.username),
+      // Ranked Rivals MMR + derived rank (Copper → Paragon). Sent here so
+      // the rivals menu's ranked CTA can render without a second fetch.
+      rankedMmr: user.rankedMmr ?? 0,
+      rankedRank:      mmrRankFor(user.rankedMmr ?? 0).id,
+      rankedRankLabel: mmrRankFor(user.rankedMmr ?? 0).label,
     } })
   })
 
@@ -134,14 +140,30 @@ export async function authRoutes(app: FastifyInstance) {
     })
   })
 
-  // ── Leaderboard — top 50 users by rivals wins ────────────────────────────
+  // ── Leaderboard — top 50 users by Ranked MMR ──────────────────────────────
+  // Switched from rivalsWins → rankedMmr as the primary sort key. Wins/losses
+  // are still surfaced so the UI can show the secondary "X-Y record". Players
+  // with 0 ranked MMR are excluded so Unranked users don't crowd the board.
   app.get('/leaderboard', async (req, reply) => {
-    const users = await User.find({ rivalsWins: { $gt: 0 } })
-      .sort({ rivalsWins: -1 })
+    const users = await User.find({ rankedMmr: { $gt: 0 } })
+      .sort({ rankedMmr: -1, rivalsWins: -1 })
       .limit(50)
-      .select('username rivalsWins rivalsLosses gamesPlayed')
+      .select('username rivalsWins rivalsLosses gamesPlayed rankedMmr')
       .lean()
-    reply.send({ users })
+    reply.send({
+      users: users.map(u => {
+        const r = mmrRankFor(u.rankedMmr ?? 0)
+        return {
+          username: u.username,
+          rivalsWins: u.rivalsWins,
+          rivalsLosses: u.rivalsLosses,
+          gamesPlayed: u.gamesPlayed,
+          rankedMmr: u.rankedMmr ?? 0,
+          rank: r.id,
+          rankLabel: r.label,
+        }
+      }),
+    })
   })
 
   // ── Rivals stats are now credited inside the WebSocket battle resolver ──

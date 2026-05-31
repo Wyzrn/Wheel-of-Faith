@@ -10,6 +10,7 @@
   import RivalsPreviewIntro from '../../components/RivalsPreviewIntro.svelte'
   import { recordOpponent } from '$lib/recentOpponents'
   import { getRecentlySpun, removeRecentlySpun, type RecentlySpunEntry } from '$lib/recentlySpun'
+  import { MMR_RANKS, mmrRankFor, mmrProgressToNext } from '$lib/mmrRanks'
   import type { SpinResult } from '$lib/session/types'
   import { setRivalsWs, getRivalsWs, clearRivalsWs } from '$lib/stores/rivalsWs'
   import { startOfflineRivals, getOfflineRivalsResult, clearOfflineRivals } from '$lib/stores/offlineRivals'
@@ -20,10 +21,22 @@
   // the fight begins. Auto-advances to 'battle' but can be skipped.
   // 'forfeit_result' shows after a mid-match DC or 60s timeout — server has
   // already credited the win/loss so we just acknowledge the outcome.
-  type Phase = 'menu' | 'searching' | 'create_or_join' | 'waiting' | 'battle_ready' | 'preview' | 'battle' | 'forfeit_result'
+  // 'ranks' shows the 10-tier Ranked ladder.
+  type Phase = 'menu' | 'searching' | 'create_or_join' | 'waiting' | 'battle_ready' | 'preview' | 'battle' | 'forfeit_result' | 'ranks'
 
   let phase = $state<Phase>('menu')
   let forfeitOutcome = $state<'win' | 'loss' | null>(null)
+  // True while the active search/match is a ranked one — drives the
+  // searching screen copy + lets us know whether the post-battle credit
+  // should reflect MMR. The server is authoritative on MMR via the
+  // ranked_result WS message; this flag is just for UI state.
+  let isRankedMatch = $state(false)
+  let lastRankedDelta = $state<{ delta: number; newMmr: number } | null>(null)
+  // Reactive rank meta derived from the auth store — used by the menu's
+  // RANKED CTA and the Ranks tab. Re-evaluates whenever the auth user's
+  // rankedMmr updates (e.g. after a ranked_result WS message).
+  let myMmr  = $derived(auth.user?.rankedMmr ?? 0)
+  let myRank = $derived(mmrRankFor(myMmr))
   let ws    = $state<WebSocket | null>(null)
 
   // Room / match state
@@ -244,11 +257,25 @@
         roomCode = msg.code as string
         isP1 = (msg.isP1 as boolean) ?? true
         partnerName = (msg.opponentUsername as string) ?? 'Opponent'
+        // Server tags ranked matches so we can show the right copy
+        // post-match. The MMR delta itself comes via 'ranked_result'.
+        isRankedMatch = !!msg.ranked
         partnerDone = false
         mySpinsDone = false
         stopSearchTimer()
         navigateToSpin()
         break
+      // Ranked match resolved — server reports the new MMR and delta
+      // for THIS player. Patch the auth store optimistically so the
+      // menu chip updates without a refetch.
+      case 'ranked_result': {
+        const delta = typeof msg.delta === 'number' ? msg.delta : 0
+        const newMmr = typeof msg.newMmr === 'number' ? msg.newMmr : (auth.user?.rankedMmr ?? 0)
+        lastRankedDelta = { delta, newMmr }
+        const rank = mmrRankFor(newMmr)
+        auth.applyRankedDelta(newMmr, rank.id, rank.label)
+        break
+      }
       case 'partner_joined':
         partnerName = (msg.username as string) ?? 'Opponent'
         navigateToSpin()
@@ -323,9 +350,22 @@
   }
 
   function findMatch() {
+    isRankedMatch = false
     connectWs(() => setTimeout(() => ws?.send(JSON.stringify({
       type: 'find_match',
       score: auth.user?.rivalsWins ?? 0,
+    })), 100))
+    startSearchTimer()
+    phase = 'searching'
+  }
+
+  // Ranked variant — sends find_ranked instead. Server pulls live MMR
+  // from the User doc and pairs by MMR proximity (growing tolerance).
+  function findRankedMatch() {
+    if (!auth.loggedIn) { goto('/login'); return }
+    isRankedMatch = true
+    connectWs(() => setTimeout(() => ws?.send(JSON.stringify({
+      type: 'find_ranked',
     })), 100))
     startSearchTimer()
     phase = 'searching'
@@ -335,6 +375,7 @@
     ws?.send(JSON.stringify({ type: 'cancel_match' }))
     stopSearchTimer()
     ws?.close()
+    isRankedMatch = false
     phase = 'menu'
   }
 
@@ -433,7 +474,39 @@
           </div>
         </button>
 
-        <!-- Find Match -->
+        <!-- Ranked Match — climbs/falls on the MMR ladder. Shows the player's
+             current rank + MMR inline so the CTA itself is the rank chip
+             they're trying to grow. Format: [pfp circle] [MMR] RANKED [icon]. -->
+        <button
+          onclick={() => auth.loggedIn ? findRankedMatch() : goto('/login')}
+          class="py-4 rounded-2xl text-left px-5 transition-all hover:brightness-110 active:scale-[0.98]" use:tilt={{ max: 5 }}
+          style="background: linear-gradient(135deg, {myRank.color}22 0%, rgba(20,15,30,0.95) 60%); border: 1px solid {myRank.color}66; box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 1px 1px 0 {myRank.color}1a, 0 0 30px {myRank.color}22; cursor: pointer;"
+        >
+          <div class="flex items-center gap-3">
+            <!-- Avatar circle: first letter of username -->
+            <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-bold"
+              style="background: {myRank.color}33; border: 1px solid {myRank.color}88; color: #ffdf96; font-family: 'Cinzel', serif; font-size: 1.1rem;">
+              {(auth.user?.username ?? '?')[0].toUpperCase()}
+            </div>
+            <!-- MMR number -->
+            <div class="flex flex-col items-center" style="min-width: 50px;">
+              <span class="font-mono font-black text-base" style="color: {myRank.color}; line-height: 1;">{myMmr}</span>
+              <span class="font-mono text-[8px] tracking-widest uppercase" style="color: #9a907b;">MMR</span>
+            </div>
+            <!-- "RANKED" label -->
+            <div class="flex-1 text-center">
+              <p class="font-black tracking-[0.22em]" style="font-family: 'Cinzel', serif; color: {myRank.color}; font-size: 1rem;">RANKED</p>
+              <p class="font-mono text-[9px] tracking-widest uppercase mt-0.5" style="color: #9a907b;">{myRank.label}</p>
+            </div>
+            <!-- Rank icon -->
+            <span style="font-size: 28px; filter: drop-shadow(0 0 8px {myRank.color}88);">{myRank.icon}</span>
+          </div>
+          {#if !auth.loggedIn}
+            <p class="text-xs mt-1.5 text-center" style="color: #f0c040; font-family: 'JetBrains Mono', monospace;">Log in to play ranked</p>
+          {/if}
+        </button>
+
+        <!-- Find Match (casual) -->
         <button
           onclick={() => auth.loggedIn ? findMatch() : goto('/login')}
           class="py-4 rounded-2xl text-left px-6 transition-all hover:brightness-110 active:scale-[0.98]" use:tilt={{ max: 5 }}
@@ -480,8 +553,27 @@
         </button>
       </div>
 
-      <!-- Leaderboard -->
-      <div class="mt-4">
+      <!-- Ranks + Leaderboard side-by-side -->
+      <div class="mt-4 flex gap-2">
+        <button
+          onclick={() => phase = 'ranks'}
+          class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all hover:brightness-110 active:scale-[0.98]"
+          style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.22); cursor: pointer;"
+        >
+          <span class="material-symbols-outlined" style="color: #a78bfa; font-size: 18px;">military_tech</span>
+          <span class="font-mono text-xs tracking-widest uppercase font-bold" style="color: #a78bfa;">Ranks</span>
+        </button>
+        <a href="/leaderboard"
+          class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all hover:brightness-110 active:scale-[0.98]"
+          style="background: rgba(240,192,64,0.05); border: 1px solid rgba(240,192,64,0.2); text-decoration: none;"
+        >
+          <span class="material-symbols-outlined" style="color: #f0c040; font-size: 18px; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+          <span class="font-mono text-xs tracking-widest uppercase font-bold" style="color: #f0c040;">Leaderboard</span>
+        </a>
+      </div>
+
+      <!-- Old leaderboard link (replaced by the two-tile row above) -->
+      <div class="hidden">
         <a href="/leaderboard"
           class="flex items-center gap-3 w-full px-5 py-3.5 rounded-xl transition-all hover:brightness-110 active:scale-[0.98]"
           style="background: rgba(240,192,64,0.05); border: 1px solid rgba(240,192,64,0.2); text-decoration: none; box-shadow: inset 1px 1px 0 rgba(255,223,150,0.04);"
@@ -562,9 +654,9 @@
             <span style="font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: #34d399;">{searchDisplay}</span>
           </div>
         </div>
-        <h2 style="font-family: 'Cinzel', serif; font-size: 1.3rem; font-weight: 700; color: #34d399;">Searching for a rival…</h2>
+        <h2 style="font-family: 'Cinzel', serif; font-size: 1.3rem; font-weight: 700; color: {isRankedMatch ? '#a78bfa' : '#34d399'};">{isRankedMatch ? 'Ranked match…' : 'Searching for a rival…'}</h2>
         <p class="text-xs" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">
-          Matching with the closest rival · bot fallback at 2:00
+          {isRankedMatch ? 'Pairing by MMR · no bot fallback in ranked' : 'Matching with the closest rival · bot fallback at 2:00'}
         </p>
         <button
           onclick={cancelSearch}
@@ -636,6 +728,57 @@
           </button>
         {/if}
         <button onclick={() => { ws?.close(); phase = 'menu' }} class="text-xs" style="color: #4e4635; font-family: 'JetBrains Mono', monospace; cursor: pointer;">← Back to menu</button>
+      </div>
+
+    <!-- ── Ranks ladder — Copper → Paragon, shows current position. ────────── -->
+    {:else if phase === 'ranks'}
+      {@const progress = mmrProgressToNext(myMmr)}
+      <button onclick={() => phase = 'menu'} class="mb-4 font-mono text-xs" style="color: #4e4635; background: none; border: none; cursor: pointer;">← Back</button>
+      <h2 class="mb-1" style="font-family: 'Cinzel', serif; font-size: 1.3rem; color: #ffdf96;">Ranked Ladder</h2>
+      <p class="mb-4 font-mono text-[10px]" style="color: #4e4635;">
+        Win ranked matches to climb — gain 3-5 MMR per win, lose 3-5 per loss, scaled by the MMR gap with your opponent.
+      </p>
+      <!-- Current standing card -->
+      <div class="rounded-2xl px-4 py-4 mb-4" style="background: linear-gradient(135deg, {myRank.color}22 0%, rgba(20,15,30,0.95) 60%); border: 1px solid {myRank.color}66;">
+        <div class="flex items-center gap-3">
+          <span style="font-size: 32px; filter: drop-shadow(0 0 10px {myRank.color}88);">{myRank.icon}</span>
+          <div class="flex-1">
+            <p class="font-mono text-[10px] tracking-widest uppercase" style="color: #9a907b;">Your Rank</p>
+            <p class="font-bold text-lg" style="font-family: 'Cinzel', serif; color: {myRank.color};">{myRank.label}</p>
+          </div>
+          <div class="text-right">
+            <p class="font-mono font-black text-2xl" style="color: {myRank.color};">{myMmr}</p>
+            <p class="font-mono text-[9px] tracking-widest uppercase" style="color: #9a907b;">MMR</p>
+          </div>
+        </div>
+        {#if progress.next}
+          <div class="mt-3" style="height: 5px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden;">
+            <div style="height: 100%; width: {(progress.progress * 100).toFixed(1)}%; background: {myRank.color}; transition: width 0.6s ease-out;"></div>
+          </div>
+          <p class="font-mono text-[9px] mt-1.5" style="color: #4e4635;">
+            {progress.next.threshold - myMmr} MMR to {progress.next.label} →
+          </p>
+        {/if}
+      </div>
+      <!-- Full ladder -->
+      <div class="flex flex-col gap-1.5">
+        {#each MMR_RANKS as r (r.id)}
+          {@const reached = myMmr >= r.threshold}
+          {@const current = myRank.id === r.id}
+          <div class="flex items-center gap-3 px-3 py-2 rounded-lg"
+            style="background: {current ? r.color + '22' : reached ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)'};
+                   border: 1px solid {current ? r.color + '88' : reached ? r.color + '33' : 'rgba(255,255,255,0.06)'};
+                   opacity: {reached || current ? 1 : 0.55};">
+            <span style="font-size: 18px;">{r.icon}</span>
+            <div class="flex-1">
+              <p class="font-mono text-xs font-bold" style="color: {r.color};">{r.label}</p>
+              <p class="font-mono text-[10px]" style="color: #9a907b;">≥ {r.threshold} MMR</p>
+            </div>
+            {#if current}
+              <span class="font-mono text-[9px] px-2 py-0.5 rounded" style="background: {r.color}33; color: {r.color}; font-weight: 700;">YOU</span>
+            {/if}
+          </div>
+        {/each}
       </div>
 
     <!-- ── Forfeit result: shown after server-credited DC/timeout outcomes ──── -->

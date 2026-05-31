@@ -17,6 +17,12 @@ export interface AuthUser {
   dailyStreak?: number
   lastVisitDate?: string | null
   isAdmin?: boolean
+  // Ranked Rivals MMR + rank tier (Copper → Paragon). Populated by /auth/me;
+  // updated optimistically after each ranked match via the `ranked_result`
+  // WS message so the menu chip stays fresh without a refetch.
+  rankedMmr?: number
+  rankedRank?: string
+  rankedRankLabel?: string
 }
 
 // Svelte 5 reactive auth state
@@ -90,6 +96,14 @@ export const auth = {
 
   updateShopData(shards: number, gamepasses: string[]) {
     if (_user) _user = { ..._user, shards, gamepasses }
+  },
+
+  // Called by the rivals WS when a ranked match resolves. The server is
+  // authoritative on the new MMR value; we just patch local state so the
+  // menu chip reflects the change immediately. Rank label is recomputed
+  // by the caller (avoids importing mmrRanks here for a single field).
+  applyRankedDelta(newMmr: number, rank: string, rankLabel: string) {
+    if (_user) _user = { ..._user, rankedMmr: newMmr, rankedRank: rank, rankedRankLabel: rankLabel }
   },
 
   // Battle results are credited server-side via the rivals WebSocket
