@@ -22,12 +22,29 @@ export type WarStatus = 'searching' | 'prep' | 'active' | 'resolved' | 'cancelle
 
 // Snapshot of one war participant's attack + defense team at match time.
 // Frozen so swapping teams mid-war can't change defenders or attack lineups.
+// `defenseTeamAlive` mirrors `defenseTeam` at creation and shrinks as
+// defenders die — when it reaches [] the member is fully defeated and
+// can't be attacked again.
 export interface WarMemberSnapshot {
   userId: mongoose.Types.ObjectId
   username: string
-  attackTeam:  string[]   // shareIds
-  defenseTeam: string[]   // shareIds
-  attacksRemaining: number  // each member starts with 2; Phase 3 decrements
+  attackTeam:  string[]        // shareIds — used for ALL of this member's attacks; doesn't deplete
+  defenseTeam: string[]        // shareIds — original roster (immutable after match)
+  defenseTeamAlive: string[]   // shareIds still alive in defense (defenders permadeath in-war)
+  attacksRemaining: number     // each member starts with 2; -1 per attack
+}
+
+// Per-attack audit log. Pushed into War.attackLog on every successful
+// /war/attack call. Drives the war timeline UI + end-of-war recap.
+export interface WarAttackLog {
+  attackerUserId: mongoose.Types.ObjectId
+  attackerUsername: string
+  defenderUserId: mongoose.Types.ObjectId
+  defenderUsername: string
+  killShareIds: string[]   // defender shareIds that died this attack
+  attackerWon: boolean     // true = full clear of remaining defenders
+  scoreAwarded: number     // points credited to attacker's clan
+  attackedAt: Date
 }
 
 export interface IWar extends Document {
@@ -61,8 +78,9 @@ export interface IWar extends Document {
   // both default to 0 until attacks land).
   clan1Score: number
   clan2Score: number
-  winnerClanId?: mongoose.Types.ObjectId
-  mmrDelta?: number
+  winnerClanId?: mongoose.Types.ObjectId   // unset on draw
+  mmrDelta?: number                         // amount applied at resolution
+  attackLog: WarAttackLog[]
 }
 
 const WarMemberSnapshotSchema = new Schema<WarMemberSnapshot>({
@@ -70,7 +88,19 @@ const WarMemberSnapshotSchema = new Schema<WarMemberSnapshot>({
   username:         { type: String, required: true },
   attackTeam:       { type: [String], default: [] },
   defenseTeam:      { type: [String], default: [] },
+  defenseTeamAlive: { type: [String], default: [] },
   attacksRemaining: { type: Number, default: 2 },
+}, { _id: false })
+
+const WarAttackLogSchema = new Schema<WarAttackLog>({
+  attackerUserId:   { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  attackerUsername: { type: String, required: true },
+  defenderUserId:   { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  defenderUsername: { type: String, required: true },
+  killShareIds:     { type: [String], default: [] },
+  attackerWon:      { type: Boolean, required: true },
+  scoreAwarded:     { type: Number, required: true },
+  attackedAt:       { type: Date, default: Date.now },
 }, { _id: false })
 
 const WarSchema = new Schema<IWar>({
@@ -99,6 +129,7 @@ const WarSchema = new Schema<IWar>({
   clan2Score:     { type: Number, default: 0 },
   winnerClanId:   { type: Schema.Types.ObjectId, ref: 'Clan' },
   mmrDelta:       { type: Number },
+  attackLog:      { type: [WarAttackLogSchema], default: [] },
 })
 
 // Compound index for matchmaking sweep: status='searching' + same size.
@@ -130,4 +161,25 @@ export function matchmakingTolerance(searchSeconds: number): number {
   const fullExpansionSec = 600   // 10 minutes
   const t = Math.max(0, Math.min(1, searchSeconds / fullExpansionSec))
   return Math.round(minTolerance + (maxTolerance - minTolerance) * t)
+}
+
+/** MMR delta applied at war resolution.
+ *
+ *  Win:  +15 to +20 MMR (small base + bonus scaled by score margin).
+ *  Loss: -10 to -20 MMR (bigger swing the more lopsided the loss).
+ *  Draw: 0 to both clans.
+ *
+ *  Margin is normalised against the theoretical max score for the war
+ *  size (members × 2 attacks × 3 points per perfect clear) so a 5v5
+ *  blowout (max 30) and a 20v20 blowout (max 120) scale the same way.
+ */
+export function computeMmrDelta(
+  winnerScore: number, loserScore: number, size: WarSize,
+): { winnerGain: number; loserLoss: number } {
+  const maxPerSide = size * 2 * 3
+  const margin = Math.max(0, winnerScore - loserScore)
+  const marginPct = maxPerSide > 0 ? Math.min(1, margin / maxPerSide) : 0
+  const winnerGain = Math.round(15 + 5  * marginPct)   // 15..20
+  const loserLoss  = Math.round(10 + 10 * marginPct)   // 10..20
+  return { winnerGain, loserLoss }
 }

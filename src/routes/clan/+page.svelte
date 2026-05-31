@@ -5,6 +5,8 @@
   import { auth } from '$lib/stores/auth.svelte'
   import { toast } from '$lib/toast.svelte'
   import { MMR_RANKS, mmrRankFor, mmrProgressToNext, type MmrRank } from '$lib/mmrRanks'
+  import { buildBattleCharacter, simulateTeamBattle } from '$lib/game/battle'
+  import type { SpinResult } from '$lib/session/types'
 
   type ClanRole = 'leader' | 'coLeader' | 'elder' | 'member' | 'none'
   type ClanMember = { _id: string; username: string; rivalsWins: number; gamesPlayed?: number; role: ClanRole }
@@ -29,7 +31,11 @@
   // ── Guild war (Phase 2) ────────────────────────────────────────────────
   type WarSize = 5 | 10 | 15 | 20
   type WarStatus = 'searching' | 'prep' | 'active' | 'resolved' | 'cancelled'
-  type WarMember = { userId: string; username: string; attackTeam: string[]; defenseTeam: string[]; attacksRemaining: number }
+  type WarMember = {
+    userId: string; username: string
+    attackTeam: string[]; defenseTeam: string[]; defenseTeamAlive: string[]
+    attacksRemaining: number
+  }
   type CurrentWar = {
     _id: string; size: WarSize; status: WarStatus
     createdAt: string; matchedAt?: string; prepStartAt?: string; warStartAt?: string; warEndAt?: string
@@ -135,6 +141,97 @@
     if (view === 'war') startWarClock()
     else stopWarClock()
   })
+
+  // ── Attack flow ──────────────────────────────────────────────────────
+  // Pick an enemy → confirm → resolve battle client-side via the existing
+  // simulateTeamBattle (no live UI, instant) → submit kills to the server,
+  // which validates + scores authoritatively. Result modal shows what
+  // happened: who died, who won, score gained.
+  let attackTarget   = $state<{ userId: string; username: string } | null>(null)
+  let attackPhase    = $state<'confirm' | 'running' | 'result' | null>(null)
+  let attackResult   = $state<{ killShareIds: string[]; attackerWon: boolean; scoreAwarded: number; deadNames: string[]; winnerLabel: string } | null>(null)
+
+  function openAttackConfirm(enemy: { userId: string; username: string }) {
+    attackTarget = enemy
+    attackPhase  = 'confirm'
+    attackResult = null
+  }
+  function closeAttackModal() {
+    attackTarget = null
+    attackPhase  = null
+    attackResult = null
+  }
+
+  // Fetch each shareId in parallel and build BattleCharacter[]. Skips
+  // any id that fails to load so a missing roster entry doesn't tank
+  // the whole attack — the rest of the team still fights.
+  async function buildTeam(shareIds: string[]): Promise<{ chars: ReturnType<typeof buildBattleCharacter>[]; idsInOrder: string[] }> {
+    const settled = await Promise.allSettled(shareIds.map(id =>
+      fetch(apiUrl(`/api/characters/${id}`), { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+    ))
+    const chars: ReturnType<typeof buildBattleCharacter>[] = []
+    const idsInOrder: string[] = []
+    settled.forEach((s, i) => {
+      if (s.status !== 'fulfilled' || !s.value) return
+      const d = s.value as { name: string; spins: SpinResult[] }
+      chars.push(buildBattleCharacter(d.spins ?? [], d.name ?? 'Unknown'))
+      idsInOrder.push(shareIds[i])
+    })
+    return { chars, idsInOrder }
+  }
+
+  async function executeAttack() {
+    if (!attackTarget || !myClan || !currentWar) return
+    const me = currentWar.myMembers.find(m => m.userId === auth.user?.id)
+    const enemy = currentWar.enemyMembers.find(m => m.userId === attackTarget!.userId)
+    if (!me || !enemy) return
+    if (me.attacksRemaining <= 0) { showToast('err', 'No attacks remaining'); return }
+    if (enemy.defenseTeamAlive.length === 0) { showToast('err', 'Defender already wiped'); return }
+    if (me.attackTeam.length === 0) { showToast('err', 'Set an attack team first'); return }
+
+    attackPhase = 'running'
+    try {
+      const [att, def] = await Promise.all([
+        buildTeam(me.attackTeam),
+        buildTeam(enemy.defenseTeamAlive),
+      ])
+      if (att.chars.length === 0) { showToast('err', "Couldn't load your attack team"); attackPhase = 'confirm'; return }
+      if (def.chars.length === 0) { showToast('err', "Couldn't load defender team"); attackPhase = 'confirm'; return }
+
+      // Run the simulation — instant. Final round's t2Hp tells us which
+      // defenders died; winner field is on the last round too.
+      const rounds = simulateTeamBattle(att.chars, def.chars)
+      const last   = rounds[rounds.length - 1]
+      const finalDefHp = last?.t2Hp ?? def.chars.map(c => c.hp)
+      const killShareIds: string[] = def.idsInOrder.filter((_, i) => (finalDefHp[i] ?? 0) <= 0)
+      const deadNames: string[]    = def.chars.filter((_, i) => (finalDefHp[i] ?? 0) <= 0).map(c => c.name)
+      const attackerWon = last?.winner === 'team1'
+
+      // POST to server — server is authoritative on score.
+      const res = await fetch(apiUrl(`/api/clans/${myClan._id}/war/attack/${attackTarget.userId}`), {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kills: killShareIds }),
+      })
+      const data = await res.json()
+      if (!res.ok) { showToast('err', data.error ?? 'Attack failed'); attackPhase = 'confirm'; return }
+
+      // Refresh the war state from the server response, show result.
+      currentWar = data.war
+      attackResult = {
+        killShareIds,
+        attackerWon: data.attack.attackerWon,
+        scoreAwarded: data.attack.scoreAwarded,
+        deadNames,
+        winnerLabel: attackerWon ? 'Victory' : (killShareIds.length > 0 ? 'Partial' : 'Defeated'),
+      }
+      attackPhase = 'result'
+    } catch (err) {
+      showToast('err', `Attack failed: ${err}`)
+      attackPhase = 'confirm'
+    }
+  }
 
   // ── Guild-war teams (Phase 1) ───────────────────────────────────────────
   // The player picks up to 3 attack-team + 3 defense-team shareIds from
@@ -1206,9 +1303,76 @@
             <p class="font-black text-2xl" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">{currentWar.enemyScore}</p>
           </div>
         </div>
-        <p class="font-mono text-[10px]" style="color: #f0c040; text-align: center;">
-          Attacks land in the next update (Phase 3). For now, watch the clock.
-        </p>
+        <!-- Caller's attacks remaining for this war. -->
+        {@const me = currentWar.myMembers.find(m => m.userId === auth.user?.id)}
+        {#if me}
+          <div class="rounded-xl px-3 py-2 mb-3 flex items-center gap-2" style="background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.20);">
+            <span class="font-mono text-[10px]" style="color: #9a907b;">Your attacks left:</span>
+            <span class="font-mono text-xs font-bold" style="color: #34d399;">{me.attacksRemaining} / 2</span>
+            {#if me.attackTeam.length === 0}
+              <span class="ml-auto font-mono text-[10px]" style="color: #f87171;">⚠ No attack team set</span>
+            {/if}
+          </div>
+        {:else}
+          <p class="font-mono text-[10px] mb-3" style="color: #9a907b; text-align: center;">You're not on this war's roster — watch the clock and cheer.</p>
+        {/if}
+
+        <!-- Enemy roster — one row per defender. Tap to attack. -->
+        <p class="font-mono text-[10px] uppercase tracking-widest mb-2" style="color: #f87171;">Enemy Defenders</p>
+        <div class="flex flex-col gap-1.5">
+          {#each currentWar.enemyMembers as e (e.userId)}
+            {@const wiped = e.defenseTeamAlive.length === 0}
+            {@const canHit = !!me && me.attacksRemaining > 0 && !wiped && me.attackTeam.length > 0}
+            <div class="flex items-center gap-2 px-2 py-2 rounded-lg"
+              style="background: rgba(0,0,0,0.2); border: 1px solid {wiped ? 'rgba(120,120,120,0.18)' : 'rgba(239,68,68,0.18)'}; opacity: {wiped ? 0.4 : 1};">
+              <span class="font-mono text-[11px] flex-1 truncate" style="color: #e9dfeb;">{e.username}</span>
+              <span class="font-mono text-[10px]" style="color: {wiped ? '#6b7280' : '#7dd3fc'};">{e.defenseTeamAlive.length}/{e.defenseTeam.length}🛡</span>
+              <button onclick={() => openAttackConfirm({ userId: e.userId, username: e.username })}
+                disabled={!canHit}
+                class="text-[10px] px-2 py-1 rounded font-mono font-bold disabled:opacity-30"
+                style="background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.32); color: #f87171; cursor: {canHit ? 'pointer' : 'not-allowed'};">
+                {wiped ? 'Wiped' : 'Attack ⚔'}
+              </button>
+            </div>
+          {/each}
+        </div>
+
+        <!-- Attack flow modal (confirm → running → result) -->
+        {#if attackPhase}
+          <div class="fixed inset-0 z-50 flex items-center justify-center px-4" style="background: rgba(0,0,0,0.78); backdrop-filter: blur(6px);">
+            <div class="w-full max-w-sm rounded-2xl px-5 py-5"
+              style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(239,68,68,0.35); box-shadow: 0 20px 60px rgba(0,0,0,0.9);">
+              {#if attackPhase === 'confirm'}
+                <p class="font-mono text-[10px] uppercase tracking-widest mb-1" style="color: #f87171;">Confirm Attack</p>
+                <p class="font-mono text-xs mb-4" style="color: #ffdf96;">Send your attack team against <span style="font-weight:700;">{attackTarget?.username}</span>?</p>
+                <div class="flex gap-2">
+                  <button onclick={closeAttackModal} class="flex-1 py-2 rounded-lg font-mono text-xs" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #9a907b;">Cancel</button>
+                  <button onclick={executeAttack} data-fx="big" class="flex-1 py-2 rounded-lg font-mono text-xs font-bold" style="background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.45); color: #f87171;">⚔ Attack</button>
+                </div>
+              {:else if attackPhase === 'running'}
+                <div class="text-center py-6">
+                  <div class="animate-spin mb-3 mx-auto" style="width: 32px; height: 32px; border: 2px solid rgba(239,68,68,0.2); border-top-color: #f87171; border-radius: 50%;"></div>
+                  <p class="font-mono text-xs" style="color: #f87171;">Resolving battle…</p>
+                </div>
+              {:else if attackPhase === 'result' && attackResult}
+                {@const color = attackResult.attackerWon ? '#34d399' : attackResult.killShareIds.length > 0 ? '#f0c040' : '#f87171'}
+                <p class="font-mono text-[10px] uppercase tracking-widest mb-1" style="color: {color};">{attackResult.winnerLabel}</p>
+                <p class="font-mono text-xs mb-3" style="color: #ffdf96;">
+                  {attackResult.killShareIds.length} of {attackTarget?.username}'s defenders defeated.
+                </p>
+                {#if attackResult.deadNames.length > 0}
+                  <div class="rounded-lg px-3 py-2 mb-3" style="background: rgba(0,0,0,0.3);">
+                    {#each attackResult.deadNames as n}
+                      <p class="font-mono text-[10px]" style="color: #9a907b;">☠ {n}</p>
+                    {/each}
+                  </div>
+                {/if}
+                <p class="font-mono text-xs mb-4 text-center" style="color: {color}; font-weight: 700;">+{attackResult.scoreAwarded} score</p>
+                <button onclick={closeAttackModal} class="w-full py-2.5 rounded-lg font-mono text-xs font-bold" style="background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.30); color: #a78bfa;">Continue</button>
+              {/if}
+            </div>
+          </div>
+        {/if}
       {/if}
 
     {:else if view === 'warStart' && myClan}
