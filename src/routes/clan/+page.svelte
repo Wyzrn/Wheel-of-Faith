@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation'
   import { auth } from '$lib/stores/auth.svelte'
   import { toast } from '$lib/toast.svelte'
+  import { MMR_RANKS, mmrRankFor, mmrProgressToNext, type MmrRank } from '$lib/mmrRanks'
 
   type ClanRole = 'leader' | 'coLeader' | 'elder' | 'member' | 'none'
   type ClanMember = { _id: string; username: string; rivalsWins: number; gamesPlayed?: number; role: ClanRole }
@@ -13,11 +14,89 @@
     _id: string; name: string; tag: string; description: string; motd: string; badge: string
     joinType: 'open' | 'invite' | 'closed'; minWinsRequired: number; maxMembers: number
     memberCount: number; level: number; clanXp: number; totalWins?: number
+    mmr?: number; rank?: string; rankLabel?: string
   }
-  type MyClan = BrowseClan & { members: ClanMember[]; role: ClanRole; joinRequests: JoinRequest[]; leaderId: string }
+  type MyClan = BrowseClan & {
+    members: ClanMember[]; role: ClanRole; joinRequests: JoinRequest[]; leaderId: string
+    // Guild-war ladder + caller's own war teams (returned by /clans/mine).
+    mmr: number; rank: string; rankLabel: string
+    myAttackTeam: string[]; myDefenseTeam: string[]
+  }
 
   // ── State ──────────────────────────────────────────────────────────────────
-  let view = $state<'mine' | 'browse' | 'create' | 'leaderboard' | 'requests' | 'settings' | 'chat' | 'topChars'>('mine')
+  let view = $state<'mine' | 'browse' | 'create' | 'leaderboard' | 'requests' | 'settings' | 'chat' | 'topChars' | 'teams' | 'ranks'>('mine')
+
+  // ── Guild-war teams (Phase 1) ───────────────────────────────────────────
+  // The player picks up to 3 attack-team + 3 defense-team shareIds from
+  // their saved roster. Loaded from /api/characters/:shareId per id in
+  // localStorage (same source the /characters page uses). On save we PATCH
+  // /api/clans/teams and persist on the User doc.
+  type MyChar = {
+    shareId: string; name: string; race: string; archetype: string
+    overall_tier: string; overall_score: number
+  }
+  let myChars         = $state<MyChar[]>([])
+  let myCharsLoading  = $state(false)
+  let teamAttack      = $state<string[]>([])  // shareIds chosen for attack
+  let teamDefense     = $state<string[]>([])  // shareIds chosen for defense
+  let teamsSaving     = $state(false)
+
+  async function loadMyCharacters() {
+    if (myCharsLoading) return
+    myCharsLoading = true
+    try {
+      const ids: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
+      if (ids.length === 0) { myChars = []; return }
+      const settled = await Promise.allSettled(ids.map(id =>
+        fetch(apiUrl(`/api/characters/${id}`), { credentials: 'include' }).then(r => r.ok ? r.json() : null)
+      ))
+      myChars = settled
+        .map(s => s.status === 'fulfilled' ? s.value : null)
+        .filter((d): d is any => !!d)
+        .map((d: any): MyChar => ({
+          shareId: d.shareId, name: d.name, race: d.race, archetype: d.archetype,
+          overall_tier: d.overall_tier ?? '', overall_score: d.overall_score ?? 0,
+        }))
+        .sort((a, b) => b.overall_score - a.overall_score)
+    } catch { myChars = [] }
+    finally { myCharsLoading = false }
+  }
+
+  function openTeamsView() {
+    teamAttack  = [...(myClan?.myAttackTeam  ?? [])]
+    teamDefense = [...(myClan?.myDefenseTeam ?? [])]
+    view = 'teams'
+    if (myChars.length === 0) loadMyCharacters()
+  }
+
+  function toggleTeamPick(team: 'attack' | 'defense', shareId: string) {
+    const list = team === 'attack' ? teamAttack : teamDefense
+    const setList = (next: string[]) => { if (team === 'attack') teamAttack = next; else teamDefense = next }
+    const idx = list.indexOf(shareId)
+    if (idx !== -1) {
+      setList(list.filter(id => id !== shareId))
+      return
+    }
+    if (list.length >= 3) { showToast('err', 'Teams cap at 3 fighters'); return }
+    setList([...list, shareId])
+  }
+
+  async function saveTeams() {
+    if (teamsSaving) return
+    teamsSaving = true
+    try {
+      const res = await fetch(apiUrl('/api/clans/teams'), {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attackTeam: teamAttack, defenseTeam: teamDefense }),
+      })
+      const data = await res.json()
+      if (!res.ok) { showToast('err', data.error ?? 'Save failed'); return }
+      showToast('ok', 'War teams saved')
+      if (myClan) { myClan.myAttackTeam = teamAttack; myClan.myDefenseTeam = teamDefense }
+      view = 'mine'
+    } finally { teamsSaving = false }
+  }
 
   // Top Characters tab — top 10 across all current clan members.
   type TopChar = {
@@ -50,6 +129,12 @@
   let chatEl: HTMLDivElement | null = $state(null)
   let chatPoll: ReturnType<typeof setInterval> | null = null
   let myClan = $state<MyClan | null>(null)
+
+  // Derived rank meta for the active guild banner — uses the client mmrRanks
+  // tier so colours match the Ranks tab.
+  let clanRank = $derived<MmrRank>(myClan ? mmrRankFor(myClan.mmr ?? 0) : mmrRankFor(0))
+  let clanRankProgress = $derived(myClan ? mmrProgressToNext(myClan.mmr ?? 0) : null)
+
   let clans = $state<BrowseClan[]>([])
   let leaderboard = $state<BrowseClan[]>([])
   let loading = $state(true)
@@ -153,13 +238,13 @@
     await loadMyClan()
     view = 'mine'
     creating = false
-    showToast('ok', 'Clan founded')
+    showToast('ok', 'Guild founded')
   }
 
   async function joinClan(c: BrowseClan) {
     actionPending = c._id
     const endpoint = c.joinType === 'invite' ? `/api/clans/${c._id}/request` : `/api/clans/${c._id}/join`
-    const res = await fetch(endpoint, { method: 'POST', credentials: 'include' })
+    const res = await fetch(apiUrl(endpoint), { method: 'POST', credentials: 'include' })
     const data = await res.json().catch(() => ({}))
     actionPending = null
     if (!res.ok) { showToast('err', data.error ?? 'Failed'); return }
@@ -375,7 +460,7 @@
     </a>
     <div class="flex-1 flex items-center justify-center gap-2">
       <span class="material-symbols-outlined" style="color: #f0c040; font-size: 18px; font-variation-settings: 'FILL' 1;">shield</span>
-      <span style="font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #ffdf96; letter-spacing: 0.18em;">CLANS</span>
+      <span style="font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #ffdf96; letter-spacing: 0.18em;">GUILDS</span>
     </div>
     <div style="min-width: 80px;"></div>
   </nav>
@@ -393,14 +478,14 @@
 
     {#if !auth.loggedIn}
       <div class="rounded-xl px-5 py-8 text-center" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
-        <p style="color: #9a907b;"><a href="/login" style="color: #f0c040; text-decoration: underline;">Log in</a> to join or create a clan.</p>
+        <p style="color: #9a907b;"><a href="/login" style="color: #f0c040; text-decoration: underline;">Log in</a> to join or create a guild.</p>
       </div>
 
     {:else if view === 'mine'}
       {#if loading}
         <div class="animate-pulse rounded-2xl h-48" style="background: rgba(255,255,255,0.04);"></div>
       {:else if myClan}
-        <!-- Clan home -->
+        <!-- Guild home -->
         <div class="rounded-2xl px-5 py-5 mb-4" style="background: linear-gradient(135deg, rgba(240,192,64,0.08), rgba(240,192,64,0.03)); border: 1px solid rgba(240,192,64,0.3);">
           <div class="flex items-start gap-3 mb-3">
             <div class="shrink-0 flex items-center justify-center rounded-xl" style="width: 56px; height: 56px; background: linear-gradient(135deg, rgba(240,192,64,0.15), rgba(240,192,64,0.05)); border: 1px solid rgba(240,192,64,0.3); font-size: 28px;">{myClan.badge || '⚔'}</div>
@@ -430,11 +515,57 @@
           {/if}
 
           <!-- Your role banner -->
-          <div class="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg" style="background: rgba(0,0,0,0.2); border: 1px solid {ROLE_META[myClan.role].color}33;">
+          <div class="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg" style="background: rgba(0,0,0,0.2); border: 1px solid {ROLE_META[myClan.role].color}33;">
             <span class="material-symbols-outlined" style="font-size: 16px; color: {ROLE_META[myClan.role].color}; font-variation-settings: 'FILL' 1;">{ROLE_META[myClan.role].icon}</span>
             <span class="font-mono text-xs" style="color: #9a907b;">Your role:</span>
             <span class="font-mono text-xs font-bold" style="color: {ROLE_META[myClan.role].color};">{ROLE_META[myClan.role].label}</span>
           </div>
+
+          <!-- Guild rank + MMR banner. Shows the current tier (Copper →
+               Paragon), the raw MMR number, and a progress bar toward the
+               next tier. Tapping it opens the Ranks tab for the full ladder. -->
+          <button onclick={() => view = 'ranks'} data-fx="big"
+            class="w-full mb-4 px-3 py-2.5 rounded-lg text-left"
+            style="background: linear-gradient(90deg, {clanRank.color}1a, rgba(0,0,0,0.2)); border: 1px solid {clanRank.color}44;">
+            <div class="flex items-center gap-2">
+              <span style="font-size: 18px; filter: drop-shadow(0 0 6px {clanRank.color}66);">{clanRank.icon}</span>
+              <span class="font-mono text-xs" style="color: #9a907b;">Guild rank:</span>
+              <span class="font-mono text-xs font-bold" style="color: {clanRank.color};">{clanRank.label}</span>
+              <span class="font-mono text-xs ml-auto" style="color: #ffdf96; font-weight: 700;">{myClan.mmr ?? 0} MMR</span>
+            </div>
+            {#if clanRankProgress?.next}
+              <div class="mt-1.5" style="height: 4px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden;">
+                <div style="height: 100%; width: {(clanRankProgress.progress * 100).toFixed(1)}%; background: {clanRank.color}; transition: width 0.6s ease-out;"></div>
+              </div>
+              <p class="font-mono text-[9px] mt-1" style="color: #4e4635;">
+                {clanRankProgress.next.threshold - (myClan.mmr ?? 0)} MMR to {clanRankProgress.next.label} →
+              </p>
+            {/if}
+          </button>
+
+          <!-- Guild war teams nudge — shown when caller hasn't set teams yet,
+               or shrunk to a manage button once they have. -->
+          {#if (myClan.myAttackTeam?.length ?? 0) === 0 && (myClan.myDefenseTeam?.length ?? 0) === 0}
+            <button onclick={openTeamsView} data-fx="big"
+              class="w-full mb-4 px-3 py-2.5 rounded-lg text-left flex items-center gap-2"
+              style="background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.30);">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: #f87171;">groups</span>
+              <div class="flex-1">
+                <p class="font-mono text-xs font-bold" style="color: #f87171;">Set your war teams</p>
+                <p class="font-mono text-[10px]" style="color: #9a907b;">Pick up to 3 attackers + 3 defenders before the next war.</p>
+              </div>
+              <span class="font-mono text-xs" style="color: #f87171;">→</span>
+            </button>
+          {:else}
+            <button onclick={openTeamsView} data-fx="big"
+              class="w-full mb-4 px-3 py-2 rounded-lg text-left flex items-center gap-2"
+              style="background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.22);">
+              <span class="material-symbols-outlined" style="font-size: 14px; color: #a78bfa;">groups</span>
+              <span class="font-mono text-[11px]" style="color: #c4b5fd;">War teams:</span>
+              <span class="font-mono text-[11px] font-bold" style="color: #c4b5fd;">{myClan.myAttackTeam?.length ?? 0}⚔ / {myClan.myDefenseTeam?.length ?? 0}🛡</span>
+              <span class="ml-auto font-mono text-[10px]" style="color: #a78bfa;">Manage →</span>
+            </button>
+          {/if}
 
           <!-- Action row: chat / settings / requests -->
           <div class="flex gap-2 mb-3 flex-wrap">
@@ -519,7 +650,7 @@
           {#if isLeader && myClan.memberCount > 1}
             {#if !disbandConfirm}
               <div class="flex gap-2">
-                <button onclick={() => leaveConfirm = true} class="font-mono text-xs px-3 py-1.5 rounded-lg" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #f87171;">Leave Clan</button>
+                <button onclick={() => leaveConfirm = true} class="font-mono text-xs px-3 py-1.5 rounded-lg" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #f87171;">Leave Guild</button>
                 <button onclick={() => disbandConfirm = true} class="font-mono text-xs px-3 py-1.5 rounded-lg" style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.28); color: #f87171;">Disband</button>
               </div>
             {:else}
@@ -529,7 +660,7 @@
               </div>
             {/if}
           {:else if !leaveConfirm}
-            <button onclick={() => leaveConfirm = true} class="font-mono text-xs px-3 py-1.5 rounded-lg" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #f87171;">Leave Clan</button>
+            <button onclick={() => leaveConfirm = true} class="font-mono text-xs px-3 py-1.5 rounded-lg" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #f87171;">Leave Guild</button>
           {:else}
             <div class="flex gap-2">
               <button onclick={leaveClan} class="font-mono text-xs px-3 py-1.5 rounded-lg" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171;">Confirm Leave</button>
@@ -538,12 +669,12 @@
           {/if}
         </div>
       {:else}
-        <!-- Not in a clan: create / browse CTAs -->
+        <!-- Not in a guild: create / browse CTAs -->
         <div class="text-center py-8 mb-6">
           <span class="material-symbols-outlined text-5xl mb-3 block" style="color: #4e4635; font-variation-settings: 'FILL' 1;">shield</span>
-          <p style="font-family: 'Cinzel', serif; color: #9a907b; margin-bottom: 8px;">You are not in a clan.</p>
+          <p style="font-family: 'Cinzel', serif; color: #9a907b; margin-bottom: 8px;">You are not in a guild.</p>
           <div class="flex gap-3 justify-center mt-4">
-            <button onclick={() => view = 'create'} data-fx="big" class="px-5 py-2.5 rounded-lg font-bold text-sm" style="font-family: 'Cinzel', serif; background: rgba(240,192,64,0.12); border: 1px solid rgba(240,192,64,0.3); color: #f0c040;">Create Clan</button>
+            <button onclick={() => view = 'create'} data-fx="big" class="px-5 py-2.5 rounded-lg font-bold text-sm" style="font-family: 'Cinzel', serif; background: rgba(240,192,64,0.12); border: 1px solid rgba(240,192,64,0.3); color: #f0c040;">Create Guild</button>
             <button onclick={browseClans} data-fx="big" class="px-5 py-2.5 rounded-lg font-bold text-sm" style="font-family: 'Cinzel', serif; background: rgba(90,214,239,0.08); border: 1px solid rgba(90,214,239,0.2); color: #5ad6ef;">Browse Clans</button>
           </div>
         </div>
@@ -551,13 +682,13 @@
 
     {:else if view === 'create'}
       <div class="rounded-2xl px-5 py-5" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(78,70,53,0.35);">
-        <h2 class="mb-5" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Found a Clan</h2>
+        <h2 class="mb-5" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Found a Guild</h2>
         {#if createError}
           <p class="text-xs mb-3 px-3 py-2 rounded-lg" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #f87171;">{createError}</p>
         {/if}
         <div class="flex flex-col gap-3">
           <div>
-            <label for="cl-name" class="font-mono text-xs block mb-1" style="color: #9a907b;">Clan Name (3–32 chars)</label>
+            <label for="cl-name" class="font-mono text-xs block mb-1" style="color: #9a907b;">Guild Name (3–32 chars)</label>
             <input id="cl-name" bind:value={createName} maxlength={32} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none;" placeholder="The Chosen Few" />
           </div>
           <div class="flex gap-3">
@@ -582,7 +713,7 @@
           </div>
           <div>
             <label for="cl-desc" class="font-mono text-xs block mb-1" style="color: #9a907b;">Description (optional, 200 chars)</label>
-            <textarea id="cl-desc" bind:value={createDesc} maxlength={200} rows={2} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none; resize: none;" placeholder="Long-form clan blurb…"></textarea>
+            <textarea id="cl-desc" bind:value={createDesc} maxlength={200} rows={2} class="w-full px-3 py-2.5 rounded-lg font-mono text-sm" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #e9dfeb; outline: none; resize: none;" placeholder="Long-form guild blurb…"></textarea>
           </div>
           <div class="flex gap-3">
             <div class="flex-1">
@@ -623,11 +754,11 @@
         </div>
       </div>
 
-      <!-- Clan list -->
+      <!-- Guild list -->
       <div class="flex flex-col gap-2">
         {#each clans as clan}
           {@const jt = JOIN_META[clan.joinType]}
-          <!-- Clan tile is now a link to /clans/[id]. Join action moved to
+          <!-- Guild tile is now a link to /clans/[id]. Join action moved to
                the public clan page so the click intent stays predictable. -->
           <a href={`/clans/${clan._id}`} data-fx="big"
             class="rounded-xl px-3 py-3 flex items-center gap-3 transition-all active:scale-98"
@@ -649,14 +780,14 @@
             <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #4e4635;">chevron_right</span>
           </a>
         {:else}
-          <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">No clans found.</p>
+          <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">No guilds found.</p>
         {/each}
       </div>
 
     {:else if view === 'leaderboard'}
       <div class="flex flex-col gap-2">
         {#each leaderboard as clan, i}
-          <!-- Leaderboard tile → public clan page. -->
+          <!-- Leaderboard tile → public guild page. -->
           <a href={`/clans/${clan._id}`} data-fx="big"
             class="flex items-center gap-3 rounded-xl px-3 py-3 transition-all active:scale-98"
             style="background: linear-gradient(145deg, #241f29 0%, #14111a 100%); border: 1px solid rgba(167,139,250,0.1); text-decoration: none;">
@@ -677,13 +808,13 @@
             </div>
           </a>
         {:else}
-          <p class="text-center py-10 font-mono text-xs" style="color: #4e4635;">No clans yet. Be the first!</p>
+          <p class="text-center py-10 font-mono text-xs" style="color: #4e4635;">No guilds yet. Be the first!</p>
         {/each}
       </div>
 
     {:else if view === 'chat' && myClan}
-      <!-- Clan chat — embedded message wall, polls every 8s while open. -->
-      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to clan</button>
+      <!-- Guild chat — embedded message wall, polls every 8s while open. -->
+      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to guild</button>
       <div class="flex items-center gap-2 mb-3">
         <span class="material-symbols-outlined" style="font-size: 18px; color: #34d399; font-variation-settings: 'FILL' 1;">chat</span>
         <h2 style="font-family: 'Cinzel', serif; font-size: 1.05rem; color: #ffdf96;">[{myClan.tag}] Chat</h2>
@@ -724,7 +855,7 @@
           bind:value={chatInput}
           onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat() } }}
           maxlength={240}
-          placeholder="Message your clan…"
+          placeholder="Message your guild…"
           class="flex-1 px-3 py-2.5 rounded-lg font-mono text-sm"
           style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); color: #e9dfeb; outline: none;"
         />
@@ -736,7 +867,7 @@
       </div>
 
     {:else if view === 'requests' && myClan}
-      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to clan</button>
+      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to guild</button>
       <h2 class="mb-4" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Join Requests ({myClan.joinRequests.length})</h2>
       <div class="flex flex-col gap-2">
         {#each myClan.joinRequests as r}
@@ -755,13 +886,13 @@
       </div>
 
     {:else if view === 'topChars' && myClan}
-      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to clan</button>
+      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to guild</button>
       <h2 class="mb-1" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Top Characters</h2>
       <p class="mb-4 font-mono text-[10px]" style="color: #4e4635;">Highest overall_score across every {myClan.tag} member's roster.</p>
       {#if topCharsLoading}
         <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">Loading…</p>
       {:else if topChars.length === 0}
-        <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">No saved characters in this clan yet.</p>
+        <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">No saved characters in this guild yet.</p>
       {:else}
         <div class="flex flex-col gap-2">
           {#each topChars as c, i (c.shareId)}
@@ -798,10 +929,84 @@
         </div>
       {/if}
 
+    {:else if view === 'teams'}
+      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to guild</button>
+      <h2 class="mb-1" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">War Teams</h2>
+      <p class="mb-4 font-mono text-[10px]" style="color: #4e4635;">
+        Pick up to 3 attackers + 3 defenders from your roster. Attackers fight in guild wars; defenders sit in defense and permadeath in-war (no revival).
+      </p>
+      {#if myCharsLoading}
+        <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">Loading your roster…</p>
+      {:else if myChars.length === 0}
+        <p class="text-center py-8 font-mono text-xs" style="color: #f87171;">
+          No saved characters yet. Spin and save a character first.
+        </p>
+      {:else}
+        {#each ['attack', 'defense'] as side (side)}
+          {@const list  = side === 'attack' ? teamAttack : teamDefense}
+          {@const color = side === 'attack' ? '#f87171' : '#7dd3fc'}
+          {@const icon  = side === 'attack' ? '⚔'      : '🛡'}
+          {@const label = side === 'attack' ? 'Attack Team' : 'Defense Team'}
+          <div class="mb-4 rounded-xl px-3 py-3" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid {color}33;">
+            <div class="flex items-center gap-2 mb-2">
+              <span style="font-size: 16px;">{icon}</span>
+              <span class="font-mono text-xs font-bold" style="color: {color};">{label}</span>
+              <span class="font-mono text-[10px] ml-auto" style="color: #9a907b;">{list.length}/3</span>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              {#each myChars as c (c.shareId)}
+                {@const picked = list.includes(c.shareId)}
+                <button onclick={() => toggleTeamPick(side as 'attack' | 'defense', c.shareId)}
+                  class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-left"
+                  style="background: {picked ? color + '1a' : 'rgba(255,255,255,0.03)'}; border: 1px solid {picked ? color + '88' : 'rgba(255,255,255,0.06)'}; cursor: pointer;">
+                  <span class="font-mono text-[10px] font-black w-6 text-center"
+                    style="color: {picked ? color : '#9a907b'};">{picked ? '✓' : '+'}</span>
+                  <span class="font-mono text-[11px] flex-1 truncate" style="color: #e9dfeb;">{c.name}</span>
+                  <span class="font-mono text-[9px] px-1 rounded" style="background: rgba(240,192,64,0.18); color: #f0c040;">{c.overall_tier}</span>
+                  <span class="font-mono text-[9px]" style="color: #4e4635;">{c.race}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/each}
+        <button onclick={saveTeams} disabled={teamsSaving}
+          data-fx="big"
+          class="w-full py-3 rounded-lg font-mono text-xs font-bold uppercase tracking-widest disabled:opacity-40"
+          style="background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.35); color: #34d399;">
+          {teamsSaving ? 'Saving…' : 'Save War Teams'}
+        </button>
+      {/if}
+
+    {:else if view === 'ranks'}
+      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to guild</button>
+      <h2 class="mb-1" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Guild Ranks</h2>
+      <p class="mb-4 font-mono text-[10px]" style="color: #4e4635;">
+        Guilds climb the ladder by winning guild wars. Win = +15-20 MMR · Loss = -10 to -20 (depends on margin).
+      </p>
+      <div class="flex flex-col gap-1.5">
+        {#each MMR_RANKS as r (r.id)}
+          {@const reached = (myClan?.mmr ?? 0) >= r.threshold}
+          {@const current = clanRank.id === r.id}
+          <div class="flex items-center gap-3 px-3 py-2 rounded-lg"
+            style="background: {current ? r.color + '22' : reached ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)'};
+                   border: 1px solid {current ? r.color + '88' : reached ? r.color + '33' : 'rgba(255,255,255,0.06)'};
+                   opacity: {reached || current ? 1 : 0.55};">
+            <span style="font-size: 18px;">{r.icon}</span>
+            <div class="flex-1">
+              <p class="font-mono text-xs font-bold" style="color: {r.color};">{r.label}</p>
+              <p class="font-mono text-[10px]" style="color: #9a907b;">≥ {r.threshold} MMR</p>
+            </div>
+            {#if current}
+              <span class="font-mono text-[9px] px-2 py-0.5 rounded" style="background: {r.color}33; color: {r.color}; font-weight: 700;">YOU</span>
+            {/if}
+          </div>
+        {/each}
+      </div>
+
     {:else if view === 'settings' && myClan && canEdit}
       <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back</button>
       <div class="rounded-2xl px-5 py-5" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(78,70,53,0.35);">
-        <h2 class="mb-5" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Clan Settings</h2>
+        <h2 class="mb-5" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Guild Settings</h2>
         <div class="flex flex-col gap-3">
           <div>
             <label for="s-badge" class="font-mono text-xs block mb-1" style="color: #9a907b;">Badge</label>

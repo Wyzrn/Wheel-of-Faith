@@ -2763,12 +2763,12 @@
           </a>
         </div>
 
-        <!-- Clan + Achievements + Replays row -->
+        <!-- Guild + Achievements + Replays row -->
         <div class="menu-entry flex gap-2" style="--menu-delay: 460ms;">
           <a href="/clan" style="text-decoration: none; flex: 1;">
             <div class="menu-cta metal-stamp-amber w-full py-3 rounded-lg relative text-center cursor-pointer" use:tilt={{ max: 5 }}
               style="font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: #1c0a00;">
-              ⚑ Clan
+              ⚑ Guild
             </div>
           </a>
           <a href="/achievements" style="text-decoration: none; flex: 1;">

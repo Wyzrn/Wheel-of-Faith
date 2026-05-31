@@ -7,6 +7,20 @@ import mongoose from 'mongoose'
 import { Clan, clanLevelFromXp, clanRoleOf, canManage, MAX_CLAN_MESSAGES, CLAN_MESSAGE_MAX_LENGTH, type ClanRole } from '../models/Clan.js'
 import { User } from '../models/User.js'
 import { Character } from '../models/Character.js'
+import { mmrRankFor } from '../lib/mmrRanks.js'
+
+// Clan-war teams: each side caps at 3 character shareIds. A player must own
+// at least 1 character to join a clan; the teams can be set later (they're
+// nudged to set them after joining and required before being included in a
+// war roster).
+const MAX_TEAM_SIZE = 3
+async function userOwnsAllShareIds(userId: string, shareIds: string[]): Promise<boolean> {
+  if (shareIds.length === 0) return true
+  const uOid = new mongoose.Types.ObjectId(userId)
+  const owned = await Character.find({ shareId: { $in: shareIds }, userId: uOid }).select('shareId').lean()
+  const ownedSet = new Set(owned.map(c => c.shareId))
+  return shareIds.every(id => ownedSet.has(id))
+}
 
 // Shape returned to the client. Computed fields (memberCount, level, totalWins,
 // role) are added on top of the lean clan document.
@@ -24,6 +38,9 @@ interface ClanResponse {
   level: number
   clanXp: number
   totalWins?: number
+  mmr: number
+  rank: string
+  rankLabel: string
 }
 
 function escapeRegex(s: string) {
@@ -53,11 +70,15 @@ export async function clanRoutes(app: FastifyInstance) {
       filter.minWinsRequired = { $lte: Number(maxRequired) }
     }
     const clans = await Clan.find(filter).limit(40).lean()
-    const result: ClanResponse[] = clans.map(c => ({
-      _id: c._id, name: c.name, tag: c.tag, description: c.description, motd: c.motd, badge: c.badge,
-      joinType: c.joinType, minWinsRequired: c.minWinsRequired, maxMembers: c.maxMembers,
-      memberCount: c.memberIds.length, level: clanLevelFromXp(c.clanXp ?? 0), clanXp: c.clanXp ?? 0,
-    }))
+    const result: ClanResponse[] = clans.map(c => {
+      const r = mmrRankFor(c.mmr ?? 0)
+      return {
+        _id: c._id, name: c.name, tag: c.tag, description: c.description, motd: c.motd, badge: c.badge,
+        joinType: c.joinType, minWinsRequired: c.minWinsRequired, maxMembers: c.maxMembers,
+        memberCount: c.memberIds.length, level: clanLevelFromXp(c.clanXp ?? 0), clanXp: c.clanXp ?? 0,
+        mmr: c.mmr ?? 0, rank: r.id, rankLabel: r.label,
+      }
+    })
     reply.send({ clans: result })
   })
 
@@ -101,6 +122,14 @@ export async function clanRoutes(app: FastifyInstance) {
       }).filter(Boolean)
     }
 
+    // Caller's own clan-war teams (so the client doesn't have to round-trip
+    // /auth/me right after loading the clan). Empty arrays are fine — they
+    // mean the player hasn't set teams yet and the UI nudges them to do so.
+    const me = await User.findById(req.userId).select('clanAttackTeam clanDefenseTeam').lean()
+
+    const mmr = clan.mmr ?? 0
+    const rank = mmrRankFor(mmr)
+
     reply.send({
       clan: {
         ...clan,
@@ -109,6 +138,13 @@ export async function clanRoutes(app: FastifyInstance) {
         level: clanLevelFromXp(clan.clanXp ?? 0),
         role,
         joinRequests,
+        // Clan-war ladder
+        mmr,
+        rank: rank.id,
+        rankLabel: rank.label,
+        // Caller's own teams — only meaningful for this requester
+        myAttackTeam:  me?.clanAttackTeam  ?? [],
+        myDefenseTeam: me?.clanDefenseTeam ?? [],
       },
     })
   })
@@ -118,14 +154,19 @@ export async function clanRoutes(app: FastifyInstance) {
     config: { rateLimit: { max: 30, timeWindow: '1m' } },
   }, async (_req, reply) => {
     const clans = await Clan.find().lean()
+    // Leaderboard now sorts by clan MMR (war ladder) rather than aggregate
+    // member rivals wins. The old totalWins is still returned so the UI can
+    // show it as a secondary stat if it wants.
     const enriched = await Promise.all(clans.map(async c => {
       const totalWins = await totalWinsFor(c.memberIds)
+      const r = mmrRankFor(c.mmr ?? 0)
       return {
         _id: c._id, name: c.name, tag: c.tag, badge: c.badge, joinType: c.joinType,
         memberCount: c.memberIds.length, level: clanLevelFromXp(c.clanXp ?? 0), totalWins,
+        mmr: c.mmr ?? 0, rank: r.id, rankLabel: r.label,
       }
     }))
-    enriched.sort((a, b) => b.totalWins - a.totalWins)
+    enriched.sort((a, b) => b.mmr - a.mmr || b.totalWins - a.totalWins)
     reply.send({ clans: enriched.slice(0, 50) })
   })
 
@@ -209,6 +250,14 @@ export async function clanRoutes(app: FastifyInstance) {
     if (clan.joinType === 'closed') return reply.status(403).send({ error: 'clan is closed to new members' })
     if (clan.joinType === 'invite') return reply.status(403).send({ error: 'this clan accepts join requests only — use /request' })
 
+    // Clan wars need at least 1 character to draft a war team. Refuse the
+    // join now rather than letting the player join and immediately discover
+    // they can't participate in wars or get assigned to a roster.
+    const charCount = await Character.countDocuments({ userId: new mongoose.Types.ObjectId(req.userId) })
+    if (charCount === 0) {
+      return reply.status(403).send({ error: 'save at least 1 character before joining a clan (needed for war teams)' })
+    }
+
     clan.memberIds.push(new mongoose.Types.ObjectId(req.userId))
     await clan.save()
     user.clanId = clan._id as mongoose.Types.ObjectId
@@ -234,6 +283,11 @@ export async function clanRoutes(app: FastifyInstance) {
     if (clan.memberIds.length >= clan.maxMembers) return reply.status(409).send({ error: 'clan is full' })
     if ((user.rivalsWins ?? 0) < clan.minWinsRequired) {
       return reply.status(403).send({ error: `${clan.minWinsRequired} rivals wins required to request join` })
+    }
+    // Same gate as /join — requester needs at least 1 character for wars.
+    const charCount = await Character.countDocuments({ userId: new mongoose.Types.ObjectId(req.userId) })
+    if (charCount === 0) {
+      return reply.status(403).send({ error: 'save at least 1 character before requesting to join a clan' })
     }
 
     if (clan.joinRequests.some(r => r.userId.toString() === req.userId)) {
@@ -428,11 +482,13 @@ export async function clanRoutes(app: FastifyInstance) {
     enriched.sort((a, b) => a._tier - b._tier || (b.rivalsWins ?? 0) - (a.rivalsWins ?? 0))
     const totalWins = members.reduce((s, m) => s + (m.rivalsWins ?? 0), 0)
 
+    const r = mmrRankFor(clan.mmr ?? 0)
     reply.send({
       clan: {
         _id: clan._id, name: clan.name, tag: clan.tag, description: clan.description, motd: clan.motd, badge: clan.badge,
         joinType: clan.joinType, minWinsRequired: clan.minWinsRequired, maxMembers: clan.maxMembers,
         memberCount: clan.memberIds.length, level: clanLevelFromXp(clan.clanXp ?? 0), clanXp: clan.clanXp ?? 0,
+        mmr: clan.mmr ?? 0, rank: r.id, rankLabel: r.label,
         totalWins, createdAt: clan.createdAt,
         members: enriched.map(({ _tier, ...rest }) => rest),
       },
@@ -487,6 +543,37 @@ export async function clanRoutes(app: FastifyInstance) {
     }
     await clan.save()
     reply.send({ ok: true, message: clan.messages[clan.messages.length - 1] })
+  })
+
+  // ── PATCH /clans/teams — set the caller's clan-war attack + defense teams ─
+  // Each side is up to MAX_TEAM_SIZE (3) shareIds, drawn from the caller's
+  // own saved characters. Validates ownership server-side so a player can't
+  // smuggle someone else's roster into their war loadout. No clan membership
+  // is required to set teams — the UI can pre-fill before the player joins.
+  app.patch('/clans/teams', {
+    config: { rateLimit: { max: 20, timeWindow: '1m' } },
+  }, async (req: any, reply) => {
+    if (!req.userId) return reply.status(401).send({ error: 'login required' })
+    const body = (req.body ?? {}) as { attackTeam?: unknown; defenseTeam?: unknown }
+    const attackTeam:  string[] = Array.isArray(body.attackTeam)  ? body.attackTeam.filter((x): x is string => typeof x === 'string').slice(0, MAX_TEAM_SIZE)  : []
+    const defenseTeam: string[] = Array.isArray(body.defenseTeam) ? body.defenseTeam.filter((x): x is string => typeof x === 'string').slice(0, MAX_TEAM_SIZE) : []
+
+    // Ownership check — both teams together. Refuse the whole request rather
+    // than silently dropping ids; the client should only ever send ids it
+    // resolved from /api/characters/:shareId moments ago.
+    const allIds = Array.from(new Set([...attackTeam, ...defenseTeam]))
+    if (!(await userOwnsAllShareIds(req.userId, allIds))) {
+      return reply.status(403).send({ error: 'one or more characters are not owned by you' })
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $set: { clanAttackTeam: attackTeam, clanDefenseTeam: defenseTeam } },
+      { new: true },
+    ).select('clanAttackTeam clanDefenseTeam').lean()
+    if (!user) return reply.status(404).send({ error: 'user not found' })
+
+    reply.send({ attackTeam: user.clanAttackTeam, defenseTeam: user.clanDefenseTeam })
   })
 
   // ── POST /clans/:id/transfer/:userId — pass leadership ─────────────────────

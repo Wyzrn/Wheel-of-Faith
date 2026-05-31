@@ -22,6 +22,14 @@ export interface IUser extends Document {
   dailyStreak:       number
   lastVisitDate?:    string   // ISO YYYY-MM-DD of last /auth/me call; drives streak math
   clanId?: mongoose.Types.ObjectId
+  // Per-user clan-war teams. Each is up to 3 shareIds drawn from the user's
+  // own saved characters. Required to participate in a clan war:
+  //   attackTeam  — used to attack enemy defenders (re-usable across attacks)
+  //   defenseTeam — sits in defense during the active war; permadeath in-war
+  // Stored as plain strings (shareIds, not ObjectId refs) because Character
+  // is keyed by shareId everywhere on the client.
+  clanAttackTeam:  string[]
+  clanDefenseTeam: string[]
   createdAt: Date
   comparePassword(plain: string): Promise<boolean>
 }
@@ -41,6 +49,10 @@ const UserSchema = new Schema<IUser>({
   dailyStreak:               { type: Number, default: 0 },
   lastVisitDate:             { type: String },
   clanId:                    { type: Schema.Types.ObjectId, ref: 'Clan', default: null },
+  // Capped at 3 entries each — enforced in the /clans/teams PATCH route
+  // because Mongoose doesn't natively bound array length.
+  clanAttackTeam:            { type: [String], default: [] },
+  clanDefenseTeam:           { type: [String], default: [] },
   createdAt:                 { type: Date, default: Date.now },
 })
 

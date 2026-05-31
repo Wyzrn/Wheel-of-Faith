@@ -17,6 +17,31 @@
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 		<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 		<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+		<!-- itch.io subpath fix: itch.io hosts each HTML5 game under a
+		     randomized URL like html-classic.itch.zone/html/<id>/<hash>/…
+		     and serves index.html from that subpath. SvelteKit's client
+		     router reads window.location.pathname, doesn't recognize the
+		     subpath as a known route, and renders a 404 on initial load.
+		     This pre-hydration script rewrites the URL to '/' when it
+		     doesn't match any known route prefix, so the router boots on
+		     the home page. No-op on Heroku where the pathname IS a real
+		     route. Safe on every page (runs once at load, before
+		     SvelteKit hydrates). -->
+		<script>
+			(function () {
+				try {
+					var path = window.location.pathname;
+					var known = ['/login', '/story', '/rivals', '/clan', '/clans',
+						'/characters', '/character', '/gallery', '/shop', '/friends',
+						'/leaderboard', '/profile', '/achievements', '/replays',
+						'/admin', '/users', '/battle', '/challenges'];
+					var matched = path === '/' || known.some(function (r) {
+						return path === r || path.indexOf(r + '/') === 0;
+					});
+					if (!matched) history.replaceState(null, '', '/');
+				} catch (e) { /* SSR / older browsers — fall through */ }
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

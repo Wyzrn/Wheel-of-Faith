@@ -27,6 +27,7 @@ export interface IClan extends Document {
   minWinsRequired: number                      // analogous to "required trophies" in CoC
   maxMembers: number
   clanXp: number                               // accumulated; used to derive clanLevel
+  mmr: number                                  // clan-war matchmaking rating; drives rank tier
   // Embedded message wall — capped at MAX_MESSAGES so the clan doc stays
   // bounded. Older messages drop off as new ones arrive. Members only.
   // System messages (kind='system') carry challenge codes auto-posted when
@@ -53,6 +54,7 @@ const ClanSchema = new Schema<IClan>({
   minWinsRequired: { type: Number, default: 0, min: 0 },
   maxMembers:     { type: Number, default: 50, min: 2, max: 50 },
   clanXp:         { type: Number, default: 0 },
+  mmr:            { type: Number, default: 0, index: true },  // matchmaking bracket sort key
   messages:       { type: [{
     authorId:       { type: Schema.Types.ObjectId, ref: 'User' },
     authorUsername: { type: String, maxlength: 24 },
