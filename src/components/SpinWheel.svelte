@@ -139,6 +139,26 @@
   let frozenSegments = $state<typeof segments | null>(null)
 
   let canSpin = $derived(spinStatus === 'IDLE')
+
+  // First-spin hint — surfaces "click wheel to spin" if the user hasn't
+  // triggered a spin within 15 seconds of mount, and only the first time
+  // the device sees the wheel (localStorage flag). Cleared once they
+  // actually spin so it never appears mid-session afterward.
+  const FIRST_SPIN_HINT_KEY = 'wof_first_spin_hint_seen'
+  let showFirstSpinHint = $state(false)
+  let _firstSpinHintTimer: ReturnType<typeof setTimeout> | null = null
+  function startFirstSpinHintTimer() {
+    if (typeof window === 'undefined') return
+    try { if (localStorage.getItem(FIRST_SPIN_HINT_KEY)) return } catch { /* opaque storage */ }
+    _firstSpinHintTimer = setTimeout(() => {
+      if (spinStatus === 'IDLE') showFirstSpinHint = true
+    }, 15_000)
+  }
+  function dismissFirstSpinHint() {
+    showFirstSpinHint = false
+    if (_firstSpinHintTimer) { clearTimeout(_firstSpinHintTimer); _firstSpinHintTimer = null }
+    try { localStorage.setItem(FIRST_SPIN_HINT_KEY, '1') } catch { /* ignore */ }
+  }
   // True when a cosmetic wheel skin is active (not the default vanilla wheel).
   let _hasTheme = $derived(!!wheelTheme && wheelTheme.id !== 'default')
   let isRevealed = $derived(spinStatus === 'REVEALED')
@@ -559,16 +579,21 @@
     requestAnimationFrame(() => resizeCanvas())
     const ro = new ResizeObserver(() => requestAnimationFrame(resizeCanvas))
     if (particleCanvas) ro.observe(particleCanvas)
+    startFirstSpinHintTimer()
     return () => {
       ctx.revert()
       idleTween?.kill()
       ro.disconnect()
       if (rafId !== null) cancelAnimationFrame(rafId)
+      if (_firstSpinHintTimer) clearTimeout(_firstSpinHintTimer)
     }
   })
 
   function handleSpin() {
     if (spinStatus !== 'IDLE') return
+    // Clear the 15s "click the wheel" first-spin hint as soon as the user
+    // engages — also persists the seen flag so the hint never returns.
+    dismissFirstSpinHint()
 
     // Capture exact position from idle tween before killing it
     if (idleTween) {
@@ -724,10 +749,19 @@
 
 <div class="sw-root flex flex-col items-center gap-5 w-full mx-auto select-none" style="contain: layout style;">
 
-  <!-- Shake wrapper — GSAP applies translate() here during spin -->
+  <!-- Shake wrapper — GSAP applies translate() here during spin.
+       The whole wheel box is now the spin trigger (no separate button) —
+       click anywhere on the rim/segments to spin. cursor flips to pointer
+       only when actionable so users know the wheel itself is interactive. -->
   <div bind:this={shakeEl} class="sw-stage flex justify-center w-full">
-  <!-- Wheel + canvas wrapper — CSS Grid overlay so canvas and SVG share identical pixel bounds -->
-  <div class="sw-wheel-box {_hasTheme ? wheelTheme!.cssClass : ''}" style="position: relative; display: grid; width: clamp(280px, min(90vw, 85vh), 500px); max-width: 500px; aspect-ratio: 1/1; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${_hasTheme ? `drop-shadow(0 0 32px ${wheelTheme!.glow}) drop-shadow(0 0 16px ${wheelTheme!.glow})` : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(90,214,239,0.15))'}`}; {_hasTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
+  <div
+    class="sw-wheel-box {_hasTheme ? wheelTheme!.cssClass : ''}"
+    onclick={() => { if (canSpin && spinStatus === 'IDLE') handleSpin() }}
+    onkeydown={(e) => { if ((e.key === ' ' || e.key === 'Enter') && canSpin && spinStatus === 'IDLE') { e.preventDefault(); handleSpin() } }}
+    role="button"
+    tabindex={canSpin && spinStatus === 'IDLE' ? 0 : -1}
+    aria-label={canSpin && spinStatus === 'IDLE' ? 'Spin the wheel' : 'Wheel'}
+    style="position: relative; display: grid; width: clamp(260px, min(90vw, calc(82vh - 180px)), 460px); max-width: 460px; aspect-ratio: 1/1; cursor: {canSpin && spinStatus === 'IDLE' ? 'pointer' : 'default'}; filter: {_perfTier === 'low' ? 'drop-shadow(0 0 24px rgba(0,0,0,0.85))' : `drop-shadow(0 0 48px rgba(0,0,0,0.97)) ${_hasTheme ? `drop-shadow(0 0 32px ${wheelTheme!.glow}) drop-shadow(0 0 16px ${wheelTheme!.glow})` : 'drop-shadow(0 0 24px rgba(240,192,64,0.34)) drop-shadow(0 0 12px rgba(90,214,239,0.15))'}`}; {_hasTheme && _perfTier !== 'low' ? 'animation: cursedPulse 3s ease-in-out infinite;' : ''}">
     <svg
       bind:this={svgEl}
       viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
@@ -1084,21 +1118,21 @@
   </div>
   </div><!-- end shake wrapper -->
 
-  <!-- Spin button — pulses gently when idle so new users notice the call-to-action -->
-  <button
-    onclick={handleSpin}
-    disabled={!canSpin}
-    data-fx="big"
-    class="sw-spin-btn {canSpin ? 'metal-stamp-gold spin-fx spin-btn-idle' : 'obsidian-slab'} px-10 py-3 rounded-lg relative disabled:opacity-40 disabled:cursor-not-allowed"
-    style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; {!canSpin ? 'color: #9a907b; border: 1px solid #4e4635;' : ''}"
-  >
-    {#if canSpin}<div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>{/if}
-    {spinStatus === 'IDLE' ? 'Spin Fate' : spinStatus === 'SPINNING' ? 'Spinning…' : 'Spun'}
-  </button>
+  <!-- First-spin hint — if the user has never seen the wheel spin before and
+       hasn't clicked it within 15 seconds of mount, surface a small
+       prompt under the wheel. localStorage flag means it only ever shows
+       once per device. The spin button used to be its own UI element but
+       was removed — the wheel itself is now the click target. -->
+  {#if showFirstSpinHint && spinStatus === 'IDLE'}
+    <p class="sw-outcomes font-mono text-[11px] tracking-[0.18em] uppercase animate-pulse"
+       style="color: #f0c040; text-shadow: 0 0 8px rgba(240,192,64,0.6);">
+      👆 click wheel to spin
+    </p>
+  {/if}
 
-  <!-- Segment count + max-weight peek — small data badge under the button so
-       users always know how many possible outcomes are on this wheel. -->
-  {#if spinStatus === 'IDLE'}
+  <!-- Segment count badge — small data hint so the player knows how many
+       possible outcomes are on this wheel. -->
+  {#if spinStatus === 'IDLE' && !showFirstSpinHint}
     <p class="sw-outcomes font-mono text-[10px] tracking-[0.16em] uppercase" style="color: #4e4635;">
       {activeSegments.length} possible outcomes
     </p>

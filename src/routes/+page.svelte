@@ -3227,12 +3227,13 @@
           </div>
         {/if}
 
-        <!-- Category heading (outside overlay so it stays visible).
-             z-[70] lifts it above the wheel subtree (z-[60]) so themed
-             wheel effects (spike crowns, accretion rings, flame tongues)
-             that extend outside the rim never overlap or wash out the
-             "spinning for X" label. -->
-        <div class="relative z-[70] text-center mb-3 md:mb-5" style="animation: fadeIn 0.25s ease-out forwards;">
+        <!-- Category heading. While spinning we lift it above the wheel
+             subtree (z-[70] over wheel z-[60]) so themed effects — spike
+             crowns, accretion rings, flame tongues — don't bleed over the
+             "spinning for X" label. During the reveal phase we drop the
+             heading below the result modal so it doesn't cover the
+             result label. -->
+        <div class="relative {isRevealed ? '' : 'z-[70]'} text-center mb-3 md:mb-5" style="animation: fadeIn 0.25s ease-out forwards;">
           <p class="text-xs tracking-[0.22em] uppercase mb-1.5"
             style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">
             {isRevealed ? 'result revealed' : 'spinning for'}

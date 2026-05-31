@@ -1425,11 +1425,10 @@
       {/if}
 
       <!-- Category heading above the wheel (matches the main game).
-           position: relative + z-index 40 lifts it above the SpinWheel's
-           themed effects (spike crowns, accretion rings, flame tongues,
-           starfields) that extend outside the rim and would otherwise
-           wash out the "spinning for X" label. -->
-      <div class="relative text-center mb-1" style="z-index: 40; animation: fadeIn 0.25s ease-out forwards;">
+           Lifted above the wheel + themed effects while idle/spinning, but
+           drops below the result modal during the reveal so it doesn't
+           cover the result label. -->
+      <div class="relative text-center mb-1" style="z-index: {pendingResult ? 'auto' : 40}; animation: fadeIn 0.25s ease-out forwards;">
         <p class="text-xs tracking-[0.22em] uppercase mb-1.5"
           style="font-family: var(--font-mono, monospace); color: #9a907b;">
           {pendingResult ? 'result revealed' : 'spinning for'}
