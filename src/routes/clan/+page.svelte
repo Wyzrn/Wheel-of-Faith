@@ -762,7 +762,11 @@
             class="w-full mb-4 px-3 py-2.5 rounded-lg text-left"
             style="background: linear-gradient(90deg, {clanRank.color}1a, rgba(0,0,0,0.2)); border: 1px solid {clanRank.color}44;">
             <div class="flex items-center gap-2">
-              <span style="font-size: 18px; filter: drop-shadow(0 0 6px {clanRank.color}66);">{clanRank.icon}</span>
+              {#if clanRank.badge}
+                <img src={clanRank.badge} alt={clanRank.label} width="22" height="22" style="display: block; filter: drop-shadow(0 0 6px {clanRank.color}66);" />
+              {:else}
+                <span style="font-size: 18px; filter: drop-shadow(0 0 6px {clanRank.color}66);">{clanRank.icon}</span>
+              {/if}
               <span class="font-mono text-xs" style="color: #9a907b;">Guild rank:</span>
               <span class="font-mono text-xs font-bold" style="color: {clanRank.color};">{clanRank.label}</span>
               <span class="font-mono text-xs ml-auto" style="color: #ffdf96; font-weight: 700;">{myClan.mmr ?? 0} MMR</span>
@@ -1243,7 +1247,11 @@
             style="background: {current ? r.color + '22' : reached ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)'};
                    border: 1px solid {current ? r.color + '88' : reached ? r.color + '33' : 'rgba(255,255,255,0.06)'};
                    opacity: {reached || current ? 1 : 0.55};">
-            <span style="font-size: 18px;">{r.icon}</span>
+            {#if r.badge}
+              <img src={r.badge} alt={r.label} width="22" height="22" style="display: block;" />
+            {:else}
+              <span style="font-size: 18px;">{r.icon}</span>
+            {/if}
             <div class="flex-1">
               <p class="font-mono text-xs font-bold" style="color: {r.color};">{r.label}</p>
               <p class="font-mono text-[10px]" style="color: #9a907b;">≥ {r.threshold} MMR</p>

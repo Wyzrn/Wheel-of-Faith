@@ -499,7 +499,11 @@
               <p class="font-mono text-[9px] tracking-widest uppercase mt-0.5" style="color: #9a907b;">{myRank.label}</p>
             </div>
             <!-- Rank icon -->
-            <span style="font-size: 28px; filter: drop-shadow(0 0 8px {myRank.color}88);">{myRank.icon}</span>
+            {#if myRank.badge}
+              <img src={myRank.badge} alt={myRank.label} width="34" height="34" style="display: block; filter: drop-shadow(0 0 8px {myRank.color}88);" />
+            {:else}
+              <span style="font-size: 28px; filter: drop-shadow(0 0 8px {myRank.color}88);">{myRank.icon}</span>
+            {/if}
           </div>
           {#if !auth.loggedIn}
             <p class="text-xs mt-1.5 text-center" style="color: #f0c040; font-family: 'JetBrains Mono', monospace;">Log in to play ranked</p>
@@ -741,7 +745,11 @@
       <!-- Current standing card -->
       <div class="rounded-2xl px-4 py-4 mb-4" style="background: linear-gradient(135deg, {myRank.color}22 0%, rgba(20,15,30,0.95) 60%); border: 1px solid {myRank.color}66;">
         <div class="flex items-center gap-3">
-          <span style="font-size: 32px; filter: drop-shadow(0 0 10px {myRank.color}88);">{myRank.icon}</span>
+          {#if myRank.badge}
+            <img src={myRank.badge} alt={myRank.label} width="40" height="40" style="display: block; filter: drop-shadow(0 0 10px {myRank.color}88);" />
+          {:else}
+            <span style="font-size: 32px; filter: drop-shadow(0 0 10px {myRank.color}88);">{myRank.icon}</span>
+          {/if}
           <div class="flex-1">
             <p class="font-mono text-[10px] tracking-widest uppercase" style="color: #9a907b;">Your Rank</p>
             <p class="font-bold text-lg" style="font-family: 'Cinzel', serif; color: {myRank.color};">{myRank.label}</p>
@@ -769,7 +777,11 @@
             style="background: {current ? r.color + '22' : reached ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)'};
                    border: 1px solid {current ? r.color + '88' : reached ? r.color + '33' : 'rgba(255,255,255,0.06)'};
                    opacity: {reached || current ? 1 : 0.55};">
-            <span style="font-size: 18px;">{r.icon}</span>
+            {#if r.badge}
+              <img src={r.badge} alt={r.label} width="22" height="22" style="display: block;" />
+            {:else}
+              <span style="font-size: 18px;">{r.icon}</span>
+            {/if}
             <div class="flex-1">
               <p class="font-mono text-xs font-bold" style="color: {r.color};">{r.label}</p>
               <p class="font-mono text-[10px]" style="color: #9a907b;">≥ {r.threshold} MMR</p>

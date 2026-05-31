@@ -22,5 +22,9 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Raw asset packs (large, unprocessed source files — use static/fx/ instead)
-/static/images/
+# Raw asset packs (large, unprocessed source files — use static/fx/ instead).
+# NOTE: no trailing slash on the parent — otherwise the `!` re-includes below
+# cannot descend into it. Re-include each shipped asset folder explicitly.
+/static/images/*
+# Exception: rank badges are shipped assets referenced by mmrRanks.ts
+!/static/images/rank_badges_bundle

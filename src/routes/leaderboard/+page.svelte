@@ -129,7 +129,11 @@
       {#if myIdx !== -1}
         <div class="mb-5 px-4 py-3 rounded-xl flex items-center gap-3" style="background: {myRank.color}14; border: 1px solid {myRank.color}55;">
           <span style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 900; color: {myRank.color};">#{myIdx + 1}</span>
-          <span style="font-size: 18px;">{myRank.icon}</span>
+          {#if myRank.badge}
+            <img src={myRank.badge} alt={myRank.label} width="22" height="22" style="display: block;" />
+          {:else}
+            <span style="font-size: 18px;">{myRank.icon}</span>
+          {/if}
           <div class="flex-1">
             <p class="text-xs" style="font-family: 'JetBrains Mono', monospace; color: #7c6fa0;">Your rank · {myRank.label}</p>
           </div>
@@ -187,7 +191,11 @@
             </div>
 
             <!-- Rank icon glyph -->
-            <span title={r.label} style="font-size: 18px; filter: drop-shadow(0 0 4px {r.color}88);">{r.icon}</span>
+            {#if r.badge}
+              <img src={r.badge} alt={r.label} title={r.label} width="22" height="22" style="display: block; filter: drop-shadow(0 0 4px {r.color}88);" />
+            {:else}
+              <span title={r.label} style="font-size: 18px; filter: drop-shadow(0 0 4px {r.color}88);">{r.icon}</span>
+            {/if}
 
             <!-- Info -->
             <div class="flex-1 min-w-0">
