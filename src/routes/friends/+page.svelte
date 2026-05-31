@@ -5,8 +5,23 @@
   import { auth } from '$lib/stores/auth.svelte'
   import { presence } from '$lib/stores/presence.svelte'
   import { toast } from '$lib/toast.svelte'
-  import { loadAllSlots } from '$lib/story/saveSlots'
-  import type { StoryRosterEntry } from '$lib/story/types'
+  import type { SpinResult } from '$lib/session/types'
+
+  // Main-roster character shape for the friend-challenge picker. Pulled from
+  // /api/characters/:shareId per saved id in localStorage — same source the
+  // /characters page lists. Replaces the previous Story Mode roster source
+  // (which was incorrect: a Story roster character can't fight in Rivals
+  // because the spin format diverges, and challenging a friend with a Story
+  // character also skipped the per-character rivals_wins medal credit).
+  type FriendChallengeChar = {
+    shareId: string
+    name: string
+    race: string
+    archetype: string
+    overall_tier: string
+    overall_score: number
+    spins: SpinResult[]
+  }
 
   type Friend = {
     _id: string
@@ -113,7 +128,8 @@
   // pick which of your roster characters to send.
   let challengeTarget = $state<Friend | null>(null)
   let challengeStep   = $state<'mode' | 'character'>('mode')
-  let myRoster        = $state<StoryRosterEntry[]>([])
+  let myRoster        = $state<FriendChallengeChar[]>([])
+  let rosterLoading   = $state(false)
 
   function openChallenge(friend: Friend) {
     if (!presence.isOnline(friend._id)) {
@@ -131,16 +147,49 @@
     challengeTarget = null
   }
 
-  function goToCharacterPick() {
-    try {
-      myRoster = loadAllSlots().flatMap(s => s?.roster ?? [])
-    } catch { myRoster = [] }
+  // Load the player's main saved-character roster for the picker. Reads the
+  // shareId list from localStorage (same source the /characters page uses)
+  // then resolves each via the public character endpoint.
+  async function goToCharacterPick() {
     challengeStep = 'character'
+    if (rosterLoading) return
+    rosterLoading = true
+    try {
+      const ids: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
+      if (ids.length === 0) { myRoster = []; return }
+      const settled = await Promise.allSettled(
+        ids.map(id => fetch(apiUrl(`/api/characters/${id}`), { credentials: 'include' })
+          .then(r => r.ok ? r.json() : null))
+      )
+      myRoster = settled
+        .map(s => s.status === 'fulfilled' ? s.value : null)
+        .filter((d): d is any => !!d)
+        .map((d: any) => ({
+          shareId:       d.shareId,
+          name:          d.name ?? '—',
+          race:          d.race ?? '—',
+          archetype:     d.archetype ?? '—',
+          overall_tier:  d.overall_tier ?? '',
+          overall_score: d.overall_score ?? 0,
+          spins:         d.spins ?? [],
+        }))
+        // Sort strongest first so the most-likely picks surface at the top.
+        .sort((a, b) => b.overall_score - a.overall_score)
+    } catch { myRoster = [] }
+    finally { rosterLoading = false }
   }
 
-  function challengeWithCharacter(char: StoryRosterEntry) {
+  function challengeWithCharacter(char: FriendChallengeChar) {
     if (!challengeTarget) return
-    presence.sendChallenge(challengeTarget._id, 'character', { name: char.name, spins: char.spins })
+    // shareId is passed through so the WS layer can plumb it into
+    // challenge_battle_start.you/opponent, letting QuickBattleView credit
+    // the per-character rivals_wins medal post-fight (the win counts on
+    // the fighter, not just on the user).
+    presence.sendChallenge(challengeTarget._id, 'character', {
+      name: char.name,
+      spins: char.spins,
+      shareId: char.shareId,
+    })
     toast.success(`Duel sent to ${challengeTarget.username}`, { detail: `${char.name} awaits their fighter…` })
     challengeTarget = null
   }
@@ -395,18 +444,20 @@
         {:else}
           <button onclick={() => challengeStep = 'mode'} class="text-xs mb-3 block" style="color: #6b7280; font-family: 'JetBrains Mono', monospace; background: none; border: none; cursor: pointer;">← Back</button>
           <p class="text-center mb-3" style="font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 800; color: #f9a8d4;">Pick your fighter</p>
-          {#if myRoster.length === 0}
+          {#if rosterLoading}
+            <p class="text-center text-xs py-6" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Loading your roster…</p>
+          {:else if myRoster.length === 0}
             <p class="text-center text-xs py-6" style="font-family: 'JetBrains Mono', monospace; color: #f87171;">
-              No Story Mode characters yet. Build one in Story Mode first.
+              No saved characters yet. Spin a character and save them to your roster first.
             </p>
           {:else}
             <div class="flex flex-col gap-2 max-h-72 overflow-y-auto">
-              {#each myRoster as char}
+              {#each myRoster as char (char.shareId)}
                 <button onclick={() => challengeWithCharacter(char)}
                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all active:scale-[0.98]"
                   style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); cursor: pointer;">
                   <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
-                    style="background: rgba(249,168,212,0.15); color: #f9a8d4; font-family: 'Cinzel', serif;">{char.overallTier}</div>
+                    style="background: rgba(249,168,212,0.15); color: #f9a8d4; font-family: 'Cinzel', serif;">{char.overall_tier}</div>
                   <div class="flex-1 min-w-0">
                     <p class="font-semibold truncate text-sm" style="font-family: 'Cinzel', serif; color: #e9dfeb;">{char.name}</p>
                     <p class="text-xs truncate" style="font-family: 'JetBrains Mono', monospace; color: #6b7280;">{char.race} · {char.archetype}</p>

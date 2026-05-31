@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify'
 import mongoose from 'mongoose'
 import { Clan, clanLevelFromXp, clanRoleOf, canManage, MAX_CLAN_MESSAGES, CLAN_MESSAGE_MAX_LENGTH, type ClanRole } from '../models/Clan.js'
 import { User } from '../models/User.js'
+import { Character } from '../models/Character.js'
 
 // Shape returned to the client. Computed fields (memberCount, level, totalWins,
 // role) are added on top of the lean clan document.
@@ -87,9 +88,11 @@ export async function clanRoutes(app: FastifyInstance) {
     }))
     enriched.sort((a, b) => a._tier - b._tier || (b.rivalsWins ?? 0) - (a.rivalsWins ?? 0))
 
-    // Join requests (visible only to elder+)
+    // Join requests are visible to leader + co-leader only. Elders can kick
+    // but don't manage the pending-requests inbox (matches the new clan
+    // permissions spec — elders are mid-tier and don't gatekeep membership).
     let joinRequests: any[] = []
-    if (['leader', 'coLeader', 'elder'].includes(role)) {
+    if (role === 'leader' || role === 'coLeader') {
       const ids = clan.joinRequests.map(r => r.userId)
       const requesters = await User.find({ _id: { $in: ids } }).select('username rivalsWins').lean()
       joinRequests = clan.joinRequests.map(jr => {
@@ -252,8 +255,10 @@ export async function clanRoutes(app: FastifyInstance) {
     const clan = await Clan.findById(id)
     if (!clan) return reply.status(404).send({ error: 'clan not found' })
     const role = clanRoleOf(clan, req.userId)
-    if (!['leader', 'coLeader', 'elder'].includes(role)) {
-      return reply.status(403).send({ error: 'elders, co-leaders, or leader only' })
+    // Restricted to leader + co-leader (matches the inbox visibility above —
+    // if you can't see requests, you can't accept them).
+    if (role !== 'leader' && role !== 'coLeader') {
+      return reply.status(403).send({ error: 'leader or co-leader only' })
     }
 
     const idx = clan.joinRequests.findIndex(r => r.userId.toString() === userId)
@@ -295,9 +300,20 @@ export async function clanRoutes(app: FastifyInstance) {
     if (!canManage(actorRole, targetRole)) {
       return reply.status(403).send({ error: 'insufficient permission for this action' })
     }
-    // Elders cannot promote — only kick.
-    if (actorRole === 'elder' && action !== 'kick') {
-      return reply.status(403).send({ error: 'elders can only kick — promotions require co-leader' })
+    // Promotion ceiling: a promote action moves the target up one tier
+    // (member→elder, elder→coLeader). The new tier may not exceed the
+    // actor's own rank — so elders can promote member→elder (matching
+    // their rank), but cannot promote elder→coLeader. Leadership is
+    // singular; co-leaders are blocked from promoting elder→coLeader is
+    // wrong actually — a co-leader CAN promote elder→coLeader because
+    // the new tier matches their rank. The block we want is target ending
+    // above the actor.
+    if (action === 'promote') {
+      const ROLE_RANK: Record<string, number> = { member: 1, elder: 2, coLeader: 3, leader: 4 }
+      const promotedTier = targetRole === 'member' ? 'elder' : targetRole === 'elder' ? 'coLeader' : null
+      if (promotedTier && ROLE_RANK[promotedTier] > ROLE_RANK[actorRole]) {
+        return reply.status(403).send({ error: `cannot promote above your own rank — ${actorRole} max is ${actorRole}` })
+      }
     }
 
     const targetOid = new mongoose.Types.ObjectId(userId)
@@ -335,6 +351,52 @@ export async function clanRoutes(app: FastifyInstance) {
     }
     await clan.save()
     reply.send({ ok: true })
+  })
+
+  // ── GET /clans/:id/top-characters — top 10 characters across all members ─
+  // Powers the "Top Characters" tab. Returns the top 10 owned by any current
+  // clan member, sorted by overall_score desc, with the owner's username so
+  // the UI can render attribution + drive the challenge button.
+  app.get('/clans/:id/top-characters', {
+    config: { rateLimit: { max: 30, timeWindow: '1m' } },
+  }, async (req: any, reply) => {
+    if (!req.userId) return reply.status(401).send({ error: 'login required' })
+    const { id } = req.params as { id: string }
+    if (!mongoose.Types.ObjectId.isValid(id)) return reply.status(400).send({ error: 'invalid id' })
+
+    const clan = await Clan.findById(id).lean()
+    if (!clan) return reply.status(404).send({ error: 'clan not found' })
+    if (clanRoleOf(clan as any, req.userId) === 'none') {
+      return reply.status(403).send({ error: 'not a member of this clan' })
+    }
+
+    // Fetch usernames once so we can attribute each character without N+1.
+    const memberDocs = await User.find({ _id: { $in: clan.memberIds } })
+      .select('username').lean()
+    const usernameById = new Map(memberDocs.map(u => [u._id.toString(), u.username]))
+
+    // Single query — pulls top 10 by overall_score across all member-owned
+    // characters. deleted_at:null already enforced by the Character schema's
+    // pre-find hook.
+    const characters = await Character.find({ userId: { $in: clan.memberIds } })
+      .sort({ overall_score: -1 })
+      .limit(10)
+      .select('shareId userId name race archetype overall_score overall_tier rivals_wins')
+      .lean()
+
+    reply.send({
+      characters: characters.map(c => ({
+        shareId:       c.shareId,
+        name:          c.name,
+        race:          c.race,
+        archetype:     c.archetype,
+        overall_score: c.overall_score,
+        overall_tier:  c.overall_tier,
+        rivals_wins:   c.rivals_wins ?? 0,
+        ownerId:       c.userId,
+        ownerUsername: usernameById.get(c.userId?.toString() ?? '') ?? 'Unknown',
+      })),
+    })
   })
 
   // ── GET /clans/public/:id — public clan profile ────────────────────────────

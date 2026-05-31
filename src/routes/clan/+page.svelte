@@ -17,7 +17,30 @@
   type MyClan = BrowseClan & { members: ClanMember[]; role: ClanRole; joinRequests: JoinRequest[]; leaderId: string }
 
   // ── State ──────────────────────────────────────────────────────────────────
-  let view = $state<'mine' | 'browse' | 'create' | 'leaderboard' | 'requests' | 'settings' | 'chat'>('mine')
+  let view = $state<'mine' | 'browse' | 'create' | 'leaderboard' | 'requests' | 'settings' | 'chat' | 'topChars'>('mine')
+
+  // Top Characters tab — top 10 across all current clan members.
+  type TopChar = {
+    shareId: string; name: string; race: string; archetype: string
+    overall_score: number; overall_tier: string; rivals_wins: number
+    ownerId: string; ownerUsername: string
+  }
+  let topChars = $state<TopChar[]>([])
+  let topCharsLoading = $state(false)
+  async function loadTopCharacters() {
+    if (!myClan) return
+    topCharsLoading = true
+    try {
+      const res = await fetch(apiUrl(`/api/clans/${myClan._id}/top-characters`), { credentials: 'include' })
+      if (res.ok) {
+        const d = await res.json()
+        topChars = d.characters ?? []
+      } else {
+        topChars = []
+      }
+    } catch { topChars = [] }
+    finally { topCharsLoading = false }
+  }
 
   // Chat state
   let chatMessages = $state<ClanMessage[]>([])
@@ -277,8 +300,46 @@
 
   // ── Derived ────────────────────────────────────────────────────────────────
   let canEdit = $derived(myClan?.role === 'leader' || myClan?.role === 'coLeader')
+  // Join-request inbox is now restricted to leader + co-leader (matches the
+  // server's new gating in clans.ts — elders no longer gatekeep membership).
+  let canSeeRequests = $derived(myClan?.role === 'leader' || myClan?.role === 'coLeader')
   let canManageMembers = $derived(myClan?.role === 'leader' || myClan?.role === 'coLeader' || myClan?.role === 'elder')
   let isLeader = $derived(myClan?.role === 'leader')
+
+  // Per-action permission helpers — actor (myClan.role) acts on target (m.role).
+  // Promote ceiling: the resulting tier cannot exceed the actor's own rank.
+  //   member → elder    (anyone elder+)
+  //   elder  → coLeader (coLeader or leader only)
+  //   coLeader → leader (transfer flow, separate from promote)
+  // Demote: actor must outrank target.
+  // Kick: actor must outrank target.
+  const RANK: Record<ClanRole, number> = { none: 0, member: 1, elder: 2, coLeader: 3, leader: 4 }
+  function canPromote(target: ClanRole): boolean {
+    const me = myClan?.role
+    if (!me) return false
+    const newTier: ClanRole | null =
+      target === 'member' ? 'elder' :
+      target === 'elder'  ? 'coLeader' : null
+    if (!newTier) return false
+    if (RANK[me] < 2) return false              // must be elder+ to promote
+    if (RANK[me] <= RANK[target]) return false  // can't act on equal-or-higher
+    if (RANK[newTier] > RANK[me]) return false  // promotion ceiling
+    return true
+  }
+  function canDemote(target: ClanRole): boolean {
+    const me = myClan?.role
+    if (!me) return false
+    if (RANK[me] < 2) return false
+    if (RANK[me] <= RANK[target]) return false
+    if (target === 'member') return false       // members can't be demoted
+    return true
+  }
+  function canKick(target: ClanRole): boolean {
+    const me = myClan?.role
+    if (!me) return false
+    if (RANK[me] < 2) return false
+    return RANK[me] > RANK[target]
+  }
 
   // Role badge styles
   const ROLE_META: Record<ClanRole, { label: string; color: string; icon: string }> = {
@@ -387,13 +448,18 @@
                 Settings
               </button>
             {/if}
-            {#if canManageMembers && myClan.joinRequests.length > 0}
+            {#if canSeeRequests && myClan.joinType === 'invite' && myClan.joinRequests.length > 0}
               <button onclick={() => view = 'requests'} data-fx="big" class="text-xs px-3 py-1.5 rounded-lg font-mono font-bold relative" style="background: rgba(90,214,239,0.10); border: 1px solid rgba(90,214,239,0.30); color: #5ad6ef;">
                 <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: -2px;">mail</span>
-                Requests
+                Pending Requests
                 <span class="absolute -top-1 -right-1 px-1.5 rounded-full text-[9px] font-bold" style="background: #f0c040; color: #1a0e00;">{myClan.joinRequests.length}</span>
               </button>
             {/if}
+            <!-- Top Characters tab — visible to every member. -->
+            <button onclick={() => { view = 'topChars'; loadTopCharacters() }} data-fx="big" class="text-xs px-3 py-1.5 rounded-lg font-mono font-bold" style="background: rgba(240,192,64,0.10); border: 1px solid rgba(240,192,64,0.30); color: #f0c040;">
+              <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: -2px;">workspace_premium</span>
+              Top Characters
+            </button>
           </div>
 
           <!-- Member list -->
@@ -428,19 +494,20 @@
                       title="Challenge {m.username} to a Rivals battle">
                       ⚔
                     </button>
-                    {#if canManageMembers}
-                      {#if isLeader && m.role === 'coLeader'}
-                        <button onclick={() => transferLeadership(m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.25); color: #f0c040;" title="Transfer leadership">👑</button>
-                      {/if}
-                      {#if isLeader && (m.role === 'member' || m.role === 'elder')}
-                        <button onclick={() => memberAction('promote', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25); color: #34d399;" title="Promote">↑</button>
-                      {/if}
-                      {#if isLeader && (m.role === 'coLeader' || m.role === 'elder')}
-                        <button onclick={() => memberAction('demote', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa;" title="Demote">↓</button>
-                      {/if}
-                      {#if (myClan.role === 'leader' && m.role !== 'leader') || (myClan.role === 'coLeader' && (m.role === 'elder' || m.role === 'member')) || (myClan.role === 'elder' && m.role === 'member')}
-                        <button onclick={() => memberAction('kick', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #f87171;" title="Kick">×</button>
-                      {/if}
+                    <!-- Transfer leadership: leader-only and target must be co-leader.
+                         Promote / Demote / Kick driven by per-target helpers so any
+                         role with the necessary permission sees the button. -->
+                    {#if isLeader && m.role === 'coLeader'}
+                      <button onclick={() => transferLeadership(m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.25); color: #f0c040;" title="Transfer leadership">👑</button>
+                    {/if}
+                    {#if canPromote(m.role)}
+                      <button onclick={() => memberAction('promote', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25); color: #34d399;" title="Promote">↑</button>
+                    {/if}
+                    {#if canDemote(m.role)}
+                      <button onclick={() => memberAction('demote', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.25); color: #a78bfa;" title="Demote">↓</button>
+                    {/if}
+                    {#if canKick(m.role)}
+                      <button onclick={() => memberAction('kick', m._id)} disabled={actionPending !== null} class="text-[10px] px-2 py-1 rounded font-mono" style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #f87171;" title="Kick">×</button>
                     {/if}
                   </div>
                 {/if}
@@ -686,6 +753,50 @@
           <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">No pending requests.</p>
         {/each}
       </div>
+
+    {:else if view === 'topChars' && myClan}
+      <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back to clan</button>
+      <h2 class="mb-1" style="font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffdf96;">Top Characters</h2>
+      <p class="mb-4 font-mono text-[10px]" style="color: #4e4635;">Highest overall_score across every {myClan.tag} member's roster.</p>
+      {#if topCharsLoading}
+        <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">Loading…</p>
+      {:else if topChars.length === 0}
+        <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">No saved characters in this clan yet.</p>
+      {:else}
+        <div class="flex flex-col gap-2">
+          {#each topChars as c, i (c.shareId)}
+            <div class="rounded-xl px-3 py-3 flex items-center gap-3" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(240,192,64,0.18);">
+              <span class="font-mono text-sm font-bold w-6 text-center" style="color: {i === 0 ? '#f0c040' : i < 3 ? '#a78bfa' : '#4e4635'};">#{i + 1}</span>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <a href={`/character/${c.shareId}`} class="font-mono text-xs truncate" style="color: #ffdf96; text-decoration: none;">{c.name}</a>
+                  <span class="font-mono text-[9px] px-1 rounded" style="background: rgba(240,192,64,0.18); color: #f0c040;">{c.overall_tier}</span>
+                  {#if c.rivals_wins > 0}
+                    <span class="font-mono text-[9px]" style="color: #f0c040;" title="Rivals wins">🏆 {c.rivals_wins}</span>
+                  {/if}
+                </div>
+                <p class="font-mono text-[10px] truncate" style="color: #9a907b;">
+                  {c.race} · {c.archetype} ·
+                  <a href={`/users/${encodeURIComponent(c.ownerUsername)}`}
+                     class="hover:underline"
+                     style="color: #a78bfa; text-decoration: none;"
+                     onclick={(e) => e.stopPropagation()}>@{c.ownerUsername}</a>
+                </p>
+              </div>
+              <span class="font-mono text-xs font-bold shrink-0" style="color: #ffdf96;" title="Overall score">{c.overall_score}</span>
+              {#if c.ownerId !== auth.user?.id}
+                <button onclick={() => challengeMember(c.ownerId, c.ownerUsername)}
+                  data-fx="big"
+                  class="text-[10px] px-2 py-1.5 rounded font-mono font-bold shrink-0"
+                  style="background: rgba(244,113,113,0.10); border: 1px solid rgba(244,113,113,0.32); color: #f87171;"
+                  title="Challenge {c.ownerUsername} to a Rivals battle">
+                  ⚔ Challenge
+                </button>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
 
     {:else if view === 'settings' && myClan && canEdit}
       <button onclick={() => view = 'mine'} class="mb-4 font-mono text-xs" style="color: #9a907b; background: none; border: none; cursor: pointer;">← Back</button>
