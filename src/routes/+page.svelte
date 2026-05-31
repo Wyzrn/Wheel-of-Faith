@@ -2867,6 +2867,7 @@
           results={cur.results}
           name={cur.name}
           startedAt={cur.startedAt}
+          shareId={cur.shareId ?? null}
           readonly={true}
           onNewCharacter={() => { showHistory = false; showMenu = true }}
           onBackToMenu={() => { showHistory = false; showMenu = true }}

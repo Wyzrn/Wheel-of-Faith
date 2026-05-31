@@ -45,6 +45,13 @@ export interface StoryRosterEntry {
   sessionStartedAt: string
   /** Spin class used to create this character — affects battle stat multiplier and luck boost. */
   spinClass?: 'hero' | 'legend' | 'paragon'
+  /** AI-generated portrait URL hosted on R2. Populated on first expand of
+   *  this roster entry via POST /api/story-slots/roster-portrait. Persists
+   *  with the save slot via the existing cloudAutosave pipeline. */
+  portraitUrl?: string | null
+  /** ISO timestamp set when the owner used their one allowed regenerate.
+   *  Prevents repeated regen-clicks and matches the saved-character rule. */
+  portraitRegeneratedAt?: string | null
 }
 
 /** Top-level Story Mode state shape. */

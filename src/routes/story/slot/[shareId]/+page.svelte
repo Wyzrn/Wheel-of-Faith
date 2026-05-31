@@ -48,7 +48,7 @@
 </script>
 
 <svelte:head>
-  <title>Story Slot — Wheel of Fate</title>
+  <title>Ascension Slot — Wheel of Fate</title>
 </svelte:head>
 
 <main class="min-h-screen" style="background: transparent; color: #e9dfeb;">
@@ -74,7 +74,7 @@
 
     <!-- Header -->
     <div class="text-center">
-      <p class="font-mono text-xs tracking-widest uppercase mb-1" style="color: #9a907b; letter-spacing: 0.18em;">Story Mode Save</p>
+      <p class="font-mono text-xs tracking-widest uppercase mb-1" style="color: #9a907b; letter-spacing: 0.18em;">Ascension Save</p>
       <h1 class="font-bold mb-1" style="font-family: var(--font-cinzel, 'Cinzel', serif); font-size: 1.4rem; color: #ffdf96;">
         Player Level {slot.playerLevel ?? 0}
       </h1>

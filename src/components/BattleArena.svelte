@@ -15,6 +15,7 @@
 -->
 <script lang="ts">
   import { onDestroy, tick, type Snippet } from 'svelte'
+  import PortraitZoom from './PortraitZoom.svelte'
   import { goto } from '$app/navigation'
   import { getPerfTier } from '$lib/perf'
   import { rootZoom } from '$lib/zoom'
@@ -868,6 +869,11 @@
   // Pending action awaiting a target click (multi-enemy team battles).
   let pickingTarget = $state<PlayerAction | null>(null)
 
+  // Click-to-zoom for the portrait sigil. null when not open. Lives here
+  // (not per-fighter) so only one zoom can be active at a time and Escape
+  // closes the right one regardless of which fighter was clicked.
+  let zoomPortrait = $state<{ src: string; alt: string } | null>(null)
+
   // Returns the BattleCharacter for the team1 ally awaiting input.
   let currentActorChar = $derived.by(() => {
     if (!controller || !awaitingPlayerInput) return null
@@ -1099,15 +1105,27 @@
       : undefined}
     style="--accent-color: {accent}; opacity: {dead ? 0.4 : 1};">
     <div class="hp-ring" style="--hp: {Math.round(pct * 100)}%; --ring: {hpColor(pct)};">
-      <div class="character-sigil" style="border-color: {accent}66; color: {accent};">
-        {#if won}
-          <span class="material-symbols-outlined" style="font-size: 26px; color: {accent}; font-variation-settings: 'FILL' 1;">workspace_premium</span>
-        {:else if dead}
-          <span class="material-symbols-outlined" style="font-size: 26px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
-        {:else}
-          <span class="font-cinzel" style="font-size: 1.5rem; font-weight: 700;">{m.name.charAt(0).toUpperCase()}</span>
-        {/if}
-      </div>
+      <!-- Portrait variant: when a character has an AI portrait we render
+           it as the sigil image, click → fullscreen zoom. Won/dead overlays
+           still take precedence so the player gets the same crown/skull
+           feedback they got before portraits existed. -->
+      {#if m.portraitUrl && !won && !dead}
+        <button class="character-sigil sigil-portrait" style="border-color: {accent}66;"
+          onclick={(e) => { e.stopPropagation(); zoomPortrait = { src: m.portraitUrl!, alt: m.name } }}
+          aria-label="View full portrait of {m.name}">
+          <img src={m.portraitUrl} alt="" />
+        </button>
+      {:else}
+        <div class="character-sigil" style="border-color: {accent}66; color: {accent};">
+          {#if won}
+            <span class="material-symbols-outlined" style="font-size: 26px; color: {accent}; font-variation-settings: 'FILL' 1;">workspace_premium</span>
+          {:else if dead}
+            <span class="material-symbols-outlined" style="font-size: 26px; color: #ef4444; font-variation-settings: 'FILL' 1;">skull</span>
+          {:else}
+            <span class="font-cinzel" style="font-size: 1.5rem; font-weight: 700;">{m.name.charAt(0).toUpperCase()}</span>
+          {/if}
+        </div>
+      {/if}
     </div>
     <div class="fighter-info {isRight ? 'items-end text-right' : ''}">
       <h2 class="fighter-name" style="color: {accent};">{m.name}</h2>
@@ -1352,9 +1370,9 @@
   <!-- ── Action dock ─────────────────────────────────────────────────── -->
   <footer class="arena-dock">
     <div class="arena-dock-inner">
-      <!-- Bottom-left: Hub (Story/Endless) or Home (other modes) -->
+      <!-- Bottom-left: Hub (Ascension/Endless) or Home (other modes) -->
       <button class="dock-nav-btn" onclick={doExit}
-        title={exitToHub ? 'Story Hub' : 'Home'} aria-label={exitToHub ? 'Story Hub' : 'Home'}>
+        title={exitToHub ? 'Ascension Hub' : 'Home'} aria-label={exitToHub ? 'Ascension Hub' : 'Home'}>
         <span class="material-symbols-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">{exitToHub ? 'castle' : 'home'}</span>
       </button>
       <!-- Turn counter + roster avatars -->
@@ -1413,6 +1431,10 @@
     {@render result()}
   {/if}
 </div>
+
+{#if zoomPortrait}
+  <PortraitZoom src={zoomPortrait.src} alt={zoomPortrait.alt} onClose={() => zoomPortrait = null} />
+{/if}
 
 <style>
   /* ══ Arcane Coliseum — full-screen battle HUD ══════════════════════════ */
@@ -1519,6 +1541,39 @@
   }
   .fighter-victor { filter: drop-shadow(0 0 16px var(--accent-color)); }
   .fighter-targetable { cursor: pointer; outline: 1px solid color-mix(in srgb, var(--accent-color) 60%, transparent); outline-offset: 3px; }
+
+  /* Rank glows for Ascension characters — colors mirror RosterCard so the
+     same character reads identically on the team-pick screen and in battle. */
+  .bv-hero {
+    border-color: rgba(251,191,36,0.85);
+    box-shadow: 0 0 18px rgba(251,191,36,0.45), 0 12px 30px rgba(0,0,0,0.6);
+    animation: bv-pulse-hero 2.6s ease-in-out infinite;
+  }
+  .bv-legend {
+    border-color: rgba(168,85,247,0.9);
+    box-shadow: 0 0 22px rgba(168,85,247,0.5), 0 12px 30px rgba(0,0,0,0.6);
+    animation: bv-pulse-legend 2.4s ease-in-out infinite;
+  }
+  .bv-paragon {
+    border-color: rgba(244,63,94,1.0);
+    box-shadow: 0 0 28px rgba(244,63,94,0.6), 0 12px 30px rgba(0,0,0,0.6);
+    animation: bv-pulse-paragon 2.2s ease-in-out infinite;
+  }
+  @keyframes bv-pulse-hero {
+    0%, 100% { box-shadow: 0 0 14px rgba(251,191,36,0.35), 0 12px 30px rgba(0,0,0,0.6); }
+    50%      { box-shadow: 0 0 24px rgba(251,191,36,0.6),  0 12px 30px rgba(0,0,0,0.6); }
+  }
+  @keyframes bv-pulse-legend {
+    0%, 100% { box-shadow: 0 0 16px rgba(168,85,247,0.4), 0 12px 30px rgba(0,0,0,0.6); }
+    50%      { box-shadow: 0 0 28px rgba(168,85,247,0.65), 0 12px 30px rgba(0,0,0,0.6); }
+  }
+  @keyframes bv-pulse-paragon {
+    0%, 100% { box-shadow: 0 0 20px rgba(244,63,94,0.5), 0 12px 30px rgba(0,0,0,0.6); }
+    50%      { box-shadow: 0 0 34px rgba(244,63,94,0.75), 0 12px 30px rgba(0,0,0,0.6); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bv-hero, .bv-legend, .bv-paragon { animation: none; }
+  }
   .target-beckon { animation: target-beckon 2s infinite ease-in-out; }
   @keyframes target-beckon {
     0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
@@ -1538,6 +1593,15 @@
     display: flex; align-items: center; justify-content: center;
     background: rgba(20,17,26,0.95); border: 1px solid rgba(255,255,255,0.1); overflow: hidden;
   }
+  /* Portrait variant of the sigil — same size + ring, but a button with the
+     AI portrait image inside. Click → zoom modal. */
+  .sigil-portrait {
+    padding: 0; cursor: zoom-in;
+    transition: transform 140ms ease;
+  }
+  .sigil-portrait:hover  { transform: scale(1.06); }
+  .sigil-portrait:active { transform: scale(0.96); }
+  .sigil-portrait img    { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
   .fighter-info { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
   .fighter-name {
     font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700;

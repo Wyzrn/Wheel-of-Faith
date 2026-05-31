@@ -359,7 +359,7 @@
         label: selectedTeam?.name ?? 'Your Team',
         accent: '#f0c040',
         members: t1Chars.map((c, i) =>
-          memberFromChar(c, t1Ids[i], 'team1', formatHp, teamMembers[i]?.spinClass)),
+          memberFromChar(c, t1Ids[i], 'team1', formatHp, teamMembers[i]?.spinClass, teamMembers[i]?.portraitUrl ?? null)),
       },
       {
         side: 'team2',

@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 import { Character } from '../models/Character.js'
 import { User } from '../models/User.js'
 import { markEvent } from '../lib/challenges.js'
+import { generatePortrait, portraitsEnabled } from '../services/portraits.js'
 import type { FastifyPluginAsync } from 'fastify'
 
 const SORT_FIELD_MAP: Record<string, Record<string, 1 | -1>> = {
@@ -181,7 +182,7 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
         .sort(sortSpec)
         .skip(skip)
         .limit(limit as number)
-        .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins elementWeaknesses userId')
+        .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins elementWeaknesses portraitUrl userId')
         .populate('userId', 'username')
         .lean(),
       Character.countDocuments(filter),
@@ -201,18 +202,103 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
     })
   })
 
-  // GET /characters/:shareId — fetch character by share ID
+  // GET /characters/:shareId — fetch character by share ID. Adds an
+  // `isOwner` boolean computed from the request's auth context so the
+  // frontend can show owner-only affordances (e.g. the regenerate-portrait
+  // button) without leaking the owner's userId in the response.
   fastify.get('/characters/:shareId', async (request, reply) => {
     const { shareId } = request.params as { shareId: string }
     const character = await Character.findOne({ shareId })
-      .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins elementWeaknesses share_in_gallery')
+      .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins elementWeaknesses share_in_gallery portraitUrl portraitRegeneratedAt userId')
       .lean()
 
     if (!character) {
       return reply.code(404).send({ error: 'Character not found' })
     }
 
-    return reply.send(character)
+    const viewerId = (request as any).userId as string | undefined
+    const isOwner = !!viewerId && !!character.userId
+      && (character.userId as mongoose.Types.ObjectId).toString() === viewerId
+    // Strip userId before sending — viewers shouldn't see the owner's id.
+    const { userId: _omit, ...payload } = character as typeof character & { userId?: unknown }
+    void _omit
+    return reply.send({ ...payload, isOwner })
+  })
+
+  // POST /characters/:shareId/portrait — generate an AI portrait.
+  //
+  // Two modes, both rate-limited at 10/5min per IP (each gen costs ~$0.003):
+  //   • Default (no query)   — anyone can trigger lazy backfill of a missing
+  //                            portrait. Returns the cached URL if already
+  //                            generated. Logged-out viewers populate old
+  //                            characters this way the first time they're
+  //                            opened, with no auth required.
+  //   • ?regenerate=1        — owner-only one-time re-roll. Replaces the
+  //                            existing URL. Subsequent regen attempts get
+  //                            409. The model tracks this via
+  //                            portraitRegeneratedAt.
+  fastify.post('/characters/:shareId/portrait', {
+    config: { rateLimit: { max: 10, timeWindow: '5 minutes' } },
+  }, async (request, reply) => {
+    if (!portraitsEnabled()) {
+      return reply.code(503).send({ error: 'Portrait generation is not configured on this server' })
+    }
+
+    const { shareId } = request.params as { shareId: string }
+    const { regenerate } = request.query as { regenerate?: string }
+    const wantsRegen = regenerate === '1' || regenerate === 'true'
+    const userId = (request as any).userId
+
+    const character = await Character.findOne({ shareId })
+    if (!character) {
+      return reply.code(404).send({ error: 'Character not found' })
+    }
+
+    if (wantsRegen) {
+      // Regenerate path: must be the owner, and they only get one shot.
+      if (!userId) return reply.code(401).send({ error: 'Login required to regenerate a portrait' })
+      if (!character.userId || !character.userId.equals(new mongoose.Types.ObjectId(userId))) {
+        return reply.code(403).send({ error: 'You can only regenerate your own characters' })
+      }
+      if (character.portraitRegeneratedAt) {
+        return reply.code(409).send({ error: 'This character has already used its one regenerate' })
+      }
+      // Fall through to generation — we'll stamp portraitRegeneratedAt on success.
+    } else if (character.portraitUrl) {
+      // Default path: cache hit. Anyone can read this — no auth needed.
+      return reply.send({ url: character.portraitUrl, cached: true })
+    }
+
+    // Pull a "signature power" from the spins blob — first power result is
+    // the one the in-app summary uses too, so prompts stay consistent with
+    // what the player reads on their card.
+    const spins = (character.spins as Array<{ category: string; resultLabel: string }>) ?? []
+    const topPower = spins.find(s => s.category === 'power')?.resultLabel
+
+    const result = await generatePortrait({
+      // Suffix the regen shareId so it lands at a new R2 key — otherwise
+      // CDN caches would still serve the old image for hours via R2's
+      // immutable cache-control headers.
+      shareId:   wantsRegen ? `${character.shareId}-r${Date.now()}` : character.shareId,
+      name:      character.name,
+      race:      character.race,
+      archetype: character.archetype,
+      topPower,
+    })
+
+    if (!result.ok) {
+      fastify.log.warn({ shareId, reason: result.reason, message: result.message }, 'portrait generation failed')
+      // 502 keeps the failure visible in metrics without leaking the upstream
+      // detail to the client. The frontend treats any non-2xx as "stay on
+      // letter sigil", so the user just sees the existing fallback.
+      return reply.code(502).send({ error: 'Portrait generation failed' })
+    }
+
+    character.portraitUrl = result.url
+    if (wantsRegen) character.portraitRegeneratedAt = new Date()
+    await character.save()
+
+    return reply.code(201).send({ url: result.url, cached: false, regenerated: wantsRegen })
   })
 
   // PATCH /characters/:shareId/gallery — toggle share_in_gallery
@@ -268,7 +354,7 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
 
     const characters = await Character.find({ userId: new mongoose.Types.ObjectId(userId) })
       .sort({ created_at: -1 })
-      .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins elementWeaknesses share_in_gallery')
+      .select('shareId name race archetype overall_tier overall_score rivals_wins created_at spins elementWeaknesses share_in_gallery portraitUrl portraitRegeneratedAt')
       .lean()
 
     return reply.send({ characters })

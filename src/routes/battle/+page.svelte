@@ -5,7 +5,7 @@
   import QuickBattleView from '../../components/QuickBattleView.svelte'
   import type { SpinResult } from '$lib/session/types'
 
-  type CharData = { name: string; spins: SpinResult[]; shareId: string }
+  type CharData = { name: string; spins: SpinResult[]; shareId: string; portraitUrl: string | null }
 
   let loading   = $state(true)
   let loadError = $state<string | null>(null)
@@ -17,7 +17,7 @@
       const r = await fetch(apiUrl(`/api/characters/${id}`))
       if (!r.ok) return null
       const d = await r.json()
-      return { name: d.name ?? '—', spins: d.spins ?? [], shareId: id }
+      return { name: d.name ?? '—', spins: d.spins ?? [], shareId: id, portraitUrl: d.portraitUrl ?? null }
     } catch {
       return null
     }
@@ -89,8 +89,8 @@
 
   {:else if team1.length > 0 && team2.length > 0}
     <QuickBattleView
-      team1={team1.map(c => ({ results: c.spins, name: c.name, shareId: c.shareId }))}
-      team2={team2.map(c => ({ results: c.spins, name: c.name, shareId: c.shareId }))}
+      team1={team1.map(c => ({ results: c.spins, name: c.name, shareId: c.shareId, portraitUrl: c.portraitUrl }))}
+      team2={team2.map(c => ({ results: c.spins, name: c.name, shareId: c.shareId, portraitUrl: c.portraitUrl }))}
       team1Label={team1.length === 1 ? team1[0].name : 'Team 1'}
       team2Label={team2.length === 1 ? team2[0].name : 'Team 2'}
       title={team1.length === 1 && team2.length === 1

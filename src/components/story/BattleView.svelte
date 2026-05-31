@@ -253,7 +253,7 @@
     arenaTeams = [
       {
         side: 'team1', label: selectedTeam?.name ?? 'Your Team', accent: '#f0c040',
-        members: t1Chars.map((c, i) => memberFromChar(c, t1Ids[i], 'team1', formatHp, teamMembers[i]?.spinClass)),
+        members: t1Chars.map((c, i) => memberFromChar(c, t1Ids[i], 'team1', formatHp, teamMembers[i]?.spinClass, teamMembers[i]?.portraitUrl ?? null)),
       },
       {
         side: 'team2',
@@ -561,7 +561,7 @@
         onManualToggle={(m) => manualMode = m}
         modeName="Ascension"
         modeTitle={plusMode ? `Absolute +${absolutePlusLevel}` : `${world} World — Battle ${battleNumber}`}
-        modeSubtitle={allWaves.length > 1 ? `Wave ${waveIdx + 1} / ${allWaves.length}` : 'Story Battle'}
+        modeSubtitle={allWaves.length > 1 ? `Wave ${waveIdx + 1} / ${allWaves.length}` : 'Ascension Battle'}
         modeAccent={ec}
         speedFactor={settings.battleSpeed}
         effectsEnabled={settings.effectsEnabled}

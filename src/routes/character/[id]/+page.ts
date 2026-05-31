@@ -15,7 +15,10 @@ import type { PageLoad } from './$types'
 import { apiUrl } from '$lib/api'
 
 export const load: PageLoad = async ({ params, fetch }) => {
-	const res = await fetch(apiUrl(`/api/characters/${params.id}`))
+	// `credentials: include` so the request carries the auth cookie — the
+	// server uses it to compute `isOwner` for owner-only UI affordances
+	// (e.g. the Regenerate Portrait button).
+	const res = await fetch(apiUrl(`/api/characters/${params.id}`), { credentials: 'include' })
 
 	if (res.status === 404) {
 		error(404, { message: 'This fate has been lost to the multiverse.' })

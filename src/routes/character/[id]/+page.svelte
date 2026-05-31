@@ -40,6 +40,10 @@
       name={data.character.name}
       startedAt={data.character.session_started_at}
       rivalsWins={data.character.rivals_wins ?? 0}
+      shareId={data.character.shareId}
+      portraitUrl={data.character.portraitUrl ?? null}
+      portraitRegeneratedAt={data.character.portraitRegeneratedAt ?? null}
+      isOwner={data.character.isOwner ?? false}
       readonly
       onNewCharacter={() => goto('/')}
     />

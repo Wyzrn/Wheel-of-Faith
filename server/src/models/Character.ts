@@ -15,6 +15,13 @@ export interface ICharacter extends Document {
   share_in_gallery: boolean
   rivals_wins: number
   elementWeaknesses: string[]  // elemental weakness tags (e.g. ['Fire', 'Ice'])
+  // R2-hosted AI-generated portrait URL. null until POST /characters/:shareId/portrait
+  // succeeds; the card and battle UIs fall back to the letter sigil while null.
+  portraitUrl: string | null
+  // Timestamp of the one allowed regenerate. Stays null until the owner uses
+  // the "Regenerate portrait" button — once set, the endpoint rejects further
+  // regenerate requests with 409.
+  portraitRegeneratedAt: Date | null
 }
 
 const CharacterSchema = new Schema<ICharacter>({
@@ -32,6 +39,8 @@ const CharacterSchema = new Schema<ICharacter>({
   share_in_gallery:    { type: Boolean, default: false },
   rivals_wins:         { type: Number, default: 0 },
   elementWeaknesses:   { type: [String], default: [], index: true },
+  portraitUrl:         { type: String, default: null },
+  portraitRegeneratedAt: { type: Date, default: null },
 }, {
   collection: 'characters',
   versionKey: false,

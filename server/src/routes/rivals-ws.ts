@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { WebSocket } from '@fastify/websocket'
 import { User } from '../models/User.js'
+import { Character } from '../models/Character.js'
 import { markEvent } from '../lib/challenges.js'
 
 interface Player {
@@ -331,7 +332,7 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
   app.get('/rivals/ws', { websocket: true }, (socket: WebSocket) => {
     const player: Player = { ws: socket, results: [], done: false }
 
-    socket.on('message', (raw: Buffer | string) => {
+    socket.on('message', async (raw: Buffer | string) => {
       let msg: { type: string; [k: string]: unknown }
       try { msg = JSON.parse(raw.toString()) } catch { return }
 
@@ -428,16 +429,31 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
               send(socket, { type: 'challenge_error', message: 'Missing character data.' })
               break
             }
+            // Look up portrait URLs by shareId so the battle UI can render
+            // the AI portraits in the sigil ring. Both lookups in parallel
+            // since they're independent. Missing portraits fall through as
+            // null and the BattleArena renders the letter sigil as before.
+            const [challengerPortrait, responderPortrait] = await Promise.all([
+              challengerChar.shareId
+                ? Character.findOne({ shareId: challengerChar.shareId }).select('portraitUrl').lean()
+                : Promise.resolve(null),
+              responderChar.shareId
+                ? Character.findOne({ shareId: responderChar.shareId }).select('portraitUrl').lean()
+                : Promise.resolve(null),
+            ])
+            const challengerPortraitUrl = challengerPortrait?.portraitUrl ?? null
+            const responderPortraitUrl  = responderPortrait?.portraitUrl ?? null
+
             // Each side gets "you" = self, "opponent" = the other fighter.
             send(challenger.ws, {
               type: 'challenge_battle_start', roomCode: room.code, mode: 'character',
-              you:      { name: challengerChar.name, results: challengerChar.spins, shareId: challengerChar.shareId },
-              opponent: { name: responderChar.name,  results: responderChar.spins,  shareId: responderChar.shareId  },
+              you:      { name: challengerChar.name, results: challengerChar.spins, shareId: challengerChar.shareId, portraitUrl: challengerPortraitUrl },
+              opponent: { name: responderChar.name,  results: responderChar.spins,  shareId: responderChar.shareId,  portraitUrl: responderPortraitUrl  },
             })
             send(player.ws, {
               type: 'challenge_battle_start', roomCode: room.code, mode: 'character',
-              you:      { name: responderChar.name,  results: responderChar.spins,  shareId: responderChar.shareId  },
-              opponent: { name: challengerChar.name, results: challengerChar.spins, shareId: challengerChar.shareId },
+              you:      { name: responderChar.name,  results: responderChar.spins,  shareId: responderChar.shareId,  portraitUrl: responderPortraitUrl  },
+              opponent: { name: challengerChar.name, results: challengerChar.spins, shareId: challengerChar.shareId, portraitUrl: challengerPortraitUrl },
             })
           } else {
             // rivals (fresh-spin) mode — mirror the matchmaking 'matched' flow

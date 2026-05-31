@@ -137,7 +137,7 @@
         <div class="rounded-xl px-5 py-8 text-center" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
           <span class="material-symbols-outlined" style="font-size: 36px; color: #4e4635;">history_toggle_off</span>
           <p class="mt-3 text-sm" style="color: #9a907b; font-family: 'Cinzel', serif;">No battles fought yet.</p>
-          <p class="text-xs mt-1" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">Win a Story Mode battle to start a replay history.</p>
+          <p class="text-xs mt-1" style="color: #4e4635; font-family: 'JetBrains Mono', monospace;">Win an Ascension battle to start a replay history.</p>
         </div>
       {:else}
         <div class="flex flex-col gap-2">

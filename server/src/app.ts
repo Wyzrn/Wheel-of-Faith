@@ -5,6 +5,7 @@ import cookie from '@fastify/cookie'
 import jwt from '@fastify/jwt'
 import websocket from '@fastify/websocket'
 import { mongoosePlugin } from './plugins/mongoose.js'
+import { portraitsEnabled } from './services/portraits.js'
 import { characterRoutes } from './routes/characters.js'
 import { authRoutes } from './routes/auth.js'
 import { rivalsWsRoutes } from './routes/rivals-ws.js'
@@ -108,6 +109,12 @@ export async function createApp() {
   await app.register(endlessRoutes, { prefix: '/api' })
   await app.register(clanRoutes, { prefix: '/api' })
   await app.register(warRoutes,  { prefix: '/api' })
+
+  app.log.info(
+    portraitsEnabled()
+      ? '[portraits] enabled (fal.ai + R2)'
+      : '[portraits] disabled — set FAL_API_KEY + R2_* env vars to enable',
+  )
 
   if (process.env.NODE_ENV === 'production') {
     const handlerPath = new URL('../../build/handler.js', import.meta.url).href

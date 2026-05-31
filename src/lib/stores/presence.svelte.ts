@@ -26,8 +26,11 @@ export interface IncomingChallenge {
 
 export interface ChallengeBattle {
   roomCode: string
-  you: { name: string; results: SpinResult[]; shareId?: string }
-  opponent: { name: string; results: SpinResult[]; shareId?: string }
+  // portraitUrl is populated server-side by rivals-ws.ts from the Character
+  // records keyed on shareId — when present, BattleArena renders the AI
+  // portrait inside the sigil ring instead of the letter glyph.
+  you: { name: string; results: SpinResult[]; shareId?: string; portraitUrl?: string | null }
+  opponent: { name: string; results: SpinResult[]; shareId?: string; portraitUrl?: string | null }
 }
 
 // Delegates to the shared wsUrl helper so the same VITE_API_URL build flag

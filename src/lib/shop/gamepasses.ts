@@ -53,7 +53,7 @@ export const GAMEPASSES: GamepassDef[] = [
   {
     id: 'crit_surge',
     name: 'Crit Surge',
-    description: '+10% critical hit chance permanently across all Story Mode characters.',
+    description: '+10% critical hit chance permanently across all Ascension characters.',
     effect: '+10% crit chance (stacks with Potential)',
     category: 'combat',
     costShards: 4_500,

@@ -17,16 +17,41 @@
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
   import { toast } from '$lib/toast.svelte'
+  import PortraitZoom from './PortraitZoom.svelte'
 
   interface EquippedItemProp { id: string; grade: string; name: string }
 
-  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, equippedItems, onNewCharacter, onBackToMenu, onSaved, onRemoveItem }: {
+  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, equippedItems, shareId, portraitUrl, portraitRegeneratedAt, isOwner = false, portraitMode = 'character', onPortraitChanged, onNewCharacter, onBackToMenu, onSaved, onRemoveItem }: {
     results: SpinResult[]
     name?: string
     startedAt: string
     readonly?: boolean
     rivalsWins?: number
     equippedItems?: { weapons: EquippedItemProp[]; armors: EquippedItemProp[]; powers: EquippedItemProp[] }
+    // shareId of an already-saved character (mode='character'), or the
+    // local roster entry id (mode='ascension'). Required for portrait
+    // generation — without it, the auto-gen effect is skipped.
+    shareId?: string | null
+    // Initial portrait URL — passed in by the parent that loaded the saved
+    // character. After a fresh save, this becomes populated by the
+    // auto-generation effect below.
+    portraitUrl?: string | null
+    // Set when the owner has already used their one regenerate. Drives the
+    // "Regenerate" button's disabled state. Stays null otherwise.
+    portraitRegeneratedAt?: string | null
+    // Whether the current viewer is the character's owner. Drives whether
+    // the "Regenerate" button shows at all — other viewers never see it.
+    isOwner?: boolean
+    // Which generation endpoint to use:
+    //   'character' — POST /api/characters/:shareId/portrait (default)
+    //   'ascension' — POST /api/story-slots/roster-portrait (sends char data
+    //                 in body since Ascension chars have no Character record)
+    portraitMode?: 'character' | 'ascension'
+    // Fired after a successful generate or regenerate so the parent can
+    // persist the URL. For Ascension this writes back into the
+    // StoryRosterEntry; for saved characters the server already persists,
+    // so the callback is informational.
+    onPortraitChanged?: (url: string, opts: { regenerated: boolean }) => void
     onNewCharacter: () => void
     onBackToMenu?: () => void
     // Fired when the user successfully POSTs this character to /api/characters.
@@ -268,6 +293,94 @@
   let saveError      = $state<string | null>(null)
   let copied         = $state(false)
   let shareInGallery = $state(false)
+
+  // ── Portrait state ────────────────────────────────────────────────────────
+  // The card owns local portrait state because generation can be triggered
+  // after-save here (saved characters arrive with portraitUrl from the
+  // parent, fresh saves get it after the auto-gen effect fires).
+  let portraitLocal: string | null = $state(portraitUrl ?? null)
+  let portraitStatus: 'idle' | 'loading' | 'loaded' | 'failed' = $state(portraitUrl ? 'loaded' : 'idle')
+  let portraitZoomOpen = $state(false)
+  // Becomes true after a successful regenerate POST so the button can't be
+  // re-clicked in the same session. Server also enforces this (409 on second
+  // attempt) — this is just UX so the button greys out immediately instead
+  // of after a roundtrip.
+  let portraitRegenerated = $state(!!portraitRegeneratedAt)
+  let portraitRegenerating = $state(false)
+
+  // Track which shareIds we've already POST'd to /portrait this session so
+  // re-renders (e.g. tier badge animation flips) don't spam the endpoint.
+  const portraitRequested = new Set<string>()
+
+  async function requestPortrait(id: string, opts: { regenerate?: boolean } = {}) {
+    const key = opts.regenerate ? `${id}:regen` : id
+    if (portraitRequested.has(key)) return
+    portraitRequested.add(key)
+    if (opts.regenerate) portraitRegenerating = true
+    portraitStatus = 'loading'
+    try {
+      let res: Response
+      if (portraitMode === 'ascension') {
+        // Ascension chars have no Character record; send identity in the body.
+        const topPower = results.find(r => r.category === 'power')?.resultLabel
+        res = await fetch(apiUrl('/api/story-slots/roster-portrait'), {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            charId:      id,
+            name:        displayName,
+            race:        results.find(r => r.category === 'race')?.resultLabel ?? '',
+            archetype:   results.find(r => r.category === 'archetype')?.resultLabel ?? '',
+            topPower,
+            existingUrl: portraitLocal ?? undefined,
+            regenerate:  opts.regenerate ?? false,
+          }),
+        })
+      } else {
+        const url = opts.regenerate
+          ? apiUrl(`/api/characters/${id}/portrait?regenerate=1`)
+          : apiUrl(`/api/characters/${id}/portrait`)
+        res = await fetch(url, { method: 'POST', credentials: 'include' })
+      }
+      // 503 = portrait service not configured on this server. Silent fallback
+      // to the existing race-glyph identity — no error toast, no UI churn.
+      if (!res.ok) {
+        portraitStatus = portraitLocal ? 'loaded' : 'failed'
+        if (opts.regenerate && res.status === 409) {
+          // Server says "already regenerated" — sync local state with reality.
+          portraitRegenerated = true
+        }
+        return
+      }
+      const body = await res.json() as { url?: string; regenerated?: boolean }
+      if (body.url) {
+        portraitLocal = body.url
+        portraitStatus = 'loaded'
+        if (body.regenerated) portraitRegenerated = true
+        // Tell the parent so it can persist the URL (Ascension save slot,
+        // any future caching layer, etc.).
+        onPortraitChanged?.(body.url, { regenerated: !!body.regenerated })
+      } else {
+        portraitStatus = 'failed'
+      }
+    } catch {
+      portraitStatus = portraitLocal ? 'loaded' : 'failed'
+    } finally {
+      if (opts.regenerate) portraitRegenerating = false
+    }
+  }
+
+  // Auto-trigger generation when we have a shareId but no portrait yet.
+  // Anonymous viewers trigger this too — the server backfills lazily and
+  // any logged-out viewer benefits from the cached URL on subsequent loads.
+  // This is the "lazy backfill" path: old characters get their first
+  // portrait the first time anyone opens them.
+  $effect(() => {
+    if (!shareId) return
+    if (portraitLocal) return
+    void requestPortrait(shareId)
+  })
   // Expandable detail panel — key is "{category}:{label}", null = nothing expanded
   let expandedItem   = $state<string | null>(null)
   function toggleItem(key: string) { expandedItem = expandedItem === key ? null : key }
@@ -353,6 +466,11 @@
       } catch { /* ignore storage errors */ }
       // Notify parent so it can mark the matching history entry as saved.
       onSaved?.(shareId, startedAt)
+      // Fire portrait generation in the background. We don't await — by the
+      // time the user reads the toast and looks back at the card, the
+      // portrait region will either be loaded or have silently fallen back
+      // to the race glyph.
+      void requestPortrait(shareId)
       toast.success('Character saved', { detail: 'Share link ready to copy below.' })
     } finally {
       saving = false
@@ -410,6 +528,36 @@
       </div>
       <!-- Identity column -->
       <div class="text-right min-w-0 flex-1">
+        <!-- Portrait thumbnail. Falls back to invisible while idle/failed so
+             the existing identity layout is unchanged when portraits aren't
+             available. Click → fullscreen zoom modal. -->
+        {#if portraitLocal}
+          <div class="cc-portrait-wrap">
+            <button class="cc-portrait-thumb" onclick={() => portraitZoomOpen = true}
+              aria-label="View full portrait of {displayName}"
+              style="border-color: {TIER_COLORS[overallGrade] ?? '#ffdf96'}88; box-shadow: 0 0 14px {TIER_COLORS[overallGrade] ?? '#f0c040'}55;">
+              <img src={portraitLocal} alt="Portrait of {displayName}" />
+              {#if portraitRegenerating}
+                <div class="cc-portrait-regen-overlay" aria-hidden="true">
+                  <span class="material-symbols-outlined" style="font-size: 28px; color: #ffdf96; animation: cc-portrait-spin 1.2s linear infinite;">auto_awesome</span>
+                </div>
+              {/if}
+            </button>
+            {#if isOwner && shareId && !portraitRegenerated && !portraitRegenerating}
+              <button class="cc-portrait-regen-btn"
+                onclick={() => requestPortrait(shareId!, { regenerate: true })}
+                title="Regenerate portrait (one-time)"
+                aria-label="Regenerate portrait (one-time)">
+                <span class="material-symbols-outlined" style="font-size: 14px;">refresh</span>
+              </button>
+            {/if}
+          </div>
+        {:else if portraitStatus === 'loading'}
+          <div class="cc-portrait-thumb cc-portrait-skel" aria-label="Generating portrait"
+            style="border-color: {TIER_COLORS[overallGrade] ?? '#ffdf96'}44;">
+            <span class="material-symbols-outlined" style="font-size: 22px; color: {TIER_COLORS[overallGrade] ?? '#ffdf96'}88; animation: cc-portrait-pulse 1.4s ease-in-out infinite;" aria-hidden="true">auto_awesome</span>
+          </div>
+        {/if}
         {#if title !== '—'}
           <p class="text-xs tracking-[0.18em] uppercase mb-1" style="color: #a78bfa;">{title}</p>
         {/if}
@@ -1141,7 +1289,68 @@
 
 </div>
 
+{#if portraitZoomOpen && portraitLocal}
+  <PortraitZoom src={portraitLocal} alt="Full portrait of {displayName}" onClose={() => portraitZoomOpen = false} />
+{/if}
+
 <style>
+  /* ── Portrait thumbnail (top-right of hero banner) ───────────────────── */
+  .cc-portrait-wrap {
+    position: relative;
+    width: 72px;
+    margin: 0 0 8px auto;
+  }
+  .cc-portrait-thumb {
+    display: block;
+    width: 72px; height: 72px;
+    margin: 0 0 8px auto;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid;
+    background: rgba(20, 17, 26, 0.6);
+    cursor: zoom-in;
+    padding: 0;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+    position: relative;
+  }
+  .cc-portrait-wrap .cc-portrait-thumb { margin: 0; }
+  .cc-portrait-thumb:hover  { transform: translateY(-2px) scale(1.04); }
+  .cc-portrait-thumb:active { transform: translateY(0)    scale(0.98); }
+  .cc-portrait-thumb img    { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cc-portrait-skel {
+    display: flex; align-items: center; justify-content: center;
+    cursor: default;
+  }
+  /* Owner-only one-time regenerate button, anchored to the thumbnail's
+     bottom-right. Stays out of the way until hovered. */
+  .cc-portrait-regen-btn {
+    position: absolute; bottom: -6px; right: -6px;
+    width: 24px; height: 24px;
+    border-radius: 999px;
+    background: rgba(20, 17, 26, 0.95);
+    border: 1px solid rgba(240, 192, 82, 0.6);
+    color: #ffdf96;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0;
+    transition: transform 120ms ease, background 120ms ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  }
+  .cc-portrait-regen-btn:hover  { background: rgba(40, 32, 50, 0.95); transform: scale(1.12); }
+  .cc-portrait-regen-btn:active { transform: scale(0.95); }
+  .cc-portrait-regen-overlay {
+    position: absolute; inset: 0;
+    background: rgba(8, 6, 14, 0.65);
+    display: flex; align-items: center; justify-content: center;
+  }
+  @keyframes cc-portrait-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  @keyframes cc-portrait-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50%      { opacity: 1;   transform: scale(1.18); }
+  }
+
   /* ── Race glyph subtle pulse so the icon "lives" on the card ──────────── */
   .character-race-glyph {
     animation: charGlyphPulse 4.5s ease-in-out infinite;

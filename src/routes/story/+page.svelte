@@ -26,6 +26,7 @@
     type OpenedItem,
   } from '$lib/story/saveSlots'
   import type { StoryTeam } from '$lib/story/types'
+  import { cloudAutosave, flushCloudAutosaves } from '$lib/story/cloudAutosave'
   import { getGemValue } from '$lib/story/shards'
   import { auth } from '$lib/stores/auth.svelte'
   import { tilt } from '$lib/actions/tilt'
@@ -94,6 +95,28 @@
     grade: string
     refund: number
   } | null>(null)
+
+  // Persist a generated Ascension portrait URL onto the matching roster entry.
+  // Triggered by CharacterCard's onPortraitChanged callback when the player
+  // opens an entry whose portrait hadn't been generated yet (or regenerates).
+  // The cloud autosave $effect picks up the slot mutation on the next tick.
+  function handleRosterPortraitChanged(charId: string, url: string, opts: { regenerated: boolean }) {
+    if (!currentSlot) return
+    const idx = currentSlot.roster.findIndex(r => r.id === charId)
+    if (idx === -1) return
+    const snap = $state.snapshot(currentSlot) as StorySaveSlot
+    const next = {
+      ...snap,
+      roster: snap.roster.map((r, i) => i === idx
+        ? { ...r, portraitUrl: url, ...(opts.regenerated ? { portraitRegeneratedAt: new Date().toISOString() } : {}) }
+        : r),
+    }
+    currentSlot = next
+    // Don't call autosaveCheckpoint here — generating a portrait is a UI
+    // augmentation, not one of the user's listed checkpoint events. The
+    // local saveSaveSlot $effect (line ~245) still fires, and the next
+    // checkpoint event (battle, sell, etc.) will push to cloud.
+  }
 
   function handleRemoveEquippedItem(characterId: string, itemId: string, type: 'weapon' | 'armor' | 'power') {
     if (!currentSlot) return
@@ -246,6 +269,22 @@
     if (currentSlot) saveSaveSlot($state.snapshot(currentSlot) as StorySaveSlot)
   })
 
+  // Cloud autosave checkpoint helper — fired explicitly at the events the
+  // user asked for (crystal open, stat apply, spin use, sell, dismantle,
+  // battle end, endless end). Debounced inside cloudAutosave().
+  function autosaveCheckpoint() {
+    if (!currentSlot) return
+    cloudAutosave($state.snapshot(currentSlot) as StorySaveSlot, { loggedIn: auth.loggedIn })
+  }
+
+  // Flush any pending autosave on tab close so the last mutation isn't lost.
+  $effect(() => {
+    if (typeof window === 'undefined') return
+    const handler = () => flushCloudAutosaves()
+    window.addEventListener('pagehide', handler)
+    return () => window.removeEventListener('pagehide', handler)
+  })
+
   // ── Lock background scroll while a full-screen overlay/modal is open, so the
   // page behind the character-sheet popup can't scroll underneath it. ───────
   $effect(() => {
@@ -396,6 +435,7 @@
     if (!updated) return
     lastSpinType = type
     currentSlot = updated
+    autosaveCheckpoint()
     view = 'spin'
   }
 
@@ -469,6 +509,7 @@
       value,
     )
     sellTarget = null
+    autosaveCheckpoint()
   }
 
   // ── Dismantle (level 4+) ──────────────────────────────────────────────────
@@ -499,6 +540,7 @@
     if (out === 'char_not_found') { dismantleTarget = null; return }
     currentSlot = out.slot
     dismantleResult = out.result
+    autosaveCheckpoint()
     // Keep the modal open with the result preview; player closes it manually.
   }
   function closeDismantle() {
@@ -655,6 +697,7 @@
 
   function handleEndlessExit(updated: StorySaveSlot) {
     currentSlot = updated
+    autosaveCheckpoint()
     view = 'hub'
   }
 
@@ -668,6 +711,7 @@
       currentSlot = updated
     }
     checkLevelUp(oldLevel, updated)
+    autosaveCheckpoint()
     view = 'worlds'
   }
 
@@ -986,6 +1030,7 @@
     }
     currentSlot = result.slot
     saveSaveSlot($state.snapshot(result.slot) as StorySaveSlot)
+    autosaveCheckpoint()
     crystalAnim = { type, grade, phase: 'pulse', item: result.item }
     setTimeout(() => {
       crystalAnim = crystalAnim ? { ...crystalAnim, phase: 'crack' } : null
@@ -1073,6 +1118,7 @@
     }
     currentSlot = updated
     saveSaveSlot($state.snapshot(updated) as StorySaveSlot)
+    autosaveCheckpoint()
     useStatModal = null
     useStatQty = 1
   }
@@ -1087,7 +1133,7 @@
         class="gold-emboss font-bold tracking-widest mb-2"
         style="font-family: var(--font-cinzel); font-size: 28px;"
       >
-        STORY MODE
+        ASCENSION
       </h1>
       <p class="text-sm font-mono" style="color: var(--color-outline);">
         Choose a save slot to continue or begin
@@ -1201,7 +1247,7 @@
       <div class="flex items-center gap-3 min-w-0">
         <button class="material-symbols-outlined" style="font-size: 20px; color: var(--color-outline); background: none; border: none; cursor: pointer;"
           onclick={() => { view = 'saveSlotSelect'; currentSlot = null }} aria-label="Back to save slots">arrow_back</button>
-        <span class="font-bold tracking-widest truncate" style="font-family: var(--font-cinzel); font-size: 16px; color: #f0c052; text-shadow: 0 0 14px rgba(240,192,82,0.35);">STORY MODE</span>
+        <span class="font-bold tracking-widest truncate" style="font-family: var(--font-cinzel); font-size: 16px; color: #f0c052; text-shadow: 0 0 14px rgba(240,192,82,0.35);">ASCENSION</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style="background: #38333c; border: 1px solid rgba(240,192,82,0.25);">
@@ -1952,6 +1998,12 @@
           startedAt={expandedEntry.sessionStartedAt}
           readonly={true}
           equippedItems={{ weapons: expandedEntry.equippedWeapons, armors: expandedEntry.equippedArmors, powers: expandedEntry.equippedPowers }}
+          shareId={expandedEntry.id}
+          portraitUrl={expandedEntry.portraitUrl ?? null}
+          portraitRegeneratedAt={expandedEntry.portraitRegeneratedAt ?? null}
+          isOwner={true}
+          portraitMode="ascension"
+          onPortraitChanged={(url, opts) => handleRosterPortraitChanged(expandedEntry!.id, url, opts)}
           onNewCharacter={() => {}}
           onRemoveItem={(itemId, type) => handleRemoveEquippedItem(expandedEntry!.id, itemId, type)}
         />

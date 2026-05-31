@@ -32,6 +32,10 @@
     name: string
     shareId?: string
     statBonuses?: Record<string, number>
+    /** R2-hosted portrait — passed through to the BattleArena sigil so the
+     *  fighter renders with the AI image instead of a letter glyph. Saved
+     *  Rivals characters carry this; un-saved or anonymous ones do not. */
+    portraitUrl?: string | null
   }
 
   const {
@@ -154,11 +158,11 @@
     arenaTeams = [
       {
         side: 'team1', label: team1Label, accent: '#f0c040',
-        members: t1Chars.map((c, i) => memberFromChar(c, t1Ids[i], 'team1', formatHp)),
+        members: t1Chars.map((c, i) => memberFromChar(c, t1Ids[i], 'team1', formatHp, undefined, team1[i]?.portraitUrl ?? null)),
       },
       {
         side: 'team2', label: team2Label, accent: team2Color,
-        members: t2Chars.map((c, i) => memberFromChar(c, t2Ids[i], 'team2', formatHp)),
+        members: t2Chars.map((c, i) => memberFromChar(c, t2Ids[i], 'team2', formatHp, undefined, team2[i]?.portraitUrl ?? null)),
       },
     ]
     controller = new BattleControllerTeam(

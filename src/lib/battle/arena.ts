@@ -31,6 +31,11 @@ export interface ArenaMember {
    *  purple for legend, crimson for paragon) so the player can read team
    *  composition at a glance. */
   spinClass?: 'hero' | 'legend' | 'paragon'
+  /** R2-hosted AI portrait. When present, renders inside the HP ring in
+   *  place of the letter sigil and supports click-to-zoom. Saved characters
+   *  (Rivals) get a portraitUrl; Ascension roster characters do not (they
+   *  live in local save slots and are never POSTed to /api/characters). */
+  portraitUrl?: string | null
 }
 
 export interface ArenaTeam {
@@ -252,6 +257,7 @@ export function normalizeRoundTeam(
 export function memberFromChar(
   char: BattleCharacter, id: string, side: ArenaSide, formatHp: (n: number) => string,
   spinClass?: 'hero' | 'legend' | 'paragon',
+  portraitUrl?: string | null,
 ): ArenaMember {
   return {
     id, side,
@@ -267,6 +273,7 @@ export function memberFromChar(
       { label: 'SPD',  value: Math.round(char.initiative) },
     ],
     spinClass,
+    portraitUrl: portraitUrl ?? null,
   }
 }
 
