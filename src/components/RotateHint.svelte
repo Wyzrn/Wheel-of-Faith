@@ -47,7 +47,7 @@
     <div class="rotate-card">
       <span class="material-symbols-outlined rotate-icon">screen_rotation</span>
       <h2 class="rotate-title">Turn your device</h2>
-      <p class="rotate-sub">Wheel of Fate is played in landscape. Rotate your phone sideways to continue.</p>
+      <p class="rotate-sub">Wheel of Destiny is played in landscape. Rotate your phone sideways to continue.</p>
       {#if canFullscreen && !isFullscreen}
         <div class="rotate-actions">
           <button class="rotate-btn rotate-btn-primary" onclick={goFullscreen}>

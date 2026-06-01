@@ -63,7 +63,7 @@
 
   <!-- Header -->
   <div class="text-center mb-8">
-    <p class="font-mono text-xs tracking-widest uppercase mb-1" style="color: #9a907b; letter-spacing: 0.18em;">Wheel of Fate</p>
+    <p class="font-mono text-xs tracking-widest uppercase mb-1" style="color: #9a907b; letter-spacing: 0.18em;">Wheel of Destiny</p>
     <h1 class="font-bold mb-2" style="font-family: 'Cinzel', serif; font-size: 1.7rem; color: #ffdf96; text-shadow: 0 0 20px rgba(240,192,64,0.35);">
       The Arcane Shop
     </h1>

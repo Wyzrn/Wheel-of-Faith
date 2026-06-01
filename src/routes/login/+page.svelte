@@ -25,7 +25,7 @@
   <div class="w-full max-w-sm">
     <!-- Header -->
     <div class="text-center mb-8">
-      <p class="text-xs tracking-[0.3em] uppercase mb-3" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Wheel of Fate</p>
+      <p class="text-xs tracking-[0.3em] uppercase mb-3" style="font-family: 'JetBrains Mono', monospace; color: #4e4635;">Wheel of Destiny</p>
       <h1 style="font-family: 'Cinzel', serif; font-size: 1.75rem; font-weight: 900; color: #ffdf96; letter-spacing: 0.1em;">
         {mode === 'login' ? 'Welcome Back' : 'Create Account'}
       </h1>

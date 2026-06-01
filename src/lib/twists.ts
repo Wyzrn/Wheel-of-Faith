@@ -512,7 +512,7 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
       'Time-Locked Form':                  { lockElement: 'Time', statBonusGrants: { agility: 'statBonus' }, flavor: 'You haven\'t aged in seven hundred years.' },
       'Prophecy of Ruin':                  { statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', charisma: 'statPenalty' }, flavor: 'Foretold to undo something important. Probably you.' },
       'Plot Armor (Once Per Battle)':      { statBonusGrants: { durability: 'statBonus' }, flavor: 'Death rolled a critical miss against you.' },
-      'The Wheel Likes You':               { statBonusGrants: { potential: 'statBonus', iq: 'statBonus', strength: 'statBonus' }, flavor: 'The Wheel of Fate ranks you among its favorites.' },
+      'The Wheel Likes You':               { statBonusGrants: { potential: 'statBonus', iq: 'statBonus', strength: 'statBonus' }, flavor: 'The Wheel of Destiny ranks you among its favorites.' },
     },
   },
 

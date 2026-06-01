@@ -34,7 +34,7 @@
       icon: 'casino',
       iconColor: '#f0c040',
       label: 'Welcome',
-      title: 'Welcome to\nWheel of Fate',
+      title: 'Welcome to\nWheel of Destiny',
       body: 'A character creation engine driven entirely by chance.\n\nYou spin ~23 sequential wheels that decide your race, class, powers, stats, weapons, weaknesses, and title — in that order. Every result is permanent. The only strategy is acceptance.\n\nThis tutorial walks you through every system before your first spin, then gives you context cards at each stage of the game as it appears.',
     },
     {

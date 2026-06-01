@@ -266,7 +266,7 @@
     </div>
     <div class="flex-1 flex items-center justify-center gap-2">
       <span class="material-symbols-outlined" style="color: #f0c040; font-size: 18px; font-variation-settings: 'FILL' 1;">casino</span>
-      <span style="font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #ffdf96; letter-spacing: 0.18em;">WHEEL OF FATE</span>
+      <span style="font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #ffdf96; letter-spacing: 0.18em;">WHEEL OF DESTINY</span>
     </div>
     <div style="min-width: 80px;"></div>
   </nav>

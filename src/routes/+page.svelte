@@ -2556,7 +2556,7 @@
           </div>
         </div>
         <div class="text-center">
-          <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 8vw, 2.6rem); font-weight: 900; color: #f0c040; letter-spacing: 0.18em; line-height: 1.1; text-shadow: 0 0 24px rgba(240,192,64,0.4);">WHEEL OF FATE</h1>
+          <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 8vw, 2.6rem); font-weight: 900; color: #f0c040; letter-spacing: 0.18em; line-height: 1.1; text-shadow: 0 0 24px rgba(240,192,64,0.4);">WHEEL OF DESTINY</h1>
           <p class="mt-1.5 text-xs tracking-[0.22em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Spin your destiny. Accept the consequences.</p>
         </div>
       </div>
@@ -2654,7 +2654,7 @@
     <!-- Center: logo -->
     <div class="flex-1 flex items-center justify-center gap-2">
       <span class="material-symbols-outlined" style="color: #f0c040; font-size: 18px; font-variation-settings: 'FILL' 1;">casino</span>
-      <span style="font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #ffdf96; letter-spacing: 0.18em;">WHEEL OF FATE</span>
+      <span style="font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #ffdf96; letter-spacing: 0.18em;">WHEEL OF DESTINY</span>
     </div>
 
     <!-- Right slot: spin counter -->
@@ -2707,7 +2707,7 @@
           </div>
         </div>
         <div class="text-center">
-          <h1 class="menu-title" style="font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 6vw, 2.2rem); font-weight: 900; color: #f0c040; letter-spacing: 0.18em; line-height: 1.1; text-shadow: 2px 2px 0 rgba(0,0,0,0.8), 0 0 16px rgba(240,192,64,0.4);">WHEEL OF FATE</h1>
+          <h1 class="menu-title" style="font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 6vw, 2.2rem); font-weight: 900; color: #f0c040; letter-spacing: 0.18em; line-height: 1.1; text-shadow: 2px 2px 0 rgba(0,0,0,0.8), 0 0 16px rgba(240,192,64,0.4);">WHEEL OF DESTINY</h1>
           <p class="mt-1.5 text-xs tracking-[0.22em] uppercase" style="font-family: 'JetBrains Mono', monospace; color: #9a907b;">Spin your destiny. Accept the consequences.</p>
         </div>
       </div>
