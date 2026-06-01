@@ -107,7 +107,7 @@
   let manualMode = $state(forceManual || !settings.autoBattle)
 
   let showCritSurge = $state(false)
-  let canInstant = $derived((auth.user?.gamepasses ?? []).includes('instant_battle'))
+  let canInstant = $derived((auth.user?.gamepasses ?? []).includes('instant_battle') && settings.instantBattleEnabled)
 
   // ── Per-spin ability modifiers (kept verbatim from the legacy view) ──────
   function extractBattleModifiers(results: SpinResult[]) {

@@ -27,6 +27,12 @@ class SettingsStore {
   // matching gamepass; resolveActiveTheme falls back to 'default' otherwise.
   // 'default' = no skin (vanilla gold wheel).
   activeWheelTheme: WheelThemeId = $state('default')
+  // Whether the Instant Battle Skip button appears in the arena dock.
+  // Gated by ownership of the `instant_battle` gamepass — this toggle just
+  // lets the player turn the affordance off when they want to watch the
+  // full fight despite owning the pass. Defaults ON to match the old
+  // behaviour where ownership alone surfaced the button.
+  instantBattleEnabled = $state(true)
 
   // Backward-compat shim: existing views still read settings.battleSpeed
   // as a single numeric multiplier. Resolves to the auto speed when auto is
@@ -58,6 +64,7 @@ class SettingsStore {
       if (typeof s.activeWheelTheme === 'string') this.activeWheelTheme = s.activeWheelTheme as WheelThemeId
       // Migrate legacy boolean cursedWheelEnabled -> activeWheelTheme.
       else if (s.cursedWheelEnabled === true) this.activeWheelTheme = 'cursed_wheel'
+      if (typeof s.instantBattleEnabled === 'boolean') this.instantBattleEnabled = s.instantBattleEnabled
       // Migrate the old battleSpeed field (single slider, 99 = instant).
       if (s.autoBattleSpeed === undefined && typeof s.battleSpeed === 'number') {
         if (s.battleSpeed >= 99) { this.autoBattle = true; this.autoBattleSpeed = 1.6 }
@@ -77,6 +84,7 @@ class SettingsStore {
       autoContinueMs:  this.autoContinueMs,
       highQualityOverride: this.highQualityOverride,
       activeWheelTheme: this.activeWheelTheme,
+      instantBattleEnabled: this.instantBattleEnabled,
     }))
   }
 }

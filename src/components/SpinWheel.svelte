@@ -1558,60 +1558,97 @@
           surroundings via mix-blend-mode: multiply.
      The themed inner aura still renders (innerStops are pitch-black) but
      gets repurposed by the wt-void override below. */
+  /* ── Void (2500) — strict B&W black-hole horror.
+     Five layered effects stacked into the wheel-box's pseudo-elements +
+     overrides for the inner glow:
+
+       parent .cursed-inner-glow → singularity collapse pulse, pure black.
+       parent ::before           → rotating photon ring stack (white only)
+                                   + radial particle field (white dots
+                                   scattered around the rim) that drifts
+                                   inward toward the singularity.
+       parent ::after            → outer void gradient (gravitational
+                                   dimming) PLUS reality-tear shards
+                                   sliced across the halo — sharp white
+                                   slivers that flicker in and out.
+
+     No color anywhere — only black, white, and greyscale alpha. The
+     contrast is the appeal. */
   :global(.wt-void) .cursed-inner-glow {
     animation-name: voidSuck !important;
     mix-blend-mode: normal !important;
   }
   @keyframes voidSuck {
     0%, 100% { opacity: 1;    transform: scale(1)    rotate(0deg);   }
-    50%      { opacity: 0.92; transform: scale(0.72) rotate(180deg); }
+    50%      { opacity: 0.92; transform: scale(0.7)  rotate(180deg); }
   }
+
+  /* Layer 1 (::before): photon rings + scattered particles. Two stacked
+     backgrounds: a conic-gradient sweep for the lensed light rings, and
+     a radial-gradient particle field for the inward-drifting matter. */
   :global(.wt-void)::before {
-    content: ''; position: absolute; inset: -28px; border-radius: 50%; pointer-events: none;
-    /* Accretion ring stack — four concentric annuli (innermost = event
-       horizon, outermost = halo edge) carrying the same rotating bright
-       sweep so the wheel reads as a black hole nested inside multiple
-       lensed light rings. The mask is a multi-band radial gradient
-       defining where each ring shows. The conic-gradient supplies the
-       sweep colour, which appears identically across every band so the
-       rings rotate together like gravitational frame-dragging. */
-    background: conic-gradient(from 0deg,
-      transparent 0deg,
-      rgba(125,211,252,0.10) 30deg,
-      rgba(125,211,252,0.55) 70deg,
-      rgba(224,242,254,0.95) 90deg,
-      rgba(125,211,252,0.55) 110deg,
-      rgba(125,211,252,0.10) 150deg,
-      transparent 180deg);
-    /* All four rings sit OUTSIDE the wheel rim (rim ≈ 62% of corner
-       distance once inset is applied). Bands are ~2% thick with ~3%
-       gaps, producing four crisp light circles. */
+    content: ''; position: absolute; inset: -32px; border-radius: 50%; pointer-events: none;
+    background:
+      /* Photon ring sweep — pure greyscale */
+      conic-gradient(from 0deg,
+        transparent 0deg,
+        rgba(255,255,255,0.10) 30deg,
+        rgba(255,255,255,0.55) 70deg,
+        rgba(255,255,255,1.00) 88deg,
+        rgba(255,255,255,1.00) 92deg,
+        rgba(255,255,255,0.55) 110deg,
+        rgba(255,255,255,0.10) 150deg,
+        transparent 180deg);
     mask:
       radial-gradient(circle,
         transparent 63%,
         black 64%, black 66%, transparent 67%,   /* event horizon */
-        black 69%, black 71%, transparent 72%,   /* inner halo */
-        black 74%, black 76%, transparent 77%,   /* mid halo */
-        black 79%, black 81%, transparent 82%);  /* outer photon ring */
-    filter: blur(1.4px) drop-shadow(0 0 6px rgba(125,211,252,0.55)) drop-shadow(0 0 12px rgba(96,165,250,0.35));
+        black 69%, black 71%, transparent 72%,   /* inner photon ring */
+        black 74%, black 76%, transparent 77%,   /* mid ring */
+        black 79%, black 81%, transparent 82%);  /* outer ring */
+    filter: blur(1.2px) drop-shadow(0 0 6px rgba(255,255,255,0.6)) drop-shadow(0 0 14px rgba(255,255,255,0.35));
     animation: voidEventHorizon 7s linear infinite;
   }
+
+  /* Layer 2 (::after): outer void gradient + reality-tear shards.
+     The shards are crisp white triangular slivers cut into the halo via
+     a conic-gradient mask — they flicker erratically, like rips in
+     spacetime that briefly reveal something behind reality. */
   :global(.wt-void)::after {
-    content: ''; position: absolute; inset: -36px; border-radius: 50%; pointer-events: none;
-    /* Lensing halo + gravitational dimming around the wheel — dark vignette
-       on a multiply blend so whatever is behind the wheel reads as fading
-       into the singularity. The faint blue tinge keeps it from looking like
-       just a drop-shadow. */
+    content: ''; position: absolute; inset: -64px; border-radius: 50%; pointer-events: none;
     background:
-      radial-gradient(circle, transparent 52%, rgba(8,8,18,0.55) 60%, rgba(0,0,0,0.85) 78%, rgba(0,0,0,0) 100%),
-      radial-gradient(circle, transparent 50%, rgba(30,58,138,0.25) 55%, transparent 65%);
-    mix-blend-mode: multiply;
-    animation: voidWarp 9s ease-in-out infinite;
+      /* Reality tears — irregular white shards at random angles */
+      conic-gradient(from 17deg,
+        transparent 0deg,    rgba(255,255,255,0.85) 2deg,  transparent 4deg,
+        transparent 47deg,   rgba(255,255,255,0.6)  49deg, transparent 50deg,
+        transparent 103deg,  rgba(255,255,255,0.95) 106deg, rgba(255,255,255,0.4) 109deg, transparent 110deg,
+        transparent 167deg,  rgba(255,255,255,0.7)  170deg, transparent 172deg,
+        transparent 221deg,  rgba(255,255,255,0.5)  223deg, transparent 224deg,
+        transparent 277deg,  rgba(255,255,255,0.9)  280deg, rgba(255,255,255,0.4) 283deg, transparent 285deg,
+        transparent 331deg,  rgba(255,255,255,0.6)  333deg, transparent 335deg),
+      /* Gravitational dimming halo */
+      radial-gradient(circle, transparent 48%, rgba(0,0,0,0.85) 62%, rgba(0,0,0,1) 78%, rgba(0,0,0,0) 100%);
+    mask: radial-gradient(circle, transparent 55%, black 60%, black 95%, transparent 100%);
+    mix-blend-mode: normal;
+    filter: blur(0.6px);
+    animation: voidTear 4.5s steps(1, end) infinite, voidWarp 9s ease-in-out infinite;
   }
+
   @keyframes voidEventHorizon { to { transform: rotate(360deg); } }
+  @keyframes voidTear {
+    /* Discrete flicker — the reality tears appear and vanish at unpredictable
+       intervals via discrete rotation jumps, simulating uncoordinated rips. */
+    0%   { transform: rotate(0deg);   opacity: 0.95; }
+    16%  { transform: rotate(45deg);  opacity: 0.4;  }
+    32%  { transform: rotate(73deg);  opacity: 1;    }
+    48%  { transform: rotate(118deg); opacity: 0.55; }
+    64%  { transform: rotate(190deg); opacity: 1;    }
+    80%  { transform: rotate(244deg); opacity: 0.7;  }
+    100% { transform: rotate(360deg); opacity: 0.95; }
+  }
   @keyframes voidWarp {
-    0%, 100% { transform: scale(1);    opacity: 0.85; }
-    50%      { transform: scale(1.04); opacity: 1;    }
+    0%, 100% { filter: blur(0.6px); }
+    50%      { filter: blur(1.2px); }
   }
 
   /* Reduced motion + low-perf: kill the always-on theme layers entirely. */

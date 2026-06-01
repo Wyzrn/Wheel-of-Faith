@@ -173,7 +173,7 @@
 
   // Manual / Auto preference seeded from the user's setting.
   let manualMode   = $state(!settings.autoBattle)
-  let canInstant   = $derived(gamepasses.includes('instant_battle'))
+  let canInstant   = $derived(gamepasses.includes('instant_battle') && settings.instantBattleEnabled)
 
   // Arena driving state (rebuilt per wave).
   let arenaTeams      = $state<[ArenaTeam, ArenaTeam] | null>(null)

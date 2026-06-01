@@ -272,11 +272,11 @@
         <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
       </button>
       <p class="font-mono text-xs tracking-widest uppercase mb-1" style="color: #9a907b;">Wheel Theme</p>
-      <h3 class="mb-4" style="font-family: 'Cinzel', serif; font-size: 1.3rem; color: {theme.rimStroke}; text-shadow: 0 0 12px {theme.glow};">{theme.name}</h3>
-      <div class="flex justify-center mb-4" style="--wtp-glow: {theme.glow};">
-        <WheelThemePreview {theme} size={220} />
+      <h3 class="mb-3" style="font-family: 'Cinzel', serif; font-size: 1.3rem; color: {theme.rimStroke}; text-shadow: 0 0 12px {theme.glow};">{theme.name}</h3>
+      <div class="flex justify-center my-2" style="--wtp-glow: {theme.glow};">
+        <WheelThemePreview {theme} size={200} />
       </div>
-      <p class="text-xs text-center" style="color: #9a907b; line-height: 1.4;">Preview only — segment colors are samples. The real spin wheel uses the same rim, glow, and inner aura.</p>
+      <p class="text-xs text-center" style="color: #9a907b; line-height: 1.4;">Segment colors are samples. Every other VFX layer — rim, glow, particles, animations — is exactly what you'll get.</p>
     </div>
   </div>
 {/if}
@@ -300,12 +300,13 @@
     background: linear-gradient(180deg, #1a1623, #0d0c16);
     border: 1px solid rgba(240, 192, 82, 0.3);
     border-radius: 16px;
-    padding: 24px 24px 20px;
-    max-width: 320px;
+    padding: 24px 12px 20px;
+    max-width: 400px;
     width: 100%;
     text-align: center;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
     animation: wtp-zoom 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
   }
   .wtp-close {
     position: absolute; top: 10px; right: 10px;

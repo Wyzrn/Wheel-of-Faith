@@ -1,8 +1,12 @@
 <script lang="ts">
   import { settings } from '$lib/settings.svelte'
   import { getPerfTier } from '$lib/perf'
+  import { auth } from '$lib/stores/auth.svelte'
 
   let { onClose }: { onClose: () => void } = $props()
+  // Surface the Instant Battle toggle only to owners — keeps the panel
+  // clean for everyone else.
+  let hasInstantBattle = $derived((auth.user?.gamepasses ?? []).includes('instant_battle'))
   // Tier the heuristic has bucketed this device into — surfaced as a tiny
   // info line under the High Quality toggle so users understand whether
   // enabling the override is risky on their device.
@@ -36,7 +40,7 @@
     { value: 4000, label: '4s',      desc: 'Savor each one'  },
   ]
 
-  function toggle(key: 'soundEnabled' | 'effectsEnabled' | 'autoBattle') {
+  function toggle(key: 'soundEnabled' | 'effectsEnabled' | 'autoBattle' | 'instantBattleEnabled') {
     settings[key] = !settings[key]
     settings.save()
   }
@@ -180,6 +184,22 @@
             </button>
           {/each}
         </div>
+      </div>
+    {/if}
+
+    {#if hasInstantBattle}
+      <div class="divider"></div>
+      <!-- ─ Instant Battle (owner-only) ─ -->
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-semibold" style="color: #e9dfeb;">Instant Battle Skip</p>
+          <p class="text-xs mt-0.5" style="color: #9a907b;">Show the in-arena Skip button. Off = watch the whole fight.</p>
+        </div>
+        <button onclick={() => toggle('instantBattleEnabled')} class="toggle-btn"
+          style="background: {settings.instantBattleEnabled ? '#f0c040' : '#1e1a22'}; box-shadow: {settings.instantBattleEnabled ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.instantBattleEnabled ? '#f0c040' : 'rgba(78,70,53,0.5)'};"
+          aria-label="Toggle Instant Battle skip button">
+          <span class="toggle-knob" style="left: {settings.instantBattleEnabled ? '22px' : '2px'}; background: {settings.instantBattleEnabled ? '#0d0d16' : '#3a3848'};"></span>
+        </button>
       </div>
     {/if}
 

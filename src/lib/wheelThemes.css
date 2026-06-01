@@ -1,0 +1,495 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Cosmetic wheel theme styles. EXTRACTED from src/components/SpinWheel.svelte
+   so the shop preview modal can render exact VFX without mounting the heavy
+   SpinWheel component (with its GSAP idle, sound loaders, etc.).
+
+   All selectors are global — the original used Svelte :global() wrappers
+   which we stripped during extraction.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Pulsating violet aura inside the wheel. */
+  .cursed-inner-glow { animation: cursedInnerPulse 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes cursedInnerPulse {
+    0%, 100% { opacity: 0.55; transform: scale(0.94); }
+    50%      { opacity: 1;    transform: scale(1.02); }
+  }
+
+  /* (Void-wheel overrides moved next to the rest of the theme treatments
+     below, where they live alongside Cosmic for tier parity.) */
+  @media (prefers-reduced-motion: reduce) {
+    .cursed-spikes-spin, .cursed-spikes-spin-rev, .cursed-inner-glow { animation: none; }
+  }
+  [data-perf="low"] .cursed-spikes-spin,
+  [data-perf="low"] .cursed-spikes-spin-rev { animation: none; }
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     Per-theme unique cosmetic treatments. Each wheel skin adds layered
+     pseudo-elements outside the wheel rim so the slice colors stay intact
+     while the surrounding aesthetic changes dramatically. Roughly tiered to
+     price: cheap skins get a single understated layer, expensive skins get
+     two stacked layers, distinct animations, and stronger glow chains.
+
+     Common positioning: .sw-wheel-box is position: relative (set inline),
+     so ::before / ::after are absolutely positioned at -Npx insets to spill
+     outside the rim. All are pointer-events: none so the spin button still
+     receives clicks. -------------------------------------------------------*/
+
+  /* ── Glowing (500) — pulsing cyan halo */
+  .wt-glowing::before {
+    content: ''; position: absolute; inset: -22px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle at center, transparent 56%, rgba(90,214,239,0.32) 66%, transparent 82%);
+    animation: glowingPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes glowingPulse {
+    0%, 100% { transform: scale(1);    opacity: 0.55; }
+    50%      { transform: scale(1.06); opacity: 1; }
+  }
+
+  /* ── Nature (500) — rotating green vine ring */
+  .wt-nature::before {
+    content: ''; position: absolute; inset: -14px; border-radius: 50%; pointer-events: none;
+    background:
+      conic-gradient(from 0deg,
+        rgba(34,197,94,0.55) 0deg, transparent 18deg, transparent 72deg,
+        rgba(34,197,94,0.55) 90deg, transparent 108deg, transparent 162deg,
+        rgba(34,197,94,0.55) 180deg, transparent 198deg, transparent 252deg,
+        rgba(34,197,94,0.55) 270deg, transparent 288deg);
+    mask: radial-gradient(circle, transparent 52%, black 56%, black 70%, transparent 76%);
+    filter: blur(4px);
+    animation: natureSpin 24s linear infinite;
+  }
+  @keyframes natureSpin { to { transform: rotate(360deg); } }
+
+  /* ── Guilded (1000) — gold dust shimmer + slow rotating beams */
+  .wt-guilded::before {
+    content: ''; position: absolute; inset: -14px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(circle at 28% 32%, rgba(255,215,0,0.6) 0%, transparent 14%),
+      radial-gradient(circle at 72% 68%, rgba(255,215,0,0.5) 0%, transparent 12%),
+      radial-gradient(circle at 50% 86%, rgba(255,215,0,0.45) 0%, transparent 11%),
+      radial-gradient(circle at 18% 76%, rgba(255,215,0,0.4)  0%, transparent 10%);
+    filter: blur(2px);
+    mix-blend-mode: screen;
+    animation: guildedShimmer 5s ease-in-out infinite;
+  }
+  .wt-guilded::after {
+    content: ''; position: absolute; inset: -32px; border-radius: 50%; pointer-events: none;
+    background: conic-gradient(from 0deg,
+      transparent 0deg, rgba(251,191,36,0.55) 5deg, transparent 14deg,
+      transparent 90deg, rgba(251,191,36,0.55) 95deg, transparent 104deg,
+      transparent 180deg, rgba(251,191,36,0.55) 185deg, transparent 194deg,
+      transparent 270deg, rgba(251,191,36,0.55) 275deg, transparent 284deg);
+    mask: radial-gradient(circle, transparent 48%, black 53%, black 70%, transparent 76%);
+    animation: guildedBeams 20s linear infinite;
+  }
+  @keyframes guildedShimmer {
+    0%, 100% { filter: blur(2px) brightness(1); }
+    50%      { filter: blur(3px) brightness(1.5); }
+  }
+  @keyframes guildedBeams { to { transform: rotate(360deg); } }
+
+  /* ── Aquatic (1000) — refracting water ring with subtle drift */
+  .wt-aquatic::before {
+    content: ''; position: absolute; inset: -12px; border-radius: 50%; pointer-events: none;
+    border: 1.5px solid rgba(56,189,248,0.45);
+    box-shadow:
+      inset 0 0 30px rgba(56,189,248,0.5),
+      0 0 38px rgba(56,189,248,0.45),
+      0 0 70px rgba(14,116,144,0.35);
+    animation: aquaticDrift 4s ease-in-out infinite;
+  }
+  .wt-aquatic::after {
+    content: ''; position: absolute; inset: -24px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(2px 2px at 30% 20%, rgba(186,230,253,0.85) 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 70% 35%, rgba(186,230,253,0.7) 100%, transparent 0),
+      radial-gradient(2px 2px at 55% 80%, rgba(186,230,253,0.8) 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 20% 65%, rgba(186,230,253,0.7) 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 88% 78%, rgba(186,230,253,0.7) 100%, transparent 0);
+    animation: aquaticBubbles 5s ease-in-out infinite;
+    filter: drop-shadow(0 0 3px #38bdf8);
+  }
+  @keyframes aquaticDrift {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-4px) scale(1.02); }
+  }
+  @keyframes aquaticBubbles {
+    0%, 100% { transform: translateY(0); opacity: 0.85; }
+    50%      { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* ── Holy (1500) — radiating sun rays + bright halo */
+  .wt-holy::before {
+    content: ''; position: absolute; inset: -36px; border-radius: 50%; pointer-events: none;
+    background: conic-gradient(from 0deg,
+      rgba(253,224,71,0.7) 0deg, transparent 6deg, transparent 24deg,
+      rgba(253,224,71,0.7) 30deg, transparent 36deg, transparent 54deg,
+      rgba(253,224,71,0.7) 60deg, transparent 66deg, transparent 84deg,
+      rgba(253,224,71,0.7) 90deg, transparent 96deg, transparent 114deg,
+      rgba(253,224,71,0.7) 120deg, transparent 126deg, transparent 144deg,
+      rgba(253,224,71,0.7) 150deg, transparent 156deg, transparent 174deg,
+      rgba(253,224,71,0.7) 180deg, transparent 186deg, transparent 204deg,
+      rgba(253,224,71,0.7) 210deg, transparent 216deg, transparent 234deg,
+      rgba(253,224,71,0.7) 240deg, transparent 246deg, transparent 264deg,
+      rgba(253,224,71,0.7) 270deg, transparent 276deg, transparent 294deg,
+      rgba(253,224,71,0.7) 300deg, transparent 306deg, transparent 324deg,
+      rgba(253,224,71,0.7) 330deg, transparent 336deg);
+    mask: radial-gradient(circle, transparent 50%, black 54%, black 90%, transparent 96%);
+    filter: blur(2px);
+    animation: holyRays 24s linear infinite;
+  }
+  .wt-holy::after {
+    content: ''; position: absolute; inset: -10px; border-radius: 50%; pointer-events: none;
+    border: 2px solid #fef3c7;
+    box-shadow:
+      0 0 55px rgba(253,224,71,0.9),
+      0 0 110px rgba(253,224,71,0.55),
+      inset 0 0 24px rgba(253,224,71,0.4);
+    animation: holyHalo 3s ease-in-out infinite;
+  }
+  @keyframes holyRays { to { transform: rotate(360deg); } }
+  @keyframes holyHalo {
+    0%, 100% { opacity: 0.7;  transform: scale(1);    }
+    50%      { opacity: 1;    transform: scale(1.04); }
+  }
+
+  /* ── Arcane (1500) — orbiting rune lights on two counter-rotating rings */
+  .wt-arcane::before {
+    content: ''; position: absolute; inset: -22px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(2.5px 2.5px at 50% 0%,    #c7d2fe 100%, transparent 0),
+      radial-gradient(2px   2px   at 93.3% 25%, #818cf8 100%, transparent 0),
+      radial-gradient(2.5px 2.5px at 93.3% 75%, #c7d2fe 100%, transparent 0),
+      radial-gradient(2px   2px   at 50% 100%,  #818cf8 100%, transparent 0),
+      radial-gradient(2.5px 2.5px at 6.7% 75%,  #c7d2fe 100%, transparent 0),
+      radial-gradient(2px   2px   at 6.7% 25%,  #818cf8 100%, transparent 0);
+    filter: drop-shadow(0 0 5px #818cf8) drop-shadow(0 0 10px rgba(99,102,241,0.6));
+    animation: arcaneOrbit 14s linear infinite;
+  }
+  .wt-arcane::after {
+    content: ''; position: absolute; inset: -8px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(1.5px 1.5px at 50% 0%, #ddd6fe 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 100% 50%, #c4b5fd 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 50% 100%, #ddd6fe 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 0% 50%, #c4b5fd 100%, transparent 0);
+    filter: drop-shadow(0 0 4px #a78bfa);
+    animation: arcaneOrbitRev 9s linear infinite;
+  }
+  @keyframes arcaneOrbit    { to { transform: rotate(360deg); } }
+  @keyframes arcaneOrbitRev { to { transform: rotate(-360deg); } }
+
+  /* ── Hellfire (2000) — the wheel is literally on fire.
+     Layer stack:
+       parent  — heat-shimmer quake (translate jitter).
+       ::before — flame tongues around the rim (conic-gradient with
+                  many tapered bright wedges, masked to a band just
+                  outside the wheel rim), screen-blended so the rim
+                  segments stay readable through them. A wraparound
+                  inset+outer box-shadow gives the wheel a hot-core
+                  glow, and rapid flicker animates blur + brightness.
+       ::after  — floating embers: ~14 hot pixels positioned around
+                  the perimeter that rise upward and fade out on
+                  loop, with a soft orange→crimson glow trailing them. */
+  .wt-hellfire { animation: hellfireQuake 0.55s ease-in-out infinite; }
+  .wt-hellfire::before {
+    content: ''; position: absolute; inset: -42px; border-radius: 50%; pointer-events: none;
+    background:
+      conic-gradient(from 0deg,
+        transparent 0deg,   rgba(254,215,170,0.95) 4deg,  rgba(251,146,60,0.9) 7deg, rgba(220,38,38,0.6)  10deg, transparent 13deg,
+        transparent 18deg,  rgba(254,215,170,0.85) 22deg, rgba(251,146,60,0.85) 25deg, transparent 28deg,
+        transparent 33deg,  rgba(254,215,170,0.95) 37deg, rgba(251,146,60,0.9) 40deg, rgba(220,38,38,0.65) 44deg, transparent 47deg,
+        transparent 53deg,  rgba(254,215,170,0.85) 57deg, rgba(251,146,60,0.85) 60deg, transparent 63deg,
+        transparent 68deg,  rgba(254,215,170,0.95) 72deg, rgba(251,146,60,0.9) 75deg, rgba(220,38,38,0.55) 78deg, transparent 82deg,
+        transparent 87deg,  rgba(254,215,170,0.85) 91deg, rgba(251,146,60,0.85) 94deg, transparent 98deg,
+        transparent 103deg, rgba(254,215,170,0.95) 107deg, rgba(251,146,60,0.9) 110deg, rgba(220,38,38,0.6) 113deg, transparent 116deg,
+        transparent 122deg, rgba(254,215,170,0.85) 126deg, rgba(251,146,60,0.85) 129deg, transparent 132deg,
+        transparent 138deg, rgba(254,215,170,0.95) 142deg, rgba(251,146,60,0.9) 145deg, rgba(220,38,38,0.65) 148deg, transparent 151deg,
+        transparent 157deg, rgba(254,215,170,0.85) 161deg, rgba(251,146,60,0.85) 164deg, transparent 167deg,
+        transparent 173deg, rgba(254,215,170,0.95) 177deg, rgba(251,146,60,0.9) 180deg, rgba(220,38,38,0.55) 183deg, transparent 187deg,
+        transparent 192deg, rgba(254,215,170,0.85) 196deg, rgba(251,146,60,0.85) 199deg, transparent 202deg,
+        transparent 208deg, rgba(254,215,170,0.95) 212deg, rgba(251,146,60,0.9) 215deg, rgba(220,38,38,0.6) 218deg, transparent 221deg,
+        transparent 227deg, rgba(254,215,170,0.85) 231deg, rgba(251,146,60,0.85) 234deg, transparent 237deg,
+        transparent 243deg, rgba(254,215,170,0.95) 247deg, rgba(251,146,60,0.9) 250deg, rgba(220,38,38,0.55) 253deg, transparent 257deg,
+        transparent 262deg, rgba(254,215,170,0.85) 266deg, rgba(251,146,60,0.85) 269deg, transparent 272deg,
+        transparent 278deg, rgba(254,215,170,0.95) 282deg, rgba(251,146,60,0.9) 285deg, rgba(220,38,38,0.65) 288deg, transparent 291deg,
+        transparent 297deg, rgba(254,215,170,0.85) 301deg, rgba(251,146,60,0.85) 304deg, transparent 307deg,
+        transparent 313deg, rgba(254,215,170,0.95) 317deg, rgba(251,146,60,0.9) 320deg, rgba(220,38,38,0.6) 323deg, transparent 326deg,
+        transparent 332deg, rgba(254,215,170,0.85) 336deg, rgba(251,146,60,0.85) 339deg, transparent 342deg,
+        transparent 348deg, rgba(254,215,170,0.95) 352deg, rgba(251,146,60,0.9) 355deg, rgba(220,38,38,0.55) 358deg, transparent 360deg);
+    /* Mask to a wide flame band that sits clear of the wheel rim and
+       fades outward into a soft tail — keeps the slice colours visible
+       and gives the flames a tapered "tongue" silhouette. */
+    mask: radial-gradient(circle,
+      transparent 58%,
+      black 62%, black 66%, rgba(0,0,0,0.7) 72%, rgba(0,0,0,0.3) 80%, transparent 88%);
+    filter: blur(3.5px) brightness(1.1);
+    box-shadow:
+      inset 0 0 80px rgba(220,38,38,0.7),
+      0 0 100px rgba(251,146,60,0.75),
+      0 0 160px rgba(220,38,38,0.5);
+    mix-blend-mode: screen;
+    animation: hellfireFlicker 0.55s ease-in-out infinite alternate;
+  }
+  .wt-hellfire::after {
+    content: ''; position: absolute; inset: -64px; border-radius: 50%; pointer-events: none;
+    /* 14 bright ember pixels seeded all around the wheel perimeter and
+       interior airspace. translateY + opacity animation rises them up
+       and fades them out, looping continuously so the ember cloud
+       never stops. */
+    background:
+      radial-gradient(2px   2px   at 12% 88%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 25% 95%, #fb923c 100%, transparent 0),
+      radial-gradient(2px   2px   at 50% 96%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 78% 92%, #fb923c 100%, transparent 0),
+      radial-gradient(2px   2px   at 90% 80%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 95% 55%, #fb923c 100%, transparent 0),
+      radial-gradient(2px   2px   at 5%  60%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 8%  30%, #fb923c 100%, transparent 0),
+      radial-gradient(2px   2px   at 30% 10%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 55% 5%,  #fb923c 100%, transparent 0),
+      radial-gradient(2px   2px   at 80% 18%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 38% 70%, #fb923c 100%, transparent 0),
+      radial-gradient(1.8px 1.8px at 62% 85%, #fed7aa 100%, transparent 0),
+      radial-gradient(1.5px 1.5px at 18% 45%, #fb923c 100%, transparent 0);
+    filter: drop-shadow(0 0 4px #fb923c) drop-shadow(0 0 8px #dc2626);
+    animation: hellfireEmberRise 2.4s ease-out infinite;
+  }
+  @keyframes hellfireQuake {
+    0%, 100% { transform: translate(0, 0); }
+    25%      { transform: translate(-1.2px, 1px); }
+    50%      { transform: translate(1px, -1.2px); }
+    75%      { transform: translate(-1px, -1px); }
+  }
+  @keyframes hellfireFlicker {
+    from { opacity: 0.8; filter: blur(3px)   brightness(1.05); }
+    to   { opacity: 1;   filter: blur(5.5px) brightness(1.5);  }
+  }
+  /* Embers drift upward + fade. translateY composes with the parent's
+     quake animation (different elements) so the embers still rise even
+     while the wheel jitters. */
+  @keyframes hellfireEmberRise {
+    0%   { transform: translateY(8px)  scale(1.05); opacity: 0;    }
+    20%  { transform: translateY(0)     scale(1);    opacity: 0.95; }
+    80%  { transform: translateY(-32px) scale(0.9);  opacity: 0.6;  }
+    100% { transform: translateY(-44px) scale(0.7);  opacity: 0;    }
+  }
+
+  /* ── Cosmic (2000) — deep-space window: indigo/violet nebula with a
+     pulsing supernova burst behind a dense slow-rotating starfield. White
+     stars carry a faint blue-tinted glow so the whole composition stays
+     in cool tones — no warm magenta accents. */
+  .wt-cosmic::before {
+    /* Starfield — ~24 stars in white / pale blue / violet, sized from
+       small twinklers up to larger 2-3px focal stars. The whole layer
+       slow-rotates so the night sky drifts across the wheel. */
+    content: ''; position: absolute; inset: -36px; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(1.2px 1.2px at 18% 12%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.8px 1.8px at 82% 31%, #c4b5fd 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 24% 73%, #e0e7ff 100%, transparent 0),
+      radial-gradient(2px   2px   at 76% 85%, #a5b4fc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 50% 50%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 39% 42%, #818cf8 100%, transparent 0),
+      radial-gradient(1.8px 1.8px at 65% 19%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 12% 55%, #a5b4fc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 92% 62%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 7%  35%, #c7d2fe 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 60% 8%,  #c4b5fd 100%, transparent 0),
+      radial-gradient(1px   1px   at 45% 90%, #e0e7ff 100%, transparent 0),
+      radial-gradient(1px   1px   at 88% 12%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.4px 1.4px at 33% 22%, #ddd6fe 100%, transparent 0),
+      radial-gradient(0.9px 0.9px at 57% 67%, #f8fafc 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 4%  82%, #c4b5fd 100%, transparent 0),
+      radial-gradient(1px   1px   at 96% 88%, #e0e7ff 100%, transparent 0),
+      radial-gradient(1.6px 1.6px at 27% 58%, #f8fafc 100%, transparent 0),
+      radial-gradient(0.9px 0.9px at 73% 9%,  #c4b5fd 100%, transparent 0),
+      radial-gradient(1.2px 1.2px at 81% 48%, #f8fafc 100%, transparent 0),
+      radial-gradient(0.8px 0.8px at 14% 92%, #ddd6fe 100%, transparent 0),
+      radial-gradient(2px   2px   at 86% 6%,  #f8fafc 100%, transparent 0),
+      radial-gradient(1.4px 1.4px at 47% 16%, #c7d2fe 100%, transparent 0),
+      radial-gradient(0.9px 0.9px at 67% 78%, #f8fafc 100%, transparent 0);
+    filter: drop-shadow(0 0 3px #818cf8);
+    animation: cosmicSpin 45s linear infinite, cosmicTwinkle 3.5s ease-in-out infinite;
+  }
+  .wt-cosmic::after {
+    /* Layer stack (bottom → top in stacking order, but listed in
+       background painting order, last is bottom):
+         1. supernova rays   — 8 thin radiating spokes that rotate
+                               counter to the starfield, mask-cut to a
+                               donut so they emanate from the supernova
+                               core outward.
+         2. supernova core   — bright white→indigo→violet burst sitting
+                               at 28%/32% (upper-left quadrant) with a
+                               huge gaussian glow, pulses brightness.
+         3. nebula clouds    — soft indigo / violet blobs + a deep-navy
+                               central void, blurred and screen-blended.
+       Single mix-blend-mode: screen keeps every layer additive over the
+       wheel's slice colours. */
+    content: ''; position: absolute; inset: -18px; border-radius: 50%; pointer-events: none;
+    background:
+      /* Supernova rays — 8 thin bright spokes */
+      conic-gradient(from 0deg,
+        rgba(224,231,255,0.7) 0deg,  transparent 4deg,  transparent 41deg,
+        rgba(199,210,254,0.6) 45deg, transparent 49deg, transparent 86deg,
+        rgba(224,231,255,0.7) 90deg, transparent 94deg, transparent 131deg,
+        rgba(199,210,254,0.6) 135deg, transparent 139deg, transparent 176deg,
+        rgba(224,231,255,0.7) 180deg, transparent 184deg, transparent 221deg,
+        rgba(199,210,254,0.6) 225deg, transparent 229deg, transparent 266deg,
+        rgba(224,231,255,0.7) 270deg, transparent 274deg, transparent 311deg,
+        rgba(199,210,254,0.6) 315deg, transparent 319deg, transparent 356deg),
+      /* Supernova bright core */
+      radial-gradient(circle at 28% 30%,
+        rgba(248,250,252,0.95) 0%,
+        rgba(199,210,254,0.78)  3%,
+        rgba(129,140,248,0.55)  7%,
+        rgba(76,29,149,0.35)   13%,
+        transparent 22%),
+      /* Nebula clouds */
+      radial-gradient(circle at 28% 32%, rgba(67,56,202,0.6),  transparent 40%),
+      radial-gradient(circle at 72% 70%, rgba(76,29,149,0.7),  transparent 42%),
+      radial-gradient(circle at 50% 50%, rgba(15,23,42,0.55),  transparent 60%);
+    filter: blur(2px);
+    mix-blend-mode: screen;
+    /* Nebula rotation carries the supernova rays around with it (single
+       transform timeline — composing two transform-animations on the same
+       element doesn't actually layer in CSS). Supernova pulse is filter-
+       only so it doesn't fight for the transform slot. */
+    animation: cosmicNebula 16s ease-in-out infinite,
+               cosmicSupernova 4.5s ease-in-out infinite;
+  }
+  @keyframes cosmicSpin    { to { transform: rotate(360deg); } }
+  @keyframes cosmicTwinkle { 50% { opacity: 0.72; } }
+  @keyframes cosmicNebula {
+    0%, 100% { transform: rotate(0)      scale(1);    opacity: 0.7; }
+    50%      { transform: rotate(180deg) scale(1.12); opacity: 1;   }
+  }
+  @keyframes cosmicSupernova {
+    0%, 100% { filter: blur(2px)   brightness(1);    }
+    50%      { filter: blur(2.5px) brightness(1.55); }
+  }
+
+  /* ── Void (2500) — singularity at the center of the wheel.
+     Layer stack:
+       1. inner pseudo-element  = pure pitch-black core that contracts and
+          rotates (voidSuck), making the wheel look like it's being pulled
+          into the middle.
+       2. ::before               = event-horizon ring with a faint blue
+          accretion-disk glow that orbits the rim.
+       3. ::after                = outer warp / lensing halo that dims the
+          surroundings via mix-blend-mode: multiply.
+     The themed inner aura still renders (innerStops are pitch-black) but
+     gets repurposed by the wt-void override below. */
+  /* ── Void (2500) — strict B&W black-hole horror.
+     Five layered effects stacked into the wheel-box's pseudo-elements +
+     overrides for the inner glow:
+
+       parent .cursed-inner-glow → singularity collapse pulse, pure black.
+       parent ::before           → rotating photon ring stack (white only)
+                                   + radial particle field (white dots
+                                   scattered around the rim) that drifts
+                                   inward toward the singularity.
+       parent ::after            → outer void gradient (gravitational
+                                   dimming) PLUS reality-tear shards
+                                   sliced across the halo — sharp white
+                                   slivers that flicker in and out.
+
+     No color anywhere — only black, white, and greyscale alpha. The
+     contrast is the appeal. */
+  .wt-void .cursed-inner-glow {
+    animation-name: voidSuck !important;
+    mix-blend-mode: normal !important;
+  }
+  @keyframes voidSuck {
+    0%, 100% { opacity: 1;    transform: scale(1)    rotate(0deg);   }
+    50%      { opacity: 0.92; transform: scale(0.7)  rotate(180deg); }
+  }
+
+  /* Layer 1 (::before): photon rings + scattered particles. Two stacked
+     backgrounds: a conic-gradient sweep for the lensed light rings, and
+     a radial-gradient particle field for the inward-drifting matter. */
+  .wt-void::before {
+    content: ''; position: absolute; inset: -32px; border-radius: 50%; pointer-events: none;
+    background:
+      /* Photon ring sweep — pure greyscale */
+      conic-gradient(from 0deg,
+        transparent 0deg,
+        rgba(255,255,255,0.10) 30deg,
+        rgba(255,255,255,0.55) 70deg,
+        rgba(255,255,255,1.00) 88deg,
+        rgba(255,255,255,1.00) 92deg,
+        rgba(255,255,255,0.55) 110deg,
+        rgba(255,255,255,0.10) 150deg,
+        transparent 180deg);
+    mask:
+      radial-gradient(circle,
+        transparent 63%,
+        black 64%, black 66%, transparent 67%,   /* event horizon */
+        black 69%, black 71%, transparent 72%,   /* inner photon ring */
+        black 74%, black 76%, transparent 77%,   /* mid ring */
+        black 79%, black 81%, transparent 82%);  /* outer ring */
+    filter: blur(1.2px) drop-shadow(0 0 6px rgba(255,255,255,0.6)) drop-shadow(0 0 14px rgba(255,255,255,0.35));
+    animation: voidEventHorizon 7s linear infinite;
+  }
+
+  /* Layer 2 (::after): outer void gradient + reality-tear shards.
+     The shards are crisp white triangular slivers cut into the halo via
+     a conic-gradient mask — they flicker erratically, like rips in
+     spacetime that briefly reveal something behind reality. */
+  .wt-void::after {
+    content: ''; position: absolute; inset: -64px; border-radius: 50%; pointer-events: none;
+    background:
+      /* Reality tears — irregular white shards at random angles */
+      conic-gradient(from 17deg,
+        transparent 0deg,    rgba(255,255,255,0.85) 2deg,  transparent 4deg,
+        transparent 47deg,   rgba(255,255,255,0.6)  49deg, transparent 50deg,
+        transparent 103deg,  rgba(255,255,255,0.95) 106deg, rgba(255,255,255,0.4) 109deg, transparent 110deg,
+        transparent 167deg,  rgba(255,255,255,0.7)  170deg, transparent 172deg,
+        transparent 221deg,  rgba(255,255,255,0.5)  223deg, transparent 224deg,
+        transparent 277deg,  rgba(255,255,255,0.9)  280deg, rgba(255,255,255,0.4) 283deg, transparent 285deg,
+        transparent 331deg,  rgba(255,255,255,0.6)  333deg, transparent 335deg),
+      /* Gravitational dimming halo */
+      radial-gradient(circle, transparent 48%, rgba(0,0,0,0.85) 62%, rgba(0,0,0,1) 78%, rgba(0,0,0,0) 100%);
+    mask: radial-gradient(circle, transparent 55%, black 60%, black 95%, transparent 100%);
+    mix-blend-mode: normal;
+    filter: blur(0.6px);
+    animation: voidTear 4.5s steps(1, end) infinite, voidWarp 9s ease-in-out infinite;
+  }
+
+  @keyframes voidEventHorizon { to { transform: rotate(360deg); } }
+  @keyframes voidTear {
+    /* Discrete flicker — the reality tears appear and vanish at unpredictable
+       intervals via discrete rotation jumps, simulating uncoordinated rips. */
+    0%   { transform: rotate(0deg);   opacity: 0.95; }
+    16%  { transform: rotate(45deg);  opacity: 0.4;  }
+    32%  { transform: rotate(73deg);  opacity: 1;    }
+    48%  { transform: rotate(118deg); opacity: 0.55; }
+    64%  { transform: rotate(190deg); opacity: 1;    }
+    80%  { transform: rotate(244deg); opacity: 0.7;  }
+    100% { transform: rotate(360deg); opacity: 0.95; }
+  }
+  @keyframes voidWarp {
+    0%, 100% { filter: blur(0.6px); }
+    50%      { filter: blur(1.2px); }
+  }
+
+  /* Reduced motion + low-perf: kill the always-on theme layers entirely. */
+  @media (prefers-reduced-motion: reduce) {
+    .wt-glowing::before, .wt-nature::before,
+    .wt-guilded::before, .wt-guilded::after,
+    .wt-aquatic::before, .wt-aquatic::after,
+    .wt-holy::before,    .wt-holy::after,
+    .wt-arcane::before,  .wt-arcane::after,
+    .wt-hellfire,        .wt-hellfire::before, .wt-hellfire::after,
+    .wt-cosmic::before,  .wt-cosmic::after,
+    .wt-void::before,    .wt-void::after { animation: none; }
+  }
+  [data-perf="low"] .wt-glowing::before,
+  [data-perf="low"] .wt-nature::before,
+  [data-perf="low"] .wt-guilded::before, [data-perf="low"] .wt-guilded::after,
+  [data-perf="low"] .wt-aquatic::before, [data-perf="low"] .wt-aquatic::after,
+  [data-perf="low"] .wt-holy::before,    [data-perf="low"] .wt-holy::after,
+  [data-perf="low"] .wt-arcane::before,  [data-perf="low"] .wt-arcane::after,
+  [data-perf="low"] .wt-hellfire::before, [data-perf="low"] .wt-hellfire::after,
+  [data-perf="low"] .wt-cosmic::before,  [data-perf="low"] .wt-cosmic::after,
+  [data-perf="low"] .wt-void::before,    [data-perf="low"] .wt-void::after { animation: none; }

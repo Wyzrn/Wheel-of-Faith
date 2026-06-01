@@ -237,7 +237,7 @@
   let prevEnemyHp   = $state<Record<string, number>>({})
   let killedIds     = $state(new Set<string>())
   let timeoutId:    ReturnType<typeof setTimeout> | null = null
-  let canInstant    = $derived(gamepasses.includes('instant_battle'))
+  let canInstant    = $derived(gamepasses.includes('instant_battle') && settings.instantBattleEnabled)
   let manualMode    = $state(!settings.autoBattle)
 
   onDestroy(() => {
