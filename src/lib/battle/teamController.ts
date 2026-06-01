@@ -20,7 +20,7 @@ import {
   doAction, formatHp,
   type BattleCharacter, type BattleMove, type RoundFxEvent,
 } from '$lib/game/battle'
-import type { ArenaRound, ArenaSide, ArenaWinner } from './arena'
+import { memberFromChar, type ArenaMember, type ArenaRound, type ArenaSide, type ArenaWinner } from './arena'
 import { POWER_COOLDOWN_TURNS, SPELL_COOLDOWN_TURNS, pickAutoMove, type PlayerAction } from './controller'
 import { GIMMICKS, roundStartHealFraction, lastStandCheck } from '$lib/gimmicks'
 
@@ -84,6 +84,10 @@ export class BattleControllerTeam {
   // Per-actor set of one-shot gimmicks that have already fired this battle
   // (Last Stand only triggers once). Mirrors BattleController1v1.
   private firedGimmicks: Record<string, Set<string>> = {}
+  // Spawn buffer drained at the end of each stepTurn() into the returned
+  // ArenaRound.newMembers — used by cloner-on-death to surface fresh
+  // fighters to the arena UI mid-battle.
+  private pendingSpawns: ArenaMember[] = []
 
   constructor(team1: TeamControllerMember[], team2: TeamControllerMember[]) {
     this.team1 = team1
@@ -179,7 +183,9 @@ export class BattleControllerTeam {
     if (!actor) {
       // No living actors left even after a cycle refill — draw.
       this._winner = 'draw'
-      return { roundNum: this.cycle, lines, hpAfter: { ...this.hp }, winner: 'draw' }
+      const drainedSpawns = this.pendingSpawns.length > 0 ? this.pendingSpawns : undefined
+      this.pendingSpawns = []
+      return { roundNum: this.cycle, lines, hpAfter: { ...this.hp }, winner: 'draw', newMembers: drainedSpawns }
     }
 
     // Resolve this actor's turn.
@@ -194,12 +200,18 @@ export class BattleControllerTeam {
     else if (t2Dead)      winner = 'team1'
     if (winner !== undefined) this._winner = winner
 
+    // Drain any spawn-buffer (cloner-on-death) into the returned round so
+    // the arena can append the new fighter cards as the log line plays.
+    const newMembers = this.pendingSpawns.length > 0 ? this.pendingSpawns : undefined
+    this.pendingSpawns = []
+
     return {
       roundNum: this.cycle,
       lines,
       hpAfter: { ...this.hp },
       fxEvents,
       winner,
+      newMembers,
     }
   }
 
@@ -450,6 +462,9 @@ export class BattleControllerTeam {
           this.powerCooldowns[cloneId] = {}
           this.firedGimmicks[cloneId] = new Set()
           this.actorQueue.push({ id: cloneId, side: dead.side, char: cloneChar })
+          // Surface the new fighter to the arena UI so the player sees a
+          // new mob card pop in instead of just a log line about clones.
+          this.pendingSpawns.push(memberFromChar(cloneChar, cloneId, dead.side, formatHp))
         }
         lines.push(`🧬 ${dead.char.name} splits into ${COUNT} weakened clones!`)
       }

@@ -4,10 +4,11 @@ import type { WheelThemeId } from './wheelThemes'
 
 const STORAGE_KEY = 'wof_settings'
 
-/** Sentinel value for autoBattleSpeed meaning "skip animations entirely
- *  and resolve to the final result in one frame". Owners of the
- *  `instant_battle` gamepass can pick this from the battle-speed selector. */
-export const BATTLE_SPEED_INSTANT = 9999
+/** Battle-speed multiplier for the "Instant" option (gated on the
+ *  `instant_battle` gamepass). 20× playback so animations still render
+ *  but a fight that normally takes 30s wraps in ~1.5s. Not a true skip —
+ *  just a hyper-speed multiplier the arena's speedDelay() floors at 10ms. */
+export const BATTLE_SPEED_INSTANT = 20
 
 class SettingsStore {
   soundEnabled    = $state(true)

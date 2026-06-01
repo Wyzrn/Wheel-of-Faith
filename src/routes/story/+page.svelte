@@ -11,7 +11,7 @@
     buyHeroSpin, buyLegendSpin, buyParagonSpin, consumeHeroSpin, consumeLegendSpin, consumeParagonSpin,
     recordWorldReplayStart, worldReplayCooldownMs, WORLD_REPLAY_COOLDOWN_MS,
     createTeamInSlot, updateTeamInSlot, deleteTeamInSlot, maxTeamSize,
-    openCrystal, equipOpenedItem, useStatCrystal, removeEquippedItem, getItemRemovalRefund,
+    openCrystal, equipOpenedItem, useStatCrystal, removeEquippedItem, removeSpunItem, getItemRemovalRefund,
     dismantleCharacterFromSlot, getDismantleCost, DISMANTLE_PLAYER_LEVEL_REQUIRED,
     type DismantleResult,
     fuseCharactersInSlot, previewFuse, getFuseCost, FUSE_PLAYER_LEVEL_REQUIRED,
@@ -38,6 +38,11 @@
   import { getArchetype } from '$lib/content/archetypes'
   import { powerRating } from '$lib/story/powerRating'
   import { quickEquipBestGear } from '$lib/story/saveSlots'
+  // Content pools for the spun-item remove flow — gives the confirm modal
+  // a grade to look up the gem refund from before the player commits.
+  import { powers as powersPool }   from '$lib/content/powers'
+  import { weapons as weaponsPool } from '$lib/content/weapons'
+  import { armors as armorsPool }   from '$lib/content/armors'
   import { toast } from '$lib/toast.svelte'
   import CharacterCompare from '../../components/CharacterCompare.svelte'
   import CharacterCard from '../../components/CharacterCard.svelte'
@@ -86,7 +91,10 @@
   let sellTarget = $state<StoryRosterEntry | null>(null)
   let rosterCapAlert = $state(false)
   // Item-removal confirmation state. When set, a modal asks the player to
-  // confirm permanently destroying an equipped item in exchange for gems.
+  // confirm permanently destroying an item in exchange for gems. Supports
+  // both equipped items (itemId set) and spin-rolled items on the spins
+  // array (spunLabel set; itemId is empty). The confirm handler routes to
+  // the right saveSlots helper based on which is present.
   let removeItemTarget = $state<{
     characterId: string
     itemId: string
@@ -94,6 +102,7 @@
     name: string
     grade: string
     refund: number
+    spunLabel?: string
   } | null>(null)
 
   // Persist a generated Ascension portrait URL onto the matching roster entry.
@@ -133,14 +142,37 @@
     }
   }
 
+  // Spin-rolled item removal (the 23-spin weapon/power/armor results, not
+  // the equipped slots). Looks up grade from the relevant content pool so
+  // the confirm modal can show the refund amount up-front.
+  function handleRemoveSpunItem(characterId: string, type: 'weapon' | 'armor' | 'power', label: string) {
+    if (!currentSlot) return
+    // Pull the grade off the matching content pool. Same lookups as
+    // saveSlots.removeSpunItem uses — duplicated here only so the confirm
+    // modal can preview the refund before the player commits.
+    let grade: string = 'F'
+    if (type === 'weapon') grade = (weaponsPool.find(w => w.label === label)?.grade ?? 'F') as string
+    else if (type === 'armor') grade = (armorsPool.find(a => a.label === label)?.grade ?? 'F') as string
+    else grade = (powersPool.find(p => p.label === label)?.grade ?? 'F') as string
+    removeItemTarget = {
+      characterId, itemId: '', type,
+      name: label,
+      grade,
+      refund: getItemRemovalRefund(grade),
+      spunLabel: label,
+    }
+  }
+
   function confirmRemoveItem() {
     if (!removeItemTarget || !currentSlot) return
-    const result = removeEquippedItem(
-      $state.snapshot(currentSlot) as StorySaveSlot,
-      removeItemTarget.characterId,
-      removeItemTarget.itemId,
-      removeItemTarget.type,
-    )
+    // Route based on whether this is an equipped-item delete (has itemId)
+    // or a spin-rolled-item delete (has spunLabel). Same modal + refund
+    // formula either way; the underlying saveSlots helper differs.
+    const target = removeItemTarget
+    const snap = $state.snapshot(currentSlot) as StorySaveSlot
+    const result = target.spunLabel
+      ? removeSpunItem(snap, target.characterId, target.type, target.spunLabel)
+      : removeEquippedItem(snap, target.characterId, target.itemId, target.type)
     if (typeof result === 'string') { removeItemTarget = null; return }
     currentSlot = result.slot
     removeItemTarget = null
@@ -221,6 +253,13 @@
       if (sortBy === 'race')      return a.race.localeCompare(b.race)
       return a.archetype.localeCompare(b.archetype)
     })
+  )
+
+  // The stat-crystal upgrade picker always shows characters strongest-first
+  // regardless of the player's main roster sort preference — investing
+  // crystals in a high-grade fighter is almost always the optimal play.
+  let rosterByGrade = $derived(
+    [...roster].sort((a, b) => b.overallScore - a.overallScore)
   )
 
   let expandedEntry = $derived(
@@ -2007,6 +2046,7 @@
           onPortraitChanged={(url, opts) => handleRosterPortraitChanged(expandedEntry!.id, url, opts)}
           onNewCharacter={() => {}}
           onRemoveItem={(itemId, type) => handleRemoveEquippedItem(expandedEntry!.id, itemId, type)}
+          onRemoveSpunItem={(type, label) => handleRemoveSpunItem(expandedEntry!.id, type, label)}
         />
       </div>
     </div>
@@ -2707,8 +2747,9 @@
           {#if roster.length === 0}
             <p class="font-mono text-xs" style="color: var(--color-outline);">No characters in roster.</p>
           {:else}
+            <!-- Always sorted strongest-first here — see rosterByGrade comment. -->
             <div class="flex flex-col gap-2 max-h-64 overflow-y-auto">
-              {#each sortedRoster as char (char.id)}
+              {#each rosterByGrade as char (char.id)}
                 <button onclick={() => selectUseStatChar(char.id)}
                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left"
                   style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); cursor: pointer;">

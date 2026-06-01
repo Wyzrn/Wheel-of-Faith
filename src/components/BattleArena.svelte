@@ -129,22 +129,37 @@
   // Member id → current displayed HP. Initialized from members and overwritten
   // as rounds resolve.
   let displayHp = $state<Record<string, number>>({})
+  // Mid-battle spawn buffer — cloner-on-death pushes ArenaMember entries
+  // here via round.newMembers and the templates below render them alongside
+  // the original team members. Cleared between battles via the teams-prop
+  // effect that also reseeds displayHp.
+  let extraMembers = $state<{ team1: ArenaMember[]; team2: ArenaMember[] }>({ team1: [], team2: [] })
+  // The render-time teams: prop members + any mid-battle spawns. Used
+  // everywhere `teams[i].members` was used before so spawned mobs render
+  // their own fighter cards.
+  let runtimeTeams = $derived<[ArenaTeam, ArenaTeam]>([
+    { ...teams[0], members: [...teams[0].members, ...extraMembers.team1] },
+    { ...teams[1], members: [...teams[1].members, ...extraMembers.team2] },
+  ])
   $effect(() => {
     const next: Record<string, number> = {}
     for (const t of teams) for (const m of t.members) next[m.id] = m.hp
     displayHp = next
+    // Reseed the spawn buffer too so a remounted arena (next wave / next
+    // battle) doesn't carry over clones from the previous fight.
+    extraMembers = { team1: [], team2: [] }
   })
 
-  let allMembers = $derived([...teams[0].members, ...teams[1].members])
+  let allMembers = $derived([...runtimeTeams[0].members, ...runtimeTeams[1].members])
   let allNames   = $derived(allMembers.map(m => m.name))
 
   // The actor the player is currently controlling. Default to team1[0] if
   // not provided. Held as derived so it tracks team changes.
   let playerActor = $derived(
-    allMembers.find(m => m.id === playerActorId) ?? teams[0].members[0]
+    allMembers.find(m => m.id === playerActorId) ?? runtimeTeams[0].members[0]
   )
-  let t1Names    = $derived(new Set(teams[0].members.map(m => m.name)))
-  let t2Names    = $derived(new Set(teams[1].members.map(m => m.name)))
+  let t1Names    = $derived(new Set(runtimeTeams[0].members.map(m => m.name)))
+  let t2Names    = $derived(new Set(runtimeTeams[1].members.map(m => m.name)))
 
   let logLines = $state<string[]>([])
   let charStatusByName = $derived(deriveStatusBadges(logLines, allNames))
@@ -398,7 +413,7 @@
     const gradeIdx = GRADE_IDX[grade ?? 'C'] ?? 3
     // Speed-scale the beam duration so "fast" actually feels fast — the
     // glow/main/core all share these timings via CSS variables below.
-    const speed = Math.max(0.4, Math.min(4, speedFactor))
+    const speed = Math.max(0.4, Math.min(20, speedFactor))
     // Floors keep the beam clearly visible even at fast/auto speeds.
     const dur = Math.max(200, Math.round(BEAM_DURATION_MS / speed))
     const fade = Math.max(120, Math.round(BEAM_FADE_DURATION_MS / speed))
@@ -443,7 +458,7 @@
     color: string, grade: string | undefined,
     onImpact: () => void,
   ) {
-    const speed = Math.max(0.4, Math.min(4, speedFactor))
+    const speed = Math.max(0.4, Math.min(20, speedFactor))
     // Keep a 220ms floor so the orb stays clearly visible even on fast/auto.
     const dur = Math.max(220, Math.round(ORB_DURATION_MS / speed))
     const gradeIdx = GRADE_IDX[grade ?? 'C'] ?? 3
@@ -469,8 +484,8 @@
 
   // Resolve an ArenaMember from a fxEvent.attackerSide / targetIdxs entry.
   function memberFromFxIndex(side: 'p1' | 'p2' | 'team1' | 'team2', idx: number): ArenaMember | undefined {
-    if (side === 'p1' || side === 'team1') return teams[0].members[idx]
-    if (side === 'p2' || side === 'team2') return teams[1].members[idx]
+    if (side === 'p1' || side === 'team1') return runtimeTeams[0].members[idx]
+    if (side === 'p2' || side === 'team2') return runtimeTeams[1].members[idx]
     return undefined
   }
   function oppositeSide(side: 'p1' | 'p2' | 'team1' | 'team2'): 'p1' | 'p2' | 'team1' | 'team2' {
@@ -807,6 +822,21 @@
       ? [`── Round ${round.roundNum} ──`, ...round.lines]
       : [...round.lines]
     playLines(lines, () => {
+      // Append any new fighters spawned during this round (cloner-on-death
+      // mechanic). Done before HP settlement so their initial HP entry is
+      // in displayHp by the time the card renders. Each new member gets
+      // its starting HP from the round's hpAfter snapshot (the controller
+      // populates it when the clone is registered).
+      if (round.newMembers && round.newMembers.length > 0) {
+        const t1 = round.newMembers.filter(m => m.side === 'team1')
+        const t2 = round.newMembers.filter(m => m.side === 'team2')
+        if (t1.length || t2.length) {
+          extraMembers = {
+            team1: [...extraMembers.team1, ...t1],
+            team2: [...extraMembers.team2, ...t2],
+          }
+        }
+      }
       // Settle HPs for this round
       const next = { ...displayHp }
       for (const id of Object.keys(round.hpAfter)) next[id] = round.hpAfter[id]
@@ -1032,13 +1062,6 @@
     timeoutId = setTimeout(() => {
       phase = 'battle'
       onPhaseChange?.('battle')
-      // Instant Battle speed — owner picked "Instant" in settings. Fast-
-      // forward to the result immediately instead of animating turns.
-      if (canInstant && speedFactor >= 9999) {
-        // Defer one tick so phase='battle' propagates first.
-        setTimeout(() => instantResolve(), 0)
-        return
-      }
       if (controllerMode && controller) {
         if (isTeamController) {
           // Peek the upcoming actor BEFORE stepping. awaitingActor primes
@@ -1260,11 +1283,11 @@
     <div class="arena-seam"></div>
     <!-- Team 1 (player) — bottom-left -->
     <div class="stage-side stage-side-1">
-      {#each teams[0].members as m (m.id)}{@render fighter(m, teams[0], false)}{/each}
+      {#each runtimeTeams[0].members as m (m.id)}{@render fighter(m, runtimeTeams[0], false)}{/each}
     </div>
     <!-- Team 2 (enemy) — top-right -->
     <div class="stage-side stage-side-2">
-      {#each teams[1].members as m (m.id)}{@render fighter(m, teams[1], true)}{/each}
+      {#each runtimeTeams[1].members as m (m.id)}{@render fighter(m, runtimeTeams[1], true)}{/each}
     </div>
     <!-- Center ticker (latest battle-log line) -->
     {#if phase !== 'intro' && logLines.length > 0}

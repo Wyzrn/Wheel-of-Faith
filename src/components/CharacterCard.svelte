@@ -21,7 +21,7 @@
 
   interface EquippedItemProp { id: string; grade: string; name: string }
 
-  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, equippedItems, shareId, portraitUrl, portraitRegeneratedAt, isOwner = false, portraitMode = 'character', onPortraitChanged, onNewCharacter, onBackToMenu, onSaved, onRemoveItem }: {
+  let { results, name = '', startedAt, readonly = false, rivalsWins = 0, equippedItems, shareId, portraitUrl, portraitRegeneratedAt, isOwner = false, portraitMode = 'character', onPortraitChanged, onNewCharacter, onBackToMenu, onSaved, onRemoveItem, onRemoveSpunItem }: {
     results: SpinResult[]
     name?: string
     startedAt: string
@@ -63,6 +63,11 @@
     // small ✕ button that triggers this callback. Parent handles the
     // confirmation modal + saveSlots.removeEquippedItem call.
     onRemoveItem?: (itemId: string, type: 'weapon' | 'armor' | 'power') => void
+    // Same idea, but for spin-rolled items (the powers/weapons/armor that
+    // came out of the 23-spin reveal). Identified by category + label
+    // instead of id since spins don't have stable ids. Parent uses
+    // saveSlots.removeSpunItem.
+    onRemoveSpunItem?: (type: 'weapon' | 'armor' | 'power', label: string) => void
   } = $props()
 
   function get(category: string) {
@@ -818,6 +823,16 @@
                 </div>
                 <p style="color: #b8b0a0; line-height: 1.5;">{generatePowerDescription(p, pInfo?.element, pGrade)}</p>
                 <p class="mt-1" style="color: #6b6358; font-style: italic;">{ABILITY_BATTLE_EFFECT[pType]}</p>
+                {#if onRemoveSpunItem}
+                  <button
+                    onclick={(e) => { e.stopPropagation(); onRemoveSpunItem!('power', p) }}
+                    class="mt-2 w-full text-[11px] py-1.5 rounded-lg flex items-center justify-center gap-1.5"
+                    title="Permanently destroy this power and refund gems"
+                    style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                    <span class="material-symbols-outlined" style="font-size: 13px;">delete</span>
+                    Remove This Power
+                  </button>
+                {/if}
               </div>
             {/if}
           </div>
@@ -929,6 +944,16 @@
                   <span class="ml-auto text-[10px]" style="color: {wGradeInfo.color};">Grade {wGrade} · +{wGradeInfo.battleBonus} Physical DMG</span>
                 </div>
                 <p style="color: #b8b0a0; line-height: 1.5;">{generateWeaponDescription(w, wElement, wGrade)}</p>
+                {#if onRemoveSpunItem}
+                  <button
+                    onclick={(e) => { e.stopPropagation(); onRemoveSpunItem!('weapon', w) }}
+                    class="mt-2 w-full text-[11px] py-1.5 rounded-lg flex items-center justify-center gap-1.5"
+                    title="Permanently destroy this weapon and refund gems"
+                    style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                    <span class="material-symbols-outlined" style="font-size: 13px;">delete</span>
+                    Remove This Weapon
+                  </button>
+                {/if}
               </div>
             {/if}
           </div>
@@ -1039,6 +1064,16 @@
                   <span class="ml-auto text-[10px]" style="color: {ITEM_GRADE_INFO[armorGrade].color};">Grade {armorGrade} · Reduces Incoming Damage</span>
                 </div>
                 <p style="color: #b8b0a0; line-height: 1.5;">{generateArmorDescription(armor, armorElement, armorGrade)}</p>
+                {#if onRemoveSpunItem && armor !== '—'}
+                  <button
+                    onclick={(e) => { e.stopPropagation(); onRemoveSpunItem!('armor', armor) }}
+                    class="mt-2 w-full text-[11px] py-1.5 rounded-lg flex items-center justify-center gap-1.5"
+                    title="Permanently destroy this armor and refund gems"
+                    style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); color: #ef4444; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                    <span class="material-symbols-outlined" style="font-size: 13px;">delete</span>
+                    Remove This Armor
+                  </button>
+                {/if}
               </div>
             {/if}
           </div>

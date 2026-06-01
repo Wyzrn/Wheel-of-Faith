@@ -56,6 +56,10 @@ export interface ArenaRound {
   hpAfter: Record<string, number>
   fxEvents?: RoundFxEvent[]
   winner?: ArenaWinner
+  // Members that came into existence this round (cloner death-spawn,
+  // future summoner mechanics). The arena appends each to the appropriate
+  // team's members list so the new fighter renders on screen.
+  newMembers?: ArenaMember[]
 }
 
 // ── Element → FX lookup ─────────────────────────────────────────────────────
@@ -289,5 +293,8 @@ export function hpColor(pct: number): string {
 // behaviour-preserving. Segment 5 swaps battleSpeed for an autoBattle toggle.
 export function speedDelay(ms: number, speedFactor: number): number {
   if (speedFactor >= 99) return 10
+  // Hyper speed (Instant Battle gamepass = 20×) gets a 10ms floor so the
+  // 20× multiplier actually lands instead of being clamped to 50ms.
+  if (speedFactor >= 20) return Math.max(10, ms / speedFactor)
   return Math.max(50, ms / speedFactor)
 }

@@ -12,6 +12,30 @@ import type { SpinResult } from '../session/types'
 import { weapons } from '../content/weapons'
 import { armors } from '../content/armors'
 import { powers } from '../content/powers'
+import { strengthLabels }      from '../content/strength-labels'
+import { speedLabels }         from '../content/speed-labels'
+import { agilityLabels }       from '../content/agility-labels'
+import { durabilityLabels }    from '../content/durability-labels'
+import { iqLabels }            from '../content/iq-labels'
+import { charismaLabels }      from '../content/charisma-labels'
+import { fightingSkillLabels } from '../content/fighting-skill-labels'
+import { powerMasteryLabels }  from '../content/power-mastery-labels'
+import { weaponMasteryLabels } from '../content/weapon-mastery-labels'
+import { armorStrengthLabels } from '../content/armor-strength-labels'
+import { potentialLabels }     from '../content/potential-labels'
+import { energyLevelLabels }   from '../content/energy-level-labels'
+import type { FlavorLabel } from '../content/types'
+
+// Stat-category → flavor label pool. Used by boostSpin to refresh the
+// resultLabel when a stat crystal pushes the character into a new tier
+// band; otherwise the card would still read "Wet Noodle Arms" at S-.
+const STAT_LABEL_POOLS: Record<string, FlavorLabel[]> = {
+  strength: strengthLabels, speed: speedLabels, agility: agilityLabels,
+  durability: durabilityLabels, iq: iqLabels, charisma: charismaLabels,
+  fightingSkill: fightingSkillLabels, powerMastery: powerMasteryLabels,
+  weaponMastery: weaponMasteryLabels, armorStrength: armorStrengthLabels,
+  potential: potentialLabels, energyLevel: energyLevelLabels,
+}
 
 export type SlotId = 1 | 2 | 3 | 4
 
@@ -1291,7 +1315,30 @@ export function openCrystal(
 function boostSpin(r: SpinResult, tierLevels: number): SpinResult {
   if (r.score == null) return r
   const { grade, score: newScore } = boostedTier(r.score, tierLevels)
-  return { ...r, score: newScore, tier: grade, displayLabel: undefined }
+  // Refresh resultLabel to a flavor matching the new tier band so the card
+  // doesn't keep showing "Wet Noodle Arms" at S-. Picks the closest label
+  // (by absolute score distance) from the stat's label pool so the new
+  // text feels consistent with the underlying score.
+  let newResultLabel = r.resultLabel
+  const pool = STAT_LABEL_POOLS[r.category]
+  if (pool) {
+    const tierMatches = pool.filter(l => l.tier === grade)
+    const candidates = tierMatches.length > 0
+      ? tierMatches
+      : pool.filter(l => l.score != null)
+    if (candidates.length > 0) {
+      // Pick the candidate whose score sits closest to the new score, so
+      // a +1 boost into a new band picks the bottom label, not the top.
+      let best = candidates[0]
+      let bestDelta = Math.abs((best.score ?? 0) - newScore)
+      for (const c of candidates) {
+        const delta = Math.abs((c.score ?? 0) - newScore)
+        if (delta < bestDelta) { best = c; bestDelta = delta }
+      }
+      newResultLabel = best.label
+    }
+  }
+  return { ...r, score: newScore, tier: grade, resultLabel: newResultLabel, displayLabel: undefined }
 }
 
 const OVERALL_STAT_CATS = [
@@ -1443,6 +1490,49 @@ export function getItemRemovalRefund(grade: string | undefined): number {
   // Strip any +/- modifiers (shouldn't appear on ItemGrade, but defensive).
   const base = grade.replace(/[-+]/g, '')
   return ITEM_REMOVAL_GEM_REFUND[base] ?? ITEM_REMOVAL_GEM_REFUND.F
+}
+
+// Lookups for spun-item grades — used by removeSpunItem to figure out
+// the gem refund tier. Built once at module load from the same pools the
+// spin wheel pulls from.
+const _powerGradeByLabel  = new Map(powers.map(p => [p.label, p.grade ?? 'F']))
+const _weaponGradeByLabel = new Map(weapons.map(w => [w.label, w.grade ?? 'F']))
+const _armorGradeByLabel  = new Map(armors.map(a => [a.label, a.grade ?? 'F']))
+
+/** Removes a spin-rolled weapon/power/armor entry from a character's
+ *  spins array (the "innate" items that came from the 23-spin reveal,
+ *  not the equipped slots). Credits a refund based on the entry's pool
+ *  grade — same refund table the equipped-item delete uses. Recomputes
+ *  overall score afterward because removing a power changes the
+ *  character's totals. */
+export function removeSpunItem(
+  slot: StorySaveSlot,
+  characterId: string,
+  category: 'weapon' | 'armor' | 'power',
+  label: string,
+): { slot: StorySaveSlot; refundedGems: number } | 'char_not_found' | 'item_not_found' {
+  const char = slot.roster.find(r => r.id === characterId)
+  if (!char) return 'char_not_found'
+  const idx = char.spins.findIndex(s => s.category === category && s.resultLabel === label)
+  if (idx === -1) return 'item_not_found'
+  const grade = category === 'weapon' ? _weaponGradeByLabel.get(label)
+              : category === 'armor'  ? _armorGradeByLabel.get(label)
+              :                          _powerGradeByLabel.get(label)
+  const refundedGems = getItemRemovalRefund(grade)
+  const newSpins = char.spins.filter((_, i) => i !== idx)
+  const { overallScore, overallTier } = recomputeOverall(newSpins)
+  return {
+    slot: {
+      ...slot,
+      gems: slot.gems + refundedGems,
+      roster: slot.roster.map(r =>
+        r.id === characterId
+          ? { ...r, spins: newSpins, overallScore, overallTier }
+          : r
+      ),
+    },
+    refundedGems,
+  }
 }
 
 /** Permanently destroys a single equipped item on a character and credits
