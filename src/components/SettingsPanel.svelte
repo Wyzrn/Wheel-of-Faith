@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { settings } from '$lib/settings.svelte'
+  import { settings, BATTLE_SPEED_INSTANT } from '$lib/settings.svelte'
   import { getPerfTier } from '$lib/perf'
   import { auth } from '$lib/stores/auth.svelte'
 
   let { onClose }: { onClose: () => void } = $props()
-  // Surface the Instant Battle toggle only to owners — keeps the panel
-  // clean for everyone else.
+  // Instant Battle gamepass adds an extra "Instant" option to the battle
+  // speed selector. Non-owners see the standard four speeds only.
   let hasInstantBattle = $derived((auth.user?.gamepasses ?? []).includes('instant_battle'))
   // Tier the heuristic has bucketed this device into — surfaced as a tiny
   // info line under the High Quality toggle so users understand whether
@@ -21,14 +21,19 @@
   ]
 
   // Auto Battle speed — only meaningful while auto is on. Manual mode plays
-  // at normal pace because the player paces themselves. "Instant" is no
-  // longer free; it lives in the Arcane Shop as the Instant Battle gamepass.
+  // at normal pace because the player paces themselves. The "Instant" entry
+  // is gated on the Instant Battle gamepass; non-owners see only the first
+  // four. Instant uses BATTLE_SPEED_INSTANT as its sentinel value — the
+  // arena reads it and skips directly to the final result.
   const AUTO_SPEED_OPTIONS: { value: number; label: string; desc: string }[] = [
     { value: 0.7,  label: 'Relaxed', desc: 'Easy to read'  },
     { value: 1.0,  label: 'Normal',  desc: 'Default'       },
     { value: 2.4,  label: 'Fast',    desc: 'Quick fights'  },
     { value: 4.0,  label: 'Turbo',   desc: 'Lightning playback' },
   ]
+  let speedOptions = $derived(hasInstantBattle
+    ? [...AUTO_SPEED_OPTIONS, { value: BATTLE_SPEED_INSTANT, label: 'Instant', desc: 'Skip to result' }]
+    : AUTO_SPEED_OPTIONS)
 
   // Auto-continue: how long the result reveal stays before auto-firing Continue.
   // 0 = disabled (user must tap). Power users who've played many sessions usually
@@ -40,7 +45,7 @@
     { value: 4000, label: '4s',      desc: 'Savor each one'  },
   ]
 
-  function toggle(key: 'soundEnabled' | 'effectsEnabled' | 'autoBattle' | 'instantBattleEnabled') {
+  function toggle(key: 'soundEnabled' | 'effectsEnabled' | 'autoBattle') {
     settings[key] = !settings[key]
     settings.save()
   }
@@ -173,7 +178,7 @@
         <p class="text-sm font-semibold mb-1" style="color: #e9dfeb;">Battle Speed</p>
         <p class="text-xs mb-3" style="color: #9a907b;">Playback rate while auto-battling</p>
         <div class="flex flex-col gap-1.5">
-          {#each AUTO_SPEED_OPTIONS as opt}
+          {#each speedOptions as opt}
             {@const active = settings.autoBattleSpeed === opt.value}
             <button onclick={() => { settings.autoBattleSpeed = opt.value; settings.save() }}
               class="battle-speed-chip"
@@ -184,22 +189,6 @@
             </button>
           {/each}
         </div>
-      </div>
-    {/if}
-
-    {#if hasInstantBattle}
-      <div class="divider"></div>
-      <!-- ─ Instant Battle (owner-only) ─ -->
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-semibold" style="color: #e9dfeb;">Instant Battle Skip</p>
-          <p class="text-xs mt-0.5" style="color: #9a907b;">Show the in-arena Skip button. Off = watch the whole fight.</p>
-        </div>
-        <button onclick={() => toggle('instantBattleEnabled')} class="toggle-btn"
-          style="background: {settings.instantBattleEnabled ? '#f0c040' : '#1e1a22'}; box-shadow: {settings.instantBattleEnabled ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.instantBattleEnabled ? '#f0c040' : 'rgba(78,70,53,0.5)'};"
-          aria-label="Toggle Instant Battle skip button">
-          <span class="toggle-knob" style="left: {settings.instantBattleEnabled ? '22px' : '2px'}; background: {settings.instantBattleEnabled ? '#0d0d16' : '#3a3848'};"></span>
-        </button>
       </div>
     {/if}
 

@@ -1032,6 +1032,13 @@
     timeoutId = setTimeout(() => {
       phase = 'battle'
       onPhaseChange?.('battle')
+      // Instant Battle speed — owner picked "Instant" in settings. Fast-
+      // forward to the result immediately instead of animating turns.
+      if (canInstant && speedFactor >= 9999) {
+        // Defer one tick so phase='battle' propagates first.
+        setTimeout(() => instantResolve(), 0)
+        return
+      }
       if (controllerMode && controller) {
         if (isTeamController) {
           // Peek the upcoming actor BEFORE stepping. awaitingActor primes
@@ -1241,12 +1248,9 @@
           <span class="arena-auto-track"><span class="arena-auto-dot"></span></span>
         </button>
       {/if}
-      {#if canInstant && phase === 'battle'}
-        <button class="arena-skip" onclick={instantResolve} title="Instant Battle — skip to result">
-          <span class="material-symbols-outlined" style="font-size: 13px; font-variation-settings: 'FILL' 1;">fast_forward</span>
-          SKIP
-        </button>
-      {/if}
+      <!-- Instant Battle Skip button removed — the Instant option in the
+           battle-speed selector now drives this. -->
+
     </div>
     <div class="rune-seam"></div>
   </header>

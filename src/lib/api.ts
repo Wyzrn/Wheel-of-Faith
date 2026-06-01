@@ -20,6 +20,17 @@ export function apiUrl(path: string): string {
   return API_BASE + (path.startsWith('/') ? path : '/' + path)
 }
 
+/** Canonical user-facing base for shareable URLs. On the Heroku build the
+ *  game is served from the origin root, so window.location.origin is the
+ *  right host. On the itch build the origin is a random hash subdomain on
+ *  html-classic.itch.zone — useless to share — so we route shares back to
+ *  the Heroku app (where /character/:shareId actually resolves). */
+export function shareBase(): string {
+  if (API_BASE) return API_BASE   // itch build — VITE_API_URL points to Heroku
+  if (typeof window !== 'undefined') return window.location.origin
+  return ''
+}
+
 /** WebSocket URL for a server-relative path. Uses VITE_API_URL when set
  *  (rewritten to ws/wss), else derives from window.location. */
 export function wsUrl(path: string): string {

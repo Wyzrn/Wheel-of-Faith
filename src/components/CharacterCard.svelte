@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { apiUrl } from '$lib/api'
+  import { apiUrl, shareBase } from '$lib/api'
   import type { SpinResult } from '$lib/session/types'
   import { computeOverallScore, scoreTier, normalizeLegacyDisplayLabel } from '$lib/game/scoreTier'
   import { tierHasGradient } from '$lib/game/tierColor'
@@ -476,7 +476,9 @@
       }
 
       const { shareId, url } = await res.json() as { shareId: string; url: string }
-      shareUrl = `${window.location.origin}${url}`
+      // shareBase() routes to the Heroku origin when running on itch (so
+      // links are openable) and to window.location.origin on Heroku.
+      shareUrl = `${shareBase()}${url}`
       // persist to local character list for the View Characters menu
       try {
         const existing: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')

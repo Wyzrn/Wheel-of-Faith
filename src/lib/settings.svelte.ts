@@ -4,6 +4,11 @@ import type { WheelThemeId } from './wheelThemes'
 
 const STORAGE_KEY = 'wof_settings'
 
+/** Sentinel value for autoBattleSpeed meaning "skip animations entirely
+ *  and resolve to the final result in one frame". Owners of the
+ *  `instant_battle` gamepass can pick this from the battle-speed selector. */
+export const BATTLE_SPEED_INSTANT = 9999
+
 class SettingsStore {
   soundEnabled    = $state(true)
   effectsEnabled  = $state(true)
@@ -27,11 +32,10 @@ class SettingsStore {
   // matching gamepass; resolveActiveTheme falls back to 'default' otherwise.
   // 'default' = no skin (vanilla gold wheel).
   activeWheelTheme: WheelThemeId = $state('default')
-  // Whether the Instant Battle Skip button appears in the arena dock.
-  // Gated by ownership of the `instant_battle` gamepass — this toggle just
-  // lets the player turn the affordance off when they want to watch the
-  // full fight despite owning the pass. Defaults ON to match the old
-  // behaviour where ownership alone surfaced the button.
+  // Legacy field kept for backward compat — previously surfaced an on/off
+  // Skip button. Replaced by the "Instant" option in the battle-speed
+  // selector (autoBattleSpeed === BATTLE_SPEED_INSTANT). Always true now;
+  // the speed picker drives behaviour.
   instantBattleEnabled = $state(true)
 
   // Backward-compat shim: existing views still read settings.battleSpeed

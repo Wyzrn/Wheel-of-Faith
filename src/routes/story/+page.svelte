@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { apiUrl } from '$lib/api'
+  import { apiUrl, shareBase } from '$lib/api'
   import { onMount, onDestroy, untrack } from 'svelte'
   import { storyHomeSignal } from '$lib/menuState.svelte'
   import {
@@ -358,7 +358,8 @@
       }
       if (!res.ok) throw new Error('Server error')
       const { url } = await res.json() as { url: string }
-      shareSlotUrl = `${window.location.origin}${url}`
+      // shareBase() resolves to Heroku origin on itch, window origin on Heroku.
+      shareSlotUrl = `${shareBase()}${url}`
     } catch {
       shareSlotError = 'Failed to save. Try again.'
     } finally {

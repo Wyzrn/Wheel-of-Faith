@@ -856,7 +856,11 @@
       // Blessed Wheel gamepass: "Higher segments slightly favoured." Boost
       // weight on stat tiers >= A- by 1.4x. Mild enough not to break the
       // tier curve, noticeable enough to be worth 9,000 shards.
-      const blessed = auth.user?.gamepasses?.includes('blessed_wheel') ?? false
+      //
+      // SUPPRESSED in rivals modes — gamepass-driven spin advantages would
+      // break competitive parity. Only cosmetic wheel themes carry over.
+      const blessed = !rivalsOnlineMode && !rivalsBotMode
+        && (auth.user?.gamepasses?.includes('blessed_wheel') ?? false)
       const aMinusIdx = TIER_ORDER.indexOf('A-' as TierGrade)
       return baseSegments
         .filter(seg => {
@@ -1060,7 +1064,10 @@
 
       const forceTutorialWildcard = isStatSpin && def.category === 'strength' && tutorialStep > 0 && tutorialStep < 15 && !tutorialWildcardDone
       if (forceTutorialWildcard) tutorialWildcardDone = true
-      const hasDoubleLuck = auth.user?.gamepasses?.includes('double_luck') ?? false
+      // Double Luck suppressed in rivals — competitive parity. Only the
+      // cosmetic wheel-theme gamepasses carry over into rivals matches.
+      const hasDoubleLuck = !rivalsOnlineMode && !rivalsBotMode
+        && (auth.user?.gamepasses?.includes('double_luck') ?? false)
       if (isStatSpin && (Math.random() < (hasDoubleLuck ? 0.10 : 0.05) || forceTutorialWildcard)) {
         // Stat wildcard: pick outcome from weighted table
         const outcome = forceTutorialWildcard
