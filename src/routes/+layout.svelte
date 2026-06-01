@@ -16,9 +16,17 @@
   import { settings } from '$lib/settings.svelte'
   import { setPerfTierOverride, getPerfTier } from '$lib/perf'
   import { toast } from '$lib/toast.svelte'
+  import { runRebrandMigration } from '$lib/rebrandMigration'
 
   let { children } = $props()
   let showSettings = $state(false)
+
+  // One-shot localStorage migration for the 2026-05-31 rebrand. Walks any
+  // persisted character payloads (rolling history, story save slots,
+  // saved-char index) and rewrites legacy names (Saiyan → Zenithian, etc.)
+  // so existing players see the new labels too. Self-stamps a version flag
+  // so subsequent loads skip immediately.
+  runRebrandMigration()
 
   onMount(() => {
     auth.init()
