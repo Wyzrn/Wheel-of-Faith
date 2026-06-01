@@ -115,13 +115,12 @@ export const GAMEPASSES: GamepassDef[] = [
   {
     id: 'blessed_wheel',
     name: 'Blessed Wheel',
-    description: 'Higher-tier segments carry slightly more weight on every spin.',
-    effect: 'Higher segments slightly favoured',
+    description: 'Stat tiers A- and above get a 1.4× weight bias on every stat wheel — sharper highs without breaking the rarity curve.',
+    effect: 'Stat A- and above × 1.4 weight',
     category: 'spinning',
     costShards: 9_000,
     stackable: false,
     icon: 'star',
-    comingSoon: true,
   },
 
   // ── Roster / Progression ──────────────────────────────────────────────────

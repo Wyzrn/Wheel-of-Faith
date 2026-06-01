@@ -6,6 +6,11 @@
   import { shop, gamepasses } from '$lib/stores/shop.svelte'
   import { SHARD_PACKS, GAMEPASSES, CATEGORY_LABELS, type GamepassCategory } from '$lib/shop/gamepasses'
   import { settings } from '$lib/settings.svelte'
+  import { WHEEL_THEMES, type WheelThemeId } from '$lib/wheelThemes'
+  import WheelThemePreview from '../../components/WheelThemePreview.svelte'
+
+  // Open preview modal for a cosmetic wheel theme. null = closed.
+  let previewThemeId = $state<WheelThemeId | null>(null)
 
   let isSuccess = $derived($page.url.searchParams.get('success') === '1')
   let successShards = $state(0)
@@ -187,6 +192,18 @@
 
               <!-- Buy button -->
               <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                <!-- Preview button for cosmetic wheel skins — shows what the
+                     theme looks like without requiring purchase. Always visible
+                     on cosmetic passes. -->
+                {#if gp.category === 'cosmetic' && WHEEL_THEMES[gp.id as WheelThemeId]}
+                  <button onclick={() => previewThemeId = gp.id as WheelThemeId}
+                    class="flex items-center gap-1 px-2 py-1 rounded-md font-mono text-[10px] font-bold mb-0.5"
+                    style="background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.25); color: #c084fc;"
+                    title="Preview this wheel theme">
+                    <span class="material-symbols-outlined" style="font-size: 12px;">visibility</span>
+                    Preview
+                  </button>
+                {/if}
                 {#if gp.comingSoon}
                   <div class="px-3 py-2 rounded-lg"
                     style="background: rgba(30,28,48,0.4); border: 1px solid rgba(48,44,64,0.5);">
@@ -245,9 +262,65 @@
 
 </div>
 
+<!-- ── Wheel theme preview modal ─────────────────────────────────────────── -->
+{#if previewThemeId && WHEEL_THEMES[previewThemeId]}
+  {@const theme = WHEEL_THEMES[previewThemeId]}
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+  <div class="wtp-backdrop" onclick={() => previewThemeId = null} role="dialog" aria-modal="true" aria-label="Wheel theme preview">
+    <div class="wtp-card" onclick={(e) => e.stopPropagation()} role="document">
+      <button class="wtp-close" onclick={() => previewThemeId = null} aria-label="Close preview">
+        <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+      </button>
+      <p class="font-mono text-xs tracking-widest uppercase mb-1" style="color: #9a907b;">Wheel Theme</p>
+      <h3 class="mb-4" style="font-family: 'Cinzel', serif; font-size: 1.3rem; color: {theme.rimStroke}; text-shadow: 0 0 12px {theme.glow};">{theme.name}</h3>
+      <div class="flex justify-center mb-4" style="--wtp-glow: {theme.glow};">
+        <WheelThemePreview {theme} size={220} />
+      </div>
+      <p class="text-xs text-center" style="color: #9a907b; line-height: 1.4;">Preview only — segment colors are samples. The real spin wheel uses the same rim, glow, and inner aura.</p>
+    </div>
+  </div>
+{/if}
+
 <style>
   @keyframes shimmer {
     0%   { background-position: -200% center; }
     100% { background-position:  200% center; }
+  }
+  /* Wheel theme preview modal */
+  .wtp-backdrop {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(8, 6, 14, 0.88);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    animation: wtp-fade 180ms ease-out;
+  }
+  .wtp-card {
+    position: relative;
+    background: linear-gradient(180deg, #1a1623, #0d0c16);
+    border: 1px solid rgba(240, 192, 82, 0.3);
+    border-radius: 16px;
+    padding: 24px 24px 20px;
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+    animation: wtp-zoom 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .wtp-close {
+    position: absolute; top: 10px; right: 10px;
+    width: 30px; height: 30px;
+    border-radius: 999px;
+    background: rgba(20, 17, 26, 0.7);
+    border: 1px solid rgba(240, 192, 82, 0.25);
+    color: #ffdf96;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .wtp-close:hover { background: rgba(40, 32, 50, 0.95); }
+  @keyframes wtp-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes wtp-zoom { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) {
+    .wtp-backdrop, .wtp-card { animation: none; }
   }
 </style>

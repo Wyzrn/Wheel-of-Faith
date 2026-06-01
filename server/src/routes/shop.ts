@@ -12,20 +12,24 @@ const SHARD_PACKS: Record<string, { name: string; shards: number; priceUsd: numb
   shards_50000: { name: 'Shard Vault',        shards: 50_000, priceUsd: 3999 },
 }
 
+// NOTE: this table MUST mirror costShards in src/lib/shop/gamepasses.ts.
+// Drift causes the displayed price to disagree with the charged amount.
+// TODO: source both from one shared module.
 const GAMEPASS_COSTS: Record<string, number> = {
-  double_shard_drop:  2_000,
-  crit_surge:         1_500,
-  revenge_protocol:     800,
-  boss_magnet:        1_200,
-  double_luck:        2_500,
-  reroll_insurance:   1_800,
-  blessed_wheel:      3_000,
-  expanded_roster:      500,
-  sell_bonus:         1_000,
-  daily_booster:      3_500,
-  legend_tag:           500,
+  double_shard_drop:  6_000,
+  crit_surge:         4_500,
+  revenge_protocol:   2_400,
+  boss_magnet:        3_600,
+  instant_battle:     5_000,
+  double_luck:        7_500,
+  reroll_insurance:   5_400,
+  blessed_wheel:      9_000,
+  expanded_roster:    1_500,
+  sell_bonus:         3_000,
+  daily_booster:      10_500,
+  legend_tag:         1_500,
   cursed_wheel:       1_500,
-  gold_roster_frame:    600,
+  gold_roster_frame:  1_800,
   // Cosmetic wheel skins.
   guilded_wheel:      1_000,
   holy_wheel:         1_500,
@@ -41,7 +45,7 @@ const GAMEPASS_COSTS: Record<string, number> = {
 // Non-stackable passes (can only own one)
 const NON_STACKABLE = new Set([
   'double_shard_drop', 'crit_surge', 'revenge_protocol', 'boss_magnet',
-  'double_luck', 'reroll_insurance', 'blessed_wheel',
+  'instant_battle', 'double_luck', 'reroll_insurance', 'blessed_wheel',
   'sell_bonus', 'daily_booster',
   'legend_tag', 'cursed_wheel', 'gold_roster_frame',
   // Cosmetic wheel skins are one-of-a-kind.

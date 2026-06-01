@@ -849,6 +849,11 @@
       const absoluteCapIdx = TIER_ORDER.indexOf('Absolute+' as TierGrade)
       const maxTierIdx = isLimitBroken ? TIER_ORDER.length - 1 : (absoluteCapIdx >= 0 ? absoluteCapIdx : TIER_ORDER.length - 1)
 
+      // Blessed Wheel gamepass: "Higher segments slightly favoured." Boost
+      // weight on stat tiers >= A- by 1.4x. Mild enough not to break the
+      // tier curve, noticeable enough to be worth 9,000 shards.
+      const blessed = auth.user?.gamepasses?.includes('blessed_wheel') ?? false
+      const aMinusIdx = TIER_ORDER.indexOf('A-' as TierGrade)
       return baseSegments
         .filter(seg => {
           const fl = seg as { tier?: string }
@@ -860,13 +865,18 @@
           return true
         })
         .map(seg => {
-          const fl = seg as { label: string; weight: number; score?: number }
+          const fl = seg as { label: string; weight: number; score?: number; tier?: string }
           const score = fl.score
           if (score === undefined) return seg
           // Higher score = rarer tier = lower weight; lower score = more common = higher weight
           const rarityWeight = Math.max(0.3, 11 - score * 0.105)
           // Race modifier: >1 shifts toward high scores, <1 shifts toward low scores
-          const finalWeight = Math.max(0.1, rarityWeight * Math.pow(modifier, score / 40))
+          let finalWeight = Math.max(0.1, rarityWeight * Math.pow(modifier, score / 40))
+          // Blessed Wheel boost for higher tiers (A- and above)
+          if (blessed && fl.tier && aMinusIdx >= 0) {
+            const tIdx = TIER_ORDER.indexOf(fl.tier as TierGrade)
+            if (tIdx >= aMinusIdx) finalWeight *= 1.4
+          }
           return { ...seg, weight: finalWeight }
         })
     }
