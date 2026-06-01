@@ -3,7 +3,7 @@
 // Special mechanic fields:
 //   statModifiers         — probability multipliers per stat (>1 boosts toward high tiers, <1 pushes low)
 //   customAbilityPool     — overrides ability pool (Stand names, breathing styles, titan forms, etc.)
-//   abilitySpinDisplayName — renames the ability spin slots (e.g. "Stand", "Breathing Style")
+//   abilitySpinDisplayName — renames the ability spin slots (e.g. "Stand", "Combat Breath")
 //   statBonusGrants       — stat bonus/penalty spins spliced immediately after archetype lands
 //   extraPowerSpins       — additional power spins
 //   bonusWeaponSpins      — additional weapon spins (dual wielders, gadgeteers)
@@ -218,12 +218,12 @@ export const archetypes: Archetype[] = [
   },
 
   {
-    label: 'Demon Slayer',
+    label: 'Dawnbringer',
     weight: 4,
-    archetypeType: 'Breathing Style',
+    archetypeType: 'Combat Breath',
     abilitySpinCount: 2,
     description: 'Trained in Breathing Techniques. Fragile bones, incredible performance. Demons terrified.',
-    abilitySpinDisplayName: 'Breathing Style',
+    abilitySpinDisplayName: 'Combat Breath',
     statBonusGrants: { fightingSkill: 'statBonus', speed: 'statBonus', durability: 'statPenalty' },
     statModifiers: { fightingSkill: 1.5, speed: 1.5, agility: 1.3, energyLevel: 1.3, durability: 0.8, iq: 0.9 },
     grantedWeapons: ['Nichirin Blade (Katana)'],
@@ -249,7 +249,7 @@ export const archetypes: Archetype[] = [
   },
 
   {
-    label: 'Shinobi',
+    label: 'Shadowblade',
     weight: 4,
     archetypeType: 'Ninja',
     abilitySpinCount: 3,
@@ -263,8 +263,8 @@ export const archetypes: Archetype[] = [
       { label: 'Ninjutsu — Shadow Clone', weight: 3, element: 'Shadow', grade: 'B' },
       { label: 'Genjutsu — Illusion Bind', weight: 2, element: 'Psychic', grade: 'B' },
       { label: 'Taijutsu — Eight Gates', weight: 1, element: 'Wind', grade: 'A' },
-      { label: 'Rasengan', weight: 2, element: 'Wind', grade: 'B' },
-      { label: 'Sharingan Insight', weight: 2, element: 'Wind', grade: 'B' },
+      { label: 'Spiral Sphere', weight: 2, element: 'Wind', grade: 'B' },
+      { label: 'Reading Eye Insight', weight: 2, element: 'Wind', grade: 'B' },
       { label: 'Sage Mode', weight: 1, element: 'Time', grade: 'A' },
       { label: 'Summoning Jutsu', weight: 2, element: 'Wind', grade: 'B' },
       { label: 'Six Paths Chakra', weight: 1, element: 'Wind', grade: 'SS' },
@@ -384,7 +384,7 @@ export const archetypes: Archetype[] = [
   },
 
   {
-    label: 'Stand User',
+    label: 'Phantom Bonded',
     weight: 3,
     archetypeType: 'Stand',
     abilitySpinCount: 1,
@@ -432,7 +432,7 @@ export const archetypes: Archetype[] = [
   },
 
   {
-    label: 'Nen Hunter',
+    label: 'Aura Hunter',
     weight: 3,
     archetypeType: 'Nen',
     abilitySpinCount: 1,
@@ -455,7 +455,7 @@ export const archetypes: Archetype[] = [
   },
 
   {
-    label: 'Esper',
+    label: 'Psion',
     weight: 3,
     archetypeType: 'Psychic',
     abilitySpinCount: 3,
@@ -502,7 +502,7 @@ export const archetypes: Archetype[] = [
       { label: 'Divergent Fist',                      weight: 3, element: 'Neutral', grade: 'B' },
       { label: 'Contract King — Binding Vow',         weight: 2, element: 'Shadow', grade: 'B' },
       { label: 'Reverse Cursed Technique',            weight: 1, element: 'Light', grade: 'A' },
-      { label: 'Hollow — Purple (Six Eyes)',           weight: 1, element: 'Arcane', grade: 'SS' },
+      { label: 'Void — Purple (All-Seeing)',           weight: 1, element: 'Arcane', grade: 'SS' },
     ],
   },
 
@@ -645,12 +645,12 @@ export const archetypes: Archetype[] = [
   },
 
   {
-    label: 'Devil Fruit User',
+    label: 'Cursed Fruit Eater',
     weight: 2,
-    archetypeType: 'Devil Fruit',
+    archetypeType: 'Cursed Fruit',
     abilitySpinCount: 1,
-    description: 'Ate a Devil Fruit. Gained immense power. Will drown in a puddle.',
-    abilitySpinDisplayName: 'Devil Fruit',
+    description: 'Ate a Cursed Fruit. Gained immense power. Will drown in a puddle.',
+    abilitySpinDisplayName: 'Cursed Fruit',
     extraPowerSpins: 1,
     statBonusGrants: { potential: 'statBonus', energyLevel: 'statBonus', durability: 'statPenalty' },
     statModifiers: { potential: 1.5, energyLevel: 1.4, powerMastery: 1.3, durability: 0.75 },
@@ -801,7 +801,7 @@ export const archetypes: Archetype[] = [
   },
 
   {
-    label: 'Titan Shifter',
+    label: 'Colossus Shifter',
     weight: 1,
     archetypeType: 'Titan Power',
     abilitySpinCount: 1,

@@ -1,7 +1,7 @@
 // Race + Archetype identity card builder. Surfaces the "what makes this
 // choice unique" data already encoded in races.ts / archetypes.ts so the
 // reveal panel can read it back to the player. The point: rolling a
-// Saiyan should FEEL different than rolling a Human, before they even
+// Zenithian should FEEL different than rolling a Human, before they even
 // see what gets spliced into the queue.
 
 import { getRace, racesByLabel } from '$lib/content/races'
@@ -151,7 +151,7 @@ export function buildRaceIdentityCard(label: string): IdentityCard | null {
 
   // Lineage stub — if this is a Demi-god / Reincarnation-style race AND
   // the Hall of Fame has prior characters, surface one as the lineage
-  // parent ("Born of GoldFist, your Saiyan ancestor"). Adds emergent
+  // parent ("Born of GoldFist, your Zenithian ancestor"). Adds emergent
   // continuity across saved characters with no extra spin cost.
   if (label === 'Demi-god' || label === 'Hybrid') {
     const parent = pickLineageParent()
@@ -178,7 +178,7 @@ export function buildRaceIdentityCard(label: string): IdentityCard | null {
   }
 
   // Gimmicks first — these are the race's signature COMBAT mechanic, not
-  // just stat tilt. Lead with them so the player sees Saiyan's Last Stand
+  // just stat tilt. Lead with them so the player sees Zenithian's Last Stand
   // before they see "+2 weapon spins."
   for (const gid of RACE_GIMMICKS[label] ?? []) {
     const g = GIMMICKS[gid]
@@ -328,7 +328,7 @@ export function buildArchetypeIdentityCard(label: string): IdentityCard | null {
     })
   }
 
-  // Ability rename (Stand, Breathing Style, Titan Form…) — top of card.
+  // Ability rename (Phantom, Combat Breath, Colossus Form…) — top of card.
   if (arc.abilitySpinDisplayName) {
     perks.push({
       icon: 'edit',
@@ -443,7 +443,7 @@ export function buildArchetypeIdentityCard(label: string): IdentityCard | null {
 }
 
 // ── Pool entry (subType / class / transformation) identity card ────────
-// Race pool entries (e.g. "Vampire Elder", "Saiyan: Super Saiyan",
+// Race pool entries (e.g. "Vampire Elder", "Zenithian: Super Zenith",
 // "Symbiote Bonded") sit one level below the race itself but still carry
 // their own perks (granted powers, ability list, stat bonus grants,
 // element + grade, transformation statBonus). Landing on one is a major

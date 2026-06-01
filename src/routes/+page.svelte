@@ -640,7 +640,7 @@
       return limitBreakSegmentsFor(race?.limitBreakOdds) ?? getSegmentsForCategory('limitBreak')
     }
 
-    // Race-injected wheel (Human Destiny, Saiyan Rage Threshold, Creator
+    // Race-injected wheel (Human Destiny, Zenithian Rage Threshold, Creator
     // Reality Law, etc.). Segments come from raceWheelRegistry keyed by
     // (race, wheelId); archetype mutations override the pool if a rule
     // applies to the active race+archetype pair.
@@ -653,7 +653,7 @@
       return mutated ?? [{ label: '—', weight: 1 }]
     }
 
-    // Devil Fruit name pool — keyed by the raceClass result label
+    // Cursed Fruit name pool — keyed by the raceClass result label
     if (def.category === 'devilFruitName') {
       const classResult = results.find(r => r.category === 'raceClass')
       const pool = classResult ? DEVIL_FRUIT_POOLS[classResult.resultLabel] : undefined
@@ -1032,22 +1032,22 @@
     'Half-Orc|Berserker':  { announcement: 'SYNERGY! Half-Orc Berserker — Savage Heritage: strength bonus!', pendingBonuses: { strength: 'statBonus' } },
     'Human|Paladin':       { announcement: 'SYNERGY! Human Paladin — Divine Champion: charisma bonus!', pendingBonuses: { charisma: 'statBonus' } },
     'Half-Elf|Ranger':     { announcement: 'SYNERGY! Half-Elven Ranger — Forest Blood: speed bonus!', pendingBonuses: { speed: 'statBonus' } },
-    'Saiyan|Berserker':    { announcement: 'SYNERGY! Saiyan Berserker — Primal Power: strength bonus + extra power!', pendingBonuses: { strength: 'statBonus' }, immediateSpins: [{ category: 'power', displayName: 'Synergy: Saiyan Rage Power' }] },
+    'Zenithian|Berserker':    { announcement: 'SYNERGY! Zenithian Berserker — Primal Power: strength bonus + extra power!', pendingBonuses: { strength: 'statBonus' }, immediateSpins: [{ category: 'power', displayName: 'Synergy: Zenithian Rage Power' }] },
     'Vampire|Rogue':       { announcement: 'SYNERGY! Vampire Rogue — Shadow Predator: agility bonus + extra racial ability!', pendingBonuses: { agility: 'statBonus' }, immediateSpins: [{ category: 'racialAbility', displayName: 'Synergy: Shadow Predator Ability' }] },
     'Demon|Warlock':       { announcement: 'SYNERGY! Demon Warlock — True Contract: powerMastery bonus + extra power!', pendingBonuses: { powerMastery: 'statBonus' }, immediateSpins: [{ category: 'power', displayName: 'Synergy: True Contract Power' }] },
     'Angel|Paladin':       { announcement: 'SYNERGY! Angel Paladin — Celestial Champion: charisma + potential bonuses!', pendingBonuses: { charisma: 'statBonus', potential: 'statBonus' } },
     'Elf|Ranger':          { announcement: 'SYNERGY! Elven Ranger — Ancient Hunter: speed + agility bonuses!', pendingBonuses: { speed: 'statBonus', agility: 'statBonus' } },
     'Dragon|Berserker':    { announcement: 'SYNERGY! Dragon Berserker — Primal Terror: strength + durability bonuses + extra power!', pendingBonuses: { strength: 'statBonus', durability: 'statBonus' }, immediateSpins: [{ category: 'power', displayName: 'Synergy: Dragon Rage Power' }] },
-    'Kryptonian|Superhero':{ announcement: 'SYNERGY! Kryptonian Superhero — Man of Steel: strength + durability bonuses + extra power!', pendingBonuses: { strength: 'statBonus', durability: 'statBonus' }, immediateSpins: [{ category: 'power', displayName: 'Synergy: Man of Steel Power' }] },
-    'Tiefling|Warlock':    { announcement: 'SYNERGY! Tiefling Warlock — Infernal Contract: powerMastery bonus + extra power!', pendingBonuses: { powerMastery: 'statBonus' }, immediateSpins: [{ category: 'power', displayName: 'Synergy: Infernal Power' }] },
-    'Dragonborn|Warrior':  { announcement: 'SYNERGY! Dragonborn Warrior — Draconic Might: strength bonus!', pendingBonuses: { strength: 'statBonus' } },
+    'Krystalian|Superhero':{ announcement: 'SYNERGY! Krystalian Superhero — Man of Steel: strength + durability bonuses + extra power!', pendingBonuses: { strength: 'statBonus', durability: 'statBonus' }, immediateSpins: [{ category: 'power', displayName: 'Synergy: Man of Steel Power' }] },
+    'Hellborn|Warlock':    { announcement: 'SYNERGY! Hellborn Warlock — Infernal Contract: powerMastery bonus + extra power!', pendingBonuses: { powerMastery: 'statBonus' }, immediateSpins: [{ category: 'power', displayName: 'Synergy: Infernal Power' }] },
+    'Drakekin|Warrior':  { announcement: 'SYNERGY! Drakekin Warrior — Draconic Might: strength bonus!', pendingBonuses: { strength: 'statBonus' } },
     'Werewolf|Berserker':  { announcement: 'SYNERGY! Werewolf Berserker — Full Moon Fury: strength + speed bonuses!', pendingBonuses: { strength: 'statBonus', speed: 'statBonus' } },
     'Undead (Revenant)|Necromancer': { announcement: 'SYNERGY! Revenant Necromancer — Death Made Manifest: extra power + extra weakness (you\'re already dead)!', immediateSpins: [{ category: 'power', displayName: 'Synergy: Death Power' }, { category: 'weakness', displayName: 'Synergy: Death Weakness' }] },
   }
 
   // ── Dark archetypes/races that raise corruption score ─────────────────────
   const DARK_ARCHETYPES = new Set(['Warlock','Necromancer','Supervillain','Cursed Sorcerer','Possessed','Anti-Hero','Chaos Gremlin'])
-  const DARK_RACES = new Set(['Demon','Undead (Revenant)','Vampire','Werewolf','Hollow / Arrancar','Tiefling','Mindflayer','Eldritch Being'])
+  const DARK_RACES = new Set(['Demon','Undead (Revenant)','Vampire','Werewolf','Null','Hellborn','Cerebrosaur','Eldritch Being'])
 
   // ── handleSpinComplete: strict order — splice, push, save ────────────────
   function handleSpinComplete(resultIndex: number, resultLabel: string) {
@@ -1200,12 +1200,12 @@
         insertSlots.push({ category: 'limitBreak' as const, displayName: `${resultLabel} Limit Break`, forRace })
       }
 
-      // Class/rank spin (e.g., Saiyan class, Mutant power level, Viltrumite rank)
+      // Class/rank spin (e.g., Zenithian class, Mutant power level, Victrumite rank)
       if (race?.classPool && race.classPool.length > 0) {
         insertSlots.push({ category: 'raceClass' as const, displayName: `${resultLabel} Class`, forRace })
       }
 
-      // Transformation spin (e.g., Saiyan max form, Vampire age, Kryptonian solar level)
+      // Transformation spin (e.g., Zenithian max form, Vampire age, Krystalian solar level)
       if (race?.transformationPool && race.transformationPool.length > 0) {
         insertSlots.push({ category: 'raceTransformation' as const, displayName: `${resultLabel} Power Level`, forRace })
       }
@@ -1231,7 +1231,7 @@
       }
 
       // Twist sub-wheel splice — for races with a registered twist (God →
-      // worshippers, Saiyan → power level, Bender → element, etc.), prepend
+      // worshippers, Zenithian → power level, Bender → element, etc.), prepend
       // the twist slot at the front of the extras so it lands BEFORE the
       // racial abilities/weapons that depend on the locked element.
       const raceTwistKey = RACE_TWIST_TRIGGERS[resultLabel]
@@ -1333,11 +1333,11 @@
           category: b.category as SpinCategory, displayName: b.displayName,
         })))
       }
-      // Splice devil fruit name spin for Devil Fruit User
-      if (raceResult?.resultLabel === 'Devil Fruit User' && DEVIL_FRUIT_POOLS[resultLabel]) {
+      // Splice devil fruit name spin for Cursed Fruit Eater
+      if (raceResult?.resultLabel === 'Cursed Fruit Eater' && DEVIL_FRUIT_POOLS[resultLabel]) {
         spinQueue.splice(currentSpinIndex + 1, 0, {
           category: 'devilFruitName' as const,
-          displayName: 'Devil Fruit Name',
+          displayName: 'Cursed Fruit Name',
         })
         const msg = `Spin your specific fruit!`
         showAnnouncement = showAnnouncement ? showAnnouncement + ' ' + msg : msg
@@ -1482,7 +1482,7 @@
       const abilityLabel = archetype?.abilitySpinDisplayName ?? 'Archetype Ability'
       const insertSlots: SpinDefinition[] = []
 
-      // Ability slots (custom display name for Stand, Breathing Style, Titan Form, etc.)
+      // Ability slots (custom display name for Stand, Combat Breath, Titan Form, etc.)
       for (let i = 0; i < count; i++) {
         insertSlots.push({
           category: 'archetypeAbility' as const,

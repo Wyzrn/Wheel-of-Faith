@@ -1,5 +1,5 @@
 // devil-fruits.ts — Devil fruit name pools keyed by the exact classPool label of the
-// Devil Fruit User race. Spliced as a 'devilFruitName' spin after 'raceClass' resolves.
+// Cursed Fruit Eater race. Spliced as a 'devilFruitName' spin after 'raceClass' resolves.
 // No default export. Single named export.
 
 export const DEVIL_FRUIT_POOLS: Record<string, { label: string; weight: number }[]> = {
@@ -86,7 +86,7 @@ export const DEVIL_FRUIT_POOLS: Record<string, { label: string; weight: number }
     { label: 'Tsuchi Tsuchi no Mi — Earth',              weight: 2 },
   ],
 
-  'Awakened Devil Fruit': [
+  'Awakened Cursed Fruit': [
     { label: 'Gomu Gomu no Mi: Gear 5 Awakening',                 weight: 3 },
     { label: 'Ito Ito no Mi: Awakened Thread Dominion',            weight: 2 },
     { label: 'Gura Gura no Mi: Seismic World-Break',               weight: 2 },

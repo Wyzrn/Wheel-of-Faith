@@ -9,7 +9,7 @@ export const weapons: SimpleItem[] = [
   // ── GOD TIER (10) — Weapons of absolute, world-ending power ──
   { label: 'The Sword of Creation', weight: 1, element: 'Cosmic', grade: 'God', attackType: 'attack' },
   { label: 'Excalibur Ultima', weight: 1, element: 'Light', grade: 'God', attackType: 'attack' },
-  { label: 'Mjolnir (True Form)', weight: 1, element: 'Lightning', grade: 'God', attackType: 'attack' },
+  { label: 'Hammer of Thor (True Form)', weight: 1, element: 'Lightning', grade: 'God', attackType: 'attack' },
   { label: 'The Spear of Destiny', weight: 1, element: 'Light', grade: 'God', attackType: 'attack' },
   { label: 'Ragnarok (The End Blade)', weight: 1, element: 'Chaos', grade: 'God', attackType: 'attack' },
   { label: 'Kusarigama of Fate', weight: 1, element: 'Time', grade: 'God', attackType: 'attack' },
@@ -20,7 +20,7 @@ export const weapons: SimpleItem[] = [
 
   // ── SSS TIER (20) — Legendary mythical weapons ──
   { label: 'Excalibur', weight: 1, element: 'Light', grade: 'SSS', attackType: 'attack' },
-  { label: 'Mjolnir', weight: 1, element: 'Lightning', grade: 'SSS', attackType: 'attack' },
+  { label: 'Hammer of Thor', weight: 1, element: 'Lightning', grade: 'SSS', attackType: 'attack' },
   { label: 'Gungnir', weight: 1, element: 'Wind', grade: 'SSS', attackType: 'attack' },
   { label: 'Durandal', weight: 1, element: 'Light', grade: 'SSS', attackType: 'attack' },
   { label: 'Tyrfing (The Cursed Blade)', weight: 1, element: 'Shadow', grade: 'SSS', attackType: 'attack' },

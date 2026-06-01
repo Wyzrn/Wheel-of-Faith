@@ -1,5 +1,5 @@
 // Material Symbols icon picks for each race. The glyph is shown next to
-// the race name on character cards + identity reveals so the Saiyan
+// the race name on character cards + identity reveals so the Zenithian
 // "whatshot" flame visually distinguishes them from the Vampire "bedtime"
 // crescent before you read either name.
 //
@@ -23,10 +23,10 @@ export const RACE_GLYPHS: Record<string, RaceGlyph> = {
   'Half-Elf':     { icon: 'people' },
   'Half-Orc':     { icon: 'group' },
   'Goblin':       { icon: 'sentiment_extremely_dissatisfied' },
-  'Dragonborn':   { icon: 'shield_lock' },
-  'Tiefling':     { icon: 'whatshot' },
-  'Aasimar':      { icon: 'auto_awesome' },
-  'Tabaxi':       { icon: 'cruelty_free' },
+  'Drakekin':   { icon: 'shield_lock' },
+  'Hellborn':     { icon: 'whatshot' },
+  'Lightborn':      { icon: 'auto_awesome' },
+  'Felfolk':       { icon: 'cruelty_free' },
   'Goliath':      { icon: 'fitness_center' },
   'Lizardfolk':   { icon: 'crop_landscape' },
 
@@ -39,17 +39,17 @@ export const RACE_GLYPHS: Record<string, RaceGlyph> = {
   // ── Mechanical ──────────────────────────────────────────────────────────
   'Robot':        { icon: 'smart_toy' },
   'Cyborg':       { icon: 'precision_manufacturing' },
-  'Warforged':    { icon: 'hardware' },
-  'Cybertronian': { icon: 'memory' },
+  'Soulforged':    { icon: 'hardware' },
+  'Mechshifter': { icon: 'memory' },
 
   // ── Anime / shonen ─────────────────────────────────────────────────────
-  'Saiyan':           { icon: 'whatshot' },
-  'Namekian':         { icon: 'healing' },
-  'Shinobi':          { icon: 'kid_star' },
+  'Zenithian':           { icon: 'whatshot' },
+  'Verdantian':         { icon: 'healing' },
+  'Shadowblade':          { icon: 'kid_star' },
   'Nen User':         { icon: 'category' },
-  'Titan Shifter':    { icon: 'transit_enterexit' },
-  'Devil Fruit User': { icon: 'nutrition' },
-  'Hollow / Arrancar': { icon: 'mask' },
+  'Colossus Shifter':    { icon: 'transit_enterexit' },
+  'Cursed Fruit Eater': { icon: 'nutrition' },
+  'Null': { icon: 'mask' },
   'Shinigami':        { icon: 'crisis_alert' },
   'Bender':           { icon: 'air' },
 
@@ -69,9 +69,9 @@ export const RACE_GLYPHS: Record<string, RaceGlyph> = {
   'Hybrid':            { icon: 'merge_type' },
 
   // ── Cosmic / divine ─────────────────────────────────────────────────────
-  'Kryptonian':     { icon: 'shield' },
-  'Asgardian':      { icon: 'bolt' },
-  'Viltrumite':     { icon: 'rocket_launch' },
+  'Krystalian':     { icon: 'shield' },
+  'Aesir':      { icon: 'bolt' },
+  'Victrumite':     { icon: 'rocket_launch' },
   'God':            { icon: 'all_inclusive' },
   'Primordial':     { icon: 'star' },
   'Creator':        { icon: 'gesture' },
@@ -79,15 +79,15 @@ export const RACE_GLYPHS: Record<string, RaceGlyph> = {
   'Angel':          { icon: 'auto_awesome' },
   'Spirit':         { icon: 'flare' },
   'Eldritch Being': { icon: 'visibility' },
-  'Mindflayer':     { icon: 'psychology' },
+  'Cerebrosaur':     { icon: 'psychology' },
 
   // ── Other ───────────────────────────────────────────────────────────────
   'Alien':       { icon: 'rocket' },
   'Mutant':      { icon: 'biotech' },
-  'Time Lord':   { icon: 'schedule' },
+  'Lord of Time':   { icon: 'schedule' },
   'Immortal':    { icon: 'all_inclusive' },
   'Dinosaur':    { icon: 'pets' },
-  'Sea King':    { icon: 'waves' },
+  'Abyssal Leviathan':    { icon: 'waves' },
   'Atlantean':   { icon: 'water' },
   'Giant':       { icon: 'height' },
   'Kaiju':       { icon: 'pest_control' },

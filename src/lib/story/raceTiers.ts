@@ -11,9 +11,9 @@ export type { Race, Archetype }
 
 // Archetypes have weights 1–6, so use tighter thresholds than the race system.
 // Stage 1: weight >= 5 → Warrior, Mage, Rogue, Superhero (4 archetypes)
-// Stage 2: weight >= 4 → + Paladin, Ranger, Bard, Cleric, Anti-Hero, Demon Slayer, Shinobi
-// Stage 3: weight >= 3 → + Berserker, Monk, Dual Wielder, Stand User, Nen Hunter, Esper, etc.
-// Stage 4: weight >= 2 → + Necromancer, Druid, Artificer, Warlock, Devil Fruit User, etc.
+// Stage 2: weight >= 4 → + Paladin, Ranger, Bard, Cleric, Anti-Hero, Dawnbringer, Shadowblade
+// Stage 3: weight >= 3 → + Berserker, Monk, Dual Wielder, Phantom Bonded, Aura Hunter, Psion, etc.
+// Stage 4: weight >= 2 → + Necromancer, Druid, Artificer, Warlock, Cursed Fruit Eater, etc.
 // Stage 5+: weight >= 1 → all archetypes
 export const ARCHETYPE_STAGE_MIN_WEIGHTS = [5, 4, 3, 2, 1, 1] as const
 

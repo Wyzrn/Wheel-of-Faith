@@ -126,7 +126,7 @@
       id: 2,
       icon: 'check_circle',
       title: 'Race Locked In',
-      body: 'Permanent. Here\'s what your race now determines for every spin ahead:\n\n• Racial Abilities — 1–3 upcoming spins of traits unique to your species\n• Subtype / Class — your variant within the race (Pure Saiyan vs. Half-Blood; Wood Elf vs. Drow)\n• Transformation — if eligible, a global stat multiplier (0.9× to 2.2×) is applied to all 11 stats after they\'re rolled\n• Hidden stat weights — your race silently shifts the probability curves on every stat wheel without showing you numbers\n• Synergy triggers — specific race × archetype combinations fire bonus spins automatically mid-session\n\nThe spins coming up are all racial features. They expand your race into a full identity.',
+      body: 'Permanent. Here\'s what your race now determines for every spin ahead:\n\n• Racial Abilities — 1–3 upcoming spins of traits unique to your species\n• Subtype / Class — your variant within the race (Pure Zenithian vs. Half-Blood; Wood Elf vs. Drow)\n• Transformation — if eligible, a global stat multiplier (0.9× to 2.2×) is applied to all 11 stats after they\'re rolled\n• Hidden stat weights — your race silently shifts the probability curves on every stat wheel without showing you numbers\n• Synergy triggers — specific race × archetype combinations fire bonus spins automatically mid-session\n\nThe spins coming up are all racial features. They expand your race into a full identity.',
       cta: 'Next spin →',
       accent: '#22c55e',
     }
@@ -136,7 +136,7 @@
       id: 3,
       icon: 'auto_awesome',
       title: 'Racial Features',
-      body: 'These spins build your identity within your race:\n\nSubtype / Class — your racial variant. Berserker Orc gets +2 Strength tiers; Runic Dwarf gets +2 Power Mastery; Pure Saiyan accesses a larger transformation pool. Each subtype unlocks its own exclusive abilities on top of this.\n\nRacial Abilities — your birthright. Separate from regular Powers — these are innate to your species and are not affected by Wildcards. They appear on your card and carry into Ascension battles.\n\nTransformation (if eligible) — picked from a tiered pool. Higher tiers multiply all your stat scores after they are calculated. A God transformation on a rare race is devastating.\n\nSynergy note: if your race + the archetype you\'ll spin next form a known combo, a bonus spin fires automatically. Watch the announcement bar at the top.',
+      body: 'These spins build your identity within your race:\n\nSubtype / Class — your racial variant. Berserker Orc gets +2 Strength tiers; Runic Dwarf gets +2 Power Mastery; Pure Zenithian accesses a larger transformation pool. Each subtype unlocks its own exclusive abilities on top of this.\n\nRacial Abilities — your birthright. Separate from regular Powers — these are innate to your species and are not affected by Wildcards. They appear on your card and carry into Ascension battles.\n\nTransformation (if eligible) — picked from a tiered pool. Higher tiers multiply all your stat scores after they are calculated. A God transformation on a rare race is devastating.\n\nSynergy note: if your race + the archetype you\'ll spin next form a known combo, a bonus spin fires automatically. Watch the announcement bar at the top.',
       cta: 'Got it — spin!',
       accent: '#a78bfa',
     }
@@ -146,7 +146,7 @@
       id: 4,
       icon: 'military_tech',
       title: 'Spin — Archetype',
-      body: 'Your combat role. Archetypes are grouped into types:\n\nCombat (Warrior, Gladiator, Berserker, Warlord)\n→ Fighting Skill + Strength bonuses, melee ability pools\n\nMagic (Mage, Warlock, Sorcerer, Mystic)\n→ Power Mastery + IQ bonuses, spell and curse ability pools\n\nStealth (Rogue, Assassin, Shinobi, Phantom)\n→ Agility + Speed bonuses, ambush ability pools\n\nSupport / Aura (Paladin, Healer, Tactician, Bard)\n→ Charisma + Potential bonuses, buff and healing pools\n\nChaos (Anti-Hero, Chaos Gremlin, Wild Card)\n→ Unpredictable stat bonuses across the board\n\nYour archetype adds 1–2 exclusive ability spins and can trigger race synergy bonus spins. A Combat archetype on a Dragon race = absurd strength. A Magic archetype on a Human = reliable but capped.',
+      body: 'Your combat role. Archetypes are grouped into types:\n\nCombat (Warrior, Gladiator, Berserker, Warlord)\n→ Fighting Skill + Strength bonuses, melee ability pools\n\nMagic (Mage, Warlock, Sorcerer, Mystic)\n→ Power Mastery + IQ bonuses, spell and curse ability pools\n\nStealth (Rogue, Assassin, Shadowblade, Phantom)\n→ Agility + Speed bonuses, ambush ability pools\n\nSupport / Aura (Paladin, Healer, Tactician, Bard)\n→ Charisma + Potential bonuses, buff and healing pools\n\nChaos (Anti-Hero, Chaos Gremlin, Wild Card)\n→ Unpredictable stat bonuses across the board\n\nYour archetype adds 1–2 exclusive ability spins and can trigger race synergy bonus spins. A Combat archetype on a Dragon race = absurd strength. A Magic archetype on a Human = reliable but capped.',
       cta: 'Got it — spin!',
       accent: '#a78bfa',
     }

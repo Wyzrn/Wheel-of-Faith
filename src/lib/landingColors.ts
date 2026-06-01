@@ -174,7 +174,7 @@ export function resolveLandingForCategory(
       // Top-level race spin. No grade on the race itself, so intensity is
       // weight-driven (rarer race = bigger celebration). Use the rarest
       // element from the race's class pool as the celebration tint when
-      // we can find one — gives Saiyan a Fire bias, Kryptonian a Cosmic
+      // we can find one — gives Zenithian a Fire bias, Krystalian a Cosmic
       // bias, etc. — falls back to a neutral gold accent.
       const race = racesByLabel.get(label)
       if (race) {

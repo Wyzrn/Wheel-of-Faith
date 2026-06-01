@@ -30,12 +30,12 @@ export type ElementType =
 // secret-event weighting, archetype mutation rules). Players never see the
 // label directly — they experience it through differentiated wheel feel.
 export type SpinIdentity =
-  | 'FateManipulator'   // Influence wheel outcomes (Human, Halfling, Time Lord, Creator)
-  | 'Evolution'         // Unlock more spins as the run progresses (Saiyan, Dragon, Vampire, Titan Shifter)
+  | 'FateManipulator'   // Influence wheel outcomes (Human, Halfling, Lord of Time, Creator)
+  | 'Evolution'         // Unlock more spins as the run progresses (Zenithian, Dragon, Vampire, Colossus Shifter)
   | 'Corruption'        // Risk/reward instability (Demon, Hollow, Eldritch Being, Parasite)
-  | 'Combo'             // Heavy archetype interaction (Shinigami, Nen User, Shinobi, Bender)
+  | 'Combo'             // Heavy archetype interaction (Shinigami, Nen User, Shadowblade, Bender)
   | 'Scaling'           // Start weak, snowball (Human, Ghoul, Symbiote, Dragon)
-  | 'RuleBreaker'       // Modify normal spin rules (Creator, Primordial, Time Lord)
+  | 'RuleBreaker'       // Modify normal spin rules (Creator, Primordial, Lord of Time)
   | 'Summoner'          // Inject companion systems (Beast, Spirit, Creator, Alien)
   | 'HighVariance'      // Can be garbage or unstoppable (Mutant, Alien, Parasite, Cyborg)
 
@@ -79,7 +79,7 @@ export interface Race {
   minStatTier?: TierGrade                 // lowest stat tier grade that can be rolled; tiers below this are excluded
   // Limit Break odds — denominator N for the 1/N chance of a Limit Break spin
   // resolving as "Limit Break" instead of "No Limit Break". Lower N = higher
-  // chance (Human ≈ 20, Viltrumite ≈ 70). Omit / 0 = race cannot Limit Break.
+  // chance (Human ≈ 20, Victrumite ≈ 70). Omit / 0 = race cannot Limit Break.
   // The Limit Break spin fires before the class spin for eligible races.
   limitBreakOdds?: number
   // Spin identity taxonomy — drives which routing hooks fire (Evolution races

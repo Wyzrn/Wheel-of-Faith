@@ -584,7 +584,7 @@
         <h1 style="font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 6vw, 2rem); font-weight: 700; color: #ffdf96; line-height: 1.15; word-break: break-word;">{displayName}</h1>
         <p class="text-sm mt-1.5 flex items-center justify-end gap-1.5 flex-wrap" style="color: #d2c5ae;">
           <!-- Race glyph — picks a Material Symbols icon per race so
-               Saiyan (flame), Vampire (crescent), Dragon (fire), etc.
+               Zenithian (flame), Vampire (crescent), Dragon (fire), etc.
                are visually distinct at a glance. Color-tinted by the
                overall tier so high-rolls glow brighter. -->
           <span class="material-symbols-outlined character-race-glyph"

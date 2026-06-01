@@ -75,7 +75,7 @@
     // Use it for item spins so a God-tier weapon triggers mythic celebration
     // even though the segment carries no TierGrade.
     //
-    // subtitle: shown under the mythic banner (e.g. "S+ TIER" or "Sea King").
+    // subtitle: shown under the mythic banner (e.g. "S+ TIER" or "Abyssal Leviathan").
     resolveLandingColors?: (resultIndex: number, label: string) => {
       tier?: string | null
       tierColor?: string | null
@@ -442,18 +442,18 @@
       'Creator':         'wheel-sig-creator',
       'Primordial':      'wheel-sig-primordial',
       'God':             'wheel-sig-god',
-      'Time Lord':       'wheel-sig-timelord',
+      'Lord of Time':       'wheel-sig-timelord',
       'Vampire':         'wheel-sig-vampire',
       'Demon':           'wheel-sig-demon',
       'Genasi (Fire)':   'wheel-sig-fire-genasi',
       'Genasi (Water)':  'wheel-sig-water-genasi',
       'Genasi (Air)':    'wheel-sig-air-genasi',
       'Genasi (Earth)':  'wheel-sig-earth-genasi',
-      'Saiyan':          'wheel-sig-saiyan',
-      'Kryptonian':      'wheel-sig-kryptonian',
-      'Viltrumite':      'wheel-sig-viltrumite',
-      'Mindflayer':      'wheel-sig-mindflayer',
-      'Hollow / Arrancar': 'wheel-sig-hollow',
+      'Zenithian':          'wheel-sig-saiyan',
+      'Krystalian':      'wheel-sig-kryptonian',
+      'Victrumite':      'wheel-sig-viltrumite',
+      'Cerebrosaur':      'wheel-sig-mindflayer',
+      'Null': 'wheel-sig-hollow',
       'Angel':           'wheel-sig-angel',
     }
     return map[race] ?? ''

@@ -1,7 +1,7 @@
 // Auto-generated character summary. Runs after the 23rd spin to produce a
 // 2-3 sentence narrative "roast" that combines the rolled race, archetype,
 // best+worst stat, signature power, and top weakness into a single line the
-// player can share. Inspired by the Wheel of Faith creator's post-spin
+// player can share. Inspired by the spin-result wheel format's post-spin
 // narration — every roll deserves a one-liner, not just stats.
 //
 // Deterministic given the same inputs (template choice seeded by name +

@@ -4,7 +4,7 @@
 // parent. Pure data layer; no UI. Capped at 25 entries so the cache
 // can't grow unbounded.
 //
-// Inspired by — not copied from — the Wheel of Faith fandom's
+// Inspired by the spin-result wheel format's
 // "characters reference past characters" pattern. Our version is local-
 // only (no shared universe yet) but lays the groundwork.
 

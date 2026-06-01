@@ -1,10 +1,10 @@
 // archetypeMutations.ts — Race × Archetype overlay rules that mutate
-// injected wheels and inject hidden outcomes. Lets a Saiyan + Berserker
-// feel different from a Saiyan + Martial Artist beyond just the
+// injected wheels and inject hidden outcomes. Lets a Zenithian + Berserker
+// feel different from a Zenithian + Martial Artist beyond just the
 // statModifiers stack.
 //
 // A mutation can:
-//   1. Replace a race-injected wheel's segments entirely (e.g. Saiyan's
+//   1. Replace a race-injected wheel's segments entirely (e.g. Zenithian's
 //      Transformation Wheel becomes rage-focused when paired with Berserker).
 //   2. Add bonus segments to an existing wheel (e.g. Vampire + Noble adds
 //      Royal Bloodline outcomes).
@@ -107,7 +107,7 @@ registerMutation('Human', 'Artificer', {
 })
 
 // ── SAIYAN × archetype ────────────────────────────────────────────────────
-registerMutation('Saiyan', 'Berserker', {
+registerMutation('Zenithian', 'Berserker', {
   // Berserker Saiyans push the rage threshold pool to volatile entries.
   wheelOverrides: {
     rageThreshold: [
@@ -117,9 +117,9 @@ registerMutation('Saiyan', 'Berserker', {
       { label: 'Tempered',        weight: 1 },
     ],
   },
-  synergyFlavor: 'Berserker Saiyan — rage threshold shifts to Battle-Lust by default.',
+  synergyFlavor: 'Berserker Zenithian — rage threshold shifts to Battle-Lust by default.',
 })
-registerMutation('Saiyan', 'Monk', {
+registerMutation('Zenithian', 'Monk', {
   // Monk Saiyans stay disciplined — Stoic-heavy rage table.
   wheelOverrides: {
     rageThreshold: [
@@ -129,9 +129,9 @@ registerMutation('Saiyan', 'Monk', {
       { label: 'Battle-Lust',     weight: 1 },
     ],
   },
-  synergyFlavor: 'Martial-Artist Saiyan — disciplined ki, technique-focused growth.',
+  synergyFlavor: 'Martial-Artist Zenithian — disciplined ki, technique-focused growth.',
 })
-registerMutation('Saiyan', 'Mage', {
+registerMutation('Zenithian', 'Mage', {
   // God Ki path — Mage Saiyans get a Strategist-coded synergy where Battle-
   // Lust converts to a pure power growth ramp.
   wheelAdditions: {
@@ -139,7 +139,7 @@ registerMutation('Saiyan', 'Mage', {
       { label: 'God Ki Channel', weight: 2, statBonusGrants: { powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Channels divine ki instead of rage.' },
     ],
   },
-  synergyFlavor: 'God-Ki Saiyan — channels divinity instead of rage.',
+  synergyFlavor: 'God-Ki Zenithian — channels divinity instead of rage.',
 })
 
 // ── CREATOR × archetype ──────────────────────────────────────────────────
@@ -248,7 +248,7 @@ registerMutation('Elf', 'Mage', {
 })
 
 // ── TIEFLING × archetype ─────────────────────────────────────────────────
-registerMutation('Tiefling', 'Warlock', {
+registerMutation('Hellborn', 'Warlock', {
   // Contract biased toward higher pacts; sin biased toward Wrath/Pride.
   wheelOverrides: {
     contract: [
@@ -262,7 +262,7 @@ registerMutation('Tiefling', 'Warlock', {
 })
 
 // ── DRAGONBORN × archetype ───────────────────────────────────────────────
-registerMutation('Dragonborn', 'Mage', {
+registerMutation('Drakekin', 'Mage', {
   // Mage dragonborn favour rare elements (Solar / Void) + dual breath.
   wheelOverrides: {
     dragonAspect: [
@@ -282,7 +282,7 @@ registerMutation('Dragonborn', 'Mage', {
 })
 
 // ── AASIMAR × archetype ──────────────────────────────────────────────────
-registerMutation('Aasimar', 'Cleric', {
+registerMutation('Lightborn', 'Cleric', {
   // Halo brighter, blessings stronger.
   wheelOverrides: {
     halo: [
@@ -292,11 +292,11 @@ registerMutation('Aasimar', 'Cleric', {
       { label: 'Subtle Glow',  weight: 1 },
     ],
   },
-  synergyFlavor: 'Cleric Aasimar — light pierces.',
+  synergyFlavor: 'Cleric Lightborn — light pierces.',
 })
 
 // ── TABAXI × archetype ───────────────────────────────────────────────────
-registerMutation('Tabaxi', 'Rogue', {
+registerMutation('Felfolk', 'Rogue', {
   wheelOverrides: {
     hunt: [
       { label: 'Stalker',     weight: 6, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' } },
@@ -417,7 +417,7 @@ registerMutation('Demon', 'Cursed Sorcerer', {
 })
 
 // ── SHINOBI × archetype ──────────────────────────────────────────────────
-registerMutation('Shinobi', 'Shinobi', {
+registerMutation('Shadowblade', 'Shadowblade', {
   wheelOverrides: {
     clan: [
       { label: 'Heir',          weight: 5, statBonusGrants: { fightingSkill: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' } },
@@ -426,11 +426,11 @@ registerMutation('Shinobi', 'Shinobi', {
       { label: 'Outer Clan',    weight: 1, statBonusGrants: { agility: 'statBonus', speed: 'statBonus' } },
     ],
   },
-  synergyFlavor: 'True Shinobi — bloodline and discipline align.',
+  synergyFlavor: 'True Shadowblade — bloodline and discipline align.',
 })
 
 // ── NEN USER × archetype ─────────────────────────────────────────────────
-registerMutation('Nen User', 'Nen Hunter', {
+registerMutation('Nen User', 'Aura Hunter', {
   // Restriction-heavy build — Nen restrictions amplify power.
   wheelOverrides: {
     restriction: [
@@ -501,7 +501,7 @@ registerMutation('Angel', 'Paladin', {
 })
 
 // ── HOLLOW/ARRANCAR × archetype ──────────────────────────────────────────
-registerMutation('Hollow / Arrancar', 'Demon Slayer', {
+registerMutation('Null', 'Dawnbringer', {
   wheelOverrides: {
     mask: [
       { label: 'Fragment Only', weight: 4, statBonusGrants: { powerMastery: 'statBonus', fightingSkill: 'statBonus', speed: 'statBonus', iq: 'statBonus' } },
@@ -512,8 +512,8 @@ registerMutation('Hollow / Arrancar', 'Demon Slayer', {
 })
 
 // ── VILTRUMITE × archetype ───────────────────────────────────────────────
-registerMutation('Viltrumite', 'Anti-Hero', {
-  // Renegade Viltrumite — Conquest standing biased to Renegade.
+registerMutation('Victrumite', 'Anti-Hero', {
+  // Renegade Victrumite — Conquest standing biased to Renegade.
   wheelOverrides: {
     conquest: [
       { label: 'Renegade',         weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' } },
@@ -528,11 +528,11 @@ registerMutation('Viltrumite', 'Anti-Hero', {
     ],
   },
   secretEventBias: 1.4,
-  synergyFlavor: 'Renegade Viltrumite — the empire chases. The empire fails.',
+  synergyFlavor: 'Renegade Victrumite — the empire chases. The empire fails.',
 })
 
 // ── KRYPTONIAN × archetype ───────────────────────────────────────────────
-registerMutation('Kryptonian', 'Superhero', {
+registerMutation('Krystalian', 'Superhero', {
   wheelOverrides: {
     sunExposure: [
       { label: 'Yellow Sun',     weight: 6, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus' } },
@@ -540,11 +540,11 @@ registerMutation('Kryptonian', 'Superhero', {
       { label: 'Blue Sun',       weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
     ],
   },
-  synergyFlavor: 'Hero Kryptonian — solar capacity at full draw.',
+  synergyFlavor: 'Hero Krystalian — solar capacity at full draw.',
 })
 
 // ── ASGARDIAN × archetype ────────────────────────────────────────────────
-registerMutation('Asgardian', 'Warrior', {
+registerMutation('Aesir', 'Warrior', {
   wheelOverrides: {
     worthiness: [
       { label: 'Warrior-Proven',weight: 5, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', durability: 'statBonus' } },
@@ -555,7 +555,7 @@ registerMutation('Asgardian', 'Warrior', {
 })
 
 // ── KAIJU × archetype ────────────────────────────────────────────────────
-registerMutation('Kaiju', 'Titan Shifter', {
+registerMutation('Kaiju', 'Colossus Shifter', {
   wheelOverrides: {
     kaijuMutation: [
       { label: 'Hivemind',     weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', iq: 'statBonus', potential: 'statBonus' } },
@@ -572,8 +572,8 @@ registerMutation('Kaiju', 'Titan Shifter', {
 })
 
 // ── TIME LORD × archetype ────────────────────────────────────────────────
-registerMutation('Time Lord', 'Mage', {
-  // Architect Time Lord — heavy timeline-bias, secret events frequent.
+registerMutation('Lord of Time', 'Mage', {
+  // Architect Lord of Time — heavy timeline-bias, secret events frequent.
   wheelOverrides: {
     timeline: [
       { label: 'Architect',     weight: 5, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', charisma: 'statBonus' } },
@@ -658,8 +658,8 @@ registerMutation('Primordial', 'Mage', {
 })
 
 // ── SAIYAN extras × Power Level ──────────────────────────────────────────
-registerMutation('Saiyan', 'Superhero', {
-  // Hero Saiyan biases Power Level toward Off the Charts / Legendary.
+registerMutation('Zenithian', 'Superhero', {
+  // Hero Zenithian biases Power Level toward Off the Charts / Legendary.
   wheelOverrides: {
     powerLevel: [
       { label: 'Off the Charts',weight: 5, statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus', potential: 'statBonus' } },
@@ -668,7 +668,7 @@ registerMutation('Saiyan', 'Superhero', {
       { label: 'Mid-Tier Class',weight: 1, statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus' } },
     ],
   },
-  synergyFlavor: 'Hero Saiyan — born for the chart-breaking battles.',
+  synergyFlavor: 'Hero Zenithian — born for the chart-breaking battles.',
 })
 
 registerMutation('Creator', 'Mage', {

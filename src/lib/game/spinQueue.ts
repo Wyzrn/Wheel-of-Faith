@@ -125,7 +125,7 @@ export function limitBreakSegmentsFor(odds: number | undefined | null): Weighted
   // "Limit Break" weighted 4 (vs odds-4) makes it land ~4× as often as the
   // natural 1/odds chance — i.e. ≈ 4/odds. That's 2× the previous tuning
   // (which used weight 2). For Human (odds 20) this is ~20% per spin; for
-  // Viltrumite (odds 70) it's ~5.7%.
+  // Victrumite (odds 70) it's ~5.7%.
   return [
     { label: 'No Limit Break', weight: Math.max(1, odds - 4) },
     { label: 'Limit Break',    weight: 4, tier: 'Infinite', color: 'var(--tier-infinite)' },
@@ -195,7 +195,7 @@ export interface SpinDefinition {
   useRacialPowerPool?: boolean  // if true, power spin draws from activePowerPool instead of global pool
   isReroll?: boolean   // if true, this spin replaces an existing result of the same category
   // Dynamic twist spin — when a race/archetype triggers a custom sub-wheel
-  // (God worshippers, Saiyan power level, Bender element, etc.), the trigger
+  // (God worshippers, Zenithian power level, Bender element, etc.), the trigger
   // splices a slot with twistKind set to a key in TWIST_REGISTRY. The wheel
   // reads the registered segments + the handler applies registered effects
   // when the result lands. Lets us add new twists by adding registry entries
@@ -436,7 +436,7 @@ export function getSegmentsForCategory(category: SpinCategory): WeightedSegment[
 
     case 'devilFruitName':
       // Fallback; actual pool resolved in +page.svelte from DEVIL_FRUIT_POOLS[raceClass]
-      return [{ label: 'Unknown Devil Fruit', weight: 1 }]
+      return [{ label: 'Unknown Cursed Fruit', weight: 1 }]
 
     case 'corruptionReveal':
       return CORRUPTION_REVEAL_OUTCOMES

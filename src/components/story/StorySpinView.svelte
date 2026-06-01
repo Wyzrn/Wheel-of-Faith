@@ -397,7 +397,7 @@
     }
 
     // Twist sub-wheel — pull segments from the twist registry by key.
-    // Triggered by God/Saiyan/Bender/Stand User/Demon Slayer/etc.
+    // Triggered by God/Zenithian/Bender/Phantom Bonded/Dawnbringer/etc.
     if (currentDef.category === 'twistSpin' && currentDef.twistKind) {
       const twist = twistByKey(currentDef.twistKind)
       if (twist) return twist.segments
@@ -749,7 +749,7 @@
           // it so Hybrid parents' extras each draw from the correct pool.
           const forRace = resultLabel
           if (race) {
-            // Twist sub-wheel splice for God/Saiyan/Bender/Vampire/etc.
+            // Twist sub-wheel splice for God/Zenithian/Bender/Vampire/etc.
             const raceTwistKey = RACE_TWIST_TRIGGERS[resultLabel]
             if (raceTwistKey) {
               const twist = twistByKey(raceTwistKey)
@@ -764,7 +764,7 @@
             if (race.subTypePool?.length) {
               insertSlots.push({ category: 'raceSubType' as const, displayName: `${resultLabel} Sub-Type`, forRace })
             }
-            // Race-injected wheels (Phase 1B: Human Destiny + Talent, Saiyan
+            // Race-injected wheels (Phase 1B: Human Destiny + Talent, Zenithian
             // Rage Threshold, Creator Reality Law + Creation Domain). Each
             // injectedWheel entry on the race becomes its own raceWheel slot
             // — segments come from raceWheelRegistry, optionally mutated by
@@ -892,7 +892,7 @@
           const count = archetype.abilitySpinCount ?? 2
           const abilitySlots: SpinDefinition[] = []
           // Archetype twist sub-wheel (Time Traveler, Chaos Gremlin, Stand
-          // User, Bounty Hunter, Demon Slayer, Sorcerer, Esper, Necromancer,
+          // User, Bounty Hunter, Dawnbringer, Sorcerer, Psion, Necromancer,
           // Cursed Sorcerer). Prepended so it lands BEFORE ability spins
           // so a locked element can bias them. Mirrors main game.
           const arcTwistKey = ARCHETYPE_TWIST_TRIGGERS[resultLabel]

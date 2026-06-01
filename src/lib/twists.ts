@@ -3,7 +3,7 @@
 // defines: the sub-wheel segments, an icon/accent, and a resolution
 // effect that applies when a result lands.
 //
-// Inspired by — not copied from — the Wheel of Faith fandom's "results
+// Inspired by — not copied from — the spin-result wheel format's "results
 // trigger sub-wheels" mechanic. Hybrid + Possessed are in handleSpinComplete
 // directly (they need bespoke flow); everything else lands here.
 //
@@ -74,7 +74,7 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
     },
   },
 
-  // ── Saiyan — power level (the meme stat itself) ───────────────────────
+  // ── Zenithian — power level (the meme stat itself) ───────────────────────
   powerLevel: {
     title: 'Power Level',
     hue: 15,
@@ -82,21 +82,21 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
     prompt: 'What\'s your power level?',
     segments: [
       { label: 'Base Form (~9,000)',                weight: 5 },
-      { label: 'Super Saiyan (~150,000)',           weight: 4 },
-      { label: 'Super Saiyan 2 (~2 million)',       weight: 3 },
-      { label: 'Super Saiyan 3 (~50 million)',      weight: 2 },
-      { label: 'Super Saiyan God (billions)',       weight: 2 },
-      { label: 'Ultra Instinct (incalculable)',     weight: 1 },
-      { label: 'IT\'S OVER 9000 (~9001)',           weight: 1 },
+      { label: 'Super Zenith (~150,000)',           weight: 4 },
+      { label: 'Super Zenith 2 (~2 million)',       weight: 3 },
+      { label: 'Super Zenith 3 (~50 million)',      weight: 2 },
+      { label: 'Super Zenith God (billions)',       weight: 2 },
+      { label: 'Zenith Instinct (incalculable)',     weight: 1 },
+      { label: 'Beyond Reading (~9001)',           weight: 1 },
     ],
     effects: {
       'Base Form (~9,000)':                { statBonusGrants: { strength: 'statBonus' } },
-      'Super Saiyan (~150,000)':           { statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus' } },
-      'Super Saiyan 2 (~2 million)':       { statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus', durability: 'statBonus' } },
-      'Super Saiyan 3 (~50 million)':      { statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' } },
-      'Super Saiyan God (billions)':       { statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
-      'Ultra Instinct (incalculable)':     { statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', agility: 'statBonus' } },
-      'IT\'S OVER 9000 (~9001)':           { statBonusGrants: { strength: 'statBonus' }, flavor: 'Vegeta is screaming somewhere.' },
+      'Super Zenith (~150,000)':           { statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus' } },
+      'Super Zenith 2 (~2 million)':       { statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus', durability: 'statBonus' } },
+      'Super Zenith 3 (~50 million)':      { statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus' } },
+      'Super Zenith God (billions)':       { statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' } },
+      'Zenith Instinct (incalculable)':     { statBonusGrants: { strength: 'statBonus', energyLevel: 'statBonus', durability: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', agility: 'statBonus' } },
+      'Beyond Reading (~9001)':           { statBonusGrants: { strength: 'statBonus' }, flavor: 'Capricorn is screaming somewhere.' },
     },
   },
 
@@ -110,14 +110,14 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
       { label: 'Water', weight: 3 },
       { label: 'Earth', weight: 3 },
       { label: 'Air',   weight: 2 },
-      { label: 'Energy (Avatar State)', weight: 1 },
+      { label: 'Energy (Convergence State)', weight: 1 },
     ],
     effects: {
       'Fire':  { lockElement: 'Fire',     statBonusGrants: { strength: 'statBonus', charisma: 'statBonus' } },
       'Water': { lockElement: 'Water',    statBonusGrants: { agility: 'statBonus', iq: 'statBonus' } },
       'Earth': { lockElement: 'Earth',    statBonusGrants: { durability: 'statBonus', strength: 'statBonus' } },
       'Air':   { lockElement: 'Wind',     statBonusGrants: { speed: 'statBonus', agility: 'statBonus' } },
-      'Energy (Avatar State)': { lockElement: 'Cosmic', statBonusGrants: { strength: 'statBonus', agility: 'statBonus', durability: 'statBonus', iq: 'statBonus', powerMastery: 'statBonus' } },
+      'Energy (Convergence State)': { lockElement: 'Cosmic', statBonusGrants: { strength: 'statBonus', agility: 'statBonus', durability: 'statBonus', iq: 'statBonus', powerMastery: 'statBonus' } },
     },
   },
 
@@ -210,7 +210,7 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
     },
   },
 
-  // ── Cosmic Scope (Kryptonian / Asgardian / Alien) ──────────────────────
+  // ── Cosmic Scope (Krystalian / Aesir / Alien) ──────────────────────
   cosmicScope: {
     title: 'Cosmic Scope',
     hue: 240,
@@ -256,7 +256,7 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
     hue: 290,
     accentColor: '#a78bfa',
     segments: [
-      { label: 'Domain: Hollow Purple', weight: 1 },
+      { label: 'Domain: Void Purple', weight: 1 },
       { label: 'Domain: Malevolent Shrine', weight: 1 },
       { label: 'Domain: Idle Death',    weight: 2 },
       { label: 'Domain: Self-Embodiment of Perfection', weight: 1 },
@@ -264,7 +264,7 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
       { label: 'No Domain (untapped)',  weight: 3 },
     ],
     effects: {
-      'Domain: Hollow Purple':          { lockElement: 'Void',   statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' } },
+      'Domain: Void Purple':          { lockElement: 'Void',   statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' } },
       'Domain: Malevolent Shrine':      { lockElement: 'Shadow', statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' } },
       'Domain: Idle Death':             { lockElement: 'Soul',   statBonusGrants: { powerMastery: 'statBonus' } },
       'Domain: Self-Embodiment of Perfection': { lockElement: 'Arcane', statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' } },
@@ -363,7 +363,7 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
     },
   },
 
-  // ── Stand User — Stand stat (the classic JJBA-style abcd grid) ─────────
+  // ── Phantom Bonded — Stand stat (the classic JJBA-style abcd grid) ─────────
   standStats: {
     title: 'Stand Stats',
     hue: 290,
@@ -411,9 +411,9 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
     },
   },
 
-  // ── Demon Slayer — breathing style (canon Demon Slayer style) ──────────
+  // ── Dawnbringer — breathing style (canon Dawnbringer style) ──────────
   breathingStyle: {
-    title: 'Breathing Style',
+    title: 'Combat Breath',
     hue: 350,
     accentColor: '#ef4444',
     prompt: 'Which Breath have you mastered?',
@@ -459,7 +459,7 @@ export const TWIST_REGISTRY: Record<string, Twist> = {
     },
   },
 
-  // ── Esper — psionic class (Mob Psycho / X-Men hybrid) ──────────────────
+  // ── Psion — psionic class (Mob Psycho / X-Men hybrid) ──────────────────
   psionicClass: {
     title: 'Psionic Class',
     hue: 260,
@@ -550,20 +550,20 @@ export const RACE_TWIST_TRIGGERS: Record<string, string> = {
   // primordialCatastrophe) carry the identity weight.
   'Creator':          'cosmicScope',
   // Power-tier escalation
-  'Saiyan':           'powerLevel',
-  // Viltrumite removed — they don't transform on the Super Saiyan ladder;
+  'Zenithian':           'powerLevel',
+  // Victrumite removed — they don't transform on the Super Zenith ladder;
   // their growth is centuries of training, not stage-shift transformations.
   // Their classPool (Soldier → Commander → Regent → Anomaly) carries it.
   // Element-locks
   'Bender':           'benderElement',
   // Insanity / cosmic horror
   'Eldritch Being':   'insanityTier',
-  'Mindflayer':       'insanityTier',
+  'Cerebrosaur':       'insanityTier',
   // Cosmic scope
-  'Kryptonian':       'cosmicScope',
-  'Asgardian':        'cosmicScope',
+  'Krystalian':       'cosmicScope',
+  'Aesir':        'cosmicScope',
   'Alien':            'cosmicScope',
-  'Cybertronian':     'cosmicScope',
+  'Mechshifter':     'cosmicScope',
   // Origin twists
   'Mutant':           'mutantOrigin',
   // Drainer twists
@@ -579,11 +579,11 @@ export const ARCHETYPE_TWIST_TRIGGERS: Record<string, string> = {
   'Time Traveler':    'temporalEra',
   'Chaos Gremlin':    'chaosRoll',
   'Cursed Sorcerer':  'curseDomain',
-  'Stand User':       'standStats',
+  'Phantom Bonded':       'standStats',
   'Bounty Hunter':    'bountyContract',
-  'Demon Slayer':     'breathingStyle',
+  'Dawnbringer':     'breathingStyle',
   'Sorcerer':         'wildMagic',
-  'Esper':            'psionicClass',
+  'Psion':            'psionicClass',
   'Necromancer':      'undeadCommand',
 }
 

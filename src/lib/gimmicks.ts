@@ -163,14 +163,14 @@ export const GIMMICKS: Record<string, Gimmick> = {
 
 // ── Race → gimmick IDs ───────────────────────────────────────────────────
 // Tied to actual race labels that exist in races.ts. Some races get more
-// than one — high-rarity races (God, Primordial, Saiyan) earn the layered
+// than one — high-rarity races (God, Primordial, Zenithian) earn the layered
 // kit. Common races get one signature so they still feel different.
 export const RACE_GIMMICKS: Record<string, string[]> = {
   // Combat-leaning rares
-  'Saiyan':            ['lastStand', 'berserkerRage'],
-  'Viltrumite':        ['lastStand', 'ironSkin'],
-  'Kryptonian':        ['conceptAvatar', 'lastStand'],
-  'Asgardian':         ['ironSkin', 'leader'],
+  'Zenithian':            ['lastStand', 'berserkerRage'],
+  'Victrumite':        ['lastStand', 'ironSkin'],
+  'Krystalian':        ['conceptAvatar', 'lastStand'],
+  'Aesir':         ['ironSkin', 'leader'],
   'Demi-god':          ['conceptAvatar'],
   'God':               ['conceptAvatar', 'leader'],
   'Primordial':        ['conceptAvatar', 'lastStand', 'ironSkin'],
@@ -180,7 +180,7 @@ export const RACE_GIMMICKS: Record<string, string[]> = {
   'Vampire':           ['lifesteal'],
   'Demon':             ['lifesteal', 'berserkerRage'],
   'Symbiote':          ['lifesteal'],
-  'Hollow / Arrancar': ['lifesteal', 'berserkerRage'],
+  'Null': ['lifesteal', 'berserkerRage'],
   'Parasite':          ['lifesteal'],
   'Werewolf':          ['berserkerRage', 'lifesteal'],
 
@@ -188,11 +188,11 @@ export const RACE_GIMMICKS: Record<string, string[]> = {
   'Dwarf':             ['ironSkin'],
   'Robot':             ['ironSkin'],
   'Cyborg':            ['ironSkin'],
-  'Warforged':         ['ironSkin'],
+  'Soulforged':         ['ironSkin'],
   'Giant':             ['ironSkin'],
   'Goliath':           ['ironSkin'],
-  'Cybertronian':      ['ironSkin'],
-  'Titan Shifter':     ['ironSkin', 'berserkerRage'],
+  'Mechshifter':      ['ironSkin'],
+  'Colossus Shifter':     ['ironSkin', 'berserkerRage'],
 
   // Underdog races (commons + scrappers)
   'Goblin':            ['underdog'],
@@ -202,35 +202,35 @@ export const RACE_GIMMICKS: Record<string, string[]> = {
   'Half-Orc':          ['underdog', 'berserkerRage'],
 
   // Speed / agility
-  'Tabaxi':            ['firstStrike'],
+  'Felfolk':            ['firstStrike'],
   'Elf':               ['firstStrike'],
   'Half-Elf':          ['firstStrike'],
-  'Shinobi':           ['firstStrike'],
+  'Shadowblade':           ['firstStrike'],
 
   // Holy / supportive
-  'Aasimar':           ['divineFavor'],
+  'Lightborn':           ['divineFavor'],
   'Angel':             ['divineFavor', 'conceptAvatar'],
   'Spirit':            ['divineFavor'],
 
   // Glass cannon
   'Eldritch Being':    ['glassCannon', 'conceptAvatar'],
-  'Mindflayer':        ['glassCannon'],
+  'Cerebrosaur':        ['glassCannon'],
 
   // Predator (vs specific race — wired via PREDATOR_TARGETS)
   'Dragon':            ['conceptAvatar'],
-  'Dragonborn':        ['conceptAvatar'],
+  'Drakekin':        ['conceptAvatar'],
 
   // Time / dimensional
-  'Time Lord':         ['leader'],
+  'Lord of Time':         ['leader'],
   'Sphinx':            ['leader'],
   'Alien':             ['firstStrike'],
   'Kaiju':             ['berserkerRage', 'ironSkin'],
   'Mythological Creature': ['conceptAvatar'],
   'Beast':             ['berserkerRage'],
-  'Sea King':          ['ironSkin', 'conceptAvatar'],
+  'Abyssal Leviathan':          ['ironSkin', 'conceptAvatar'],
   'Atlantean':         ['ironSkin'],
   'Shinigami':         ['lifesteal'],
-  'Namekian':          ['divineFavor'],
+  'Verdantian':          ['divineFavor'],
   'Nen User':          ['firstStrike'],
   'Mutant':            ['conceptAvatar'],
   'Bender':            ['conceptAvatar'],
@@ -243,7 +243,7 @@ export const RACE_GIMMICKS: Record<string, string[]> = {
   'Hybrid':            ['underdog'],
   'Half-Dragon':       ['conceptAvatar'],
   'Lizardfolk':        ['ironSkin'],
-  'Tiefling':          ['conceptAvatar'],
+  'Hellborn':          ['conceptAvatar'],
   'Immortal':          ['divineFavor', 'lastStand'],
   'Dinosaur':          ['berserkerRage', 'ironSkin'],
   'Githyanki':         ['firstStrike'],
@@ -264,12 +264,12 @@ export const ARCHETYPE_GIMMICKS: Record<string, string[]> = {
   'Anti-Hero':         ['berserkerRage'],
   'Superhero':         ['leader', 'ironSkin'],
   'Supervillain':      ['conceptAvatar', 'berserkerRage'],
-  'Shinobi':           ['firstStrike'],
-  'Demon Slayer':      ['predator'],
+  'Shadowblade':           ['firstStrike'],
+  'Dawnbringer':      ['predator'],
   'Bounty Hunter':     ['predator', 'firstStrike'],
-  'Stand User':        ['conceptAvatar'],
-  'Nen Hunter':        ['firstStrike'],
-  'Esper':             ['conceptAvatar'],
+  'Phantom Bonded':        ['conceptAvatar'],
+  'Aura Hunter':        ['firstStrike'],
+  'Psion':             ['conceptAvatar'],
   'Cursed Sorcerer':   ['conceptAvatar', 'glassCannon'],
   'Necromancer':       ['lifesteal', 'conceptAvatar'],
   'Druid':             ['divineFavor', 'conceptAvatar'],
@@ -277,25 +277,25 @@ export const ARCHETYPE_GIMMICKS: Record<string, string[]> = {
   'Warlock':           ['lifesteal', 'conceptAvatar'],
   'Exorcist':          ['predator', 'divineFavor'],
   'Alchemist':         ['conceptAvatar'],
-  'Devil Fruit User':  ['conceptAvatar'],
+  'Cursed Fruit Eater':  ['conceptAvatar'],
   'Possessed':         ['berserkerRage', 'lifesteal'],
   'Sorcerer':          ['conceptAvatar', 'glassCannon'],
   'Middle Manager':    ['leader'],
   'Professional Sneezer': ['underdog'],
   'Chaos Gremlin':     ['underdog', 'firstStrike'],
   'Time Traveler':     ['leader', 'firstStrike'],
-  'Titan Shifter':     ['berserkerRage', 'ironSkin'],
+  'Colossus Shifter':     ['berserkerRage', 'ironSkin'],
   'Awakened':          ['conceptAvatar', 'lastStand'],
   'Dual Wielder':      ['berserkerRage'],
 }
 
 // ── Predator targets (rivalry / counter-race) ────────────────────────────
 // When an archetype/race grants 'predator', the bonus damage applies vs
-// the listed target race labels. Demon Slayer → kills demons. Dragon
+// the listed target race labels. Dawnbringer → kills demons. Dragon
 // Slayer (none in our data yet, but pattern's there). Etc.
 export const PREDATOR_TARGETS: Record<string, string[]> = {
-  'Demon Slayer':      ['Demon', 'Devil Fruit User'],
-  'Exorcist':          ['Demon', 'Undead (Revenant)', 'Possessed', 'Hollow / Arrancar', 'Ghoul'],
+  'Dawnbringer':      ['Demon', 'Cursed Fruit Eater'],
+  'Exorcist':          ['Demon', 'Undead (Revenant)', 'Possessed', 'Null', 'Ghoul'],
   'Bounty Hunter':     [],   // hunts whoever opposed them — no fixed prey
 }
 
