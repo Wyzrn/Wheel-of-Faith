@@ -269,11 +269,15 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send({ url: character.portraitUrl, cached: true })
     }
 
-    // Pull a "signature power" from the spins blob — first power result is
-    // the one the in-app summary uses too, so prompts stay consistent with
-    // what the player reads on their card.
+    // Pull every prompt-relevant field from the spins blob. The richer the
+    // prompt, the more on-model the portrait — Flux Schnell handles long
+    // identity descriptions well, and player feedback consistently asked for
+    // gender + multiple powers to influence the render.
     const spins = (character.spins as Array<{ category: string; resultLabel: string }>) ?? []
-    const topPower = spins.find(s => s.category === 'power')?.resultLabel
+    const allPowers = spins.filter(s => s.category === 'power').map(s => s.resultLabel)
+    const weapon = spins.find(s => s.category === 'weapon')?.resultLabel
+    const gender = spins.find(s => s.category === 'gender')?.resultLabel
+    const height = spins.find(s => s.category === 'height')?.resultLabel
 
     const result = await generatePortrait({
       // Suffix the regen shareId so it lands at a new R2 key — otherwise
@@ -283,7 +287,11 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       name:      character.name,
       race:      character.race,
       archetype: character.archetype,
-      topPower,
+      topPower:    allPowers[0],
+      extraPowers: allPowers.slice(1, 3),
+      weapon,
+      gender,
+      height,
     })
 
     if (!result.ok) {

@@ -113,6 +113,10 @@ export const storySlotRoutes: FastifyPluginAsync = async (fastify) => {
           race:        { type: 'string', minLength: 1, maxLength: 80 },
           archetype:   { type: 'string', minLength: 1, maxLength: 80 },
           topPower:    { type: 'string', maxLength: 120 },
+          extraPowers: { type: 'array', items: { type: 'string', maxLength: 120 }, maxItems: 3 },
+          weapon:      { type: 'string', maxLength: 120 },
+          gender:      { type: 'string', maxLength: 32 },
+          height:      { type: 'string', maxLength: 32 },
           existingUrl: { type: 'string', maxLength: 500 },
           regenerate:  { type: 'boolean' },
         },
@@ -127,7 +131,9 @@ export const storySlotRoutes: FastifyPluginAsync = async (fastify) => {
 
     const body = request.body as {
       charId: string; name: string; race: string; archetype: string
-      topPower?: string; existingUrl?: string; regenerate?: boolean
+      topPower?: string; extraPowers?: string[]; weapon?: string;
+      gender?: string; height?: string;
+      existingUrl?: string; regenerate?: boolean
     }
 
     // Cache hit: client has a URL and isn't asking for a re-roll.
@@ -140,11 +146,15 @@ export const storySlotRoutes: FastifyPluginAsync = async (fastify) => {
     const seedKey = body.regenerate ? `${body.charId}-r${Date.now()}` : body.charId
 
     const result = await generatePortrait({
-      shareId:   `ascension-${seedKey}`,
-      name:      body.name,
-      race:      body.race,
-      archetype: body.archetype,
-      topPower:  body.topPower,
+      shareId:     `ascension-${seedKey}`,
+      name:        body.name,
+      race:        body.race,
+      archetype:   body.archetype,
+      topPower:    body.topPower,
+      extraPowers: body.extraPowers,
+      weapon:      body.weapon,
+      gender:      body.gender,
+      height:      body.height,
     })
 
     if (!result.ok) {

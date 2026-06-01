@@ -66,6 +66,11 @@ function handle(e: MessageEvent) {
   try { msg = JSON.parse(e.data) } catch { return }
 
   switch (msg.type) {
+    case 'ping':
+      // Server heartbeat to keep Heroku's 55s proxy from dropping the
+      // connection. Echo a pong so proxies see two-way traffic.
+      try { _ws?.send(JSON.stringify({ type: 'pong' })) } catch { /* socket dying */ }
+      return
     case 'presence_status': {
       const online = Array.isArray(msg.online) ? (msg.online as string[]) : []
       _onlineIds = new Set(online)

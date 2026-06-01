@@ -193,6 +193,10 @@
   let opponentTotalSpins = $state<number | undefined>(undefined)
   let inactivityRemaining = $state(60)  // seconds
   let inactivityTimer: ReturnType<typeof setInterval> | null = null
+  // Watchdog timer that resends spins_complete if battle_start doesn't
+  // arrive within 8s. Recovers from transient WS drops where one side's
+  // message was lost in flight. Cleared by the battle_start handler.
+  let rivalsCompleteRetryTimer: ReturnType<typeof setTimeout> | null = null
   function resetInactivityTimer() {
     inactivityRemaining = 60
     if (inactivityTimer) clearInterval(inactivityTimer)
@@ -911,6 +915,10 @@
         try {
           const msg = JSON.parse(event.data) as { type: string; [k: string]: unknown }
           switch (msg.type) {
+            case 'ping':
+              // Server heartbeat — keep the connection visibly active.
+              try { wsData.ws.send(JSON.stringify({ type: 'pong' })) } catch { /* socket dying */ }
+              break
             case 'partner_progress': {
               const idx = typeof msg.spinIndex === 'number' ? msg.spinIndex : -1
               opponentSpinIndex = Math.max(opponentSpinIndex, idx)
@@ -944,6 +952,8 @@
             }
             case 'battle_start': {
               stopInactivityTimer()
+              // Cancel the resend watchdog — the round handshake completed.
+              if (rivalsCompleteRetryTimer) { clearTimeout(rivalsCompleteRetryTimer); rivalsCompleteRetryTimer = null }
               const you = msg.you as { username?: string; results: unknown[] }
               const opp = msg.opponent as { username?: string; results: unknown[] }
               patchRivalsWs({
@@ -2442,13 +2452,31 @@
       // will exempt us until the opponent finishes too.
       stopInactivityTimer()
       const wsData = getRivalsWs()
+      const completePayload = JSON.stringify({
+        type: 'spins_complete',
+        results: $state.snapshot(results),
+        name: characterName,
+      })
       if (wsData?.ws && wsData.ws.readyState === WebSocket.OPEN) {
-        wsData.ws.send(JSON.stringify({
-          type: 'spins_complete',
-          results: $state.snapshot(results),
-          name: characterName,
-        }))
+        wsData.ws.send(completePayload)
       }
+      // Watchdog: if battle_start doesn't arrive within 8s, re-send
+      // spins_complete. The server's handler is idempotent (sets done=true
+      // again, sends battle_start again if both done) so this safely
+      // recovers from a transient drop where the original message landed
+      // server-side but the response was lost, or vice versa. Cleared by
+      // the battle_start handler.
+      if (rivalsCompleteRetryTimer) clearTimeout(rivalsCompleteRetryTimer)
+      let attempts = 0
+      const retry = () => {
+        attempts++
+        const ws = getRivalsWs()?.ws
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(completePayload)
+        // Keep retrying up to 3 times, then give up — assume the partner
+        // genuinely vanished and let the server's inactivity sweep handle it.
+        if (attempts < 3) rivalsCompleteRetryTimer = setTimeout(retry, 8_000)
+      }
+      rivalsCompleteRetryTimer = setTimeout(retry, 8_000)
       clearSession()
       showNameScreen = false
       rivalsOnlineWaiting = true

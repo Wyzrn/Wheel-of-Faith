@@ -91,15 +91,53 @@ interface PortraitPromptInput {
   name: string
   race: string
   archetype: string
+  /** First / signature power. Falls back gracefully when omitted. */
   topPower?: string
-  summary?: string  // narrative line from generateCharacterSummary().text
+  /** Additional powers — joined with the topPower into a short list so
+   *  the model sees the full kit, not just one ability. Caller should cap
+   *  at 2-3 to avoid bloating the prompt. */
+  extraPowers?: string[]
+  /** Primary weapon, if any. Helps the model render the right silhouette. */
+  weapon?: string
+  /** Gender label rolled at character creation. Surfaced as a pronoun hint
+   *  so the rendered figure matches the player's spin. */
+  gender?: string
+  /** Height label (e.g. "6'2\""). Coarse but helps the model bias frame. */
+  height?: string
+  /** Narrative line from generateCharacterSummary().text. */
+  summary?: string
 }
 
 export function buildPortraitPrompt(c: PortraitPromptInput): string {
-  const subject = `a ${c.race} ${c.archetype} named ${c.name}`
-  const power   = c.topPower ? `, wielding ${c.topPower}` : ''
-  const flavor  = c.summary ? `. ${c.summary}` : ''
-  const raw     = `${STYLE_PREAMBLE}. ${subject}${power}${flavor}.`
+  // Identity clause: "a [gender] [race] [archetype] named [name]".
+  // Gender slots in as an adjective when present so the model gets a
+  // clear pronoun signal without needing prose.
+  const genderAdj = c.gender && !/^[—-]?$/.test(c.gender)
+    ? `${c.gender.toLowerCase()} `
+    : ''
+  const subject = `a ${genderAdj}${c.race} ${c.archetype} named ${c.name}`
+
+  // Power list: combine topPower + extraPowers (deduped), cap at 3 to keep
+  // the prompt tight. "wielding A, B, and C" reads naturally to the model.
+  const allPowers = [c.topPower, ...(c.extraPowers ?? [])]
+    .filter((p): p is string => !!p && p !== '—')
+  const uniquePowers = Array.from(new Set(allPowers)).slice(0, 3)
+  const powerClause = uniquePowers.length === 0 ? ''
+    : uniquePowers.length === 1 ? `, wielding ${uniquePowers[0]}`
+    : uniquePowers.length === 2 ? `, wielding ${uniquePowers[0]} and ${uniquePowers[1]}`
+    : `, wielding ${uniquePowers.slice(0, -1).join(', ')}, and ${uniquePowers[uniquePowers.length - 1]}`
+
+  const weaponClause = c.weapon && c.weapon !== '—' && !/^No Weapon/i.test(c.weapon)
+    ? `. Armed with ${c.weapon}`
+    : ''
+
+  const heightClause = c.height && c.height !== '—'
+    ? `. Height: ${c.height}`
+    : ''
+
+  const flavor = c.summary ? `. ${c.summary}` : ''
+
+  const raw = `${STYLE_PREAMBLE}. ${subject}${powerClause}${weaponClause}${heightClause}${flavor}.`
   return raw.replace(BLOCKLIST, '[redacted]')
 }
 
@@ -180,6 +218,10 @@ export interface GeneratePortraitInput {
   race: string
   archetype: string
   topPower?: string
+  extraPowers?: string[]
+  weapon?: string
+  gender?: string
+  height?: string
   summary?: string
 }
 

@@ -332,6 +332,17 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
   app.get('/rivals/ws', { websocket: true }, (socket: WebSocket) => {
     const player: Player = { ws: socket, results: [], done: false }
 
+    // Heartbeat — Heroku's router closes idle WebSocket connections after
+    // ~55 seconds of silence (https://devcenter.heroku.com/articles/websockets#timeouts).
+    // The spin/wait phase regularly idles past that, so we ping every 25s
+    // to keep proxies awake. Clients respond with `pong` but the server
+    // doesn't require it — any inbound traffic resets the proxy timer.
+    const heartbeat = setInterval(() => {
+      if (socket.readyState !== 1) return
+      try { send(socket, { type: 'ping', t: Date.now() }) } catch { /* socket dying */ }
+    }, 25_000)
+    socket.on('close', () => clearInterval(heartbeat))
+
     socket.on('message', async (raw: Buffer | string) => {
       let msg: { type: string; [k: string]: unknown }
       try { msg = JSON.parse(raw.toString()) } catch { return }

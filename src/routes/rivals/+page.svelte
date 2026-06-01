@@ -229,6 +229,10 @@
   function handleMessage(e: MessageEvent) {
     const msg = JSON.parse(e.data) as Record<string, unknown>
     switch (msg.type) {
+      case 'ping':
+        // Server heartbeat — reply so proxies see two-way traffic.
+        try { ws?.send(JSON.stringify({ type: 'pong' })) } catch { /* socket dying */ }
+        return
       case 'room_created':
         roomCode = msg.code as string
         isP1 = true
@@ -283,6 +287,16 @@
       case 'partner_spin':
         partnerSpins = new Map(partnerSpins).set(msg.spinIndex as number, msg.result as SpinResult)
         break
+      // Defensive: if a partner_progress arrives while we're still on the
+      // rivals page (e.g. the goto('/?rivals=online') is mid-flight), keep
+      // the spin counter updated so the user sees live progress as soon as
+      // the spin page mounts. Without this, in-flight progress messages
+      // get dropped and the bar appears stuck until partner_complete fires.
+      case 'partner_progress': {
+        const idx = typeof msg.spinIndex === 'number' ? msg.spinIndex : -1
+        if (idx > -1) partnerSpins = new Map(partnerSpins).set(idx, partnerSpins.get(idx) ?? ({} as SpinResult))
+        break
+      }
       case 'partner_complete':
         partnerDone = true
         if (mySpinsDone) phase = 'battle_ready'

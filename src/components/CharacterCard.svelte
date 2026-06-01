@@ -335,7 +335,10 @@
       let res: Response
       if (portraitMode === 'ascension') {
         // Ascension chars have no Character record; send identity in the body.
-        const topPower = results.find(r => r.category === 'power')?.resultLabel
+        // Send the same enriched fields the saved-character endpoint pulls
+        // server-side — gender + multiple powers + weapon all influence the
+        // rendered portrait noticeably.
+        const allPowers = results.filter(r => r.category === 'power').map(r => r.resultLabel)
         res = await fetch(apiUrl('/api/story-slots/roster-portrait'), {
           method: 'POST',
           credentials: 'include',
@@ -345,7 +348,11 @@
             name:        displayName,
             race:        results.find(r => r.category === 'race')?.resultLabel ?? '',
             archetype:   results.find(r => r.category === 'archetype')?.resultLabel ?? '',
-            topPower,
+            topPower:    allPowers[0],
+            extraPowers: allPowers.slice(1, 3),
+            weapon:      results.find(r => r.category === 'weapon')?.resultLabel,
+            gender:      results.find(r => r.category === 'gender')?.resultLabel,
+            height:      results.find(r => r.category === 'height')?.resultLabel,
             existingUrl: portraitLocal ?? undefined,
             regenerate:  opts.regenerate ?? false,
           }),
