@@ -1025,12 +1025,12 @@ export const races: Race[] = [
     abilitySpinCount: 2,
     weaknessProbabilityModifier: 0.7,
     minStatTier: 'B-',
-    description: 'Green warriors from Planet Namek. They can regenerate limbs and create Dragon Balls, which is cheating.',
+    description: 'Green-skinned, antennae-marked warrior race from the planet Verdant. Peaceful by nature, monstrous in defense — they regenerate limbs at will and shape verdant wish-orbs that grant the seekers who collect them all.',
     injectedWheels: [
-      { id: 'dragonClan', displayName: 'Dragon Clan Gift', order: 1, segments: [
+      { id: 'wishOrbLineage', displayName: 'Wish-Orb Lineage', order: 1, segments: [
         { label: 'Reserved', weight: 5, description: 'The gift is dormant.' },
-        { label: 'Crafted', weight: 4, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Can shape and call. Small wishes.' },
-        { label: 'Granter', weight: 3, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus', iq: 'statBonus' }, description: 'Calls upon Eternal Dragon. Three wishes.' },
+        { label: 'Crafter', weight: 4, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Can shape and call. Small wishes.' },
+        { label: 'Granter', weight: 3, statBonusGrants: { powerMastery: 'statBonus', charisma: 'statBonus', iq: 'statBonus' }, description: 'Calls upon the Verdant Sovereign. Three wishes.' },
         { label: 'Grand Elder', weight: 1, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', iq: 'statBonus', charisma: 'statBonus' }, description: 'Awakens dormant power in others. Can change fates.' },
       ]},
       { id: 'warriorClan', displayName: 'Warrior Path', order: 2, segments: [
@@ -1043,7 +1043,7 @@ export const races: Race[] = [
     statModifiers: { potential: 1.5, iq: 1.3, durability: 1.2 },
     subTypePool: [
       { label: 'Warrior-Type Verdantian', weight: 4, element: 'Earth', grade: 'C', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
-      { label: 'Dragon Clan Verdantian', weight: 4, element: 'Nature', grade: 'C', statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus' } },
+      { label: 'Wish-Shaper Verdantian', weight: 4, element: 'Nature', grade: 'C', statBonusGrants: { potential: 'statBonus', powerMastery: 'statBonus' } },
       { label: 'Super Verdantian', weight: 2, element: 'Earth', grade: 'A', statBonusGrants: { strength: 'statBonus', durability: 'statBonus' } },
     ],
     customHeightPool: [
@@ -1059,7 +1059,7 @@ export const races: Race[] = [
 
     abilities: [
       { label: 'Limb Regeneration', weight: 3, element: 'Nature', grade: 'A' },
-      { label: 'Dragon Ball Sensing', weight: 2, element: 'Earth', grade: 'A' },
+      { label: 'Wish-Orb Resonance', weight: 2, element: 'Earth', grade: 'A' },
       { label: 'Fusion Compatibility', weight: 2, element: 'Earth', grade: 'A' },
       { label: 'Giant Form (Warrior Class)', weight: 2, element: 'Earth', grade: 'C' },
       { label: 'Mystic Attack (Stretchy Arms)', weight: 2, element: 'Arcane', grade: 'A' },
@@ -1286,7 +1286,7 @@ export const races: Race[] = [
     // Evolution + Scaling identity: a Rage Threshold wheel that determines
     // how easily the character escalates mid-fight (lower threshold = more
     // transformations triggered). The Super Zenith ladder itself is now
-    // owned by the twist spin (src/lib/twists.ts saiyan pool) — keeping it
+    // owned by the twist spin (src/lib/twists.ts zenithian pool) — keeping it
     // here would double-roll the same identity.
     injectedWheels: [
       { id: 'rageThreshold', displayName: 'Rage Threshold', order: 2, segments: [
@@ -1304,7 +1304,7 @@ export const races: Race[] = [
       { label: 'Royal Blood (Prince / King Lineage)', weight: 1, element: 'Fire', grade: 'A', statBonusGrants: { strength: 'statBonus', fightingSkill: 'statBonus', speed: 'statBonus' }, abilities: [{ label: 'Royal Ki Aura', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Command Presence', weight: 2, element: 'Psychic', grade: 'A' }, { label: 'Legendary Battle Potential', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Ruling Combat Style', weight: 2, element: 'Fire', grade: 'C' }, { label: 'Pride Amplification', weight: 2, element: 'Fire', grade: 'A' }, { label: 'Bloodline Awakening', weight: 1, element: 'Blood', grade: 'A' }], powerPool: [{ label: 'Unmake (Destruction)', weight: 3 }, { label: 'Ki Blast', weight: 3 }, { label: 'Flight (Zenithian)', weight: 2 }, { label: 'Resurgence Surge', weight: 2 }, { label: 'Omnipotence (Weekend Only)', weight: 1 }] },
     ],
     // transformationPool removed — the Super Zenith ladder lives on the
-    // twist spin (src/lib/twists.ts saiyan pool) so it isn't double-rolled.
+    // twist spin (src/lib/twists.ts zenithian pool) so it isn't double-rolled.
     customHeightPool: [
       { label: "5'2\"", weight: 3 }, { label: "5'4\"", weight: 6 }, { label: "5'6\"", weight: 7 },
       { label: "5'8\"", weight: 7 }, { label: "5'10\"", weight: 6 }, { label: "6'0\"", weight: 4 },
@@ -1340,7 +1340,7 @@ export const races: Race[] = [
         { label: 'Insatiable', weight: 1, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' }, description: 'Devours indiscriminately. Mind stacked twenty deep.' },
       ]},
       { id: 'psychicEvolution', displayName: 'Psychic Evolution', order: 2, segments: [
-        { label: 'Standard', weight: 4, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, description: 'Stage 1 mindflayer. Standard arsenal.' },
+        { label: 'Standard', weight: 4, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, description: 'Stage 1 cerebrosaur. Standard arsenal.' },
         { label: 'Refined', weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', fightingSkill: 'statBonus' }, description: 'Learnt to fight in the body. Not just the mind.' },
         { label: 'Ascended', weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Lifecycle accelerated. Psionics expanded.' },
         { label: 'Elder Brain', weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Final stage. No body. All minds.' },
@@ -1985,12 +1985,12 @@ export const races: Race[] = [
       { id: 'sunExposure', displayName: 'Sun Exposure', order: 1, segments: [
         { label: 'Red Sun', weight: 2, statBonusGrants: { strength: 'statPenalty', durability: 'statPenalty' }, description: 'Powerless. Mortal. Vulnerable.' },
         { label: 'Distant Yellow', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Limited yellow-sun exposure. Working toward full power.' },
-        { label: 'Yellow Sun', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus' }, description: 'Full powers. Standard kryptonian.' },
+        { label: 'Yellow Sun', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus' }, description: 'Full powers. Standard krystalian.' },
         { label: 'Blue Sun', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Power levels exceed normal. Gravity bends.' },
         { label: 'Solar-Engorged', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', energyLevel: 'statBonus' }, description: 'Walking sun-battery. Glows visibly.' },
       ]},
       { id: 'geneticPotential', displayName: 'Genetic Potential', order: 2, segments: [
-        { label: 'Standard', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Default kryptonian genome.' },
+        { label: 'Standard', weight: 5, statBonusGrants: { strength: 'statBonus', durability: 'statBonus' }, description: 'Default krystalian genome.' },
         { label: 'Bred-Line', weight: 4, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus' }, description: 'Designed for combat. Generations refined.' },
         { label: 'Hybrid Genome', weight: 3, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', potential: 'statBonus' }, description: 'Adapted to non-Krystos conditions.' },
         { label: 'Cloned Champion', weight: 2, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'Synthesized in a vat. Each batch better than the last.' },
@@ -2122,16 +2122,16 @@ export const races: Race[] = [
     statModifiers: { iq: 2.2, potential: 2.0, charisma: 1.4 },
     classPool: [
       { label: 'Renegade',       weight: 4, element: 'Time', grade: 'B', abilities: [{ label: 'Maverick Initiative', weight: 2, element: 'Time', grade: 'D' }, { label: 'Rule-Break Protocol', weight: 2, element: 'Time', grade: 'B' }, { label: 'Temporal Exploit', weight: 2, element: 'Time', grade: 'B' }, { label: 'Free Agent Status', weight: 2, element: 'Time', grade: 'B' }, { label: 'Renegade Regeneration', weight: 2, element: 'Nature', grade: 'B' }, { label: 'Lone Variable', weight: 1, element: 'Time', grade: 'B' }], powerPool: [{ label: 'Chronopod Pocket Space', weight: 3 }, { label: 'Time Stop', weight: 3 }, { label: 'Trickster Gambit', weight: 2 }, { label: 'Temporal Paradox', weight: 2 }, { label: 'Regeneration Burst', weight: 1 }] },
-      { label: 'Warrior',        weight: 3, element: 'Earth', grade: 'D', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'War-Form Regeneration', weight: 2, element: 'Nature', grade: 'D' }, { label: 'Battle-Hardened Time Sense', weight: 2, element: 'Time', grade: 'C' }, { label: 'Temporal Strike', weight: 2, element: 'Time', grade: 'D' }, { label: 'Combat Regeneration', weight: 2, element: 'Nature', grade: 'C' }, { label: 'War Doctor Precision', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Zero-Point Combat', weight: 1, element: 'Earth', grade: 'C' }], powerPool: [{ label: 'Regeneration Burst', weight: 3 }, { label: 'Time Scream', weight: 3 }, { label: 'Temporal Stasis', weight: 2 }, { label: 'Time Stop', weight: 2 }, { label: 'Temporal Paradox', weight: 1 }] },
+      { label: 'Warrior',        weight: 3, element: 'Earth', grade: 'D', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'War-Form Regeneration', weight: 2, element: 'Nature', grade: 'D' }, { label: 'Battle-Hardened Time Sense', weight: 2, element: 'Time', grade: 'C' }, { label: 'Temporal Strike', weight: 2, element: 'Time', grade: 'D' }, { label: 'Combat Regeneration', weight: 2, element: 'Nature', grade: 'C' }, { label: 'War-Warden Precision', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Zero-Point Combat', weight: 1, element: 'Earth', grade: 'C' }], powerPool: [{ label: 'Regeneration Burst', weight: 3 }, { label: 'Time Scream', weight: 3 }, { label: 'Temporal Stasis', weight: 2 }, { label: 'Time Stop', weight: 2 }, { label: 'Temporal Paradox', weight: 1 }] },
       { label: 'Guardian',       weight: 3, element: 'Time', grade: 'B', statBonusGrants: { potential: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Temporal Ward', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Protected Timeline', weight: 2, element: 'Time', grade: 'B' }, { label: 'Fixed Point Awareness', weight: 2, element: 'Time', grade: 'B' }, { label: "Guardian's Mark", weight: 2 }, { label: 'Timeless Stand', weight: 2, element: 'Time', grade: 'B' }, { label: 'Paradox Shield', weight: 1, element: 'Time', grade: 'C' }], powerPool: [{ label: 'Temporal Stasis', weight: 3 }, { label: 'Chronolock', weight: 3 }, { label: 'Chronopod Pocket Space', weight: 2 }, { label: 'Regeneration Burst', weight: 2 }, { label: 'Timeline Navigation', weight: 1 }] },
-      { label: 'Scholar',        weight: 2, element: 'Time', grade: 'A', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Gallifreyan Archive Access', weight: 2, element: 'Time', grade: 'A' }, { label: 'Temporal Theory Combat', weight: 2, element: 'Time', grade: 'C' }, { label: 'Multi-Timeline Computation', weight: 2, element: 'Time', grade: 'A' }, { label: 'Academic Combat', weight: 2, element: 'Time', grade: 'C' }, { label: 'Time Equation Solve', weight: 2, element: 'Time', grade: 'A' }, { label: 'Historical Pattern Read', weight: 1, element: 'Time', grade: 'A' }], powerPool: [{ label: "Odin's Wisdom", weight: 3 }, { label: 'Tome of All Knowledge', weight: 3 }, { label: 'Precognition', weight: 2 }, { label: 'Temporal Paradox', weight: 2 }, { label: 'Omniscience (Partial)', weight: 1 }] },
+      { label: 'Scholar',        weight: 2, element: 'Time', grade: 'A', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Chronarch Archive Access', weight: 2, element: 'Time', grade: 'A' }, { label: 'Temporal Theory Combat', weight: 2, element: 'Time', grade: 'C' }, { label: 'Multi-Timeline Computation', weight: 2, element: 'Time', grade: 'A' }, { label: 'Academic Combat', weight: 2, element: 'Time', grade: 'C' }, { label: 'Time Equation Solve', weight: 2, element: 'Time', grade: 'A' }, { label: 'Historical Pattern Read', weight: 1, element: 'Time', grade: 'A' }], powerPool: [{ label: "Odin's Wisdom", weight: 3 }, { label: 'Tome of All Knowledge', weight: 3 }, { label: 'Precognition', weight: 2 }, { label: 'Temporal Paradox', weight: 2 }, { label: 'Omniscience (Partial)', weight: 1 }] },
     ],
     transformationPool: [
       { label: 'First Regeneration Cycle',      weight: 4, element: 'Time', grade: 'C', statBonusGrants: { iq: 'statPenalty' }, statBonus: 1.0 },
       { label: 'Mid-Cycle (Experienced)',       weight: 3, element: 'Time', grade: 'B', statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, statBonus: 1.3 },
       { label: 'Late Cycle (Ancient Wisdom)',   weight: 3, element: 'Time', grade: 'A', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, statBonus: 1.6 },
-      { label: 'War Doctor (Battle-Hardened)',  weight: 2, element: 'Time', grade: 'S', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.9 },
-      { label: 'Timeless Child (No Limit)',     weight: 1, element: 'Time', grade: 'SS', statBonus: 2.8, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' } },
+      { label: 'War-Warden (Battle-Hardened)',  weight: 2, element: 'Time', grade: 'S', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.9 },
+      { label: 'Ageless Heir (No Limit)',     weight: 1, element: 'Time', grade: 'SS', statBonus: 2.8, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' } },
     ],
     customHeightPool: [
       { label: "5'2\"", weight: 2 }, { label: "5'4\"", weight: 4 }, { label: "5'6\"", weight: 6 },
@@ -2143,11 +2143,11 @@ export const races: Race[] = [
       { label: 'Regeneration (Body Reset)', weight: 3, element: 'Nature', grade: 'SS' },
       { label: 'Time Sense (Accurate to Milliseconds)', weight: 2, element: 'Time', grade: 'SS' },
       { label: 'Chronopod Symbiosis', weight: 2, element: 'Time', grade: 'SS' },
-      { label: 'Gallifreyan Mind (Two Brains)', weight: 2, element: 'Water', grade: 'SS' },
+      { label: 'Chronarch Mind (Two Brains)', weight: 2, element: 'Water', grade: 'SS' },
       { label: 'Fixed Point Recognition', weight: 1, element: 'Time', grade: 'SS' },
-      { label: 'Psychic Paper Mastery', weight: 1, element: 'Psychic', grade: 'C' },
+      { label: 'Suggestion Sigil Mastery', weight: 1, element: 'Psychic', grade: 'C' },
       { label: 'Temporal Loophole Detection', weight: 1, element: 'Time', grade: 'SS' },
-      { label: 'Artron Energy Reserves', weight: 1, element: 'Time', grade: 'SS' },
+      { label: 'Chrono Energy Reserves', weight: 1, element: 'Time', grade: 'SS' },
     ],
   },
   {
@@ -2570,19 +2570,19 @@ export const races: Race[] = [
         { label: 'Beast Mode', weight: 2, statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus' }, description: 'Organic-mimicking. Predator. Wild.' },
         { label: 'Triple-Changer', weight: 1, statBonusGrants: { strength: 'statBonus', speed: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus' }, description: 'Three alt forms. Switches mid-fight. Rare bloodline.' },
       ]},
-      { id: 'energon', displayName: 'Aetherium Tier', order: 2, segments: [
+      { id: 'aetheriumTier', displayName: 'Aetherium Tier', order: 2, segments: [
         { label: 'Standard', weight: 5, description: 'Standard fuel rations.' },
-        { label: 'Refined', weight: 4, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus' }, description: 'Premium energon. Better burns.' },
-        { label: 'Cybertronium', weight: 3, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus', strength: 'statBonus' }, description: 'Plating reinforced with home-world alloy.' },
-        { label: 'Sparked', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' }, description: 'Spark touched by Primus. Or the AllSpark.' },
-        { label: 'Prime-Class', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Carries the Matrix of Leadership.' },
+        { label: 'Refined', weight: 4, statBonusGrants: { energyLevel: 'statBonus', powerMastery: 'statBonus' }, description: 'Premium aetherium. Burns cleaner, hits harder.' },
+        { label: 'Mechforged', weight: 3, statBonusGrants: { durability: 'statBonus', armorStrength: 'statBonus', strength: 'statBonus' }, description: 'Plating reinforced with home-world alloy.' },
+        { label: 'Coreheart-Touched', weight: 2, statBonusGrants: { powerMastery: 'statBonus', potential: 'statBonus', energyLevel: 'statBonus' }, description: 'Spark forged at the Coreheart itself. Older than memory.' },
+        { label: 'Apex-Class', weight: 1, statBonusGrants: { strength: 'statBonus', durability: 'statBonus', fightingSkill: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Carries the Mantle of Leadership.' },
       ]},
     ],
     statModifiers: { strength: 1.8, durability: 1.8, iq: 1.4, speed: 1.3 },
     classPool: [
-      { label: 'Autobot (Guardian)',    weight: 4, element: 'Light', grade: 'B', statBonusGrants: { durability: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Shield Matrix', weight: 2, element: 'Light', grade: 'B' }, { label: 'Aetherium Storage (High)', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Combat Protocol Alpha', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Autobot Honor Code', weight: 1, element: 'Light', grade: 'B' }], powerPool: [{ label: 'Energy Blast', weight: 3 }, { label: 'Invulnerability', weight: 3 }, { label: 'Plasma Cannon', weight: 2 }, { label: 'Repair Field', weight: 2 }, { label: 'Rocket Thrust', weight: 1 }] },
-      { label: 'Decepticon (Warmonger)', weight: 4, element: 'Shadow', grade: 'B', statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, abilities: [{ label: 'Aetherium Cannon', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Deceptive Protocol', weight: 2, element: 'Shadow', grade: 'B' }, { label: 'Tactical Override', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Mechforge Aggression Field', weight: 1, element: 'Chaos', grade: 'B' }], powerPool: [{ label: 'Plasma Cannon', weight: 3 }, { label: 'Super Strength', weight: 3 }, { label: 'Teleportation', weight: 2 }, { label: 'Energy Absorption', weight: 2 }, { label: 'Anti-Gravity Field', weight: 1 }] },
-      { label: 'Prime (Leader Class)',   weight: 2, element: 'Cosmic', grade: 'A', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus' }, abilities: [{ label: 'Matrix of Leadership', weight: 2, element: 'Cosmic', grade: 'A' }, { label: 'Prime Aura', weight: 2, element: 'Cosmic', grade: 'A' }, { label: 'Mechforge Will', weight: 2, element: 'Light', grade: 'A' }, { label: 'All Spark Fragment', weight: 1, element: 'Cosmic', grade: 'SS' }], powerPool: [{ label: 'Divine Strength', weight: 3 }, { label: 'Energy Mastery', weight: 3 }, { label: 'Telekinesis', weight: 2 }, { label: 'Flight', weight: 2 }, { label: 'Reality Rift', weight: 1 }] },
+      { label: 'Guardian (Protector)',    weight: 4, element: 'Light', grade: 'B', statBonusGrants: { durability: 'statBonus', fightingSkill: 'statBonus' }, abilities: [{ label: 'Shield Matrix', weight: 2, element: 'Light', grade: 'B' }, { label: 'Aetherium Storage (High)', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Combat Protocol Alpha', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Guardian Honor Code', weight: 1, element: 'Light', grade: 'B' }], powerPool: [{ label: 'Energy Blast', weight: 3 }, { label: 'Invulnerability', weight: 3 }, { label: 'Plasma Cannon', weight: 2 }, { label: 'Repair Field', weight: 2 }, { label: 'Rocket Thrust', weight: 1 }] },
+      { label: 'Warmonger (Reaver)',     weight: 4, element: 'Shadow', grade: 'B', statBonusGrants: { strength: 'statBonus', powerMastery: 'statBonus' }, abilities: [{ label: 'Aetherium Cannon', weight: 2, element: 'Fire', grade: 'B' }, { label: 'Deceptive Protocol', weight: 2, element: 'Shadow', grade: 'B' }, { label: 'Tactical Override', weight: 2, element: 'Metal', grade: 'B' }, { label: 'Mechforge Aggression Field', weight: 1, element: 'Chaos', grade: 'B' }], powerPool: [{ label: 'Plasma Cannon', weight: 3 }, { label: 'Super Strength', weight: 3 }, { label: 'Teleportation', weight: 2 }, { label: 'Energy Absorption', weight: 2 }, { label: 'Anti-Gravity Field', weight: 1 }] },
+      { label: 'Apex (Leader Class)',    weight: 2, element: 'Cosmic', grade: 'A', statBonusGrants: { strength: 'statBonus', durability: 'statBonus', charisma: 'statBonus', powerMastery: 'statBonus' }, abilities: [{ label: 'Mantle of Leadership', weight: 2, element: 'Cosmic', grade: 'A' }, { label: 'Apex Aura', weight: 2, element: 'Cosmic', grade: 'A' }, { label: 'Mechforge Will', weight: 2, element: 'Light', grade: 'A' }, { label: 'Coreheart Fragment', weight: 1, element: 'Cosmic', grade: 'SS' }], powerPool: [{ label: 'Divine Strength', weight: 3 }, { label: 'Energy Mastery', weight: 3 }, { label: 'Telekinesis', weight: 2 }, { label: 'Flight', weight: 2 }, { label: 'Reality Rift', weight: 1 }] },
       { label: 'Quintesson Construct',   weight: 1, element: 'Chaos', grade: 'S', statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, abilities: [{ label: 'Multi-Vector Processing', weight: 2, element: 'Psychic', grade: 'S' }, { label: 'Ancient Machine Code', weight: 2, element: 'Metal', grade: 'S' }, { label: 'Recursion Loop', weight: 2, element: 'Chaos', grade: 'S' }, { label: 'Fabrication Field', weight: 1, element: 'Metal', grade: 'S' }], powerPool: [{ label: 'Matter Manipulation', weight: 3 }, { label: 'Molecular Control', weight: 3 }, { label: 'Cybernetic Mastery', weight: 2 }, { label: 'Machine Control', weight: 2 }, { label: 'Dimensional Rift', weight: 1 }] },
     ],
     transformationPool: [
@@ -2602,7 +2602,7 @@ export const races: Race[] = [
       { label: 'Combat Algorithm', weight: 2, element: 'Metal', grade: 'C' },
       { label: 'Sensor Array', weight: 2, element: 'Psychic', grade: 'C' },
       { label: 'Repair Nano-Bots', weight: 2, element: 'Metal', grade: 'C' },
-      { label: 'All Spark Resonance', weight: 1, element: 'Cosmic', grade: 'A' },
+      { label: 'Coreheart Resonance', weight: 1, element: 'Cosmic', grade: 'A' },
     ],
   },
   {
@@ -3196,16 +3196,16 @@ export const races: Race[] = [
     statModifiers: { iq: 2.2, potential: 2.0, charisma: 1.4 },
     classPool: [
       { label: 'Renegade',       weight: 4, element: 'Time', grade: 'B', abilities: [{ label: 'Maverick Initiative', weight: 2, element: 'Time', grade: 'D' }, { label: 'Rule-Break Protocol', weight: 2, element: 'Time', grade: 'B' }, { label: 'Temporal Exploit', weight: 2, element: 'Time', grade: 'B' }, { label: 'Free Agent Status', weight: 2, element: 'Time', grade: 'B' }, { label: 'Renegade Regeneration', weight: 2, element: 'Nature', grade: 'B' }, { label: 'Lone Variable', weight: 1, element: 'Time', grade: 'B' }], powerPool: [{ label: 'Chronopod Pocket Space', weight: 3 }, { label: 'Time Stop', weight: 3 }, { label: 'Trickster Gambit', weight: 2 }, { label: 'Temporal Paradox', weight: 2 }, { label: 'Regeneration Burst', weight: 1 }] },
-      { label: 'Warrior',        weight: 3, element: 'Earth', grade: 'D', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'War-Form Regeneration', weight: 2, element: 'Nature', grade: 'D' }, { label: 'Battle-Hardened Time Sense', weight: 2, element: 'Time', grade: 'C' }, { label: 'Temporal Strike', weight: 2, element: 'Time', grade: 'D' }, { label: 'Combat Regeneration', weight: 2, element: 'Nature', grade: 'C' }, { label: 'War Doctor Precision', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Zero-Point Combat', weight: 1, element: 'Earth', grade: 'C' }], powerPool: [{ label: 'Regeneration Burst', weight: 3 }, { label: 'Time Scream', weight: 3 }, { label: 'Temporal Stasis', weight: 2 }, { label: 'Time Stop', weight: 2 }, { label: 'Temporal Paradox', weight: 1 }] },
+      { label: 'Warrior',        weight: 3, element: 'Earth', grade: 'D', statBonusGrants: { fightingSkill: 'statBonus' }, abilities: [{ label: 'War-Form Regeneration', weight: 2, element: 'Nature', grade: 'D' }, { label: 'Battle-Hardened Time Sense', weight: 2, element: 'Time', grade: 'C' }, { label: 'Temporal Strike', weight: 2, element: 'Time', grade: 'D' }, { label: 'Combat Regeneration', weight: 2, element: 'Nature', grade: 'C' }, { label: 'War-Warden Precision', weight: 2, element: 'Earth', grade: 'D' }, { label: 'Zero-Point Combat', weight: 1, element: 'Earth', grade: 'C' }], powerPool: [{ label: 'Regeneration Burst', weight: 3 }, { label: 'Time Scream', weight: 3 }, { label: 'Temporal Stasis', weight: 2 }, { label: 'Time Stop', weight: 2 }, { label: 'Temporal Paradox', weight: 1 }] },
       { label: 'Guardian',       weight: 3, element: 'Time', grade: 'B', statBonusGrants: { potential: 'statBonus', durability: 'statBonus' }, abilities: [{ label: 'Temporal Ward', weight: 2, element: 'Arcane', grade: 'C' }, { label: 'Protected Timeline', weight: 2, element: 'Time', grade: 'B' }, { label: 'Fixed Point Awareness', weight: 2, element: 'Time', grade: 'B' }, { label: "Guardian's Mark", weight: 2 }, { label: 'Timeless Stand', weight: 2, element: 'Time', grade: 'B' }, { label: 'Paradox Shield', weight: 1, element: 'Time', grade: 'C' }], powerPool: [{ label: 'Temporal Stasis', weight: 3 }, { label: 'Chronolock', weight: 3 }, { label: 'Chronopod Pocket Space', weight: 2 }, { label: 'Regeneration Burst', weight: 2 }, { label: 'Timeline Navigation', weight: 1 }] },
-      { label: 'Scholar',        weight: 2, element: 'Time', grade: 'A', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Gallifreyan Archive Access', weight: 2, element: 'Time', grade: 'A' }, { label: 'Temporal Theory Combat', weight: 2, element: 'Time', grade: 'C' }, { label: 'Multi-Timeline Computation', weight: 2, element: 'Time', grade: 'A' }, { label: 'Academic Combat', weight: 2, element: 'Time', grade: 'C' }, { label: 'Time Equation Solve', weight: 2, element: 'Time', grade: 'A' }, { label: 'Historical Pattern Read', weight: 1, element: 'Time', grade: 'A' }], powerPool: [{ label: "Odin's Wisdom", weight: 3 }, { label: 'Tome of All Knowledge', weight: 3 }, { label: 'Precognition', weight: 2 }, { label: 'Temporal Paradox', weight: 2 }, { label: 'Omniscience (Partial)', weight: 1 }] },
+      { label: 'Scholar',        weight: 2, element: 'Time', grade: 'A', statBonusGrants: { iq: 'statBonus' }, abilities: [{ label: 'Chronarch Archive Access', weight: 2, element: 'Time', grade: 'A' }, { label: 'Temporal Theory Combat', weight: 2, element: 'Time', grade: 'C' }, { label: 'Multi-Timeline Computation', weight: 2, element: 'Time', grade: 'A' }, { label: 'Academic Combat', weight: 2, element: 'Time', grade: 'C' }, { label: 'Time Equation Solve', weight: 2, element: 'Time', grade: 'A' }, { label: 'Historical Pattern Read', weight: 1, element: 'Time', grade: 'A' }], powerPool: [{ label: "Odin's Wisdom", weight: 3 }, { label: 'Tome of All Knowledge', weight: 3 }, { label: 'Precognition', weight: 2 }, { label: 'Temporal Paradox', weight: 2 }, { label: 'Omniscience (Partial)', weight: 1 }] },
     ],
     transformationPool: [
       { label: 'First Regeneration Cycle',      weight: 4, element: 'Time', grade: 'C', statBonusGrants: { iq: 'statPenalty' }, statBonus: 1.0 },
       { label: 'Mid-Cycle (Experienced)',       weight: 3, element: 'Time', grade: 'B', statBonusGrants: { iq: 'statBonus', potential: 'statBonus' }, statBonus: 1.3 },
       { label: 'Late Cycle (Ancient Wisdom)',   weight: 3, element: 'Time', grade: 'A', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, statBonus: 1.6 },
-      { label: 'War Doctor (Battle-Hardened)',  weight: 2, element: 'Time', grade: 'S', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.9 },
-      { label: 'Timeless Child (No Limit)',     weight: 1, element: 'Time', grade: 'SS', statBonus: 2.8, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' } },
+      { label: 'War-Warden (Battle-Hardened)',  weight: 2, element: 'Time', grade: 'S', statBonusGrants: { iq: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' }, statBonus: 1.9 },
+      { label: 'Ageless Heir (No Limit)',     weight: 1, element: 'Time', grade: 'SS', statBonus: 2.8, statBonusGrants: { iq: 'statBonus', potential: 'statBonus' } },
     ],
     customHeightPool: [
       { label: "5'2\"", weight: 2 }, { label: "5'4\"", weight: 4 }, { label: "5'6\"", weight: 6 },
@@ -3217,11 +3217,11 @@ export const races: Race[] = [
       { label: 'Regeneration (Body Reset)', weight: 3, element: 'Nature', grade: 'SS' },
       { label: 'Time Sense (Accurate to Milliseconds)', weight: 2, element: 'Time', grade: 'SS' },
       { label: 'Chronopod Symbiosis', weight: 2, element: 'Time', grade: 'SS' },
-      { label: 'Gallifreyan Mind (Two Brains)', weight: 2, element: 'Water', grade: 'SS' },
+      { label: 'Chronarch Mind (Two Brains)', weight: 2, element: 'Water', grade: 'SS' },
       { label: 'Fixed Point Recognition', weight: 1, element: 'Time', grade: 'SS' },
-      { label: 'Psychic Paper Mastery', weight: 1, element: 'Psychic', grade: 'C' },
+      { label: 'Suggestion Sigil Mastery', weight: 1, element: 'Psychic', grade: 'C' },
       { label: 'Temporal Loophole Detection', weight: 1, element: 'Time', grade: 'SS' },
-      { label: 'Artron Energy Reserves', weight: 1, element: 'Time', grade: 'SS' },
+      { label: 'Chrono Energy Reserves', weight: 1, element: 'Time', grade: 'SS' },
     ],
   },
   {
@@ -3577,7 +3577,7 @@ export const races: Race[] = [
         { label: 'Insatiable', weight: 1, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', fightingSkill: 'statBonus' }, description: 'Devours indiscriminately. Mind stacked twenty deep.' },
       ]},
       { id: 'psychicEvolution', displayName: 'Psychic Evolution', order: 2, segments: [
-        { label: 'Standard', weight: 4, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, description: 'Stage 1 mindflayer. Standard arsenal.' },
+        { label: 'Standard', weight: 4, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus' }, description: 'Stage 1 cerebrosaur. Standard arsenal.' },
         { label: 'Refined', weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', fightingSkill: 'statBonus' }, description: 'Learnt to fight in the body. Not just the mind.' },
         { label: 'Ascended', weight: 3, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus' }, description: 'Lifecycle accelerated. Psionics expanded.' },
         { label: 'Elder Brain', weight: 2, statBonusGrants: { iq: 'statBonus', powerMastery: 'statBonus', potential: 'statBonus', charisma: 'statBonus' }, description: 'Final stage. No body. All minds.' },
