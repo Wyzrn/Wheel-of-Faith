@@ -507,6 +507,30 @@
   let fxEventIdx = 0
   let aoeRemainingHits = 0
 
+  // Screen-flash + arena-shake state. Both reset/retrigger via a key
+  // counter that increments each time the effect should play — the
+  // overlay's keyframe re-runs from scratch when the keyed div remounts.
+  // Shake is a CSS class on the arena root; flash is a fixed overlay.
+  let flashKey   = $state(0)
+  let flashKind  = $state<'crit' | 'kill' | 'element'>('crit')
+  let flashColor = $state('rgba(255,255,255,0.9)')
+  let shakeKick  = $state(0)
+  let flashTimeoutId: ReturnType<typeof setTimeout> | null = null
+  let shakeTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+  function triggerScreenFlash(kind: 'crit' | 'kill' | 'element', color: string) {
+    flashKey++
+    flashKind = kind
+    flashColor = color
+    if (flashTimeoutId) clearTimeout(flashTimeoutId)
+    flashTimeoutId = setTimeout(() => { flashKey = 0 }, kind === 'kill' ? 600 : 320)
+  }
+  function triggerArenaShake(intensity = 1) {
+    shakeKick = intensity
+    if (shakeTimeoutId) clearTimeout(shakeTimeoutId)
+    shakeTimeoutId = setTimeout(() => { shakeKick = 0 }, 380)
+  }
+
   async function scrollLog() {
     await tick()
     if (logEl) logEl.scrollTop = logEl.scrollHeight
@@ -613,6 +637,33 @@
     if (anim && effectsEnabled) {
       const fx = currentFxEvents[fxEventIdx]
       const grade = (anim.type !== 'dodge' && anim.type !== 'shield' && fx) ? fx.grade : undefined
+
+      // Screen-flash + arena-shake hooks. Crits trigger a quick white
+      // flash + light shake; killing-blow lines (one of the dramatic
+      // "X has been defeated!" / "OBLITERATED" patterns) trigger a
+      // longer red flash + a heavier shake. Element-coded big attacks
+      // (S+ grade or higher) get a brief tinted flash matching the
+      // element color so spells feel weighty.
+      if (fx && fx.isCrit && (isDamage || anim.type === 'crit')) {
+        triggerScreenFlash('crit', 'rgba(255,255,255,0.85)')
+        triggerArenaShake(1)
+      }
+      const isKillingBlow = isDamage && /DEFEATED|OBLITERATED|ANNIHILATED|OVERKILL|FALLS|DOWNED/i.test(head)
+      if (isKillingBlow) {
+        triggerScreenFlash('kill', 'rgba(239,68,68,0.6)')
+        triggerArenaShake(1.4)
+      } else if (fx && isDamage && fx.grade && /^(S\+?$|SS|SSS|Z|God|Cosmic|Celestial|Godly|Primordial|Absolute|Transcendent|Infinite)/.test(fx.grade)) {
+        // Big-spell element flash — short, tinted by element color.
+        const elementFx = fx.element ? ELEMENT_FX[fx.element] : null
+        if (elementFx) {
+          const c = elementFx.color
+          // Convert hex to rgba with low alpha for a tasteful tint
+          const r = parseInt(c.slice(1, 3), 16)
+          const g = parseInt(c.slice(3, 5), 16)
+          const b = parseInt(c.slice(5, 7), 16)
+          triggerScreenFlash('element', `rgba(${r},${g},${b},0.32)`)
+        }
+      }
 
       let aoeSkip = false
       if (isDamage && aoeRemainingHits > 0) {
@@ -1242,8 +1293,15 @@
   </div>
 {/snippet}
 
-<div bind:this={wrapperEl} class="arena">
+<div bind:this={wrapperEl} class="arena" class:arena-shake={shakeKick > 0}>
   <div class="void-grain"></div>
+  <!-- Crit / killing-blow screen flash overlay. Mounted once; the flashKey
+       state increments to retrigger the keyframe animation cleanly. The
+       flash kind drives the color stop and intensity (white for crits,
+       red-saturated for killing blows). Hidden when effects are off. -->
+  {#if effectsEnabled && flashKey > 0}
+    <div class="arena-flash arena-flash-{flashKind}" style="--flash-color: {flashColor};" aria-hidden="true">{flashKey}</div>
+  {/if}
   {#if arenaEmbers.length > 0}
     <div class="arena-embers" aria-hidden="true">
       {#each arenaEmbers as e}
@@ -1464,6 +1522,47 @@
 {/if}
 
 <style>
+  /* ══ Screen-wide hit feedback — flash + shake ══════════════════════════
+     The flash overlay sits above the arena content at z 45 and fades from
+     full opacity → 0 over its duration. The shake class applies a quick
+     translate jitter to the arena root. Both honor prefers-reduced-motion
+     so accessibility users don't get hammered. */
+  .arena-flash {
+    position: fixed; inset: 0;
+    z-index: 45;
+    background: var(--flash-color, rgba(255,255,255,0.85));
+    pointer-events: none;
+    mix-blend-mode: screen;
+    animation: arenaFlash 320ms ease-out forwards;
+    color: transparent;  /* hide the keyed counter we put in the div */
+  }
+  .arena-flash-kill {
+    animation-duration: 600ms;
+    mix-blend-mode: normal;
+  }
+  .arena-flash-element {
+    animation-duration: 260ms;
+  }
+  @keyframes arenaFlash {
+    0%   { opacity: 0.9; }
+    20%  { opacity: 0.7; }
+    100% { opacity: 0; }
+  }
+  .arena-shake { animation: arenaShakeAnim 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+  @keyframes arenaShakeAnim {
+    0%, 100% { transform: translate(0, 0); }
+    10%      { transform: translate(-3px, 1px); }
+    20%      { transform: translate(4px, -2px); }
+    35%      { transform: translate(-3px, -2px); }
+    50%      { transform: translate(3px, 2px); }
+    65%      { transform: translate(-2px, 1px); }
+    80%      { transform: translate(2px, -1px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .arena-flash, .arena-shake { animation: none; }
+    .arena-flash { opacity: 0 !important; }
+  }
+
   /* ══ Arcane Coliseum — full-screen battle HUD ══════════════════════════ */
   .arena {
     position: fixed; inset: 0; z-index: 40;

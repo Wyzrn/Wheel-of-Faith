@@ -862,6 +862,28 @@
       const blessed = !rivalsOnlineMode && !rivalsBotMode
         && (auth.user?.gamepasses?.includes('blessed_wheel') ?? false)
       const aMinusIdx = TIER_ORDER.indexOf('A-' as TierGrade)
+
+      // Floor-shifted weight curve. When a race has minStatTier > F-, we
+      // don't just chop the bottom off the canonical curve — we TRANSLATE
+      // the curve so the new floor tier inherits F-'s weight, the next
+      // tier inherits F's weight, and so on. This keeps the relative
+      // shape (low-tier-heavy with thin high-end tail) consistent across
+      // race tiers, instead of making high tiers proportionally easier
+      // as the wheel shrinks. A Legendary race ends up with its peak at
+      // C-equivalent (= Z-tier absolute), rare at S-equivalent
+      // (= Cosmic+), and so on.
+      //
+      // canonicalWeights[i] = weight at the i-th lowest visible tier
+      // index (so canonicalWeights[0] = F-'s weight = 4). Built from the
+      // unfiltered baseSegments so we always see the full curve.
+      const canonicalWeights: number[] = []
+      const tieredSegs = (baseSegments as { weight: number; tier?: string }[])
+        .filter(s => s.tier && TIER_ORDER.indexOf(s.tier as TierGrade) >= 0)
+      tieredSegs.sort((a, b) => TIER_ORDER.indexOf(a.tier as TierGrade) - TIER_ORDER.indexOf(b.tier as TierGrade))
+      for (const s of tieredSegs) canonicalWeights.push(s.weight)
+      const curveTail = canonicalWeights[canonicalWeights.length - 1] ?? 0.03
+      const floorIdx = Math.max(0, minTierIdx)
+
       return baseSegments
         .filter(seg => {
           const fl = seg as { tier?: string }
@@ -874,17 +896,25 @@
         })
         .map(seg => {
           const fl = seg as { label: string; weight: number; score?: number; tier?: string }
-          const score = fl.score
-          if (score === undefined) return seg
-          // Higher score = rarer tier = lower weight; lower score = more common = higher weight
-          const rarityWeight = Math.max(0.3, 11 - score * 0.105)
-          // Race modifier: >1 shifts toward high scores, <1 shifts toward low scores
-          let finalWeight = Math.max(0.1, rarityWeight * Math.pow(modifier, score / 40))
+          if (!fl.tier) return seg
+          const tIdx = TIER_ORDER.indexOf(fl.tier as TierGrade)
+          if (tIdx < 0) return seg
+          // Shifted weight: look up canonical[tIdx - floorIdx]. Below the
+          // floor is impossible (filter removed those); above the curve's
+          // end uses the curve's smallest weight as a stable tail.
+          const shifted = tIdx - floorIdx
+          const baseWeight = shifted < canonicalWeights.length
+            ? canonicalWeights[shifted]
+            : curveTail
+          // Race / archetype / height modifiers still apply, but only
+          // as a mild flat multiplier — the shifted curve is the main
+          // shape, modifiers just bias certain stats for races with
+          // affinities (Saiyan strength=1.9, etc.). Clamped narrowly so
+          // a strong modifier doesn't undo the shift.
+          const flatMult = Math.max(0.6, Math.min(1.8, modifier))
+          let finalWeight = Math.max(0.05, baseWeight * flatMult)
           // Blessed Wheel boost for higher tiers (A- and above)
-          if (blessed && fl.tier && aMinusIdx >= 0) {
-            const tIdx = TIER_ORDER.indexOf(fl.tier as TierGrade)
-            if (tIdx >= aMinusIdx) finalWeight *= 1.4
-          }
+          if (blessed && aMinusIdx >= 0 && tIdx >= aMinusIdx) finalWeight *= 1.4
           return { ...seg, weight: finalWeight }
         })
     }
