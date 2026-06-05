@@ -8,6 +8,9 @@
   import RotateHint from '../components/RotateHint.svelte'
   import IncomingChallengePopup from '../components/IncomingChallengePopup.svelte'
   import ChallengeBattleOverlay from '../components/ChallengeBattleOverlay.svelte'
+  import Guide from '../components/Guide.svelte'
+  import { guide } from '$lib/guide/store.svelte'
+  import { sceneForRoute, QUILL } from '$lib/guide/scenes'
   import { page } from '$app/stores'
   import { goto, onNavigate } from '$app/navigation'
   import { triggerMenu, triggerStoryHome } from '$lib/menuState.svelte'
@@ -160,6 +163,31 @@
       })
     })
   })
+
+  // ── NPC guide (Quill) auto-trigger ────────────────────────────────────────
+  // First time a player visits a known route, Quill introduces what's on it.
+  // The store's seen-set prevents re-fires; the player can re-summon any
+  // scene via the persistent portrait button.
+  // The first-character scene fires from /+page.svelte after spin 23 resolves,
+  // not from here, because the route doesn't change at that moment.
+  $effect(() => {
+    const sceneId = sceneForRoute($page.url.pathname)
+    if (!sceneId) return
+    // Suppress home-overview until the first character has been built —
+    // otherwise a fresh player gets two "what is this?" intros stacked.
+    if (sceneId === 'home-overview' && !guide.hasSeen('first-character')) return
+    // Defer one frame so the new route has mounted before we overlay.
+    queueMicrotask(() => guide.open(sceneId))
+  })
+
+  // "Ask Quill" portrait button — sits above the bottom nav and re-opens the
+  // current screen's scene on demand. Visible everywhere; toggles off when
+  // the guide is already showing.
+  function askQuill() {
+    if (guide.scene) { guide.close(); return }
+    const sceneId = sceneForRoute($page.url.pathname) ?? 'home-overview'
+    guide.open(sceneId, true)
+  }
 </script>
 
 <!-- Global ambient backdrop (gradient glows + drifting embers), behind all content -->
@@ -228,12 +256,52 @@
 <IncomingChallengePopup />
 <ChallengeBattleOverlay />
 
+<!-- Ask-Quill portrait — always-available NPC guide summoner. Floats above
+     the bottom nav so it never crowds the 5 tabs. Tap to open / close the
+     dialogue for the current screen. -->
+<button class="ask-quill" onclick={askQuill}
+  aria-label={guide.scene ? 'Close guide' : `Ask ${QUILL.name} about this screen`}
+  title={guide.scene ? 'Close guide' : `Ask ${QUILL.name} about this screen`}>
+  <span class="material-symbols-outlined"
+    style="font-variation-settings: 'FILL' 1; font-size: 22px; color: #f0c040;
+           filter: drop-shadow(0 0 8px rgba(240,192,64,0.55));">
+    {guide.scene ? 'close' : QUILL.icon}
+  </span>
+</button>
+
+<!-- NPC guide overlay — renders the active dialogue scene if any. -->
+<Guide />
+
 <!-- Mobile landscape gate — blocks portrait play on touch devices -->
 <!-- RotateHint temporarily disabled while we let the game render in any
      orientation. Restore by re-mounting once the rotate flow is wanted again. -->
 <!-- <RotateHint /> -->
 
 <style>
+  /* Ask-Quill floating portrait — NPC guide summoner. */
+  .ask-quill {
+    position: fixed;
+    right: 12px;
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 30% 30%, rgba(240,192,64,0.30) 0%, rgba(20,16,10,0.95) 70%);
+    border: 1.5px solid rgba(240,192,64,0.55);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 18px rgba(240,192,64,0.20);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9997;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.15s ease;
+  }
+  .ask-quill:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.55), 0 0 24px rgba(240,192,64,0.30);
+  }
+  .ask-quill:active { transform: scale(0.92); }
+
   /* Stone fortress floor — the nav bar is a carved obsidian shelf */
   .bottom-nav {
     position: fixed;

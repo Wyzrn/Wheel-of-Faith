@@ -17,62 +17,14 @@
 
   let { step, currentCategory, isRevealed = false, onGotIt, onSkip, onStartGame, onTriggerAction }: Props = $props()
 
-  // ── Welcome modal pages ───────────────────────────────────────────────────
-  let welcomePage = $state(0)
-  const WELCOME_PAGES = 6
-
-  type WelcomePage = {
-    icon: string
-    iconColor: string
-    label: string
-    title: string
-    body: string
-  }
-
-  const WELCOME: WelcomePage[] = [
-    {
-      icon: 'casino',
-      iconColor: '#f0c040',
-      label: 'Welcome',
-      title: 'Welcome to\nWheel of Destiny',
-      body: 'A character creation engine driven entirely by chance.\n\nYou spin ~23 sequential wheels that decide your race, class, powers, stats, weapons, weaknesses, and title — in that order. Every result is permanent. The only strategy is acceptance.\n\nThis tutorial walks you through every system before your first spin, then gives you context cards at each stage of the game as it appears.',
-    },
-    {
-      icon: 'rotate_right',
-      iconColor: '#a78bfa',
-      label: 'The Spin',
-      title: 'How the Spin Works',
-      body: 'The 23+ wheels fire in sequence:\n\n① Race — your species, stat multipliers, and power pool\n② Racial features — subtype, class, transformation, abilities (1–3 spins)\n③ Archetype — your role (Combat, Magic, Stealth, Support, Chaos)\n④ 11 Stats — Strength, Speed, Agility, Durability, IQ, Charisma, Fighting Skill, Potential, Energy Level, Power Mastery, Weapon Mastery\n⑤ Powers — 1–3+ spins based on race and archetype\n⑥ Weapon + Armor + Armor Strength\n⑦ Weaknesses — 0–3 based on your race\n⑧ Redemption Spin — 25% chance to alter your fate\n⑨ Backstory — generated origin story\n⑩ Title — your final designation\n\nEvery stat spin carries a 5% Wildcard chance that rewrites the result mid-spin. Watch for the flash.',
-    },
-    {
-      icon: 'menu_book',
-      iconColor: '#34d399',
-      label: 'Ascension',
-      title: 'Ascension',
-      body: 'A full progression mode with 4 independent save slots.\n\nEach slot gives you:\n• 10 free spins/day (refreshing every 3 hrs). Daily Booster gamepass doubles this to 20.\n• A roster of characters you build by spending spins — Hero and Legend spins give multiplied stats\n• 16 Worlds: F → E → D → C → B → A → S → SS → SSS → Z → ZZ → ZZZ → Celestial → Godly → Primordial → Absolute\n• 20 battles per world. Win them to earn Gems, XP, and crystal drops.\n• Crystal inventory — open grade-based crystals to get random powers, weapons, and armor to equip\n• Stat Crystals — spend Gems or Fate Shards to boost individual stats permanently\n\n⚑ Endless Mode unlocks at Level 3 — infinite scaling waves, global leaderboard by highest wave cleared.',
-    },
-    {
-      icon: 'swords',
-      iconColor: '#f87171',
-      label: 'Rivals',
-      title: 'Rivals Mode',
-      body: 'Battle your characters against others. Two formats:\n\n⚔ Local — fight a friend on the same device. Each player picks a character from your shared collection and they fight in an auto-battle simulator. Stats, powers, weapons, armor, and equipped crystals all factor in.\n\n🌐 Online — real-time matchmaking pairs you with another player. Your selected character fights theirs in an auto-battle. Wins tracked on your profile and the Rivals leaderboard.\n\n🤖 Bot Battle — no match found? A bot fills in. Wins still count.\n\n⚑ Revenge Protocol gamepass: if you lose a battle you still earn 50% of the gem drops.\n⚑ Crit Surge gamepass: +10% critical hit chance in all battles.\n⚑ Legend Tag gamepass: [LEGEND] prefix shown next to your name in online matches.',
-    },
-    {
-      icon: 'diamond',
-      iconColor: '#f0c040',
-      label: 'Shards & Shop',
-      title: 'Fate Shards, Shop & Clans',
-      body: 'Fate Shards are your global account currency — they never reset across save slots or sessions.\n\nEarn Fate Shards by:\n• Winning battles in Ascension (chance drops, doubled with 2× Shard Drop gamepass)\n• Daily Challenges — up to 175 shards/day from 3 rotating tasks\n\nEarn Gems (per-slot currency) by:\n• Selling characters from your roster (+25% with Sell Bonus gamepass)\n• Winning battles in Ascension worlds\n\nSpend Fate Shards in the Arcane Shop on:\n• Gamepasses — permanent upgrades: 2× Luck, Reroll Insurance, Expanded Roster, Daily Booster, Boss Magnet, Cursed Wheel, Gold Roster Frame, and more\n• Stat Crystals — buy Common (50 ◆), Elite (500 ◆), or Legendary (1,000 ◆) crystals directly, no daily limit\n\n⚑ Clans — team up with up to 9 other players. Clan leaderboard ranks by total combined Rivals wins. Join from the Clan page on the main menu.',
-    },
-    {
-      icon: 'workspace_premium',
-      iconColor: '#f0c040',
-      label: "Let's Go",
-      title: "You're Ready",
-      body: 'After your 23 spins, you receive an Overall Tier Grade:\n\nF– → F → F+ → E → D → C → B → A → S → SS → SSS → Z → ZZ → ZZZ → Celestial → Godly → Primordial → Absolute\n\nDerived from a weighted score across all 11 stats, powers, and equipment. Fighting Skill is weighted heaviest. Absolute tier is extremely rare.\n\nYour completed character card can be:\n• Shared — a unique URL anyone can open\n• Published to the Public Gallery\n• Added to your Profile Hall of Fame (top 5 characters you\'ve ever rolled)\n• Replayed — step through all 23 spins in a viewer\n\nContext cards will appear during the spin to explain each system as it comes up. You can end the tutorial at any time by clicking "End tutorial" on any card.\n\nThe wheel has no memory. Every spin is fresh.',
-    },
-  ]
+  // Welcome modal collapsed to a single screen. Every line a player has to
+  // read before the first spin is a chance for them to bounce. The 6-page
+  // tour was the #1 friction point in playtest — replaced with: title, one
+  // sentence, big "Spin" CTA, and a small expandable "What is this?" for the
+  // rare player who wants context before acting. Everything else is taught
+  // by the in-game contextual cards (steps 1–13) and the post-creation NPC
+  // guide that picks up at step 14.
+  let aboutExpanded = $state(false)
 
   // ── In-game step card definitions ─────────────────────────────────────────
   type CardContent = {
@@ -292,9 +244,12 @@
   })
 </script>
 
-<!-- ─── Welcome modal (step 0) — multi-page ────────────────────────────────── -->
+<!-- ─── Welcome modal (step 0) — single-screen "just spin" intro ─────────────
+     Replaces the 6-page tour that was the #1 playtest bounce point. The
+     contextual cards (steps 1–13) teach mechanics while you spin; the NPC
+     guide (step 14+) explains every feature after the first character is
+     built. This screen exists purely to fire the first action. -->
 {#if step === 0}
-  {@const pg = WELCOME[welcomePage]}
   <div class="fixed inset-0 z-50 flex items-center justify-center px-4"
     style="background: rgba(7,7,13,0.97); backdrop-filter: blur(20px);">
     <div class="obsidian-slab w-full max-w-sm rounded-2xl relative overflow-hidden"
@@ -307,85 +262,45 @@
       <div class="absolute bottom-3 left-3 w-5 h-5 pointer-events-none" style="border-bottom: 2px solid rgba(240,192,64,0.4); border-left: 2px solid rgba(240,192,64,0.4);"></div>
       <div class="absolute bottom-3 right-3 w-5 h-5 pointer-events-none" style="border-bottom: 2px solid rgba(240,192,64,0.4); border-right: 2px solid rgba(240,192,64,0.4);"></div>
 
-      <!-- Page tabs -->
-      <div class="relative z-10 flex border-b" style="border-color: rgba(255,255,255,0.06);">
-        {#each WELCOME as p, i}
-          <button
-            onclick={() => welcomePage = i}
-            class="flex-1 py-2 text-center transition-all"
-            style="font-family: 'JetBrains Mono', monospace; font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase; border: none; background: none; cursor: pointer; color: {welcomePage === i ? pg.iconColor : '#2a2640'}; border-bottom: 2px solid {welcomePage === i ? pg.iconColor : 'transparent'}; margin-bottom: -1px;">
-            {p.label}
-          </button>
-        {/each}
-      </div>
-
-      <!-- Content -->
-      <div class="relative z-10 px-6 pt-5 pb-3" style="min-height: 360px; overflow-y: auto; max-height: 70vh;">
-        <div class="flex flex-col items-center text-center mb-4">
-          <span class="material-symbols-outlined mb-3"
-            style="font-size: 42px; color: {pg.iconColor}; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 14px {pg.iconColor}55);">{pg.icon}</span>
-          <h2 style="font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 900; color: #ffdf96; letter-spacing: 0.06em; line-height: 1.25; white-space: pre-line;">{pg.title}</h2>
+      <div class="relative z-10 px-6 pt-8 pb-6">
+        <div class="flex flex-col items-center text-center">
+          <span class="material-symbols-outlined mb-4"
+            style="font-size: 56px; color: #f0c040; font-variation-settings: 'FILL' 1; filter: drop-shadow(0 0 20px rgba(240,192,64,0.4));">casino</span>
+          <h2 style="font-family: 'Cinzel', serif; font-size: 1.45rem; font-weight: 900; color: #ffdf96; letter-spacing: 0.08em; line-height: 1.15;">Wheel of Destiny</h2>
+          <p class="mt-3" style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #9a907b; line-height: 1.55; max-width: 280px;">
+            Spin a wheel. Build a hero. See what fate gave you.
+          </p>
         </div>
-        <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.69rem; color: #9a907b; line-height: 1.78; white-space: pre-line;">{pg.body}</p>
-      </div>
 
-      <!-- Navigation -->
-      <div class="relative z-10 px-5 pt-3 pb-3 flex items-center gap-2.5">
-        {#if welcomePage > 0}
-          <button onclick={() => welcomePage--}
-            class="px-4 py-2.5 rounded-lg text-xs font-bold hover:brightness-110 transition-all"
-            style="font-family: 'Cinzel', serif; letter-spacing: 0.08em; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #9a907b; cursor: pointer;">
-            ← Back
-          </button>
-        {/if}
-
-        {#if welcomePage < WELCOME_PAGES - 1}
-          <!-- "Played before" express path — on page 0 only, prominent next to Next so
-               returning players see it instantly. Skips the 6-page intro and starts the
-               game with the contextual in-game tutorial cards intact. -->
-          {#if welcomePage === 0}
-            <button onclick={() => { onSkip(); onStartGame() }}
-              class="px-3 py-2.5 rounded-lg text-xs font-bold transition-all"
-              style="font-family: 'Cinzel', serif; letter-spacing: 0.08em; background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.32); color: #a78bfa; cursor: pointer; white-space: nowrap;"
-              title="Skip the intro — I've played before">
-              Played before
-            </button>
-          {/if}
-          <button onclick={() => welcomePage++}
-            data-fx="big"
-            class="metal-stamp-gold flex-1 py-2.5 rounded-lg relative text-xs font-bold"
-            style="font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;">
-            <div class="l-bracket" style="color: rgba(255,255,255,0.2);"></div>
-            Next →
-          </button>
-        {:else}
-          <button onclick={() => { onStartGame() }}
-            data-fx="big"
-            class="metal-stamp-gold flex-1 py-2.5 rounded-lg relative text-xs font-bold"
-            style="font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;">
-            <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
-            Let's Spin!
-          </button>
-        {/if}
-      </div>
-
-      <!-- Dot indicators -->
-      <div class="relative z-10 flex justify-center gap-1.5 pb-3">
-        {#each Array.from({length: WELCOME_PAGES}, (_, i) => i) as i}
-          <div class="rounded-full transition-all duration-300 cursor-pointer"
-            onclick={() => welcomePage = i}
-            role="button" tabindex="0"
-            onkeydown={(e) => { if (e.key === 'Enter') welcomePage = i }}
-            style="width: {welcomePage === i ? 16 : 5}px; height: 5px; background: {welcomePage === i ? pg.iconColor : '#2a2640'};"></div>
-        {/each}
-      </div>
-
-      <!-- Skip -->
-      <div class="relative z-10 pb-3 text-center">
-        <button onclick={onSkip}
-          style="font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: #2a2640; background: none; border: none; cursor: pointer; letter-spacing: 0.1em; text-decoration: underline;">
-          Skip tutorial
+        <button onclick={onStartGame}
+          data-fx="big"
+          class="metal-stamp-gold w-full mt-7 py-3.5 rounded-lg relative text-sm font-bold"
+          style="font-family: 'Cinzel', serif; letter-spacing: 0.18em; text-transform: uppercase;">
+          <div class="l-bracket" style="color: rgba(255,255,255,0.25);"></div>
+          Spin to Begin
         </button>
+
+        <div class="mt-4 flex items-center justify-center gap-4">
+          <button onclick={() => aboutExpanded = !aboutExpanded}
+            style="font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: #9a907b; background: none; border: none; cursor: pointer; letter-spacing: 0.08em; text-decoration: underline;">
+            {aboutExpanded ? 'Hide' : 'What is this?'}
+          </button>
+          <span style="color: #2a2640;">·</span>
+          <button onclick={onSkip}
+            style="font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: #2a2640; background: none; border: none; cursor: pointer; letter-spacing: 0.08em; text-decoration: underline;">
+            Skip intro
+          </button>
+        </div>
+
+        {#if aboutExpanded}
+          <div class="mt-4 px-4 py-3 rounded-lg" style="background: rgba(0,0,0,0.35); border-left: 2px solid #f0c040;">
+            <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: #c4b5fd; line-height: 1.7;">
+              A character creation engine driven by chance. You'll spin ~23 wheels — race, powers, stats, weapons, weaknesses, a title. Every result is permanent.
+              <br/><br/>
+              When the wheel stops, your hero is ready. From there you can battle, build a roster, climb worlds, or share the card. A guide will walk you through it when you're done.
+            </p>
+          </div>
+        {/if}
       </div>
     </div>
   </div>

@@ -42,6 +42,7 @@
   import { auth } from '$lib/stores/auth.svelte'
   import { powers as powersPool } from '$lib/content/powers'
   import Tutorial from '../components/Tutorial.svelte'
+  import { guide } from '$lib/guide/store.svelte'
   import { appendSpinHistory } from '$lib/spinHistory'
   import { loadCharHistory, pushCharHistory, migrateLegacyLastChar, markCharSaved, type CharHistoryEntry } from '$lib/charHistory'
   import SpinResultReveal from '../components/SpinResultReveal.svelte'
@@ -270,6 +271,18 @@
     }
   })
 
+  // Spin 23 reveal → fire NPC guide intro. Quill (the Fate Scribe) takes
+  // over teaching from the contextual tutorial cards at this point: she
+  // explains what the player just built and what they can do with it.
+  // Idempotent via the guide's seen-set, so re-rolling won't re-fire.
+  $effect(() => {
+    if (currentDef?.category === 'title' && isRevealed) {
+      // queueMicrotask defers until after the reveal animation kicks in,
+      // so the NPC appears once the player's eyes are already on the card.
+      queueMicrotask(() => guide.open('first-character'))
+    }
+  })
+
   function handleTutorialGotIt(nextStep: number) {
     if (nextStep > 14) {
       tutorialStep = 15   // triggers completion toast
@@ -353,7 +366,11 @@
 
   // ── Derived values ────────────────────────────────────────────────────────
   let currentDef = $derived(spinQueue[currentSpinIndex])
-  let spinCounterText = $derived(`Spin ${currentSpinIndex + 1} of ${spinQueue.length}`)
+  // Clamp the numerator at queue length so the counter never reads e.g.
+  // "Spin 61 of 60" when a post-finale advance momentarily overshoots
+  // (playtest report). The denominator already grows when bonus spins
+  // splice in, so the clamp only affects the off-by-one edge case.
+  let spinCounterText = $derived(`Spin ${Math.min(currentSpinIndex + 1, spinQueue.length)} of ${spinQueue.length}`)
   let categoryHeaderText = $derived(
     isRevealed
       ? `${currentDef?.displayName ?? ''} — Result:`

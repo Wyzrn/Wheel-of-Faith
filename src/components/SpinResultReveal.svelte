@@ -281,11 +281,11 @@
               type="button"
               onclick={(e) => { e.stopPropagation(); onReplay?.() }}
               class="srr-replay-btn flex items-center gap-1.5 px-3 py-2 rounded-lg"
-              title="Replay celebration"
-              aria-label="Replay landing celebration"
+              title="Replay the landing animation (your result is locked in)"
+              aria-label="Replay landing animation"
             >
-              <span class="material-symbols-outlined leading-none" style="font-size: 15px; font-variation-settings: 'FILL' 1;">replay</span>
-              <span>Replay</span>
+              <span class="material-symbols-outlined leading-none" style="font-size: 15px; font-variation-settings: 'FILL' 1;">animation</span>
+              <span>Replay FX</span>
             </button>
           {/if}
           <button
@@ -408,11 +408,11 @@
             type="button"
             onclick={(e) => { e.stopPropagation(); onReplay?.() }}
             class="srr-replay-btn flex items-center gap-1.5 px-3 py-2 rounded-lg"
-            title="Replay celebration"
-            aria-label="Replay landing celebration"
+            title="Replay the landing animation (your result is locked in)"
+            aria-label="Replay landing animation"
           >
-            <span class="material-symbols-outlined leading-none" style="font-size: 15px; font-variation-settings: 'FILL' 1;">replay</span>
-            <span>Replay</span>
+            <span class="material-symbols-outlined leading-none" style="font-size: 15px; font-variation-settings: 'FILL' 1;">animation</span>
+            <span>Replay FX</span>
           </button>
         {/if}
         <button
