@@ -88,10 +88,11 @@ export const SCENES: Record<string, GuideScene> = {
       { text: "The great wheel sits at center. Tap it to begin a new spin session: race first, then archetype, then stats, then powers, then weapons and weaknesses and a title to close the ledger.", mood: 'neutral' },
       { text: "The bar below holds your halls: Home returns you here, Fighters keeps every hero you've forged, Friends lists other Spinners you've met, the gear is for Settings.", mood: 'neutral' },
       { text: "And there — top-center, the gold menu — opens the deeper paths: Ascension, Rivals, the Arcane Shop, Daily Challenges, the Hall of Champions.", mood: 'wry' },
-      { text: "Tap my portrait on any screen and I'll explain it. That is the whole of the deal.", mood: 'pleased' },
+      { text: "Tap my portrait on any screen and I'll explain it. Or read the full guide if you want every system in depth, ink and all.", mood: 'pleased' },
     ],
     choices: [
-      { label: 'Got it', action: 'dismiss', color: '#f0c040' },
+      { label: 'Read the full guide', action: 'navigate', target: '/how-to-play', color: '#a78bfa' },
+      { label: 'Got it',              action: 'dismiss',                          color: '#f0c040' },
     ],
   },
 
@@ -1287,6 +1288,17 @@ export const SCENES: Record<string, GuideScene> = {
     choices: [{ label: 'Spin!', action: 'dismiss', color: '#f0c040' }],
   },
 
+  'how-to-play-intro': {
+    id: 'how-to-play-intro',
+    menuLabel: 'How do I use this guide?',
+    lines: [
+      { text: "Every system, every wheel, every relic — all written down here.", mood: 'pleased' },
+      { text: "Use the index on the left to jump anywhere. Search by name in the box above it. Each section opens with a TL;DR for the quick read and detail beneath for the long.", mood: 'neutral' },
+      { text: "This page is always here. Return whenever the wheel offers something new.", mood: 'wry' },
+    ],
+    choices: [{ label: 'Got it', action: 'dismiss', color: '#a78bfa' }],
+  },
+
   'login-intro': {
     id: 'login-intro',
     menuLabel: 'Why log in?',
@@ -1332,6 +1344,7 @@ export const ROUTE_SCENES: { prefix: string; sceneId: string }[] = [
   { prefix: '/replays',              sceneId: 'replays-intro' },
   { prefix: '/battle',               sceneId: 'battle-intro' },
   { prefix: '/login',                sceneId: 'login-intro' },
+  { prefix: '/how-to-play',          sceneId: 'how-to-play-intro' },
 ]
 
 // Sub-view scene maps, keyed by route prefix. The active sub-view (e.g.

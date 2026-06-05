@@ -280,11 +280,16 @@
           Spin to Begin
         </button>
 
-        <div class="mt-4 flex items-center justify-center gap-4">
+        <div class="mt-4 flex items-center justify-center gap-3 flex-wrap">
           <button onclick={() => aboutExpanded = !aboutExpanded}
             style="font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: #9a907b; background: none; border: none; cursor: pointer; letter-spacing: 0.08em; text-decoration: underline;">
             {aboutExpanded ? 'Hide' : 'What is this?'}
           </button>
+          <span style="color: #2a2640;">·</span>
+          <a href="/how-to-play"
+            style="font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: #9a907b; letter-spacing: 0.08em; text-decoration: underline;">
+            Full guide
+          </a>
           <span style="color: #2a2640;">·</span>
           <button onclick={onSkip}
             style="font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: #2a2640; background: none; border: none; cursor: pointer; letter-spacing: 0.08em; text-decoration: underline;">
