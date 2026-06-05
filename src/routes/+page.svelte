@@ -283,6 +283,16 @@
     }
   })
 
+  // Tell Quill which wheel is active so the "Ask Quill" portrait surfaces
+  // the right per-wheel scene (wheel-strength, wheel-race, etc.). Wheel
+  // scenes are summon-only — auto-fire is suppressed by the layout's
+  // effect — so this only changes what appears when the player asks.
+  // Cleared on unmount so home-overview returns when the page is gone.
+  $effect(() => {
+    guide.setSubView(currentDef?.category ?? null)
+    return () => guide.setSubView(null)
+  })
+
   function handleTutorialGotIt(nextStep: number) {
     if (nextStep > 14) {
       tutorialStep = 15   // triggers completion toast

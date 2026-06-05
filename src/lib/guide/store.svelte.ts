@@ -34,6 +34,7 @@ function saveSeen(seen: Set<string>) {
 function createGuide() {
   let activeSceneId = $state<string | null>(null)
   let lineIndex = $state(0)
+  let subView = $state<string | null>(null)
   const seen = $state(loadSeen())
 
   function activeScene(): GuideScene | null {
@@ -79,10 +80,19 @@ function createGuide() {
     saveSeen(seen)
   }
 
+  // Routes register their active sub-view (e.g. clan tab "browse") so the
+  // resolver can pick a more specific scene than the route default. Routes
+  // should pass null when the relevant sub-view goes away (e.g. tab close
+  // or unmount) so the scene resolver falls back to the route default.
+  function setSubView(v: string | null) {
+    subView = v
+  }
+
   return {
     get activeSceneId() { return activeSceneId },
     get lineIndex() { return lineIndex },
     get scene() { return activeScene() },
+    get subView() { return subView },
     get atLastLine() {
       const s = activeScene()
       return s ? lineIndex >= s.lines.length - 1 : false
@@ -91,6 +101,7 @@ function createGuide() {
     open,
     next,
     close,
+    setSubView,
     resetSeen,
   }
 }

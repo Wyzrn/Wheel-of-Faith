@@ -29,6 +29,7 @@
   import { cloudAutosave, flushCloudAutosaves } from '$lib/story/cloudAutosave'
   import { getGemValue } from '$lib/story/shards'
   import { auth } from '$lib/stores/auth.svelte'
+  import { guide } from '$lib/guide/store.svelte'
   import { tilt } from '$lib/actions/tilt'
   import { getEffectiveMaxSpins, getEffectiveRosterCapacity } from '$lib/story/saveSlots'
   import { getStageTierLabel } from '$lib/story/raceTiers'
@@ -57,6 +58,13 @@
   // ── View state machine ─────────────────────────────────────────────────────
   type View = 'saveSlotSelect' | 'hub' | 'spin' | 'roster' | 'expanded' | 'shop' | 'worlds' | 'battle' | 'inventory' | 'teams' | 'endless'
   let view = $state<View>('saveSlotSelect')
+
+  // Quill's NPC guide reads our active view name so it can show a more
+  // specific scene than the route default. Clears on unmount.
+  $effect(() => {
+    guide.setSubView(view)
+    return () => guide.setSubView(null)
+  })
 
   // ── Slot state ─────────────────────────────────────────────────────────────
   let slots = $state<(StorySaveSlot | null)[]>([null, null, null, null])

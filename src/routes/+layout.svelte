@@ -165,27 +165,48 @@
   })
 
   // ── NPC guide (Quill) auto-trigger ────────────────────────────────────────
-  // First time a player visits a known route, Quill introduces what's on it.
-  // The store's seen-set prevents re-fires; the player can re-summon any
-  // scene via the persistent portrait button.
-  // The first-character scene fires from /+page.svelte after spin 23 resolves,
-  // not from here, because the route doesn't change at that moment.
+  // First time a player visits a known screen, Quill introduces what's on it.
+  // "Screen" includes sub-views: routes register their active sub-view (e.g.
+  // the clan "browse" tab) with guide.setSubView() and a more specific scene
+  // fires for that sub-view. The store's seen-set prevents re-fires; the
+  // player can re-summon any scene via the persistent portrait button.
+  //
+  // Debounce: when a route changes, both `pathname` and `subView` may
+  // change in rapid succession (pathname first, then subView once the new
+  // page's component mounts and its $effect runs setSubView). Without a
+  // debounce, the route default scene auto-fires for one frame and then
+  // gets replaced by the sub-view scene, causing a visible flash. The
+  // 50ms timeout coalesces the two updates so the most specific scene
+  // available wins on first paint.
+  let autoFireTimer: ReturnType<typeof setTimeout> | null = null
   $effect(() => {
-    const sceneId = sceneForRoute($page.url.pathname)
-    if (!sceneId) return
-    // Suppress home-overview until the first character has been built —
-    // otherwise a fresh player gets two "what is this?" intros stacked.
-    if (sceneId === 'home-overview' && !guide.hasSeen('first-character')) return
-    // Defer one frame so the new route has mounted before we overlay.
-    queueMicrotask(() => guide.open(sceneId))
+    // Track the two reactive deps explicitly so the effect re-runs when
+    // either changes.
+    const path = $page.url.pathname
+    const sub = guide.subView
+    if (autoFireTimer) clearTimeout(autoFireTimer)
+    autoFireTimer = setTimeout(() => {
+      const sceneId = sceneForRoute(path, sub)
+      if (!sceneId) return
+      // Suppress home-overview until the first character has been built —
+      // otherwise a fresh player gets two "what is this?" intros stacked.
+      if (sceneId === 'home-overview' && !guide.hasSeen('first-character')) return
+      // Wheel-by-wheel scenes are SUMMON-ONLY — auto-firing them would
+      // recreate the wall-of-text problem playtest flagged. The "Ask
+      // Quill" portrait still surfaces them on demand.
+      if (sceneId.startsWith('wheel-')) return
+      guide.open(sceneId)
+    }, 50)
+    return () => { if (autoFireTimer) clearTimeout(autoFireTimer) }
   })
 
   // "Ask Quill" portrait button — sits above the bottom nav and re-opens the
   // current screen's scene on demand. Visible everywhere; toggles off when
-  // the guide is already showing.
+  // the guide is already showing. Uses the same resolver as auto-fire so
+  // the sub-view scene shows when one is registered.
   function askQuill() {
     if (guide.scene) { guide.close(); return }
-    const sceneId = sceneForRoute($page.url.pathname) ?? 'home-overview'
+    const sceneId = sceneForRoute($page.url.pathname, guide.subView) ?? 'home-overview'
     guide.open(sceneId, true)
   }
 </script>

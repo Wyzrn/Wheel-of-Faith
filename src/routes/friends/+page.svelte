@@ -5,6 +5,7 @@
   import { auth } from '$lib/stores/auth.svelte'
   import { presence } from '$lib/stores/presence.svelte'
   import { toast } from '$lib/toast.svelte'
+  import { guide } from '$lib/guide/store.svelte'
   import type { SpinResult } from '$lib/session/types'
 
   // Main-roster character shape for the friend-challenge picker. Pulled from
@@ -45,6 +46,13 @@
   let addSuccess     = $state(false)
   let addLoading     = $state(false)
   let activeTab      = $state<'friends' | 'requests'>('friends')
+
+  // Quill's NPC guide reads our active tab so it can show a more specific
+  // scene than the friends-intro default. Clears on unmount.
+  $effect(() => {
+    guide.setSubView(activeTab)
+    return () => guide.setSubView(null)
+  })
   let removingId     = $state<string | null>(null)
 
   onMount(async () => {

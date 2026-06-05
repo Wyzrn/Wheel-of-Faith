@@ -6,6 +6,7 @@
   import { toast } from '$lib/toast.svelte'
   import { MMR_RANKS, mmrRankFor, mmrProgressToNext, type MmrRank } from '$lib/mmrRanks'
   import { buildBattleCharacter, simulateTeamBattle } from '$lib/game/battle'
+  import { guide } from '$lib/guide/store.svelte'
   import type { SpinResult } from '$lib/session/types'
 
   type ClanRole = 'leader' | 'coLeader' | 'elder' | 'member' | 'none'
@@ -410,6 +411,13 @@
   const BADGE_CHOICES = ['⚔', '🛡', '🐉', '🔥', '⚡', '🌙', '✨', '👑', '🦅', '🐺', '💀', '⚓']
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
+  // Quill's NPC guide reads our active tab name so it can show a more
+  // specific scene than the route default. Clears on unmount.
+  $effect(() => {
+    guide.setSubView(view)
+    return () => guide.setSubView(null)
+  })
+
   onMount(async () => {
     await loadMyClan()
     loading = false

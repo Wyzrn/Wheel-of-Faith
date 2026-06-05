@@ -15,6 +15,7 @@
   import { setRivalsWs, getRivalsWs, clearRivalsWs } from '$lib/stores/rivalsWs'
   import { startOfflineRivals, getOfflineRivalsResult, clearOfflineRivals } from '$lib/stores/offlineRivals'
   import { tilt } from '$lib/actions/tilt'
+  import { guide } from '$lib/guide/store.svelte'
 
   // ── Phase state machine ────────────────────────────────────────────────────
   // 'preview' is a 4-second pre-battle screen showing both characters before
@@ -25,6 +26,13 @@
   type Phase = 'menu' | 'searching' | 'create_or_join' | 'waiting' | 'battle_ready' | 'preview' | 'battle' | 'forfeit_result' | 'ranks'
 
   let phase = $state<Phase>('menu')
+
+  // Quill's NPC guide reads our active phase so it can show a more specific
+  // scene than the rivals-intro default. Clears on unmount.
+  $effect(() => {
+    guide.setSubView(phase)
+    return () => guide.setSubView(null)
+  })
   let forfeitOutcome = $state<'win' | 'loss' | null>(null)
   // True while the active search/match is a ranked one — drives the
   // searching screen copy + lets us know whether the post-battle credit
