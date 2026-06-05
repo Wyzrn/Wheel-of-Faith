@@ -287,10 +287,29 @@
   // the right per-wheel scene (wheel-strength, wheel-race, etc.). Wheel
   // scenes are summon-only — auto-fire is suppressed by the layout's
   // effect — so this only changes what appears when the player asks.
-  // Cleared on unmount so home-overview returns when the page is gone.
+  //
+  // We also push the full SpinDefinition context so the scene synthesizer
+  // can name the specific wheel — "Rage Threshold" for a Zenithian, the
+  // exact enchantment, the named twist — instead of falling back to a
+  // generic "this is a race wheel" description.
   $effect(() => {
     guide.setSubView(currentDef?.category ?? null)
-    return () => guide.setSubView(null)
+    if (currentDef) {
+      guide.setSpinContext({
+        category:    currentDef.category,
+        displayName: currentDef.displayName,
+        raceWheelId: (currentDef as any).raceWheelId,
+        twistId:     (currentDef as any).twistKind,
+        forRace:     (currentDef as any).forRace
+                    ?? results.find(r => r.category === 'race')?.resultLabel,
+      })
+    } else {
+      guide.setSpinContext(null)
+    }
+    return () => {
+      guide.setSubView(null)
+      guide.setSpinContext(null)
+    }
   })
 
   function handleTutorialGotIt(nextStep: number) {

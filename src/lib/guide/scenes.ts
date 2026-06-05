@@ -1448,6 +1448,313 @@ const SUB_VIEW_SCENES: Record<string, Record<string, string>> = {
   },
 }
 
+// ────────────────────────────────────────────────────────────────────────
+//  Per-wheel dialogue synthesis
+//  When the player asks Quill mid-spin, the store passes the live
+//  SpinDefinition context (category, displayName, raceWheelId, twistId,
+//  forRace). For wheels that have variants — race-injected wheels (~110
+//  unique ids), twist pools (~20 unique ids) — the generic scene is
+//  overlaid with displayName-aware lines so dialogue names the specific
+//  wheel. Categories without variants (Strength, Power, Title, etc.)
+//  return the base scene unchanged.
+// ────────────────────────────────────────────────────────────────────────
+
+export interface SpinContextShape {
+  category: string
+  displayName?: string
+  raceWheelId?: string
+  twistId?: string
+  forRace?: string
+}
+
+// Light, evocative one-liners keyed by raceWheelId. Anything not listed
+// here falls back to a generic "a wheel of your race's lore" sentence
+// stitched together from displayName + forRace.
+const RACE_WHEEL_FLAVOR: Record<string, string> = {
+  rageThreshold:        "how easily your hero escalates — lower thresholds mean transformations trigger fast under pressure.",
+  sunExposure:          "the sun that bathes your Krystalian — red drains, yellow empowers, blue exceeds, solar-engorged blinds.",
+  geneticPotential:     "the bloodline strain your Krystalian carries — standard, designed for combat, hybrid, cloned, or Genesis-pure.",
+  soulBlade:            "the bond between your Shinigami and their soul-blade — sealed, awakened, twin-bound, true-form, or fully fused.",
+  aetheriumTier:        "the grade of aetherium burning in your Mechshifter's core — the higher, the more capable the form.",
+  wishOrbLineage:       "your Verdantian's role within the Wish-Orb tradition — Wish-Shaper, Sovereign, or some rarer kinship.",
+  bloodline:            "the strain of your bloodline — pure, mixed, or something stranger your kind admits with discomfort.",
+  bloodlinePurity:      "how undiluted your bloodline runs. Pure lines carry stronger racial gifts but invite stranger weaknesses.",
+  alpha:                "your rank within the pack — Omega is hard living, Alpha rules, the unique Alpha-of-Alphas dominates.",
+  apex:                 "your apex trait — the singular evolutionary edge your kind sharpened above all else.",
+  ascension:            "which path of ascension your hero walks — earthly, mortal-divine, divine, or beyond-divine.",
+  awakeningPotential:   "the ceiling of your awakening — how high your latent power may yet climb.",
+  blessing:             "which divine blessing rests on your hero. Light blessings comfort; rare blessings reshape.",
+  brainConsumption:     "how many minds your cerebrosaur has consumed — each one adding a thread of memory and skill.",
+  breathEvolution:      "the breathing style your warrior has cultivated — flame, water, mist, thunder, sun.",
+  catastrophe:          "the disaster your hero embodies — flood, quake, plague, drought, end-of-world.",
+  causeOfDeath:         "how your undead hero died, and what shadow that leaves on them now.",
+  choir:                "the choir of angels you sing with — seraphim, cherubim, throne, dominion.",
+  colossus:             "the colossal scale you operate at — building-tall, tower-tall, city-block, district, kaiju.",
+  conflict:             "the inner conflict that drives or breaks you. Few escape unaffected.",
+  conquest:             "your standing in the conquest — fresh soldier, captain, warlord, conqueror absolute.",
+  contract:             "the infernal contract you signed — and what it took, and what it gave.",
+  core:                 "the core that powers your construct — coal, steam, atomic, anti-matter, singularity.",
+  corruptedTech:        "the state of the corrupted tech inside you — booting, stable, glitching, sentient, awakened.",
+  corruption:           "how deep the corruption has set in — touched, infested, dominated, consumed.",
+  creationDomain:       "the domain your creator-god rules — fire, life, time, void, dream.",
+  creationElement:      "the primordial element woven through your existence.",
+  deathCounter:         "how many times you have died and returned. Each death sharpens — or breaks — the next.",
+  defect:               "the manufacturing defect that gives your hero their unique edge — or curse.",
+  destiny:              "the destiny written for your hero — chosen, accidental, refused, embraced.",
+  disaster:             "the disaster footprint your hero leaves wherever they go.",
+  divineDomain:         "the divine domain your hero presides over.",
+  divineDuty:           "the divine duty laid on your hero — the task they cannot refuse.",
+  dragonAspect:         "which dragon aspect runs in your bloodline — chromatic, metallic, primordial, or stranger.",
+  dragonBlood:          "how thick the dragon-blood runs in your veins.",
+  earthshaker:          "the earthshaking power level your hero carries.",
+  endurance:            "your hero's endurance reserves — how long they last in the fight.",
+  erasureDepth:         "how deeply your hero erases what they strike. Surface, soul, lineage, concept.",
+  eternalAge:           "the age of your eternal one — recent ascension, ancient, primordial, before-time.",
+  evolution:            "which evolutionary path your kind has taken.",
+  experiment:           "what experiment created your hero, and how much of that subject survived.",
+  fortune:              "the fortune that follows your hero — luck of fools, of nobles, of the damned.",
+  gadget:               "which gadget your hero relies on most — the signature tool.",
+  halo:                 "the halo of your celestial — its color, its weight, its meaning.",
+  hellfire:             "the hellfire grade of your demon — ember, blaze, inferno, abyssal.",
+  heritage:             "the heritage line you trace your hero to — common, noble, royal, divine.",
+  hoard:                "the hoard your dragon has gathered — modest pile, vault, mountain, world's worth.",
+  host:                 "how compatible the host body is with the spirit riding it.",
+  hunger:               "the hunger that drives your hero — for blood, for power, for peace.",
+  hunt:                 "the hunt your hero is on — small game, dangerous prey, gods themselves.",
+  implant:              "the implant grafted into your hero — what it does, and what it costs.",
+  instinct:             "the instinct your hero falls back on when thought fails.",
+  kaijuMutation:        "the kaiju mutation reshaping your hero.",
+  legacy:               "the legacy your hero inherits — title, debt, curse, blade.",
+  leviathan:            "your leviathan class — coastal terror, deep-water, ocean-scale, world-girdling.",
+  lineage:              "your draconic lineage's purity and station.",
+  loot:                 "the loot your hero carries — junk, treasure, artifact, relic of gods.",
+  madness:              "the madness touch your hero carries — whispers, visions, certainty.",
+  masteryLevel:         "your mastery level over your discipline — novice, adept, master, peerless.",
+  module:               "the module installed in your hero — combat, stealth, infiltration, prophecy.",
+  moonPhase:            "the moon phase your hero draws power from — new, waxing, full, blood.",
+  mutation:             "the mutation reshaping your hero. Slight, severe, total.",
+  mythType:             "which myth-species your hero belongs to.",
+  pack:                 "the pack rank or pack identity your hero holds.",
+  pact:                 "the pact your hero swore — and what cost it carries.",
+  paraMutation:         "the parasitic mutation working through your hero.",
+  planetOrigin:         "the planet your alien hero hails from.",
+  possession:           "how possessed your hero is, and by whom.",
+  predator:             "the predator type your hero is — stalker, ambush, pursuit, apex.",
+  primordialCatastrophe:"the primordial catastrophe domain your hero embodies.",
+  protocol:             "the combat protocol your construct follows.",
+  psychicEvolution:     "the psychic evolution stage your hero has reached.",
+  rage:                 "the rage your hero carries — banked, kindled, blazing, consuming.",
+  realityFracture:      "how fractured reality has become around your hero.",
+  realityLaw:           "the reality law your hero may bend or break.",
+  realm:                "the realm your hero hails from.",
+  reflex:               "the reflex speed your hero operates at.",
+  regeneration:         "the regeneration rate your hero recovers at.",
+  scrap:                "the scrap pile your construct was assembled from.",
+  seaKingPath:          "the sea-king path your hero walks — coastal, deep, abyssal, world.",
+  sin:                  "the sin your hero embodies — pride, wrath, envy, sloth, greed, gluttony, lust.",
+  soul:                 "the soul-anchor that keeps your hero tethered to themselves.",
+  survival:             "your hero's survival index — odds of walking away from any given fight.",
+  symMutation:          "the symbiotic mutation reshaping your hero.",
+  talent:               "the talent your hero has cultivated above all others.",
+  temperament:          "the temperament your hero brings into every encounter.",
+  tide:                 "the tide affinity that pulls at your hero.",
+  timeline:             "the timeline authority your hero holds — observer, traveler, anchor, fixer.",
+  titanGrowth:          "how titanic your hero has grown — tall, towering, world-spanning.",
+  trinket:              "the trinket your hero keeps — small, unremarkable, secretly important.",
+  upgradeTree:          "which upgrade tree your construct has pursued.",
+  vengeance:            "the vengeance your hero pursues — petty, blood-debt, dynastic, cosmic.",
+  voidAspect:           "the void aspect that lives inside your hero.",
+  voidMark:             "the void-mark burned into your hero's flesh.",
+  warpaint:             "the warpaint your hero wears — banner, ritual, mourning.",
+  warriorClan:          "the warrior clan your hero belongs to.",
+  worship:              "the worship your hero commands — none, local, regional, worldwide.",
+  abyss:                "how deep into the abyss your hero descends.",
+  adaptation:           "the adaptation your hero has made to survive.",
+  alienMutation:        "the alien bio-form your hero carries.",
+  altForm:              "the alternate form your shifter takes.",
+  ancientInstinct:      "the ancient instinct your hero still obeys.",
+  bountyContract:       "the bounty contract your hero hunts under.",
+  cosmicScope:          "the cosmic scope your hero operates at.",
+  curseDomain:          "the cursed domain your hero rules.",
+  divineParent:         "the divine parent who fathered or mothered your hero.",
+  dwarfClan:            "the dwarf clan your hero is sworn to.",
+  insanityTier:         "how unhinged your hero has become.",
+  mutantOrigin:         "the mutant origin behind your hero's powers.",
+  powerLevel:           "your hero's power level — the meme stat made real.",
+  psionicClass:         "your hero's psionic class.",
+  standStats:           "the stats of your hero's Stand.",
+  temporalEra:          "the temporal era your hero hails from.",
+  undeadCommand:        "the command your undead hero exerts over the dead.",
+  vampireAge:           "how ancient your vampire hero is.",
+  wildMagic:            "the wild magic your hero channels.",
+  worshipperCount:      "how many worshippers fuel your god-hero.",
+  chaosFactor:          "the chaos factor your hero brings into every situation.",
+  chaosRoll:            "the chaos roll dictating your hero's outcomes.",
+  benderElement:        "which element your bender commands.",
+  breathingStyle:       "the breathing style your warrior practices.",
+}
+
+// Twist titles map to their flavor. If we don't have a specific entry we
+// just stitch from twistId / displayName.
+const TWIST_FLAVOR: Record<string, string> = {
+  worshipperCount: "How many believers fuel your god. More faith, more might.",
+  powerLevel:      "Your power level. The meme stat, real here. Base form is humble; full Zenithian Instinct is absurd.",
+  benderElement:   "Which element your bender commands — water, earth, fire, or sky.",
+  insanityTier:    "How unhinged your hero has become. Quirky, eccentric, paranoid, broken, transcendent.",
+  temporalEra:     "The era your time-walker hails from. Ancient, medieval, modern, future, beyond-time.",
+  chaosRoll:       "A pure-chaos roll. Whatever lands, lands.",
+  divineParent:    "Which god fathered or mothered your demigod.",
+  cosmicScope:     "The cosmic scale your hero operates at.",
+  mutantOrigin:    "How your mutant got their powers — bite, birth, lab, cosmic ray.",
+  curseDomain:     "Which cursed domain your hero rules.",
+  vampireAge:      "How old your vampire is. Each century compounds.",
+  moonPhase:       "Which lunar phase empowers your hero.",
+  dragonHoard:     "The size of your dragon's hoard.",
+  dwarfClan:       "Which dwarven clan your hero swore to.",
+  standStats:      "Your hero's Stand — its power, speed, range, precision, and persistence.",
+  bountyContract:  "The bounty your hero hunts under.",
+  breathingStyle: "The breathing style your warrior cultivates.",
+  wildMagic:       "The wild magic your hero channels — unstable, unpredictable, devastating.",
+  psionicClass:    "Your hero's psionic class.",
+  chaosFactor:     "The chaos factor your hero embodies.",
+  undeadCommand:   "The command your undead hero holds over the dead.",
+}
+
+// Categories whose generic scene gets overlaid with a context-aware
+// version when guide.spinContext is set. Others use their static scene
+// as-is (e.g. wheel-strength always describes Strength).
+const CATEGORIES_WITH_VARIANTS = new Set([
+  'raceWheel',
+  'twistSpin',
+  'weaponEnchantment',
+  'armorEnchantment',
+  'devilFruitName',
+  'racialAbility',
+  'archetypeAbility',
+  'power',
+  'weapon',
+  'armor',
+  'limitBreak',
+  'limitBreakLevel',
+])
+
+// Synthesize a context-aware scene for the active wheel. Returns null if
+// no contextual override is wanted (caller uses the base scene).
+export function synthesizeSpinScene(
+  sceneId: string,
+  base: GuideScene,
+  ctx: SpinContextShape,
+): GuideScene | null {
+  if (!CATEGORIES_WITH_VARIANTS.has(ctx.category)) return null
+
+  const dn = ctx.displayName?.trim() || base.lines[0]?.text || 'this wheel'
+  const race = ctx.forRace?.trim()
+
+  // Race-injected wheels — every unique injected wheel id gets a tailored
+  // description, falling back to a generic but still race-named line.
+  if (ctx.category === 'raceWheel' && ctx.raceWheelId) {
+    const flavor = RACE_WHEEL_FLAVOR[ctx.raceWheelId]
+    const raceLine = race
+      ? `${dn}. A wheel drawn from ${race} lore — only ${race} characters spin it.`
+      : `${dn}. A race-specific wheel — only your kind spins it.`
+    const detail = flavor
+      ? `It determines ${flavor}`
+      : "Whatever lands becomes a permanent part of your hero's identity, layered atop their race."
+    return {
+      id: sceneId,
+      menuLabel: `What is the ${dn} wheel?`,
+      lines: [
+        { text: raceLine, mood: 'pleased' },
+        { text: detail,   mood: 'neutral' },
+        { text: "The segments before you are the full range of what fortune allows here. Spin and accept.", mood: 'wry' },
+      ],
+      choices: [{ label: 'Spin!', action: 'dismiss', color: '#f0c040' }],
+    }
+  }
+
+  // Twist spins — race-flavored "wildcards" with their own pool.
+  if (ctx.category === 'twistSpin') {
+    const flavor = ctx.twistId ? TWIST_FLAVOR[ctx.twistId] : undefined
+    return {
+      id: sceneId,
+      menuLabel: `What is the ${dn} wheel?`,
+      lines: [
+        { text: `${dn}. A twist drawn from your race's lore.`, mood: 'pleased' },
+        { text: flavor ?? "Each twist is a single permanent trait, layered on top of everything else fate already wrote.", mood: 'neutral' },
+        { text: "Spin. The wheel decides which thread of your race's tradition takes hold.", mood: 'wry' },
+      ],
+      choices: [{ label: 'Spin!', action: 'dismiss', color: '#f0c040' }],
+    }
+  }
+
+  // Enchantment wheels — weapon vs armor. Synthesize from the live display
+  // name so the player sees "Weapon Enchantment" or whatever specific name
+  // was used, while Quill explains what enchantments are.
+  if (ctx.category === 'weaponEnchantment') {
+    return {
+      id: sceneId,
+      menuLabel: `What does ${dn} do?`,
+      lines: [
+        { text: `${dn}. A magical layer woven into your weapon.`, mood: 'pleased' },
+        { text: "It grants an elemental affinity, a passive trait, or a hidden edge — read the segments to see the range.", mood: 'neutral' },
+        { text: "High-grade weapons may earn multiple enchantments. Yours has earned at least one.", mood: 'wry' },
+      ],
+      choices: [{ label: 'Spin!', action: 'dismiss', color: '#f0c040' }],
+    }
+  }
+
+  if (ctx.category === 'armorEnchantment') {
+    return {
+      id: sceneId,
+      menuLabel: `What does ${dn} do?`,
+      lines: [
+        { text: `${dn}. A passive layer set into your armor.`, mood: 'pleased' },
+        { text: "Damage reduction, elemental resistance, regeneration — the kinds of effect that turn a long fight your way.", mood: 'neutral' },
+        { text: "Slot count rises with grade. SS+ armor may carry several enchantments at once.", mood: 'wry' },
+      ],
+      choices: [{ label: 'Spin!', action: 'dismiss', color: '#f0c040' }],
+    }
+  }
+
+  // Devil Fruit names — race-locked named powers.
+  if (ctx.category === 'devilFruitName') {
+    return {
+      id: sceneId,
+      menuLabel: `What is ${dn}?`,
+      lines: [
+        { text: `${dn}. A named fruit, granting a specific power-set.`, mood: 'pleased' },
+        { text: race ? `Only ${race} may eat. The fruit's name is half the flavor; the power it carries is the rest.` : "Race-locked — only certain kinds may eat. The name is half the flavor.", mood: 'neutral' },
+        { text: "Whatever the wheel lands on becomes part of your hero's signature, written into the card.", mood: 'wry' },
+      ],
+      choices: [{ label: 'Spin!', action: 'dismiss', color: '#f0c040' }],
+    }
+  }
+
+  // The "you rolled wheel N of M" categories. We keep the generic scene
+  // but rename the menuLabel to match the displayName so a player asking
+  // about e.g. "Racial Ability 2" sees the specific name, not a generic.
+  if (
+    ctx.category === 'racialAbility' ||
+    ctx.category === 'archetypeAbility' ||
+    ctx.category === 'power' ||
+    ctx.category === 'weapon' ||
+    ctx.category === 'armor' ||
+    ctx.category === 'limitBreak' ||
+    ctx.category === 'limitBreakLevel'
+  ) {
+    return {
+      ...base,
+      menuLabel: `What is the ${dn} wheel?`,
+      lines: [
+        { text: `${dn}.`, mood: base.lines[0]?.mood ?? 'neutral' },
+        ...base.lines,
+      ],
+    }
+  }
+
+  return null
+}
+
 // Resolve the most specific scene id for a route + sub-view pair. Used by
 // both the auto-fire (first-visit) effect and the "Ask Quill" button. The
 // sub-view takes priority if mapped, then the route prefix, then the

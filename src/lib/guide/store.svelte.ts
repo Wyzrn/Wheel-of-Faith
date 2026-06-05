@@ -6,7 +6,20 @@
 // auto-fire scenes don't re-fire on every visit). The player can always
 // re-summon a seen scene manually via the help portrait.
 
-import { SCENES, type GuideScene } from './scenes'
+import { SCENES, type GuideScene, synthesizeSpinScene } from './scenes'
+
+// Live context for whatever spin is currently in front of the player. The
+// main spin page (/+page.svelte) keeps this updated; it lets Quill describe
+// the *specific* wheel — including the displayName of a race-injected
+// wheel like "Wish-Orb Lineage" or a twist like "Power Level" — rather
+// than falling back to a generic category description.
+export type SpinContext = {
+  category: string
+  displayName?: string
+  raceWheelId?: string
+  twistId?: string
+  forRace?: string
+}
 
 const SEEN_KEY = 'wof_guide_seen_v1'
 
@@ -35,10 +48,21 @@ function createGuide() {
   let activeSceneId = $state<string | null>(null)
   let lineIndex = $state(0)
   let subView = $state<string | null>(null)
+  let spinContext = $state<SpinContext | null>(null)
   const seen = $state(loadSeen())
 
   function activeScene(): GuideScene | null {
-    return activeSceneId ? SCENES[activeSceneId] ?? null : null
+    if (!activeSceneId) return null
+    const base = SCENES[activeSceneId] ?? null
+    if (!base) return null
+    // For wheel-* scenes, layer the live spin context on top of the
+    // generic template so the dialogue names the specific wheel (e.g.
+    // "Rage Threshold" for a Zenithian instead of just "a race wheel").
+    if (activeSceneId.startsWith('wheel-') && spinContext) {
+      const synth = synthesizeSpinScene(activeSceneId, base, spinContext)
+      if (synth) return synth
+    }
+    return base
   }
 
   // Open a scene by id. Resets line index. If `force` is false (default) and
@@ -88,11 +112,19 @@ function createGuide() {
     subView = v
   }
 
+  // Main spin page registers the full SpinDefinition context so per-wheel
+  // dialogue can name the specific wheel — even race-injected wheels like
+  // "Wish-Orb Lineage" or twists like "Power Level."
+  function setSpinContext(ctx: SpinContext | null) {
+    spinContext = ctx
+  }
+
   return {
     get activeSceneId() { return activeSceneId },
     get lineIndex() { return lineIndex },
     get scene() { return activeScene() },
     get subView() { return subView },
+    get spinContext() { return spinContext },
     get atLastLine() {
       const s = activeScene()
       return s ? lineIndex >= s.lines.length - 1 : false
@@ -102,6 +134,7 @@ function createGuide() {
     next,
     close,
     setSubView,
+    setSpinContext,
     resetSeen,
   }
 }
