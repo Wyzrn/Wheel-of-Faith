@@ -298,6 +298,44 @@ export async function clanRoutes(app: FastifyInstance) {
     reply.send({ ok: true })
   })
 
+  // ── DELETE /clans/:id/request — withdraw a pending application ────────────
+  // Player-initiated cancel. Idempotent: succeeds even if no request existed.
+  app.delete('/clans/:id/request', async (req: any, reply) => {
+    if (!req.userId) return reply.status(401).send({ error: 'login required' })
+    const { id } = req.params as { id: string }
+    const clan = await Clan.findById(id)
+    if (!clan) return reply.status(404).send({ error: 'clan not found' })
+    const before = clan.joinRequests.length
+    clan.joinRequests = clan.joinRequests.filter(r => r.userId.toString() !== req.userId) as any
+    if (clan.joinRequests.length !== before) await clan.save()
+    reply.send({ ok: true })
+  })
+
+  // ── GET /clans/my-applications — outgoing pending requests for this user ──
+  // Source-of-truth: scan Clan.joinRequests rather than denormalizing onto
+  // the User doc. Clan count is small (hundreds at most) so this stays cheap.
+  app.get('/clans/my-applications', async (req: any, reply) => {
+    if (!req.userId) return reply.status(401).send({ error: 'login required' })
+    const uOid = new mongoose.Types.ObjectId(req.userId)
+    const clans = await Clan.find({ 'joinRequests.userId': uOid })
+      .select('name tag badge joinType memberIds maxMembers joinRequests')
+      .lean()
+    const applications = clans.map(c => {
+      const req = c.joinRequests.find((r: any) => r.userId.toString() === uOid.toString())
+      return {
+        clanId: c._id.toString(),
+        name: c.name,
+        tag: c.tag,
+        badge: c.badge,
+        joinType: c.joinType,
+        memberCount: c.memberIds.length,
+        maxMembers: c.maxMembers,
+        requestedAt: req?.requestedAt ?? null,
+      }
+    }).sort((a, b) => (b.requestedAt ? new Date(b.requestedAt).getTime() : 0) - (a.requestedAt ? new Date(a.requestedAt).getTime() : 0))
+    reply.send({ applications })
+  })
+
   // ── POST /clans/:id/requests/:userId/:action — accept / decline ────────────
   app.post('/clans/:id/requests/:userId/:action', {
     config: { rateLimit: { max: 30, timeWindow: '1m' } },

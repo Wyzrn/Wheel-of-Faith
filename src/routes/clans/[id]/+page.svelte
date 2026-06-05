@@ -22,6 +22,8 @@
   let loading = $state(true)
   let error = $state<string | null>(null)
   let myClanId = $state<string | null>(null)
+  let myClanName = $state<string | null>(null)
+  let alreadyRequested = $state(false)
   let actionPending = $state(false)
 
   onMount(async () => {
@@ -31,18 +33,36 @@
       if (!res.ok) { error = 'Clan not found'; return }
       const d = await res.json()
       clan = d.clan
-      // Check if the viewer already has a clan (to disable Join CTA)
       if (auth.loggedIn) {
-        const mineRes = await fetch(apiUrl('/api/clans/mine'), { credentials: 'include' })
+        const [mineRes, appsRes] = await Promise.all([
+          fetch(apiUrl('/api/clans/mine'), { credentials: 'include' }),
+          fetch(apiUrl('/api/clans/my-applications'), { credentials: 'include' }),
+        ])
         if (mineRes.ok) {
           const m = await mineRes.json()
           myClanId = m.clan?._id ?? null
+          myClanName = m.clan?.name ?? null
+        }
+        if (appsRes.ok) {
+          const a = await appsRes.json()
+          alreadyRequested = Array.isArray(a.applications) && a.applications.some((x: any) => x.clanId === id)
         }
       }
     } catch {
       error = 'Could not load clan.'
     } finally { loading = false }
   })
+
+  async function cancelRequest() {
+    if (!clan || actionPending) return
+    actionPending = true
+    const res = await fetch(apiUrl(`/api/clans/${clan._id}/request`), { method: 'DELETE', credentials: 'include' })
+    const data = await res.json().catch(() => ({}))
+    actionPending = false
+    if (!res.ok) { toast.error(data.error ?? 'Failed to cancel'); return }
+    alreadyRequested = false
+    toast.success('Request cancelled')
+  }
 
   async function join() {
     if (!clan || actionPending) return
@@ -53,10 +73,12 @@
     actionPending = false
     if (!res.ok) { toast.error(data.error ?? 'Failed'); return }
     if (clan.joinType === 'invite') {
+      alreadyRequested = true
       toast.success('Join request sent')
     } else {
       toast.success(`Joined ${clan.name}`)
       myClanId = clan._id
+      myClanName = clan.name
     }
   }
 
@@ -142,18 +164,51 @@
           </div>
         </div>
 
-        <!-- Join CTA — hidden if already in this clan, or in a different one, or closed -->
-        {#if auth.loggedIn && !myClanId && clan.joinType !== 'closed' && clan.memberCount < clan.maxMembers}
-          <button onclick={join} disabled={actionPending} data-fx="big"
-            class="w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest"
-            style="background: rgba(52,211,153,0.10); border: 1.5px solid rgba(52,211,153,0.40); color: #34d399; cursor: pointer;">
-            {actionPending ? '…' : clan.joinType === 'invite' ? 'Request to Join' : 'Join Clan'}
-          </button>
+        <!-- Join CTA — always shows SOMETHING explaining the state so the
+             button never silently disappears (a playtest pain point). -->
+        {#if !auth.loggedIn}
+          <a href="/login" class="block w-full py-2.5 rounded-xl font-mono text-xs text-center"
+            style="background: rgba(90,214,239,0.08); border: 1px solid rgba(90,214,239,0.25); color: #5ad6ef; text-decoration: none;">
+            Log in to join a clan →
+          </a>
         {:else if myClanId === clan._id}
           <a href="/clan" class="block w-full py-2.5 rounded-xl font-mono text-xs text-center"
             style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.22); color: #f0c040; text-decoration: none;">
             You're a member — open clan home →
           </a>
+        {:else if myClanId}
+          <div class="w-full py-2.5 rounded-xl font-mono text-xs text-center"
+            style="background: rgba(154,144,123,0.08); border: 1px solid rgba(154,144,123,0.25); color: #9a907b;">
+            You're already in {myClanName ? `[${myClanName}]` : 'a clan'}. Leave it first to join another.
+          </div>
+        {:else if clan.joinType === 'closed'}
+          <div class="w-full py-2.5 rounded-xl font-mono text-xs text-center"
+            style="background: rgba(154,144,123,0.08); border: 1px solid rgba(154,144,123,0.25); color: #9a907b;">
+            This clan is closed to new members.
+          </div>
+        {:else if clan.memberCount >= clan.maxMembers}
+          <div class="w-full py-2.5 rounded-xl font-mono text-xs text-center"
+            style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #f87171;">
+            This clan is full ({clan.memberCount}/{clan.maxMembers}).
+          </div>
+        {:else if alreadyRequested}
+          <div class="flex gap-2 items-stretch">
+            <div class="flex-1 py-2.5 rounded-xl font-mono text-xs text-center"
+              style="background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.25); color: #f0c040;">
+              Request pending — leader review
+            </div>
+            <button onclick={cancelRequest} disabled={actionPending}
+              class="px-3 rounded-xl font-mono text-[10px] uppercase tracking-wider"
+              style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #f87171; cursor: pointer;">
+              {actionPending ? '…' : 'Cancel'}
+            </button>
+          </div>
+        {:else}
+          <button onclick={join} disabled={actionPending} data-fx="big"
+            class="w-full py-3 rounded-xl font-bold font-mono text-sm tracking-widest"
+            style="background: rgba(52,211,153,0.10); border: 1.5px solid rgba(52,211,153,0.40); color: #34d399; cursor: pointer;">
+            {actionPending ? '…' : clan.joinType === 'invite' ? 'Request to Join' : 'Join Clan'}
+          </button>
         {/if}
       </div>
 

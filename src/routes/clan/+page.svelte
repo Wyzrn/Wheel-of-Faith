@@ -26,7 +26,15 @@
   }
 
   // ── State ──────────────────────────────────────────────────────────────────
-  let view = $state<'mine' | 'browse' | 'create' | 'leaderboard' | 'requests' | 'settings' | 'chat' | 'topChars' | 'teams' | 'ranks' | 'war' | 'warStart'>('mine')
+  let view = $state<'mine' | 'browse' | 'create' | 'leaderboard' | 'applications' | 'requests' | 'settings' | 'chat' | 'topChars' | 'teams' | 'ranks' | 'war' | 'warStart'>('mine')
+
+  // ── My outgoing applications (pending requests this user sent) ─────────────
+  type Application = {
+    clanId: string; name: string; tag: string; badge: string; joinType: string
+    memberCount: number; maxMembers: number; requestedAt: string | null
+  }
+  let applications = $state<Application[]>([])
+  let applicationsLoading = $state(false)
 
   // ── Guild war (Phase 2) ────────────────────────────────────────────────
   type WarSize = 5 | 10 | 15 | 20
@@ -406,6 +414,9 @@
     await loadMyClan()
     loading = false
     if (auth.loggedIn) {
+      // Pre-load outgoing applications so the no-clan section can show a
+      // "Pending Requests (N)" pill without a second roundtrip.
+      if (!myClan) loadApplications()
       fetch(apiUrl('/api/challenges/progress'), {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -445,6 +456,30 @@
     if (leaderboard.length) return
     const res = await fetch(apiUrl('/api/clans/leaderboard'))
     if (res.ok) leaderboard = (await res.json()).clans ?? []
+  }
+
+  // ── My Applications — outgoing pending requests this user sent. Shown on
+  // the no-clan home so players can see "did my request go through?" without
+  // navigating back to each clan profile. Source: scan of joinRequests.
+  async function loadApplications() {
+    if (!auth.loggedIn) return
+    applicationsLoading = true
+    try {
+      const res = await fetch(apiUrl('/api/clans/my-applications'), { credentials: 'include' })
+      if (res.ok) applications = (await res.json()).applications ?? []
+    } finally {
+      applicationsLoading = false
+    }
+  }
+  async function openApplications() {
+    view = 'applications'
+    await loadApplications()
+  }
+  async function cancelApplication(clanId: string) {
+    const res = await fetch(apiUrl(`/api/clans/${clanId}/request`), { method: 'DELETE', credentials: 'include' })
+    if (!res.ok) { toast.error('Failed to cancel'); return }
+    applications = applications.filter(a => a.clanId !== clanId)
+    toast.success('Request cancelled')
   }
 
   // Toast helper — delegates to the global toast store so messages get the
@@ -817,11 +852,16 @@
                 Settings
               </button>
             {/if}
-            {#if canSeeRequests && myClan.joinType === 'invite' && myClan.joinRequests.length > 0}
+            {#if canSeeRequests && myClan.joinType === 'invite'}
+              <!-- Always visible for leaders/co/elders so the inbox is
+                   discoverable even when the queue is empty. Badge only
+                   shows when there are pending requests. -->
               <button onclick={() => view = 'requests'} data-fx="big" class="text-xs px-3 py-1.5 rounded-lg font-mono font-bold relative" style="background: rgba(90,214,239,0.10); border: 1px solid rgba(90,214,239,0.30); color: #5ad6ef;">
                 <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: -2px;">mail</span>
                 Pending Requests
-                <span class="absolute -top-1 -right-1 px-1.5 rounded-full text-[9px] font-bold" style="background: #f0c040; color: #1a0e00;">{myClan.joinRequests.length}</span>
+                {#if myClan.joinRequests.length > 0}
+                  <span class="absolute -top-1 -right-1 px-1.5 rounded-full text-[9px] font-bold" style="background: #f0c040; color: #1a0e00;">{myClan.joinRequests.length}</span>
+                {/if}
               </button>
             {/if}
             <!-- Top Characters tab — visible to every member. -->
@@ -912,14 +952,56 @@
           {/if}
         </div>
       {:else}
-        <!-- Not in a guild: create / browse CTAs -->
+        <!-- Not in a guild: create / browse CTAs + pending-applications tile -->
         <div class="text-center py-8 mb-6">
           <span class="material-symbols-outlined text-5xl mb-3 block" style="color: #4e4635; font-variation-settings: 'FILL' 1;">shield</span>
           <p style="font-family: 'Cinzel', serif; color: #9a907b; margin-bottom: 8px;">You are not in a guild.</p>
-          <div class="flex gap-3 justify-center mt-4">
+          <div class="flex gap-3 justify-center mt-4 flex-wrap">
             <button onclick={() => view = 'create'} data-fx="big" class="px-5 py-2.5 rounded-lg font-bold text-sm" style="font-family: 'Cinzel', serif; background: rgba(240,192,64,0.12); border: 1px solid rgba(240,192,64,0.3); color: #f0c040;">Create Guild</button>
             <button onclick={browseClans} data-fx="big" class="px-5 py-2.5 rounded-lg font-bold text-sm" style="font-family: 'Cinzel', serif; background: rgba(90,214,239,0.08); border: 1px solid rgba(90,214,239,0.2); color: #5ad6ef;">Browse Clans</button>
           </div>
+          {#if applications.length > 0}
+            <button onclick={openApplications} data-fx="big"
+              class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold relative"
+              style="background: rgba(240,192,64,0.10); border: 1px solid rgba(240,192,64,0.30); color: #f0c040;">
+              <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: -2px;">outbox</span>
+              My Pending Requests
+              <span class="px-1.5 rounded-full text-[9px] font-bold" style="background: #f0c040; color: #1a0e00;">{applications.length}</span>
+            </button>
+          {/if}
+        </div>
+      {/if}
+
+    {:else if view === 'applications'}
+      <div class="flex items-center gap-2 mb-4">
+        <button onclick={() => view = 'mine'} class="font-mono text-[10px] uppercase tracking-wider px-2 py-1 rounded" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #9a907b;">← Back</button>
+        <h2 class="flex-1" style="font-family: 'Cinzel', serif; font-size: 1rem; color: #ffdf96;">My Pending Requests</h2>
+      </div>
+      {#if applicationsLoading}
+        <div class="animate-pulse rounded-2xl h-24" style="background: rgba(255,255,255,0.04);"></div>
+      {:else if applications.length === 0}
+        <div class="rounded-xl px-5 py-8 text-center" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
+          <p class="font-mono text-xs" style="color: #4e4635;">No pending requests.</p>
+          <button onclick={browseClans} class="mt-3 font-mono text-xs px-3 py-1.5 rounded-lg" style="background: rgba(90,214,239,0.08); border: 1px solid rgba(90,214,239,0.25); color: #5ad6ef;">Browse Clans →</button>
+        </div>
+      {:else}
+        <div class="flex flex-col gap-2">
+          {#each applications as app}
+            <div class="rounded-xl px-3 py-3 flex items-center gap-3" style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(240,192,64,0.18);">
+              <div class="shrink-0 flex items-center justify-center rounded-lg" style="width: 38px; height: 38px; background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.20); font-size: 18px;">{app.badge || '⚔'}</div>
+              <a href={`/clans/${app.clanId}`} class="flex-1 min-w-0" style="text-decoration: none;">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-mono font-black text-[10px] px-1.5 py-0.5 rounded" style="background: rgba(240,192,64,0.10); border: 1px solid rgba(240,192,64,0.20); color: #f0c040;">[{app.tag}]</span>
+                  <p class="font-semibold text-sm truncate" style="font-family: 'Cinzel', serif; color: #e9dfeb;">{app.name}</p>
+                </div>
+                <div class="flex gap-2 items-center mt-1 flex-wrap">
+                  <span class="font-mono text-[10px]" style="color: #4e4635;">{app.memberCount}/{app.maxMembers}</span>
+                  <span class="font-mono text-[10px]" style="color: #f0c040;">Sent {app.requestedAt ? relTime(app.requestedAt) : '—'}</span>
+                </div>
+              </a>
+              <button onclick={() => cancelApplication(app.clanId)} class="font-mono text-[10px] uppercase tracking-wider px-2 py-1.5 rounded shrink-0" style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); color: #f87171;">Cancel</button>
+            </div>
+          {/each}
         </div>
       {/if}
 
@@ -1001,8 +1083,22 @@
       <div class="flex flex-col gap-2">
         {#each clans as clan}
           {@const jt = JOIN_META[clan.joinType]}
-          <!-- Guild tile is now a link to /clans/[id]. Join action moved to
-               the public clan page so the click intent stays predictable. -->
+          {@const isFull = clan.memberCount >= clan.maxMembers}
+          {@const isMine = !!(myClan && myClan._id === clan._id)}
+          {@const cta = isMine
+            ? { text: 'Your Clan',   bg: 'rgba(90,214,239,0.14)',  border: 'rgba(90,214,239,0.30)',  color: '#5ad6ef' }
+            : myClan
+              ? { text: 'In a clan', bg: 'rgba(154,144,123,0.10)', border: 'rgba(154,144,123,0.25)', color: '#9a907b' }
+              : clan.joinType === 'closed'
+                ? { text: 'Closed',  bg: 'rgba(154,144,123,0.10)', border: 'rgba(154,144,123,0.25)', color: '#9a907b' }
+                : isFull
+                  ? { text: 'Full',  bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.28)', color: '#f87171' }
+                  : clan.joinType === 'invite'
+                    ? { text: 'Request', bg: 'rgba(240,192,64,0.14)', border: 'rgba(240,192,64,0.30)', color: '#f0c040' }
+                    : { text: 'Join',    bg: 'rgba(52,211,153,0.14)', border: 'rgba(52,211,153,0.32)', color: '#34d399' }}
+          <!-- Click goes to the public clan page where the actual join/request
+               action is gated. The CTA pill makes the user's expected next
+               action visible so the click intent stays predictable. -->
           <a href={`/clans/${clan._id}`} data-fx="big"
             class="rounded-xl px-3 py-3 flex items-center gap-3 transition-all active:scale-98"
             style="background: linear-gradient(180deg, #13121c, #1e1a22); border: 1px solid rgba(78,70,53,0.3); text-decoration: none;">
@@ -1020,7 +1116,8 @@
                 {/if}
               </div>
             </div>
-            <span class="material-symbols-outlined shrink-0" style="font-size: 18px; color: #4e4635;">chevron_right</span>
+            <span class="font-mono text-[10px] font-bold uppercase tracking-wider shrink-0 px-2 py-1 rounded"
+              style="background: {cta.bg}; border: 1px solid {cta.border}; color: {cta.color};">{cta.text}</span>
           </a>
         {:else}
           <p class="text-center py-8 font-mono text-xs" style="color: #4e4635;">No guilds found.</p>
