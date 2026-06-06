@@ -896,8 +896,7 @@
                          decisions before challenging). -->
                     <a href={`/users/${encodeURIComponent(m.username)}`}
                       class="font-mono text-xs truncate"
-                      style="color: #e9dfeb; text-decoration: none;"
-                      onclick={(e) => e.stopPropagation()}>{m.username}</a>
+                      style="color: #e9dfeb; text-decoration: none;">{m.username}</a>
                     <span class="font-mono text-[9px] px-1 rounded" style="background: {meta.color}1f; color: {meta.color};">{meta.label}</span>
                   </div>
                   <span class="font-mono text-[10px]" style="color: #4e4635;">{m.rivalsWins}W</span>
@@ -1258,8 +1257,7 @@
                   {c.race} · {c.archetype} ·
                   <a href={`/users/${encodeURIComponent(c.ownerUsername)}`}
                      class="hover:underline"
-                     style="color: #a78bfa; text-decoration: none;"
-                     onclick={(e) => e.stopPropagation()}>@{c.ownerUsername}</a>
+                     style="color: #a78bfa; text-decoration: none;">@{c.ownerUsername}</a>
                 </p>
               </div>
               <span class="font-mono text-xs font-bold shrink-0" style="color: #ffdf96;" title="Overall score">{c.overall_score}</span>
