@@ -1,6 +1,7 @@
 <script lang="ts">
   import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
+  import { goto } from '$app/navigation'
   import { scoreTier } from '$lib/game/scoreTier'
 
   type GalleryChar = {
@@ -276,7 +277,13 @@
 
   function startBattle(myId: string) {
     if (!challengeTarget) return
-    window.location.href = `/battle?t1=${myId}&t2=${challengeTarget.shareId}`
+    // Use SvelteKit goto() rather than window.location.href so the
+    // navigation is routed client-side. On itch.io (adapter-static) a
+    // raw window.location.href to a SvelteKit route resolves against
+    // html-classic.itch.zone's root, where no `/battle` URL exists, and
+    // the CDN returns "AccessDenied" — that's the source of the access
+    // denied errors players see when challenging from the gallery.
+    goto(`/battle?t1=${myId}&t2=${challengeTarget.shareId}`)
   }
 </script>
 
