@@ -68,11 +68,21 @@ function createGuide() {
   // Open a scene by id. Resets line index. If `force` is false (default) and
   // the scene has been seen, this is a no-op — useful for the
   // first-visit-on-route triggers where you only want to auto-fire once.
+  //
+  // Marks the scene as seen on open (not just on close). This way a player
+  // who auto-fires a scene, then navigates away without dismissing it, then
+  // navigates back, doesn't get the same scene re-popping every time. The
+  // portrait button uses force=true to bypass this check and re-show any
+  // already-seen scene on demand.
   function open(sceneId: string, force = false) {
     if (!SCENES[sceneId]) return
     if (!force && seen.has(sceneId)) return
     activeSceneId = sceneId
     lineIndex = 0
+    if (!seen.has(sceneId)) {
+      seen.add(sceneId)
+      saveSeen(seen)
+    }
   }
 
   // Advance to the next line, or close if we're at the end (and no choices).

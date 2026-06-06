@@ -79,20 +79,24 @@ export const SCENES: Record<string, GuideScene> = {
     ],
   },
 
-  // What the home screen IS — main hub, the wheel, the nav.
+  // The main menu — describes every tile on the gold panel of verbs that
+  // sits in the centre of the home screen.
   'home-overview': {
     id: 'home-overview',
-    menuLabel: 'What is this screen?',
+    menuLabel: 'What is in this menu?',
     lines: [
-      { text: "Welcome back, Spinner. This is the heart — every road begins from here.", mood: 'neutral' },
-      { text: "The great wheel sits at center. Tap it to begin a new spin session: race first, then archetype, then stats, then powers, then weapons and weaknesses and a title to close the ledger.", mood: 'neutral' },
-      { text: "The bar below holds your halls: Home returns you here, Fighters keeps every hero you've forged, Friends lists other Spinners you've met, the gear is for Settings.", mood: 'neutral' },
-      { text: "And there — top-center, the gold menu — opens the deeper paths: Ascension, Rivals, the Arcane Shop, Daily Challenges, the Hall of Champions.", mood: 'wry' },
-      { text: "Tap my portrait on any screen and I'll explain it. Or read the full guide if you want every system in depth, ink and all.", mood: 'pleased' },
+      { text: "Welcome back, Spinner. The main hall — every path opens from this menu.", mood: 'pleased' },
+      { text: "Spin the Wheel forges a fresh hero. Twenty-three wheels, race to title, in sequence. Your last spun character is shown in a panel beside it.", mood: 'neutral' },
+      { text: "Rivals Mode pits one of your heroes against another player's — local, online, or a bot. Wins climb your rank.", mood: 'urgent' },
+      { text: "Ascension is the long campaign. Twenty worlds, four save slots, daily spins, crystal drops, an endless mode beyond the climb.", mood: 'grave' },
+      { text: "The Arcane Shop trades Fate Shards — those gold diamonds at the top of the screen — for Gamepasses and Stat Crystals. Permanent boons, every one.", mood: 'neutral' },
+      { text: "Daily Challenges hands out small tasks each day. Three of them, up to one hundred seventy-five Shards if you finish all.", mood: 'pleased' },
+      { text: "Hall of Champions ranks every Spinner by their Rivals victories. Hall of Fates collects characters players have published for the world to see.", mood: 'wry' },
+      { text: "The bar below holds the smaller halls — Home returns here, Fighters keeps every hero you've forged, Friends lists allies, Settings is for the practical matters.", mood: 'neutral' },
+      { text: "Tap my portrait on any screen and I'll explain it. That is the whole of the deal.", mood: 'pleased' },
     ],
     choices: [
-      { label: 'Read the full guide', action: 'navigate', target: '/how-to-play', color: '#a78bfa' },
-      { label: 'Got it',              action: 'dismiss',                          color: '#f0c040' },
+      { label: 'Got it', action: 'dismiss', color: '#f0c040' },
     ],
   },
 
@@ -1771,17 +1775,22 @@ export function synthesizeSpinScene(
 }
 
 // Resolve the most specific scene id for a route + sub-view pair. Used by
-// both the auto-fire (first-visit) effect and the "Ask Quill" button. The
-// sub-view takes priority if mapped, then the route prefix, then the
-// home overview.
+// both the auto-fire (first-visit) effect and the "Ask Quill" button.
+//
+// Sub-view ALWAYS wins if mapped — even on / — so the main spin page's
+// per-wheel scenes (wheel-race, wheel-strength, …) fire correctly while
+// the player is mid-spin. Without this, the pathname='/' early return
+// short-circuited to home-overview and Quill explained the menu instead
+// of the active wheel. Worked in Ascension (pathname=/story → no early
+// return) but not the main spin (pathname=/), which is what the player
+// observed: "it works in story mode for the wheel but not the other one."
 export function sceneForRoute(pathname: string, subView: string | null = null): string | null {
-  if (pathname === '/' || pathname === '') return 'home-overview'
-
   // Suffix-based overrides for nested dynamic routes (where the parameter
   // sits between prefix and suffix, so a startsWith prefix can't match).
   if (/^\/character\/[^/]+\/replay$/.test(pathname)) return 'character-replay'
 
-  // Sub-view check: walk longest prefix first so /story/slot beats /story.
+  // Sub-view check FIRST — walk longest prefix first so /story/slot beats
+  // /story, and so '/' (single-slash) catches main-spin sub-views.
   if (subView) {
     const prefixes = Object.keys(SUB_VIEW_SCENES).sort((a, b) => b.length - a.length)
     for (const prefix of prefixes) {
@@ -1792,7 +1801,8 @@ export function sceneForRoute(pathname: string, subView: string | null = null): 
     }
   }
 
-  // Otherwise, fall back to the route default.
+  // No sub-view match — fall back to route defaults.
+  if (pathname === '/' || pathname === '') return 'home-overview'
   for (const { prefix, sceneId } of ROUTE_SCENES) {
     if (pathname.startsWith(prefix)) return sceneId
   }

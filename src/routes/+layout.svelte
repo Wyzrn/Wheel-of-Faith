@@ -282,9 +282,19 @@
 <IncomingChallengePopup />
 <ChallengeBattleOverlay />
 
-<!-- Ask-Quill portrait — always-available NPC guide summoner. Floats above
-     the bottom nav so it never crowds the 5 tabs. Tap to open / close the
-     dialogue for the current screen. -->
+<!-- Floating chrome — two portrait buttons stacked above the bottom nav so
+     neither crowds the 5 main tabs. Top: Full Guide (jumps to the in-depth
+     /how-to-play reference). Bottom: Ask Quill (opens the NPC dialogue for
+     the current screen). Kept separate so the in-game guide stays focused
+     on the active screen while the reference is always one tap away. -->
+<a class="full-guide" href="/how-to-play"
+  aria-label="Open the full game guide"
+  title="Open the full game guide">
+  <span class="material-symbols-outlined"
+    style="font-variation-settings: 'FILL' 1; font-size: 20px; color: #a78bfa;
+           filter: drop-shadow(0 0 8px rgba(167,139,250,0.50));">menu_book</span>
+</a>
+
 <button class="ask-quill" onclick={askQuill}
   aria-label={guide.scene ? 'Close guide' : `Ask ${QUILL.name} about this screen`}
   title={guide.scene ? 'Close guide' : `Ask ${QUILL.name} about this screen`}>
@@ -327,6 +337,33 @@
     box-shadow: 0 4px 18px rgba(0,0,0,0.55), 0 0 24px rgba(240,192,64,0.30);
   }
   .ask-quill:active { transform: scale(0.92); }
+
+  /* Full Guide floating button — sits directly above the Ask-Quill portrait.
+     Smaller (40px) and violet so it reads as the secondary action. Links
+     straight to /how-to-play. */
+  .full-guide {
+    position: fixed;
+    right: 16px;
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px) + 52px);
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 30% 30%, rgba(167,139,250,0.28) 0%, rgba(20,16,10,0.95) 70%);
+    border: 1.5px solid rgba(167,139,250,0.50);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 16px rgba(167,139,250,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9997;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.15s ease;
+  }
+  .full-guide:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.55), 0 0 22px rgba(167,139,250,0.30);
+  }
+  .full-guide:active { transform: scale(0.92); }
 
   /* Stone fortress floor — the nav bar is a carved obsidian shelf */
   .bottom-nav {
