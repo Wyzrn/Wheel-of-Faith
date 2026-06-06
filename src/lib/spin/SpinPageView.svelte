@@ -2,7 +2,6 @@
   import { apiUrl } from '$lib/api'
   import { onMount } from 'svelte'
   import { goto } from '$app/navigation'
-  import { page } from '$app/stores'
   import { getRivalsWs, clearRivalsWs, patchRivalsWs } from '$lib/stores/rivalsWs'
   import { pushRecentlySpun } from '$lib/recentlySpun'
   import { isOfflineRivalsActive, setOfflineRivalsResult } from '$lib/stores/offlineRivals'
@@ -97,10 +96,20 @@
 
   // URL sync: keep the browser address in step with the active mode.
   // Player progress: menu (/) → spin (/spin) → result (/character/new).
-  // Uses replaceState so the back button skips the wheel/menu cycle —
-  // most players don't want browser-back to leave the spin mid-roll.
-  // Rivals modes (online/bot/local duel) keep their own routes and are
-  // exempted here so we don't fight them.
+  //
+  // We use the History API directly (window.history.replaceState) rather
+  // than SvelteKit's goto(). goto() runs the route's load function and
+  // remounts the page component — and since /, /spin, and /character/new
+  // all mount the same SpinPageView, every navigation would clobber the
+  // in-progress session state. With effect re-runs from a fresh mount the
+  // sync would re-fire, queueing another goto. SvelteKit aborts the
+  // previous navigation each time, producing the "navigation aborted"
+  // Uncaught Promise rejections the player was seeing (3000+ in console).
+  //
+  // history.replaceState just updates the address bar without touching
+  // SvelteKit's routing layer — the current component keeps running and
+  // its state stays intact. Rivals modes (online/bot/local duel) keep
+  // their own routes and are exempted here so we don't fight them.
   $effect(() => {
     if (typeof window === 'undefined') return
     if (rivalsOnlineMode || rivalsBotMode || rivalMode) return
@@ -112,8 +121,10 @@
     } else {
       target = '/'
     }
-    if (target && $page.url.pathname !== target) {
-      goto(target, { replaceState: true, noScroll: true })
+    if (target && window.location.pathname !== target) {
+      try {
+        window.history.replaceState(window.history.state, '', target)
+      } catch { /* ignore — happens on some sandboxed iframes (itch.io) */ }
     }
   })
   const LANDING_KEY = 'wof_visited'
@@ -324,34 +335,56 @@
   })
 
   // ── Autospin ──────────────────────────────────────────────────────────────
-  // When settings.autoSpin is on, fire the wheel automatically and then
-  // auto-continue after each reveal. Speed is bumped to AUTOSPIN_SPEED_MULT
+  // When settings.autoSpin is on, fire the wheel automatically, advance past
+  // each reveal, and auto-dismiss Wildcard overlays so the spin train rolls
+  // through without manual taps. Speed is bumped to AUTOSPIN_SPEED_MULT
   // (4× — 2× the Turbo preset) so a full character finishes in ~30s.
   //
-  // Two effects: one fires the wheel when no spin is in progress, the
-  // other advances past the reveal. Both wait for the name screen to NOT
-  // be visible so we don't auto-skip the naming step.
+  // Hard pauses (autospin MUST stop and wait):
+  //   • Name screen (player must type a name)
+  //   • Main menu (player must explicitly start)
+  //   • Tutorial step 0 (first-time intro)
+  //   • Quill mid-dialogue (player should read)
+  //
+  // Soft pauses (timer just waits a beat then advances):
+  //   • Reveal phase   → 700ms read, then handleNextSpin()
+  //   • Wildcard reveal → 1500ms read (it's more important), then
+  //                       handleWildcardContinue()
+  //   • Idle wheel     → 250ms, then trigger a spin
   let autoSpinFireTimer: ReturnType<typeof setTimeout> | null = null
   let autoSpinAdvanceTimer: ReturnType<typeof setTimeout> | null = null
+  let autoSpinWildcardTimer: ReturnType<typeof setTimeout> | null = null
   $effect(() => {
-    if (autoSpinFireTimer) { clearTimeout(autoSpinFireTimer); autoSpinFireTimer = null }
-    if (autoSpinAdvanceTimer) { clearTimeout(autoSpinAdvanceTimer); autoSpinAdvanceTimer = null }
+    if (autoSpinFireTimer)     { clearTimeout(autoSpinFireTimer);     autoSpinFireTimer = null }
+    if (autoSpinAdvanceTimer)  { clearTimeout(autoSpinAdvanceTimer);  autoSpinAdvanceTimer = null }
+    if (autoSpinWildcardTimer) { clearTimeout(autoSpinWildcardTimer); autoSpinWildcardTimer = null }
     if (!settings.autoSpin) return
+    // Hard pauses: typing a name, on the menu, or in the welcome modal.
     if (showNameScreen || showMenu || tutorialStep === 0) return
     // Pause autospin while Quill is mid-dialogue so the player can read.
     if (guide.scene) return
     if (currentSpinIndex >= spinQueue.length) return
-    if (isRevealed) {
+    if (wildcardPhase === 'reveal') {
+      // Wildcard overlay is showing — let the player read it for a moment,
+      // then auto-dismiss so autospin keeps going. handleWildcardContinue
+      // resolves the wildcard outcome and re-enters the normal spin flow.
+      autoSpinWildcardTimer = setTimeout(() => { handleWildcardContinue() }, 1500)
+    } else if (wildcardPhase === 'flashing') {
+      // Mid-flash animation — the engine will move to 'reveal' on its own.
+      // Just wait; don't touch anything.
+      return
+    } else if (isRevealed) {
       // Short pause to let the player read the result before auto-advancing.
       autoSpinAdvanceTimer = setTimeout(() => { handleNextSpin() }, 700)
-    } else if (wildcardPhase === 'idle') {
-      // Wheel idle (no active wildcard overlay) → fire it. Brief delay so
-      // consecutive spins feel paced rather than instant.
+    } else {
+      // Wheel idle → fire it. Brief delay so consecutive spins feel paced
+      // rather than instant.
       autoSpinFireTimer = setTimeout(() => { spinTriggerKey++ }, 250)
     }
     return () => {
-      if (autoSpinFireTimer) clearTimeout(autoSpinFireTimer)
-      if (autoSpinAdvanceTimer) clearTimeout(autoSpinAdvanceTimer)
+      if (autoSpinFireTimer)     clearTimeout(autoSpinFireTimer)
+      if (autoSpinAdvanceTimer)  clearTimeout(autoSpinAdvanceTimer)
+      if (autoSpinWildcardTimer) clearTimeout(autoSpinWildcardTimer)
     }
   })
 
