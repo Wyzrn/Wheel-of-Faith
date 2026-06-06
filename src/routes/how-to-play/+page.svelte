@@ -26,7 +26,7 @@
     { id: 'twists',        title: 'Twists',                       icon: 'change_history' },
     { id: 'corruption',    title: 'Corruption',                   icon: 'dark_mode' },
     { id: 'limitBreak',    title: 'Limit Break',                  icon: 'speed' },
-    { id: 'specials',      title: 'Devil Fruits & Possession',    icon: 'science' },
+    { id: 'specials',      title: 'Demon Fruits & Possession',    icon: 'science' },
     { id: 'card',          title: 'The Character Card',           icon: 'badge' },
     { id: 'ascension',     title: 'Ascension Mode',               icon: 'trending_up' },
     { id: 'crystals',      title: 'Crystals',                     icon: 'diamond' },
@@ -145,7 +145,7 @@
         <p>Three places to use a character once forged:</p>
         <ul>
           <li><strong>Rivals</strong> — auto-resolved 1v1 against other players.</li>
-          <li><strong>Ascension</strong> — long-form campaign of 16 worlds, with a roster, gem economy, crystal drops, and Endless Mode.</li>
+          <li><strong>Ascension</strong> — long-form campaign of 20 worlds, with a roster, gem economy, crystal drops, and Endless Mode.</li>
           <li><strong>Share</strong> — every character has a public URL and an optional Gallery publish.</li>
         </ul>
       </section>
@@ -168,7 +168,7 @@
           <li><strong>Redemption Spin</strong> (25% chance to fire).</li>
           <li><strong>Backstory</strong> — generated narrative snapshot.</li>
           <li><strong>Title</strong> — the final designation.</li>
-          <li><strong>Twists, Corruption, Limit Breaks, Possessions, Devil Fruits</strong> may splice in extra spins along the way depending on race + archetype + outcomes.</li>
+          <li><strong>Twists, Corruption, Limit Breaks, Possessions, Demon Fruits</strong> may splice in extra spins along the way depending on race + archetype + outcomes.</li>
         </ol>
         <p>Many race-archetype combinations trigger bonus spin chains automatically. Watch the announcement bar above the wheel — it names what fired and why.</p>
       </section>
@@ -339,9 +339,9 @@
       </section>
 
       <section id="sec-specials" class="htp-section">
-        <h2><span class="material-symbols-outlined">science</span> Devil Fruits & Possession</h2>
-        <p class="htp-tldr"><strong>TL;DR:</strong> Two race-locked specials. Devil Fruits grant named power-sets. Possession lets a second race ride along inside your character.</p>
-        <p><strong>Devil Fruits</strong> — race-locked named powers. The fruit's name is part of the flavor; the power-set it grants is layered onto your hero. Spliced in when your race is on the eligible list.</p>
+        <h2><span class="material-symbols-outlined">science</span> Demon Fruits & Possession</h2>
+        <p class="htp-tldr"><strong>TL;DR:</strong> Two race-locked specials. Demon Fruits grant named power-sets. Possession lets a second race ride along inside your character.</p>
+        <p><strong>Demon Fruits</strong> — race-locked named powers. The fruit's name is part of the flavor; the power-set it grants is layered onto your hero. Spliced in when your race is on the eligible list.</p>
         <p><strong>Possession</strong> — a second race fused with your first. Two wheels: Possession Race (who) and Possession Strength (how firmly). Strong possessions grant access to a small slice of the possessor's pool. Weak possessions just whisper.</p>
       </section>
 
@@ -360,11 +360,11 @@
 
       <section id="sec-ascension" class="htp-section">
         <h2><span class="material-symbols-outlined">trending_up</span> Ascension Mode</h2>
-        <p class="htp-tldr"><strong>TL;DR:</strong> Long-form campaign. Four save slots, each independent. Climb 16 worlds (F → Absolute) of 20 battles each. Spend daily spins to forge heroes, equip crystal drops, beat bosses, earn gems, climb forever.</p>
+        <p class="htp-tldr"><strong>TL;DR:</strong> Long-form campaign. Four save slots, each independent. Climb 20 worlds (F → Infinite) of 20 battles each. Spend daily spins to forge heroes, equip crystal drops, beat bosses, earn gems, climb forever.</p>
         <p>Per save slot, you get:</p>
         <ul>
           <li><strong>10 free spins per day</strong>, regenerating every 3 hours. Daily Booster gamepass doubles the cap to 20.</li>
-          <li><strong>16 Worlds</strong> — F → E → D → C → B → A → S → SS → SSS → Z → ZZ → ZZZ → Celestial → Godly → Primordial → Absolute.</li>
+          <li><strong>20 Worlds</strong> — F → E → D → C → B → A → S → SS → SSS → Z → ZZ → ZZZ → Cosmic → Immortal → Celestial → Godly → Primordial → Absolute → Transcendent → Infinite.</li>
           <li><strong>20 battles per world</strong>. Win drops gems, XP, and crystal containers.</li>
           <li><strong>A roster</strong> of forged heroes — Common, Hero (multiplied stats), or Legend (multiplied higher). Max 20 by default, expandable with the Expanded Roster gamepass.</li>
           <li><strong>Crystal inventory</strong> — open container crystals to reveal random powers, weapons, and armor.</li>

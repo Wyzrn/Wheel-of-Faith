@@ -283,6 +283,38 @@
     }
   })
 
+  // ── Autospin ──────────────────────────────────────────────────────────────
+  // When settings.autoSpin is on, fire the wheel automatically and then
+  // auto-continue after each reveal. Speed is bumped to AUTOSPIN_SPEED_MULT
+  // (4× — 2× the Turbo preset) so a full character finishes in ~30s.
+  //
+  // Two effects: one fires the wheel when no spin is in progress, the
+  // other advances past the reveal. Both wait for the name screen to NOT
+  // be visible so we don't auto-skip the naming step.
+  let autoSpinFireTimer: ReturnType<typeof setTimeout> | null = null
+  let autoSpinAdvanceTimer: ReturnType<typeof setTimeout> | null = null
+  $effect(() => {
+    if (autoSpinFireTimer) { clearTimeout(autoSpinFireTimer); autoSpinFireTimer = null }
+    if (autoSpinAdvanceTimer) { clearTimeout(autoSpinAdvanceTimer); autoSpinAdvanceTimer = null }
+    if (!settings.autoSpin) return
+    if (showNameScreen || showMenu || tutorialStep === 0) return
+    // Pause autospin while Quill is mid-dialogue so the player can read.
+    if (guide.scene) return
+    if (currentSpinIndex >= spinQueue.length) return
+    if (isRevealed) {
+      // Short pause to let the player read the result before auto-advancing.
+      autoSpinAdvanceTimer = setTimeout(() => { handleNextSpin() }, 700)
+    } else if (wildcardPhase === 'idle') {
+      // Wheel idle (no active wildcard overlay) → fire it. Brief delay so
+      // consecutive spins feel paced rather than instant.
+      autoSpinFireTimer = setTimeout(() => { spinTriggerKey++ }, 250)
+    }
+    return () => {
+      if (autoSpinFireTimer) clearTimeout(autoSpinFireTimer)
+      if (autoSpinAdvanceTimer) clearTimeout(autoSpinAdvanceTimer)
+    }
+  })
+
   // Tell Quill which wheel is active so the "Ask Quill" portrait surfaces
   // the right per-wheel scene (wheel-strength, wheel-race, etc.). Wheel
   // scenes are summon-only — auto-fire is suppressed by the layout's
@@ -699,7 +731,7 @@
       return mutated ?? [{ label: '—', weight: 1 }]
     }
 
-    // Cursed Fruit name pool — keyed by the raceClass result label
+    // Demon Fruit name pool — keyed by the raceClass result label
     if (def.category === 'devilFruitName') {
       const classResult = results.find(r => r.category === 'raceClass')
       const pool = classResult ? DEVIL_FRUIT_POOLS[classResult.resultLabel] : undefined
@@ -1416,11 +1448,11 @@
           category: b.category as SpinCategory, displayName: b.displayName,
         })))
       }
-      // Splice devil fruit name spin for Cursed Fruit Eater
-      if (raceResult?.resultLabel === 'Cursed Fruit Eater' && DEVIL_FRUIT_POOLS[resultLabel]) {
+      // Splice devil fruit name spin for Demon Fruit Eater
+      if (raceResult?.resultLabel === 'Demon Fruit Eater' && DEVIL_FRUIT_POOLS[resultLabel]) {
         spinQueue.splice(currentSpinIndex + 1, 0, {
           category: 'devilFruitName' as const,
-          displayName: 'Cursed Fruit Name',
+          displayName: 'Demon Fruit Name',
         })
         const msg = `Spin your specific fruit!`
         showAnnouncement = showAnnouncement ? showAnnouncement + ' ' + msg : msg
@@ -3391,7 +3423,7 @@
               categoryHue={currentCategoryHue}
               soundEnabled={settings.soundEnabled}
               effectsEnabled={settings.effectsEnabled}
-              spinSpeedMultiplier={settings.spinSpeed}
+              spinSpeedMultiplier={settings.autoSpin ? 4.0 : settings.spinSpeed}
               wheelTheme={resolveActiveTheme(settings.activeWheelTheme, auth.user?.gamepasses)}
               spinTrigger={spinTriggerKey}
               replayTrigger={replayTriggerKey}

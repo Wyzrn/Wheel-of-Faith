@@ -126,8 +126,8 @@
     <!-- ─ Spin Speed ─ -->
     <div>
       <p class="text-sm font-semibold mb-1" style="color: #e9dfeb;">Spin Speed</p>
-      <p class="text-xs mb-3" style="color: #9a907b;">Wheel animation rate</p>
-      <div class="flex gap-1.5 flex-wrap">
+      <p class="text-xs mb-3" style="color: #9a907b;">Wheel animation rate{settings.autoSpin ? ' · overridden by Autospin' : ''}</p>
+      <div class="flex gap-1.5 flex-wrap" style="opacity: {settings.autoSpin ? 0.4 : 1}; pointer-events: {settings.autoSpin ? 'none' : 'auto'};">
         {#each SPIN_SPEED_OPTIONS as opt}
           <button onclick={() => { settings.spinSpeed = opt.value; settings.save() }}
             class="speed-chip"
@@ -135,6 +135,23 @@
           >{opt.label}</button>
         {/each}
       </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ─ Autospin ─ -->
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-semibold" style="color: #e9dfeb;">Autospin</p>
+        <p class="text-xs mt-0.5" style="color: #9a907b;">Auto-fire each wheel at 4× speed (2× Turbo)</p>
+      </div>
+      <button onclick={() => { settings.autoSpin = !settings.autoSpin; settings.save() }}
+        class="toggle-btn"
+        style="background: {settings.autoSpin ? '#f0c040' : '#1e1a22'}; box-shadow: {settings.autoSpin ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.autoSpin ? '#f0c040' : 'rgba(78,70,53,0.5)'};"
+        aria-label="Toggle autospin" aria-pressed={settings.autoSpin}
+      >
+        <span class="toggle-knob" style="left: {settings.autoSpin ? '22px' : '2px'}; background: {settings.autoSpin ? '#0d0d16' : '#3a3848'};"></span>
+      </button>
     </div>
 
     <div class="divider"></div>

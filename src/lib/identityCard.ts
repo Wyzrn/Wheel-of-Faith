@@ -419,7 +419,7 @@ export function buildArchetypeIdentityCard(label: string): IdentityCard | null {
     })
   }
   // Custom ability pool overrides the standard pool with archetype-flavored
-  // names (Stand types, Devil Fruits, etc.). Surface that it exists.
+  // names (Phantom types, Demon Fruits, etc.). Surface that it exists.
   if (arc.customAbilityPool && arc.customAbilityPool.length > 0 && !arc.abilitySpinDisplayName) {
     perks.push({
       icon: 'palette',

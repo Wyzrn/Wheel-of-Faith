@@ -102,7 +102,7 @@ export const SCENES: Record<string, GuideScene> = {
     menuLabel: 'What is in this menu?',
     lines: [
       { text: "The main paths of the game, gathered in one place.", mood: 'neutral' },
-      { text: "Ascension is the long campaign — sixteen worlds to climb. Rivals is direct combat against other Spinners. The Arcane Shop trades Fate Shards for permanent boons.", mood: 'neutral' },
+      { text: "Ascension is the long campaign — twenty worlds to climb. Rivals is direct combat against other Spinners. The Arcane Shop trades Fate Shards for permanent boons.", mood: 'neutral' },
       { text: "Daily Challenges pay Shards for small tasks. The Hall of Champions ranks every Spinner by their wins. Settings adjusts sound, speed, and battle fidelity.", mood: 'wry' },
       { text: "Each opens to its own screen — and when you arrive, I will be there to explain it.", mood: 'pleased' },
     ],
@@ -137,7 +137,7 @@ export const SCENES: Record<string, GuideScene> = {
     lines: [
       { text: "Ascension. The long road, Spinner.", mood: 'grave' },
       { text: "You will choose one of four save slots — four parallel destinies, each independent of the others. Tap a slot to claim it.", mood: 'neutral' },
-      { text: "Once chosen, a hub opens: a Roster of your forged heroes, a Shop for in-slot purchases, a Wheel that spends your daily spins, and the Worlds — sixteen of them, climbing from F to Absolute.", mood: 'neutral' },
+      { text: "Once chosen, a hub opens: a Roster of your forged heroes, a Shop for in-slot purchases, a Wheel that spends your daily spins, and the Worlds — twenty of them, climbing from F to Infinite.", mood: 'neutral' },
       { text: "Each day, the wheel grants you ten free spins, refreshing every three hours. Use them to build heroes. Send those heroes into battle.", mood: 'neutral' },
       { text: "Win, and the world drops Crystals: a power, a weapon, an armor sealed inside each one. Open them. Equip them. Grow stronger.", mood: 'pleased' },
       { text: "Reach the third world and Endless Mode unlocks — waves without end, names carved on a global leaderboard.", mood: 'wry' },
@@ -187,7 +187,7 @@ export const SCENES: Record<string, GuideScene> = {
     id: 'ascension-worlds',
     menuLabel: 'How do the Worlds work?',
     lines: [
-      { text: "Sixteen worlds, climbed in order. You begin at F, the threshold; the Absolute waits at the summit.", mood: 'grave' },
+      { text: "Twenty worlds, climbed in order. You begin at F, the threshold; the Infinite waits at the summit.", mood: 'grave' },
       { text: "Each world holds twenty battles. Tap a level to choose your team — up to three heroes from your roster — and step in.", mood: 'neutral' },
       { text: "The minimum stat tier required for a hero rises as the worlds climb. Bring strong fighters or be ground down.", mood: 'urgent' },
       { text: "Win, and gems and crystals drop. Lose, and your team is bruised but not gone — try again.", mood: 'neutral' },
@@ -1253,7 +1253,7 @@ export const SCENES: Record<string, GuideScene> = {
   },
 
   'wheel-devilFruitName': {
-    id: 'wheel-devilFruitName', menuLabel: 'What is the Devil Fruit name?',
+    id: 'wheel-devilFruitName', menuLabel: 'What is the Demon Fruit name?',
     lines: [
       { text: "A named fruit, granting a specific power-set. Race-locked — only certain kinds may eat.", mood: 'pleased' },
       { text: "The name is half the flavor. The power it carries is the rest.", mood: 'wry' },
@@ -1729,7 +1729,7 @@ export function synthesizeSpinScene(
     }
   }
 
-  // Devil Fruit names — race-locked named powers.
+  // Demon Fruit names — race-locked named powers.
   if (ctx.category === 'devilFruitName') {
     return {
       id: sceneId,

@@ -10,6 +10,11 @@ const STORAGE_KEY = 'wof_settings'
  *  just a hyper-speed multiplier the arena's speedDelay() floors at 10ms. */
 export const BATTLE_SPEED_INSTANT = 20
 
+/** Spin-speed multiplier used while Autospin is on. The Turbo preset is
+ *  2.0×; Autospin doubles that to 4.0× so a full 23-spin character finishes
+ *  in well under a minute. */
+export const AUTOSPIN_SPEED_MULT = 4.0
+
 class SettingsStore {
   soundEnabled    = $state(true)
   effectsEnabled  = $state(true)
@@ -24,6 +29,12 @@ class SettingsStore {
   autoBattle      = $state(true)
   autoBattleSpeed = $state(1.0)
   autoContinueMs  = $state(0)     // auto-fire Continue after spin reveal (0 = off)
+  // Autospin: when on, each wheel auto-fires (no tap needed) and the reveal
+  // auto-continues to the next spin. Runs at AUTOSPIN_SPEED_MULT (2× the
+  // Turbo preset) so a full 23-spin character takes well under a minute.
+  // Player can toggle at any time from Settings or an inline button above
+  // the wheel during a spin session.
+  autoSpin        = $state(false)
   // Force-high-quality override. When true, perf scaling is bypassed and
   // every device renders at full fidelity regardless of detected tier.
   // Useful on flagship phones that the heuristic mis-buckets as 'low'
@@ -65,6 +76,7 @@ class SettingsStore {
       if (typeof s.autoBattle      === 'boolean') this.autoBattle      = s.autoBattle
       if (typeof s.autoBattleSpeed === 'number')  this.autoBattleSpeed = s.autoBattleSpeed
       if (typeof s.autoContinueMs  === 'number')  this.autoContinueMs  = s.autoContinueMs
+      if (typeof s.autoSpin        === 'boolean') this.autoSpin        = s.autoSpin
       if (s.highQualityOverride === 'auto' || s.highQualityOverride === 'high') this.highQualityOverride = s.highQualityOverride
       if (typeof s.activeWheelTheme === 'string') this.activeWheelTheme = s.activeWheelTheme as WheelThemeId
       // Migrate legacy boolean cursedWheelEnabled -> activeWheelTheme.
@@ -87,6 +99,7 @@ class SettingsStore {
       autoBattle:      this.autoBattle,
       autoBattleSpeed: this.autoBattleSpeed,
       autoContinueMs:  this.autoContinueMs,
+      autoSpin:        this.autoSpin,
       highQualityOverride: this.highQualityOverride,
       activeWheelTheme: this.activeWheelTheme,
       instantBattleEnabled: this.instantBattleEnabled,

@@ -1023,7 +1023,7 @@ export function doAction(
     // PREDATOR_TARGETS lookup duplicated here to avoid a circular import;
     // keep in sync with gimmicks.ts. Bounty Hunter has no fixed prey.
     const prey: Record<string, string[]> = {
-      'Dawnbringer': ['Demon', 'Cursed Fruit Eater'],
+      'Dawnbringer': ['Demon', 'Demon Fruit Eater'],
       'Exorcist':     ['Demon', 'Undead (Revenant)', 'Possessed', 'Null', 'Ghoul'],
     }
     if ((prey[attacker.archetypeLabel] ?? []).includes(defender.raceLabel)) {

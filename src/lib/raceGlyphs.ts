@@ -48,7 +48,7 @@ export const RACE_GLYPHS: Record<string, RaceGlyph> = {
   'Shadowblade':          { icon: 'kid_star' },
   'Nen User':         { icon: 'category' },
   'Colossus Shifter':    { icon: 'transit_enterexit' },
-  'Cursed Fruit Eater': { icon: 'nutrition' },
+  'Demon Fruit Eater': { icon: 'nutrition' },
   'Null': { icon: 'mask' },
   'Shinigami':        { icon: 'crisis_alert' },
   'Bender':           { icon: 'air' },

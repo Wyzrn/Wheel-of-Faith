@@ -277,7 +277,7 @@ export const ARCHETYPE_GIMMICKS: Record<string, string[]> = {
   'Warlock':           ['lifesteal', 'conceptAvatar'],
   'Exorcist':          ['predator', 'divineFavor'],
   'Alchemist':         ['conceptAvatar'],
-  'Cursed Fruit Eater':  ['conceptAvatar'],
+  'Demon Fruit Eater':  ['conceptAvatar'],
   'Possessed':         ['berserkerRage', 'lifesteal'],
   'Sorcerer':          ['conceptAvatar', 'glassCannon'],
   'Middle Manager':    ['leader'],
@@ -294,7 +294,7 @@ export const ARCHETYPE_GIMMICKS: Record<string, string[]> = {
 // the listed target race labels. Dawnbringer → kills demons. Dragon
 // Slayer (none in our data yet, but pattern's there). Etc.
 export const PREDATOR_TARGETS: Record<string, string[]> = {
-  'Dawnbringer':      ['Demon', 'Cursed Fruit Eater'],
+  'Dawnbringer':      ['Demon', 'Demon Fruit Eater'],
   'Exorcist':          ['Demon', 'Undead (Revenant)', 'Possessed', 'Null', 'Ghoul'],
   'Bounty Hunter':     [],   // hunts whoever opposed them — no fixed prey
 }

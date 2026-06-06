@@ -191,10 +191,15 @@
       // Suppress home-overview until the first character has been built —
       // otherwise a fresh player gets two "what is this?" intros stacked.
       if (sceneId === 'home-overview' && !guide.hasSeen('first-character')) return
-      // Wheel-by-wheel scenes are SUMMON-ONLY — auto-firing them would
-      // recreate the wall-of-text problem playtest flagged. The "Ask
-      // Quill" portrait still surfaces them on demand.
-      if (sceneId.startsWith('wheel-')) return
+      // While Autospin is on, the player has explicitly asked to power
+      // through. Don't interrupt with wheel scenes (the portrait still
+      // surfaces them on demand). Non-wheel scenes — first-character,
+      // route intros — still fire so the player sees them at least once.
+      if (settings.autoSpin && sceneId.startsWith('wheel-')) return
+      // Wheel-by-wheel scenes auto-fire only once each (seen-set in the
+      // store prevents repeats), so first-time-encountering a Stats wheel
+      // gets a brief Quill explanation but subsequent encounters stay
+      // silent. The portrait still re-summons them on demand.
       guide.open(sceneId)
     }, 50)
     return () => { if (autoFireTimer) clearTimeout(autoFireTimer) }
