@@ -250,13 +250,9 @@ export async function clanRoutes(app: FastifyInstance) {
     if (clan.joinType === 'closed') return reply.status(403).send({ error: 'clan is closed to new members' })
     if (clan.joinType === 'invite') return reply.status(403).send({ error: 'this clan accepts join requests only — use /request' })
 
-    // Clan wars need at least 1 character to draft a war team. Refuse the
-    // join now rather than letting the player join and immediately discover
-    // they can't participate in wars or get assigned to a roster.
-    const charCount = await Character.countDocuments({ userId: new mongoose.Types.ObjectId(req.userId) })
-    if (charCount === 0) {
-      return reply.status(403).send({ error: 'save at least 1 character before joining a clan (needed for war teams)' })
-    }
+    // (Previous version refused joining if user had 0 saved characters —
+    // too strict for new players. War teams can be set after joining; the
+    // clan UI already handles members without war teams.)
 
     clan.memberIds.push(new mongoose.Types.ObjectId(req.userId))
     await clan.save()
@@ -284,11 +280,9 @@ export async function clanRoutes(app: FastifyInstance) {
     if ((user.rivalsWins ?? 0) < clan.minWinsRequired) {
       return reply.status(403).send({ error: `${clan.minWinsRequired} rivals wins required to request join` })
     }
-    // Same gate as /join — requester needs at least 1 character for wars.
-    const charCount = await Character.countDocuments({ userId: new mongoose.Types.ObjectId(req.userId) })
-    if (charCount === 0) {
-      return reply.status(403).send({ error: 'save at least 1 character before requesting to join a clan' })
-    }
+    // (Previous version refused requesting if user had 0 saved characters —
+    // too strict for new players. They can make one after the leader
+    // accepts; war participation is gated on having a team anyway.)
 
     if (clan.joinRequests.some(r => r.userId.toString() === req.userId)) {
       return reply.status(409).send({ error: 'request already pending' })

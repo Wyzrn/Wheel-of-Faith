@@ -96,6 +96,11 @@
   let showAnnouncement = $state<string | null>(null)
   let showCard = $state(false)
   let pendingStatBonuses = $state<Record<string, Array<'statBonus' | 'statPenalty'>>>({})
+  // Flat tier shifts queued by races/archetypes/classes that opted into the
+  // "+N" mechanic instead of spawning an extra stat roll. Keyed by stat
+  // category. Applied at stat-result-push time and then cleared. Stacks
+  // additively if multiple sources buff the same stat.
+  let pendingFlatStatBonuses = $state<Record<string, number>>({})
   // Class/subType/transformation power pool override — used only by racial bonus power spins
   let activePowerPool = $state<{ label: string; weight: number }[]>([])
   // Element locked in by a twist sub-spin (Bender: Fire, Demi-God: Storms,
@@ -271,14 +276,13 @@
     }
   })
 
-  // Spin 23 reveal → fire NPC guide intro. Quill (the Fate Scribe) takes
-  // over teaching from the contextual tutorial cards at this point: she
-  // explains what the player just built and what they can do with it.
+  // After the player names their character (showCard becomes true), fire
+  // the Quill NPC intro. She greets them with the completed card in front
+  // and explains what to do next. Previously fired on title reveal —
+  // moved here so the name + finalised card are already visible.
   // Idempotent via the guide's seen-set, so re-rolling won't re-fire.
   $effect(() => {
-    if (currentDef?.category === 'title' && isRevealed) {
-      // queueMicrotask defers until after the reveal animation kicks in,
-      // so the NPC appears once the player's eyes are already on the card.
+    if (showCard) {
       queueMicrotask(() => guide.open('first-character'))
     }
   })
@@ -896,16 +900,25 @@
       // Uncommon ≈ B/A baseline, Rare ≈ A+/S, Legendary ≈ Z-/ZZ+,
       // Mythological ≈ ZZZ+/Cosmic, Divine ≈ Cosmic+/Immortal.
       const globalModifier = raceTierModifier(race)
+      // ── Stat-buff dampening ─────────────────────────────────────────────
+      // Halves the strength of any positive race/archetype modifier so
+      // stacked combos stop running characters to Cosmic / Immortal on
+      // ordinary rolls. Penalties (<1) are kept at full strength because
+      // the design wants weakness to feel meaningful. Replaces an
+      // unmanageable race-by-race nerf with a single global pass.
+      const dampenPositive = (m: number) => m >= 1.0 ? 1.0 + (m - 1.0) * 0.5 : m
       // Stat-specific race modifier, falling back to global
-      const raceMod = race?.statModifiers?.[def.category] ?? globalModifier
+      const raceMod = dampenPositive(race?.statModifiers?.[def.category] ?? globalModifier)
       // Archetype modifier: shapes stat probability on top of race
       const archetypeResult = results.find(r => r.category === 'archetype')
       const archetype = getArchetype(archetypeResult?.resultLabel)
-      const archetypeMod = archetype?.statModifiers?.[def.category] ?? 1.0
+      const archetypeMod = dampenPositive(archetype?.statModifiers?.[def.category] ?? 1.0)
       // Height modifier — set when height spin resolves, multiplies into stat probability
       const heightMod = heightModifiers[def.category] ?? 1.0
-      // Combined modifier capped at 3.5 so even stacked combos stay in range
-      const baseModifier = Math.min(3.5, Math.max(0.1, raceMod * archetypeMod * heightMod))
+      // Combined modifier capped at 2.5 (was 3.5) so even stacked combos
+      // stay closer to mid-tier outcomes. With dampening above, the
+      // effective ceiling is much lower than the cap.
+      const baseModifier = Math.min(2.5, Math.max(0.1, raceMod * archetypeMod * heightMod))
       // Multiply by transformation bonus if the race has one and it has been spun
       let transformationBonus = 1.0
       if (race?.transformationPool) {
@@ -1274,6 +1287,12 @@
         // skip the rest of the race-extras splice; the parents will provide it.
       } else {
       const race = getRace(resultLabel)
+      // Race-level flat stat shifts — additive into the pending pool.
+      if (race?.flatStatBonuses) {
+        for (const [stat, n] of Object.entries(race.flatStatBonuses)) {
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + (n as number)
+        }
+      }
       const count = race?.abilitySpinCount ?? 1
       const extraPowers = race?.extraPowerSpins ?? 0
       const extraWeapons = (race as any)?.extraWeaponSpins ?? 0
@@ -1385,6 +1404,11 @@
           pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
         }
       }
+      if (subTypeItem?.flatStatBonuses) {
+        for (const [stat, n] of Object.entries(subTypeItem.flatStatBonuses)) {
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + (n as number)
+        }
+      }
       if (subTypeItem?.powerPool?.length) {
         activePowerPool = subTypeItem.powerPool
       }
@@ -1433,6 +1457,11 @@
         const bonusCount = Object.keys(classItem.statBonusGrants).length
         showAnnouncement = `${resultLabel}: unlocks ${bonusCount} stat bonus spin${bonusCount > 1 ? 's' : ''}!`
       }
+      if (classItem?.flatStatBonuses) {
+        for (const [stat, n] of Object.entries(classItem.flatStatBonuses)) {
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + (n as number)
+        }
+      }
       if (classItem?.powerPool?.length) {
         activePowerPool = classItem.powerPool
         const msg = `${resultLabel}: power pool activated!`
@@ -1468,6 +1497,11 @@
         const bonusCount = Object.keys(transItem.statBonusGrants).length
         showAnnouncement = `${resultLabel}: unlocks ${bonusCount} stat bonus spin${bonusCount > 1 ? 's' : ''}!`
       }
+      if (transItem?.flatStatBonuses) {
+        for (const [stat, n] of Object.entries(transItem.flatStatBonuses)) {
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + (n as number)
+        }
+      }
       if (transItem?.powerPool?.length) {
         activePowerPool = transItem.powerPool
         const msg = `${resultLabel}: power pool activated!`
@@ -1483,11 +1517,16 @@
       // landed segment's stat boost/debuff so these progression spins reward too.
       const raceResult = results.find(r => r.category === 'race')
       const raceLabel = def.forRace ?? raceResult?.resultLabel
-      const segs = getRaceWheelSegments(raceLabel ?? '', def.raceWheelId) as Array<{ label: string; statBonusGrants?: Record<string, 'statBonus' | 'statPenalty'> }> | null
+      const segs = getRaceWheelSegments(raceLabel ?? '', def.raceWheelId) as Array<{ label: string; statBonusGrants?: Record<string, 'statBonus' | 'statPenalty'>; flatStatBonuses?: Record<string, number> }> | null
       const seg = segs?.find(s => s.label === resultLabel)
       if (seg?.statBonusGrants) {
         for (const [stat, bonusType] of Object.entries(seg.statBonusGrants)) {
           pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+        }
+      }
+      if (seg?.flatStatBonuses) {
+        for (const [stat, n] of Object.entries(seg.flatStatBonuses)) {
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + n
         }
       }
     } else if (def.category === 'height') {
@@ -1609,6 +1648,13 @@
       if (archetype?.statBonusGrants) {
         for (const [stat, bonusType] of Object.entries(archetype.statBonusGrants)) {
           pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType as 'statBonus' | 'statPenalty']
+        }
+      }
+      // Flat tier shifts (the "+N strength" mechanic) — additive across
+      // any source that wants to buff/nerf the same stat.
+      if (archetype?.flatStatBonuses) {
+        for (const [stat, n] of Object.entries(archetype.flatStatBonuses)) {
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + (n as number)
         }
       }
 
@@ -2129,6 +2175,22 @@
       delete pendingStatBonuses[def.category]
     }
 
+    // Step 2b: Flat tier shifts ("+N strength" mechanic — applied IN PLACE on
+    // the rolled stat label, no extra spin spawned). Net positive sources buff
+    // up; negatives nerf down. Cleared after use so re-rolls don't double-up.
+    if (STAT_CATEGORIES.has(def.category) && pendingFlatStatBonuses[def.category]) {
+      const shift = pendingFlatStatBonuses[def.category]
+      const segs = getSegmentsForCategory(def.category) as { label: string; tier?: string }[]
+      const shifted = shiftTierLabel(resultLabel, shift, segs)
+      if (shifted !== resultLabel) {
+        resultLabel = shifted
+        const sign = shift > 0 ? '+' : ''
+        const msg = `${def.displayName}: ${sign}${shift} tier from racial / archetype lineage.`
+        showAnnouncement = showAnnouncement ? showAnnouncement + ' ' + msg : msg
+      }
+      delete pendingFlatStatBonuses[def.category]
+    }
+
     // Step 2: PUSH result
     const spinResult: SpinResult = {
       step: results.length + 1,
@@ -2371,6 +2433,7 @@
     isRevealed = false
     showResumePrompt = false
     pendingStatBonuses = {}
+    pendingFlatStatBonuses = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
     activePowerPool = []
@@ -2435,6 +2498,7 @@
     isRevealed = false
     showResumePrompt = false
     pendingStatBonuses = {}
+    pendingFlatStatBonuses = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
     activePowerPool = []
@@ -2469,6 +2533,7 @@
     characterName = ''
     isRevealed = false
     pendingStatBonuses = {}
+    pendingFlatStatBonuses = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
     activePowerPool = []
@@ -2503,6 +2568,7 @@
     isRevealed = false
     showResumePrompt = false
     pendingStatBonuses = {}
+    pendingFlatStatBonuses = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
     activePowerPool = []
@@ -2537,6 +2603,7 @@
       characterName = ''
       isRevealed = false
       pendingStatBonuses = {}
+    pendingFlatStatBonuses = {}
       usedRacialAbilities = new Set()
       usedArchetypeAbilities = new Set()
       activePowerPool = []

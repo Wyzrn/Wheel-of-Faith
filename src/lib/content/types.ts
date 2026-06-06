@@ -10,6 +10,14 @@ import type { TierGrade } from '$lib/game/scoreTier'
 // When a transformation/class/subType with this field resolves, those stats get a bonus spin spliced after them.
 export type StatBonusGrants = Record<string, 'statBonus' | 'statPenalty'>
 
+// Flat tier shifts applied at stat-resolution time INSTEAD of spawning a
+// bonus stat roll. Positive = bump the rolled tier up by N. Negative =
+// bump down by N. Used to nerf characters that were getting too strong
+// from stacking too many bonus stat rolls — a +1 flat bump is roughly
+// half the strength of a typical statBonus spin while costing zero
+// extra spins.
+export type FlatStatBonuses = Record<string, number>
+
 // Item grade — rarity/power tier for powers, weapons, and armors.
 // F = Common, E = Weak, D = Uncommon, C = Rare, B = Epic, A = Legendary, S = Mythic, SS = Divine, SSS = Primordial, God = God-Tier
 export type ItemGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'God'
@@ -52,7 +60,7 @@ export interface RaceWheel {
   /** When this wheel fires relative to other race extras. Lower = sooner. */
   order?: number
   /** Segments shown on the wheel. */
-  segments: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; description?: string }[]
+  segments: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; flatStatBonuses?: FlatStatBonuses; description?: string }[]
 }
 
 // Six-bucket rarity classifier. Previously derived from `weight` via
@@ -74,6 +82,7 @@ export interface Race {
   description?: string                // optional flavor text for character card
   abilities: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]  // race-unique ability pool drawn for racialAbility spins
   statModifiers?: Record<string, number>  // multiplier per stat category; >1 boosts higher tiers, <1 pushes lower
+  flatStatBonuses?: FlatStatBonuses       // +N tier shift applied at stat resolution (no extra spin)
   extraPowerSpins?: number                // additional power category spins spliced after race lands
   extraWeaponSpins?: number               // additional weapon spins spliced after race lands (some races get unique weapons)
   minStatTier?: TierGrade                 // lowest stat tier grade that can be rolled; tiers below this are excluded
@@ -108,9 +117,9 @@ export interface Race {
   // race-granted power spins and the landing celebration can subtitle them
   // with the proper rarity. When an entry omits them, races.ts inherits from
   // the global powers pool or the parent class/subtype/transformation.
-  subTypePool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
-  classPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
-  transformationPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonus: number; statBonusGrants?: StatBonusGrants; grantedPowers?: string[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  subTypePool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; flatStatBonuses?: FlatStatBonuses; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  classPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; flatStatBonuses?: FlatStatBonuses; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  transformationPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonus: number; statBonusGrants?: StatBonusGrants; flatStatBonuses?: FlatStatBonuses; grantedPowers?: string[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
 }
 
 // Archetype definition — drives archetype ability spin count and special effects.
@@ -128,6 +137,10 @@ export interface Archetype {
   abilitySpinDisplayName?: string
   // Stat bonus/penalty spins spliced immediately after archetype lands
   statBonusGrants?: StatBonusGrants
+  // Flat tier shifts applied at stat-resolution time instead of spawning an
+  // extra spin. Used to give a small "+1 strength" feel without inflating
+  // the spin queue or letting characters become overpowered.
+  flatStatBonuses?: FlatStatBonuses
   // Extra power spins spliced after archetype lands
   extraPowerSpins?: number
   // Extra weapon spins spliced after archetype lands (dual wielders, gadgeteers, etc.)

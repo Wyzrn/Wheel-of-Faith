@@ -25,6 +25,11 @@
   let myClanName = $state<string | null>(null)
   let alreadyRequested = $state(false)
   let actionPending = $state(false)
+  // Persistent error from the last join/request attempt. Surfaced as an
+  // inline pill so the player can actually read the rejection reason —
+  // the toast vanishes too fast for "save a character first" type
+  // messages to register.
+  let joinError = $state<string | null>(null)
 
   onMount(async () => {
     const id = $page.params.id
@@ -67,11 +72,23 @@
   async function join() {
     if (!clan || actionPending) return
     actionPending = true
-    const endpoint = clan.joinType === 'invite' ? `/api/clans/${clan._id}/request` : `/api/clans/${clan._id}/join`
+    // Must wrap with apiUrl() so the itch.io build (cross-origin to the
+    // Heroku backend) hits the right host. Plain `/api/...` worked on the
+    // Heroku-served site but on itch the relative URL pointed at the
+    // itch CDN, returning a 403 instead of the API JSON.
+    const endpoint = clan.joinType === 'invite'
+      ? apiUrl(`/api/clans/${clan._id}/request`)
+      : apiUrl(`/api/clans/${clan._id}/join`)
     const res = await fetch(endpoint, { method: 'POST', credentials: 'include' })
     const data = await res.json().catch(() => ({}))
     actionPending = false
-    if (!res.ok) { toast.error(data.error ?? 'Failed'); return }
+    if (!res.ok) {
+      const msg = data.error ?? `Server rejected the request (HTTP ${res.status}).`
+      joinError = msg
+      toast.error(msg)
+      return
+    }
+    joinError = null
     if (clan.joinType === 'invite') {
       alreadyRequested = true
       toast.success('Join request sent')
@@ -209,6 +226,12 @@
             style="background: rgba(52,211,153,0.10); border: 1.5px solid rgba(52,211,153,0.40); color: #34d399; cursor: pointer;">
             {actionPending ? '…' : clan.joinType === 'invite' ? 'Request to Join' : 'Join Clan'}
           </button>
+        {/if}
+        {#if joinError}
+          <div class="mt-2 px-3 py-2 rounded-lg font-mono text-[11px] leading-relaxed"
+            style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.30); color: #f87171;">
+            {joinError}
+          </div>
         {/if}
       </div>
 
