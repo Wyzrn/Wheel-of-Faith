@@ -97,22 +97,34 @@
   // URL sync: keep the browser address in step with the active mode.
   // Player progress: menu (/) → spin (/spin) → result (/character/new).
   //
-  // We use the History API directly (window.history.replaceState) rather
-  // than SvelteKit's goto(). goto() runs the route's load function and
-  // remounts the page component — and since /, /spin, and /character/new
-  // all mount the same SpinPageView, every navigation would clobber the
-  // in-progress session state. With effect re-runs from a fresh mount the
-  // sync would re-fire, queueing another goto. SvelteKit aborts the
-  // previous navigation each time, producing the "navigation aborted"
-  // Uncaught Promise rejections the player was seeing (3000+ in console).
+  // Heroku-only. On the itch.io adapter-static build, the game lives in
+  // an iframe at html-classic.itch.zone/html/<id>/<hash>/index.html and
+  // itch's CDN has no SPA fallback — any chunk request, route refresh,
+  // or stray request to a path that isn't in the uploaded zip returns
+  // 403 "AccessDenied". Changing the URL to /spin or /character/new via
+  // replaceState makes the browser anchor subsequent chunk imports and
+  // any reload against the new path, which 403s. That 403 cascades into
+  // "Cannot use import statement outside a module" (when a chunk gets
+  // an HTML 403 page instead of JS) and "Cannot read properties of
+  // undefined (reading 'getAttribute')" (when Svelte's runtime tries to
+  // operate on a node that never loaded). The pre-hydration script in
+  // src/app.html sets a <base href> only on the original itch iframe
+  // URL, so the presence of that base element is a reliable
+  // "are-we-on-itch" sniff. Skip the URL sync when it's present.
   //
-  // history.replaceState just updates the address bar without touching
-  // SvelteKit's routing layer — the current component keeps running and
-  // its state stays intact. Rivals modes (online/bot/local duel) keep
-  // their own routes and are exempted here so we don't fight them.
+  // We use the History API directly (window.history.replaceState) rather
+  // than SvelteKit's goto() so the current component never remounts —
+  // goto() would re-run the route's load, remount SpinPageView, and the
+  // effect would re-fire from initial state, producing the "navigation
+  // aborted" Uncaught Promise rejections we saw earlier.
+  //
+  // Rivals modes (online/bot/local duel) keep their own routes and are
+  // exempted here so we don't fight them.
   $effect(() => {
     if (typeof window === 'undefined') return
     if (rivalsOnlineMode || rivalsBotMode || rivalMode) return
+    // Skip on itch (see comment above).
+    if (document.querySelector('base[href]')) return
     let target: string | null = null
     if (showNameScreen || showCard) {
       target = '/character/new'
@@ -124,7 +136,7 @@
     if (target && window.location.pathname !== target) {
       try {
         window.history.replaceState(window.history.state, '', target)
-      } catch { /* ignore — happens on some sandboxed iframes (itch.io) */ }
+      } catch { /* ignore — happens on some sandboxed iframes */ }
     }
   })
   const LANDING_KEY = 'wof_visited'
