@@ -371,8 +371,11 @@
     if (autoSpinAdvanceTimer)  { clearTimeout(autoSpinAdvanceTimer);  autoSpinAdvanceTimer = null }
     if (autoSpinWildcardTimer) { clearTimeout(autoSpinWildcardTimer); autoSpinWildcardTimer = null }
     if (!settings.autoSpin) return
-    // Hard pauses: typing a name, on the menu, or in the welcome modal.
-    if (showNameScreen || showMenu || tutorialStep === 0) return
+    // Hard pauses: typing a name, on the menu, viewing a saved character,
+    // browsing history, on a resume prompt, or in the welcome modal. Each
+    // of these hides the wheel from view but the engine state could still
+    // tick — so explicitly halt autospin so it doesn't silently fire.
+    if (showNameScreen || showMenu || showCard || showResumePrompt || showHistory || tutorialStep === 0) return
     // Pause autospin while Quill is mid-dialogue so the player can read.
     if (guide.scene) return
     if (currentSpinIndex >= spinQueue.length) return
@@ -3434,8 +3437,10 @@
   {/if}
 
   <!-- Main game: two-column layout. Gated on !showMenu so the z-[60] wheel
-       doesn't poke through the menu overlay (which sits lower). -->
-  {#if !showMenu && !showCard && !showResumePrompt && !showNameScreen && !(rivalMode && rivalPhase === 'battle')}
+       doesn't poke through the menu overlay (which sits lower). showHistory
+       is also gated here because scrolling the history viewer exposed the
+       wheel below it — and with autospin on, that wheel would silently fire. -->
+  {#if !showMenu && !showCard && !showResumePrompt && !showNameScreen && !showHistory && !(rivalMode && rivalPhase === 'battle')}
     <!-- min-height pre-divides by --app-zoom so the html-level CSS zoom
          applied on touch devices (~0.8) doesn't shrink the layout to 80%
          of viewport — which would pull justify-center inside the right
