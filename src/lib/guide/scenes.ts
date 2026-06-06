@@ -1326,6 +1326,8 @@ export const SCENES: Record<string, GuideScene> = {
 // land there from a shared URL. The real Ascension hub lives at /story and
 // drives its sub-views from internal `view` state.
 export const ROUTE_SCENES: { prefix: string; sceneId: string }[] = [
+  { prefix: '/character/new',        sceneId: 'first-character' },
+  { prefix: '/spin',                 sceneId: 'wheel-spinning' },
   { prefix: '/story/slot',           sceneId: 'ascension-slot-share' },
   { prefix: '/story',                sceneId: 'ascension-intro' },
   { prefix: '/clans/',               sceneId: 'public-clan-intro' },
