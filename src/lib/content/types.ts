@@ -158,6 +158,21 @@ export interface WheelSegment {
    *  Queen, Trade Prince ↔ Princess). Same semantics as ClassEntry's
    *  genderLabels. */
   genderLabels?: GenderLabels
+  /** Per-stat floor lift (in tier steps). Raises the minimum tier the
+   *  named stat can roll. Stacks additively with `tierFloorBonus`. Used
+   *  by Uncommon-tier rare-branch Wheel 1 options (Rare=+1, Epic=+2,
+   *  Legendary=+3, Divine=+4) and explicit floor specs ("raises floor of
+   *  Strength by +2"). Cannot be debuffed or cursed away. */
+  statFloorBonuses?: Record<string, number>
+  /** Per-stat cap raise (in tier steps). Pushes the maximum tier the
+   *  named stat can roll above the race's universal cap. Used by rare+
+   *  Wheel 1 options to give that branch genuine ceiling-busting reach
+   *  on the boosted stats. */
+  statCapBonuses?: Record<string, number>
+  /** Tagged perks / unlocks granted by this segment, surfaced on the
+   *  character card. Pure data — not consumed by any stat/spin handler.
+   *  Used by Centaur Wheel 2 "Dragon" → ['Dragon Scales']. */
+  grantedKeywords?: string[]
 }
 
 // Six-bucket rarity classifier. Previously derived from `weight` via
@@ -270,6 +285,18 @@ export interface ClassEntry {
    *  class lands. Used by Zombie Cosmic ("disables all standard
    *  weapon/armor/power spins"). Same semantics as WheelSegment's. */
   disableItemSpins?: ('weapon' | 'armor' | 'power')[]
+  /** Stack +N into the race's tier-floor bonus when this class lands. */
+  tierFloorBonus?: number
+  /** Per-stat floor lift (in tier steps). Same semantics as
+   *  WheelSegment.statFloorBonuses — used by Uncommon-tier Wheel 1
+   *  rare-branch classes (Rare=+1, Epic=+2, Legendary=+3, Divine=+4). */
+  statFloorBonuses?: Record<string, number>
+  /** Per-stat cap raise (in tier steps). */
+  statCapBonuses?: Record<string, number>
+  /** Strip the universal Height spin when this class lands (Troll). */
+  bypassHeightSpin?: boolean
+  /** Tagged perks granted by this class — surfaced on the character card. */
+  grantedKeywords?: string[]
   powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
   abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
 }

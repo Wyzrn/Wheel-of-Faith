@@ -173,6 +173,16 @@
   // pendingTierFloorBonus: stacked +N modifier applied to the effective
   //   stat-tier floor when stats resolve. Lifts the whole grade ladder.
   let pendingTierFloorBonus = $state(0)
+  // Per-stat floor/cap bonuses accumulated from Wheel 1 rare-branch
+  // segments (Rare=+1, Epic=+2, Legendary=+3, Divine=+4 to listed stats).
+  // Stack additively per stat; protected from debuffs.
+  let pendingStatFloorBonuses = $state<Record<string, number>>({})
+  let pendingStatCapBonuses = $state<Record<string, number>>({})
+  // Tagged perks (Centaur Dragon Scales etc.). Surfaced on character card.
+  let pendingGrantedKeywords = $state<string[]>([])
+  // When true, the universal Height spin is stripped from the queue
+  // (Troll — size is hard-locked by the Size Wheel result).
+  let pendingBypassHeight = $state(false)
   // raceWheelResults: maps raceWheelId → resolved label so later
   //   dynamic-insertion grants ("[Insert Rolled X]") can look up the
   //   earlier wheel's outcome at resolution time.
@@ -1043,14 +1053,22 @@
       const baseMin = race?.minStatTier != null ? TIER_ORDER.indexOf(race.minStatTier) : -1
       // pendingTierFloorBonus stacks into the floor — Zombie Cosmic
       // Power Level lifts the whole ladder by +1..+4 tiers via this.
+      // Per-stat floor bonus from Wheel 1 rare-branch lifts is added
+      // on top so a Lamia [LEGENDARY] "+3 IQ floor" branch only lifts
+      // IQ while leaving other stats at the race baseline.
       const tierFloorBonus = pendingTierFloorBonus
+      const perStatFloor = pendingStatFloorBonuses[def.category] ?? 0
       const minTierIdx = baseMin < 0
-        ? (isLimitBroken ? Math.max(0, lbShift + tierFloorBonus) : (tierFloorBonus > 0 ? Math.min(TIER_ORDER.length - 1, tierFloorBonus) : -1))
-        : Math.min(TIER_ORDER.length - 1, baseMin + lbShift + tierFloorBonus)
+        ? (isLimitBroken ? Math.max(0, lbShift + tierFloorBonus + perStatFloor) : ((tierFloorBonus + perStatFloor) > 0 ? Math.min(TIER_ORDER.length - 1, tierFloorBonus + perStatFloor) : -1))
+        : Math.min(TIER_ORDER.length - 1, baseMin + lbShift + tierFloorBonus + perStatFloor)
       // Without Limit Break, stat wheels cap at Absolute+. Transcendent and
       // Infinite tiers are locked off until the character is broken.
+      // Per-stat cap bonus pushes the ceiling above Absolute+ for stats
+      // boosted by rare-branch Wheel 1 lifts.
       const absoluteCapIdx = TIER_ORDER.indexOf('Absolute+' as TierGrade)
-      const maxTierIdx = isLimitBroken ? TIER_ORDER.length - 1 : (absoluteCapIdx >= 0 ? absoluteCapIdx : TIER_ORDER.length - 1)
+      const perStatCap = pendingStatCapBonuses[def.category] ?? 0
+      const baseCapIdx = isLimitBroken ? TIER_ORDER.length - 1 : (absoluteCapIdx >= 0 ? absoluteCapIdx : TIER_ORDER.length - 1)
+      const maxTierIdx = Math.min(TIER_ORDER.length - 1, baseCapIdx + perStatCap)
 
       // Blessed Wheel gamepass: "Higher segments slightly favoured." Boost
       // weight on stat tiers >= A- by 1.4x. Mild enough not to break the
@@ -1625,6 +1643,31 @@
           if (kill.has(spinQueue[i].category)) spinQueue.splice(i, 1)
         }
       }
+      // 2026-uncommon revamp: Wheel 1 rare-branch lifts (per-stat floor/cap)
+      // + global tier floor + height bypass + keyword grants. All stack.
+      if (classItem?.tierFloorBonus) {
+        pendingTierFloorBonus += classItem.tierFloorBonus
+      }
+      if (classItem?.statFloorBonuses) {
+        for (const [stat, n] of Object.entries(classItem.statFloorBonuses)) {
+          pendingStatFloorBonuses[stat] = (pendingStatFloorBonuses[stat] ?? 0) + (n as number)
+        }
+      }
+      if (classItem?.statCapBonuses) {
+        for (const [stat, n] of Object.entries(classItem.statCapBonuses)) {
+          pendingStatCapBonuses[stat] = (pendingStatCapBonuses[stat] ?? 0) + (n as number)
+        }
+      }
+      if (classItem?.grantedKeywords?.length) {
+        pendingGrantedKeywords = [...pendingGrantedKeywords, ...classItem.grantedKeywords]
+      }
+      if (classItem?.bypassHeightSpin) {
+        pendingBypassHeight = true
+        // Strip any pending height spins from the queue.
+        for (let i = spinQueue.length - 1; i > currentSpinIndex; i--) {
+          if (spinQueue[i].category === 'height') spinQueue.splice(i, 1)
+        }
+      }
 
       // ── 2026-06 race revamp: granted items + conditional wheels + gender swap ──
       // Apply structured grants (powers/weapons/armor) immediately. Pushing
@@ -1795,6 +1838,22 @@
       // Tier-floor bonus (Zombie Cosmic Power Level). Stacks additively.
       if (seg?.tierFloorBonus) {
         pendingTierFloorBonus += seg.tierFloorBonus
+      }
+      // Per-stat floor / cap lifts from Wheel 1 rare-branch segments
+      // (Uncommon-tier revamp). Stack additively per named stat.
+      if (seg?.statFloorBonuses) {
+        for (const [stat, n] of Object.entries(seg.statFloorBonuses)) {
+          pendingStatFloorBonuses[stat] = (pendingStatFloorBonuses[stat] ?? 0) + (n as number)
+        }
+      }
+      if (seg?.statCapBonuses) {
+        for (const [stat, n] of Object.entries(seg.statCapBonuses)) {
+          pendingStatCapBonuses[stat] = (pendingStatCapBonuses[stat] ?? 0) + (n as number)
+        }
+      }
+      // Tagged perk grants (Centaur Dragon → Dragon Scales).
+      if (seg?.grantedKeywords?.length) {
+        pendingGrantedKeywords = [...pendingGrantedKeywords, ...seg.grantedKeywords]
       }
       // Dynamic grant — copy an earlier raceWheel's result into this
       // segment's grant slot (Zombie Mutated Evolved Horror, Ghost Wraith
@@ -2760,6 +2819,10 @@
     pendingFlatStatBonuses = {}
     overrideClassPool = null
     pendingTierFloorBonus = 0
+    pendingStatFloorBonuses = {}
+    pendingStatCapBonuses = {}
+    pendingGrantedKeywords = []
+    pendingBypassHeight = false
     raceWheelResults = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
@@ -2828,6 +2891,10 @@
     pendingFlatStatBonuses = {}
     overrideClassPool = null
     pendingTierFloorBonus = 0
+    pendingStatFloorBonuses = {}
+    pendingStatCapBonuses = {}
+    pendingGrantedKeywords = []
+    pendingBypassHeight = false
     raceWheelResults = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
@@ -2866,6 +2933,10 @@
     pendingFlatStatBonuses = {}
     overrideClassPool = null
     pendingTierFloorBonus = 0
+    pendingStatFloorBonuses = {}
+    pendingStatCapBonuses = {}
+    pendingGrantedKeywords = []
+    pendingBypassHeight = false
     raceWheelResults = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
@@ -2904,6 +2975,10 @@
     pendingFlatStatBonuses = {}
     overrideClassPool = null
     pendingTierFloorBonus = 0
+    pendingStatFloorBonuses = {}
+    pendingStatCapBonuses = {}
+    pendingGrantedKeywords = []
+    pendingBypassHeight = false
     raceWheelResults = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
