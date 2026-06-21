@@ -239,7 +239,11 @@ export function buildInitialQueue(): SpinDefinition[] {
     { category: 'backstory',     displayName: 'Backstory'     },
     // bonus stat spin spliced here if backstory has bonusSpin
     { category: 'height',        displayName: 'Height'        },
-    { category: 'gender',        displayName: 'Gender'        },
+    // gender used to sit here; moved to splice right after racialAbility
+    // in the race-extras section (universal 2026-06 race revamp). Some
+    // race-specific class entries (Wizard/Witch, Goblin King/Queen) swap
+    // their displayed label based on the rolled gender, so the gender
+    // result needs to exist BEFORE raceClass resolves.
     { category: 'strength',      displayName: 'Strength'      },
     { category: 'speed',         displayName: 'Speed'         },
     { category: 'agility',       displayName: 'Agility'       },

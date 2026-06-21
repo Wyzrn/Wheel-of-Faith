@@ -18,7 +18,8 @@
   import { loadSession, saveSession, clearSession, flushSession, createSession } from '$lib/session/store'
   import type { SessionState, SpinResult } from '$lib/session/types'
   import { buildInitialQueue, getSegmentsForCategory, limitBreakSegmentsFor, LIMIT_BREAK_LEVEL_POOL, LIMIT_BREAK_SHIFT } from '$lib/game/spinQueue'
-  import { getRaceWheelSegments, getRaceWheelSegmentDescription } from '$lib/game/raceWheelRegistry'
+  import { getRaceWheelSegments, getRaceWheelSegmentDescription, getRaceWheel } from '$lib/game/raceWheelRegistry'
+  import { applyGrantedItems, formatGrantsSuffix, resolveGenderedLabel, type GrantsApplied } from '$lib/game/grantedItems'
   import { generateStatDescription, STAT_DESCRIPTION_CATEGORIES } from '$lib/content/statDescriptions'
   import { generateExtraDescription, EXTRA_DESCRIPTION_CATEGORIES } from '$lib/content/extraDescriptions'
   import { resolveMutatedSegments, getMutation } from '$lib/game/archetypeMutations'
@@ -160,6 +161,22 @@
   // category. Applied at stat-result-push time and then cleared. Stacks
   // additively if multiple sources buff the same stat.
   let pendingFlatStatBonuses = $state<Record<string, number>>({})
+  // 2026-06 race revamp state vars — set by raceWheel segment handlers
+  // when the player rolls a flagged outcome (Evolution Chance branches,
+  // Zombie type wheels, Catfolk Normal Cat, etc.). All reset on session
+  // start so they don't leak across characters.
+  //
+  // overrideClassPool: when set, the raceClass spin draws from this list
+  //   instead of race.classPool. Triggered by Evolution-Chance segments
+  //   that lock the player into a specific class wheel.
+  let overrideClassPool = $state<import('$lib/content/types').ClassEntry[] | null>(null)
+  // pendingTierFloorBonus: stacked +N modifier applied to the effective
+  //   stat-tier floor when stats resolve. Lifts the whole grade ladder.
+  let pendingTierFloorBonus = $state(0)
+  // raceWheelResults: maps raceWheelId → resolved label so later
+  //   dynamic-insertion grants ("[Insert Rolled X]") can look up the
+  //   earlier wheel's outcome at resolution time.
+  let raceWheelResults = $state<Record<string, string>>({})
   // Class/subType/transformation power pool override — used only by racial bonus power spins
   let activePowerPool = $state<{ label: string; weight: number }[]>([])
   // Element locked in by a twist sub-spin (Bender: Fire, Demi-God: Storms,
@@ -791,11 +808,13 @@
       return race?.subTypePool ?? getSegmentsForCategory('raceSubType')
     }
 
-    // Use race class pool
+    // Use race class pool — prefer the override-pool when an
+    // Evolution-Chance / type-gate segment locked it in for this run.
     if (def.category === 'raceClass') {
       const raceResult = results.find(r => r.category === 'race')
       const race = getRace(def.forRace ?? raceResult?.resultLabel)
-      return race?.classPool ?? getSegmentsForCategory('raceClass')
+      const pool = overrideClassPool ?? race?.classPool
+      return pool ?? getSegmentsForCategory('raceClass')
     }
 
     // Per-race Limit Break wheel — odds derived from race.limitBreakOdds. Falls
@@ -1022,7 +1041,12 @@
       const lbShift = lbResult ? (LIMIT_BREAK_SHIFT[lbResult.resultLabel] ?? 0) : 0
       const isLimitBroken = lbShift > 0
       const baseMin = race?.minStatTier != null ? TIER_ORDER.indexOf(race.minStatTier) : -1
-      const minTierIdx = baseMin < 0 ? (isLimitBroken ? Math.max(0, lbShift) : -1) : Math.min(TIER_ORDER.length - 1, baseMin + lbShift)
+      // pendingTierFloorBonus stacks into the floor — Zombie Cosmic
+      // Power Level lifts the whole ladder by +1..+4 tiers via this.
+      const tierFloorBonus = pendingTierFloorBonus
+      const minTierIdx = baseMin < 0
+        ? (isLimitBroken ? Math.max(0, lbShift + tierFloorBonus) : (tierFloorBonus > 0 ? Math.min(TIER_ORDER.length - 1, tierFloorBonus) : -1))
+        : Math.min(TIER_ORDER.length - 1, baseMin + lbShift + tierFloorBonus)
       // Without Limit Break, stat wheels cap at Absolute+. Transcendent and
       // Infinite tiers are locked off until the character is broken.
       const absoluteCapIdx = TIER_ORDER.indexOf('Absolute+' as TierGrade)
@@ -1262,6 +1286,12 @@
   function handleSpinComplete(resultIndex: number, resultLabel: string) {
     const def = spinQueue[currentSpinIndex]
 
+    // Display-label override set by class/clan/rank branches when a result
+    // grants items or stat bonuses that should appear on the card inline
+    // (e.g. "Knight (+2 Strength, +2 Durability)"). Falls back to undefined
+    // when no override is needed and the raw resultLabel is shown as-is.
+    let displayLabelOverride: string | undefined = undefined
+
     // ── Wildcard interrupt ────────────────────────────────────────────────
     if (!skipWildcard) {
       const isStatSpin = STAT_CATEGORIES.has(def.category) && !def.isReroll
@@ -1398,8 +1428,16 @@
       // race.injectedWheels becomes its own raceWheel slot, ordered by
       // the wheel's `order` field. Splices BEFORE the Limit Break check
       // so the player's narrative wheels resolve first.
+      //
+      // Class-conditional wheels (requireClassLabel set on the RaceWheel —
+      // e.g. knightRank, wizardMagic, shamanElement) are SKIPPED here and
+      // deferred to the raceClass-resolution branch below, where they
+      // splice in after the player's class result is known.
       if (race?.injectedWheels?.length) {
-        const ordered = [...race.injectedWheels].sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+        const ordered = [...race.injectedWheels]
+          .filter(w => !w.requireClassLabel || w.requireClassLabel.length === 0)
+          .filter(w => (w.order ?? 99) > 0)
+          .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
         for (const w of ordered) {
           insertSlots.push({
             category: 'raceWheel' as const,
@@ -1432,6 +1470,13 @@
       for (let i = 0; i < count; i++) {
         insertSlots.push({ category: 'racialAbility' as const, displayName: `Racial Ability ${count > 1 ? i + 1 : ''}`.trim(), forRace })
       }
+
+      // Gender — universal placement: AFTER the last racialAbility,
+      // BEFORE any class-conditional injected wheels and the raceClass
+      // spin. This lets class entries that swap their label by gender
+      // (Wizard ↔ Witch, Goblin King ↔ Queen) read a resolved gender.
+      // No-ops if some other code path already spliced a gender slot.
+      insertSlots.push({ category: 'gender' as const, displayName: 'Gender' })
 
       // Bonus power slots — racial, use class-specific power pool if set
       for (let i = 0; i < extraPowers; i++) {
@@ -1533,7 +1578,10 @@
     } else if (def.category === 'raceClass') {
       const raceResult = results.find(r => r.category === 'race')
       const race = getRace(def.forRace ?? raceResult?.resultLabel)
-      const classItem = race?.classPool?.find(c => c.label === resultLabel)
+      // Prefer the override pool (Evolution-Chance / type-gate lock-in)
+      // over the race's standard classPool when one is active.
+      const activePool = overrideClassPool ?? race?.classPool
+      const classItem = activePool?.find(c => c.label === resultLabel)
       if (classItem?.statBonusGrants) {
         for (const [stat, bonusType] of Object.entries(classItem.statBonusGrants)) {
           pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
@@ -1558,9 +1606,80 @@
       }
       if (classItem?.bonusSpins?.length) {
         spinQueue.splice(currentSpinIndex + 1, 0, ...classItem.bonusSpins.map(b => ({
-          category: b.category as SpinCategory, displayName: b.displayName,
+          category: b.category as SpinCategory,
+          displayName: b.displayName,
+          raceWheelId: b.raceWheelId,
+          forRace: def.forRace,
         })))
       }
+      // Disable specific item-spin categories at class-result level (Zombie
+      // Cosmic). Mirrors the WheelSegment-level handler.
+      if (classItem?.disableItemSpins?.length) {
+        const kill = new Set<string>()
+        for (const c of classItem.disableItemSpins) {
+          if (c === 'weapon') { kill.add('weaponType'); kill.add('weapon'); kill.add('weaponEnchantment'); kill.add('weaponMastery') }
+          if (c === 'armor')  { kill.add('armorType');  kill.add('armor');  kill.add('armorStrength');    kill.add('armorEnchantment') }
+          if (c === 'power')  { kill.add('power');      kill.add('powerMastery') }
+        }
+        for (let i = spinQueue.length - 1; i > currentSpinIndex; i--) {
+          if (kill.has(spinQueue[i].category)) spinQueue.splice(i, 1)
+        }
+      }
+
+      // ── 2026-06 race revamp: granted items + conditional wheels + gender swap ──
+      // Apply structured grants (powers/weapons/armor) immediately. Pushing
+      // these as SpinResults AND removing the matching upcoming base spin
+      // slots so the player doesn't double-roll. Then splice any class-
+      // conditional injected wheels (rank wheels, magic wheels) the chosen
+      // class triggers, sorted by their order field. Finally compose the
+      // display-label override with gender swap + grants suffix.
+      const grants: GrantsApplied | null = (classItem?.grantedPowerItems?.length || classItem?.grantedWeapons?.length || classItem?.grantedArmor?.length)
+        ? applyGrantedItems({
+            grantedPowerItems: classItem.grantedPowerItems,
+            grantedWeapons:    classItem.grantedWeapons,
+            grantedArmor:      classItem.grantedArmor,
+            spinQueue,
+            results,
+            currentSpinIndex,
+            parentDisplayName: def.displayName,
+          })
+        : null
+
+      // Class-conditional injected wheels — only fire when the class result
+      // matches the wheel's requireClassLabel filter. Rank wheels gate
+      // exactly one class; magic-pool wheels (wizardMagic, shamanElement)
+      // gate the magic class. Sort by order so e.g. wizardMagic (order 1)
+      // splices before wizardRank (order 2).
+      const conditionalWheels = (race?.injectedWheels ?? [])
+        .filter(w => Array.isArray(w.requireClassLabel) && w.requireClassLabel.includes(resultLabel))
+        .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+      if (conditionalWheels.length > 0) {
+        spinQueue.splice(currentSpinIndex + 1, 0, ...conditionalWheels.map(w => ({
+          category: 'raceWheel' as const,
+          displayName: w.displayName,
+          forRace: def.forRace,
+          raceWheelId: w.id,
+        })))
+      }
+
+      // Gender-gated display label swap (Wizard ↔ Witch, Goblin King ↔ Queen).
+      // The internal `resultLabel` stays as the segment id (used for synergy
+      // maps, achievement triggers, etc.); only displayLabelOverride is rewritten.
+      const rolledGender = results.find(r => r.category === 'gender')?.resultLabel
+      const displayedClassLabel = resolveGenderedLabel({
+        base: resultLabel,
+        genderLabels: classItem?.genderLabels,
+        rolledGender,
+      })
+      const classSuffix = formatGrantsSuffix({
+        flatStatBonuses: classItem?.flatStatBonuses,
+        statBonusGrants: classItem?.statBonusGrants,
+        grants: grants ?? undefined,
+      })
+      if (displayedClassLabel !== resultLabel || classSuffix !== '') {
+        displayLabelOverride = `${displayedClassLabel}${classSuffix}`
+      }
+
       // Splice devil fruit name spin for Demon Fruit Eater
       if (raceResult?.resultLabel === 'Demon Fruit Eater' && DEVIL_FRUIT_POOLS[resultLabel]) {
         spinQueue.splice(currentSpinIndex + 1, 0, {
@@ -1597,12 +1716,16 @@
         showAnnouncement = showAnnouncement ? showAnnouncement + ' ' + msg : msg
       }
     } else if (def.category === 'raceWheel' && def.raceWheelId) {
-      // Injected race wheels (Dragon Aspect / Breath Evolution, etc.) grant the
-      // landed segment's stat boost/debuff so these progression spins reward too.
+      // Injected race wheels (Dragon Aspect / Breath Evolution / rank
+      // ladders / magic-element pools) grant the landed segment's stat
+      // boost/debuff AND any direct power/weapon/armor item grants the
+      // segment carries (2026-06 race revamp adds grant fields to wheel
+      // segments). Read the full RaceWheel from the registry so we get
+      // the typed segment shape including grant fields.
       const raceResult = results.find(r => r.category === 'race')
       const raceLabel = def.forRace ?? raceResult?.resultLabel
-      const segs = getRaceWheelSegments(raceLabel ?? '', def.raceWheelId) as Array<{ label: string; statBonusGrants?: Record<string, 'statBonus' | 'statPenalty'>; flatStatBonuses?: Record<string, number> }> | null
-      const seg = segs?.find(s => s.label === resultLabel)
+      const wheel = getRaceWheel(raceLabel ?? '', def.raceWheelId)
+      const seg = wheel?.segments.find(s => s.label === resultLabel)
       if (seg?.statBonusGrants) {
         for (const [stat, bonusType] of Object.entries(seg.statBonusGrants)) {
           pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
@@ -1612,6 +1735,118 @@
         for (const [stat, n] of Object.entries(seg.flatStatBonuses)) {
           pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + n
         }
+      }
+      // Granted items on rank/magic segments — push results + disable
+      // the corresponding upcoming base spin slots so the rank's weapon
+      // replaces the player's weaponType+weapon roll, etc.
+      const segGrants = (seg?.grantedPowers?.length || seg?.grantedWeapons?.length || seg?.grantedArmor?.length)
+        ? applyGrantedItems({
+            grantedPowerItems: seg?.grantedPowers,
+            grantedWeapons:    seg?.grantedWeapons,
+            grantedArmor:      seg?.grantedArmor,
+            spinQueue,
+            results,
+            currentSpinIndex,
+            parentDisplayName: def.displayName,
+          })
+        : null
+      const wheelSuffix = formatGrantsSuffix({
+        flatStatBonuses: seg?.flatStatBonuses,
+        statBonusGrants: seg?.statBonusGrants,
+        grants: segGrants ?? undefined,
+      })
+      let labelTag = ''
+
+      // Stash this wheel's result so dynamic-insertion ranks down the
+      // queue can look it up by raceWheelId.
+      if (def.raceWheelId) {
+        raceWheelResults[def.raceWheelId] = resultLabel
+      }
+
+      // ── 2026-06 race revamp segment effects ──
+      // Skip-remaining-racial-extras (Catfolk Normal Cat). Strips the
+      // queue of any future racial-extras slots — racial abilities, class,
+      // rank wheels, weakness, transformation — without touching archetype
+      // / stats / weapons / armor / weakness placement / title.
+      if (seg?.skipRemainingRacialExtras) {
+        const racialCats = new Set(['raceSubType','raceClass','raceWheel','racialAbility','raceTransformation','limitBreak','limitBreakLevel'])
+        for (let i = spinQueue.length - 1; i > currentSpinIndex; i--) {
+          if (racialCats.has(spinQueue[i].category)) spinQueue.splice(i, 1)
+        }
+      }
+      // Disable specific item-spin categories (Catfolk tiny paws, Zombie
+      // Cosmic standard items). Removes future slots of the listed kinds.
+      if (seg?.disableItemSpins?.length) {
+        const kill = new Set<string>()
+        for (const c of seg.disableItemSpins) {
+          if (c === 'weapon') { kill.add('weaponType'); kill.add('weapon'); kill.add('weaponEnchantment'); kill.add('weaponMastery') }
+          if (c === 'armor')  { kill.add('armorType');  kill.add('armor');  kill.add('armorStrength');    kill.add('armorEnchantment') }
+          if (c === 'power')  { kill.add('power');      kill.add('powerMastery') }
+        }
+        for (let i = spinQueue.length - 1; i > currentSpinIndex; i--) {
+          if (kill.has(spinQueue[i].category)) spinQueue.splice(i, 1)
+        }
+      }
+      // Override class pool (Evolution Chance / type-gate). Stored on the
+      // module-scope state var so the upcoming raceClass spin sees it.
+      if (seg?.overrideClassPool?.length) {
+        overrideClassPool = seg.overrideClassPool
+      }
+      // Tier-floor bonus (Zombie Cosmic Power Level). Stacks additively.
+      if (seg?.tierFloorBonus) {
+        pendingTierFloorBonus += seg.tierFloorBonus
+      }
+      // Dynamic grant — copy an earlier raceWheel's result into this
+      // segment's grant slot (Zombie Mutated Evolved Horror, Ghost Wraith
+      // capstone, Merfolk Abyssal Terror, etc.).
+      if (seg?.grantsRolledFrom) {
+        const rolls = Array.isArray(seg.grantsRolledFrom) ? seg.grantsRolledFrom : [seg.grantsRolledFrom]
+        for (const roll of rolls) {
+          const sourceLabel = raceWheelResults[roll.wheelId]
+          if (!sourceLabel) continue
+          const grantsSynth = applyGrantedItems({
+            ...(roll.grantAs === 'power'  ? { grantedPowerItems: [{ label: sourceLabel }] } : {}),
+            ...(roll.grantAs === 'weapon' ? { grantedWeapons:    [{ label: sourceLabel }] } : {}),
+            ...(roll.grantAs === 'armor'  ? { grantedArmor:     [{ label: sourceLabel }] } : {}),
+            spinQueue,
+            results,
+            currentSpinIndex,
+            parentDisplayName: def.displayName,
+          })
+          const synthSuffix = formatGrantsSuffix({ grants: grantsSynth })
+          if (synthSuffix) labelTag += synthSuffix
+          break
+        }
+      }
+      // Triggers a follow-up wheel (Zombie Mutation Selection → matching
+      // Mutation Power Wheel). The named wheel is one of the race's
+      // injectedWheels — splice an extra raceWheel slot for it.
+      if (seg?.triggersWheel) {
+        spinQueue.splice(currentSpinIndex + 1, 0, {
+          category: 'raceWheel' as const,
+          displayName: seg.triggersWheel.displayName ?? seg.triggersWheel.id,
+          forRace: raceLabel,
+          raceWheelId: seg.triggersWheel.id,
+        })
+      }
+      // Rare/Broken display tag. Appended after suffix so the label reads
+      // "Sentient Malfunction [BROKEN] (+4 …)".
+      if (seg?.rareTag) labelTag = ` ${seg.rareTag}` + labelTag
+
+      // Gender-gated display label swap on rank/wheel segments (e.g.
+      // Goblin's Trade Prince ↔ Princess capstone). Internal resultLabel
+      // stays the canonical id for synergy lookups; only the display
+      // label rewrites.
+      const rolledGenderForWheel = results.find(r => r.category === 'gender')?.resultLabel
+      const displayedSegLabel = resolveGenderedLabel({
+        base: resultLabel,
+        genderLabels: seg?.genderLabels,
+        rolledGender: rolledGenderForWheel,
+      })
+
+      const finalSuffix = wheelSuffix + labelTag
+      if (displayedSegLabel !== resultLabel || finalSuffix !== '') {
+        displayLabelOverride = `${displayedSegLabel}${finalSuffix}`
       }
     } else if (def.category === 'height') {
       // Apply stat modifiers to future stat spins based on height range
@@ -2282,6 +2517,11 @@
       resultLabel,
       resultIndex,
       timestamp: new Date().toISOString(),
+      // Branches above (raceClass, raceWheel) set this when a result has
+      // gender-swapped its display label and/or carries item / stat grants
+      // the player should see inline (e.g. "Knight (+2 Str, + Bronze
+      // Shortsword (F))"). Falls back to resultLabel when unset.
+      displayLabel: displayLabelOverride,
     }
 
     // For stat categories, look up tier + score from the FlavorLabel embedded data.
@@ -2518,6 +2758,9 @@
     showResumePrompt = false
     pendingStatBonuses = {}
     pendingFlatStatBonuses = {}
+    overrideClassPool = null
+    pendingTierFloorBonus = 0
+    raceWheelResults = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
     activePowerPool = []
@@ -2583,6 +2826,9 @@
     showResumePrompt = false
     pendingStatBonuses = {}
     pendingFlatStatBonuses = {}
+    overrideClassPool = null
+    pendingTierFloorBonus = 0
+    raceWheelResults = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
     activePowerPool = []
@@ -2618,6 +2864,9 @@
     isRevealed = false
     pendingStatBonuses = {}
     pendingFlatStatBonuses = {}
+    overrideClassPool = null
+    pendingTierFloorBonus = 0
+    raceWheelResults = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
     activePowerPool = []
@@ -2653,6 +2902,9 @@
     showResumePrompt = false
     pendingStatBonuses = {}
     pendingFlatStatBonuses = {}
+    overrideClassPool = null
+    pendingTierFloorBonus = 0
+    raceWheelResults = {}
     usedRacialAbilities = new Set()
     usedArchetypeAbilities = new Set()
     activePowerPool = []
@@ -2688,6 +2940,9 @@
       isRevealed = false
       pendingStatBonuses = {}
     pendingFlatStatBonuses = {}
+    overrideClassPool = null
+    pendingTierFloorBonus = 0
+    raceWheelResults = {}
       usedRacialAbilities = new Set()
       usedArchetypeAbilities = new Set()
       activePowerPool = []

@@ -18,6 +18,35 @@ export type StatBonusGrants = Record<string, 'statBonus' | 'statPenalty'>
 // extra spins.
 export type FlatStatBonuses = Record<string, number>
 
+// Granted item carried by a class / clan / rank / injected-wheel segment.
+// When this fires, the engine pushes a SpinResult for the corresponding
+// category (power / weapon / armor) AND removes the would-be base spin
+// from the queue so the player doesn't double-roll. Wildcards can still
+// award bonus item spins on top — they're orthogonal.
+//
+// label   — the item's display name (need not exist in the global pool)
+// grade   — item rarity tier (F → God); falls back to 'C' if omitted
+// element — thematic affinity; auto-defaulted by family (sword=Metal,
+//           bow=Wind, staff=Arcane, mace=Light, axe=Neutral, dagger=Shadow,
+//           lute/horn/drum=Sound) when omitted; see resolveGrantElement().
+export interface GrantedItem {
+  label: string
+  grade?: ItemGrade
+  element?: ElementType
+}
+
+// Display-label swap based on the rolled gender result. Useful when a class
+// name conventionally differs by gender (Wizard ↔ Witch). The base `label`
+// remains the canonical id used in scripts / synergy maps; `genderLabels`
+// only rewrites what the player SEES on the card. Falls back to `label`
+// when the rolled gender isn't in the map. Default for missing entries =
+// the `male` value.
+export interface GenderLabels {
+  male?: string
+  female?: string
+  other?: string
+}
+
 // Item grade — rarity/power tier for powers, weapons, and armors.
 // F = Common, E = Weak, D = Uncommon, C = Rare, B = Epic, A = Legendary, S = Mythic, SS = Divine, SSS = Primordial, God = God-Tier
 export type ItemGrade = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS' | 'God'
@@ -57,10 +86,78 @@ export interface RaceWheel {
   id: string
   /** Display name on the spin queue ("Bloodline", "Reality Law"). */
   displayName: string
-  /** When this wheel fires relative to other race extras. Lower = sooner. */
+  /** When this wheel fires relative to other race extras. Lower = sooner.
+   *  Wheels with order ≤ 0 are skipped from the default auto-splice and
+   *  only fire when triggered by a bonusSpins entry that names their id
+   *  (used for class-conditional wheels like rank ladders + magic pools). */
   order?: number
-  /** Segments shown on the wheel. */
-  segments: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; flatStatBonuses?: FlatStatBonuses; description?: string }[]
+  /** Conditional gate — when set, this wheel ONLY fires if the most
+   *  recent raceClass result label matches one of the listed strings.
+   *  Used for rank wheels (knightRank fires only when raceClass='Knight')
+   *  and magic-pool wheels (wizardMagic fires only on Wizard/Witch). */
+  requireClassLabel?: string[]
+  /** Segments shown on the wheel. Segments can carry stat bonuses (flat or
+   *  spin-spawning), direct item grants (power/weapon/armor), AND a set of
+   *  reroute / branching flags that the 2026-06 race revamp added so a
+   *  single landing can dramatically reshape the rest of the spin run. */
+  segments: WheelSegment[]
+}
+
+/** Single segment on an injected race wheel. All fields optional except
+ *  label + weight; carries every possible side-effect a 2026-06 race
+ *  segment can trigger. */
+export interface WheelSegment {
+  label: string
+  weight: number
+  element?: ElementType
+  grade?: ItemGrade
+  statBonusGrants?: StatBonusGrants
+  flatStatBonuses?: FlatStatBonuses
+  grantedPowers?: GrantedItem[]
+  grantedWeapons?: GrantedItem[]
+  grantedArmor?: GrantedItem[]
+  description?: string
+  /** Engine flags for type-gated branching / dynamic insertion / etc. */
+  /** When true, the engine wipes any remaining race-extras spins from the
+   *  queue (racial abilities, class, rank, magic wheels, weakness) but
+   *  KEEPS the global flow — archetype, stats, weapons, etc. — going.
+   *  Used by Catfolk Normal Cat to end the racial portion early. */
+  skipRemainingRacialExtras?: boolean
+  /** Strip future base spins of these categories from the queue. Lets a
+   *  segment say "you can't roll a weapon" without wiping anything else.
+   *  Used by Catfolk Normal Cat (tiny paws), Zombie Cosmic. */
+  disableItemSpins?: ('weapon' | 'armor' | 'power')[]
+  /** Replace the race's standard classPool for this run with a custom
+   *  one. Used by Evolution-Chance branches (Sprite Immortal, Hobgoblin
+   *  Goblin-Lord, Ghost Wraith, Pixie Fae, Wisp Bog-Lord, Gremlin
+   *  Colossus) and by Zombie/Merfolk type wheels that route to different
+   *  per-type class wheels. */
+  overrideClassPool?: ClassEntry[]
+  /** Apply a flat +N to the FINAL stat-grade resolution floor — lifts
+   *  every stat ladder by N steps. Used by Zombie Cosmic Power Level. */
+  tierFloorBonus?: number
+  /** When landed on, the engine clears all current race-derived results
+   *  + queue, and re-enters as the specified race (no second random race
+   *  spin). Used by Imp Archdemon Lineage → Demon. */
+  redirectToRace?: string
+  /** Splice a follow-up raceWheel slot of this id directly after this
+   *  segment resolves. Used by chained wheels (Zombie Mutation Selection
+   *  → Mutation Power Wheel keyed by selection). */
+  triggersWheel?: { id: string; displayName?: string }
+  /** Reference an earlier resolved raceWheel result and re-grant it as
+   *  power/weapon/armor at this segment. Used by dynamic-insertion ranks
+   *  ("[Insert Rolled Mutation Power]" on Zombie Mutated Evolved Horror,
+   *  "[Insert Rolled Reaper Magic]" on Ghost Wraith capstone, etc.). */
+  grantsRolledFrom?:
+    | { wheelId: string; grantAs: 'power' | 'weapon' | 'armor' }
+    | { wheelId: string; grantAs: 'power' | 'weapon' | 'armor' }[]
+  /** Player-facing decorator added to the displayed label (e.g. "[RARE]"
+   *  or "[BROKEN]"). Internal label stays clean for synergy lookups. */
+  rareTag?: string
+  /** Gender-gated display label swap on a wheel segment (Goblin King ↔
+   *  Queen, Trade Prince ↔ Princess). Same semantics as ClassEntry's
+   *  genderLabels. */
+  genderLabels?: GenderLabels
 }
 
 // Six-bucket rarity classifier. Previously derived from `weight` via
@@ -117,9 +214,80 @@ export interface Race {
   // race-granted power spins and the landing celebration can subtitle them
   // with the proper rarity. When an entry omits them, races.ts inherits from
   // the global powers pool or the parent class/subtype/transformation.
-  subTypePool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; flatStatBonuses?: FlatStatBonuses; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
-  classPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonusGrants?: StatBonusGrants; flatStatBonuses?: FlatStatBonuses; grantedPowers?: string[]; bonusSpins?: { category: string; displayName: string }[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
-  transformationPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade; statBonus: number; statBonusGrants?: StatBonusGrants; flatStatBonuses?: FlatStatBonuses; grantedPowers?: string[]; powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]; abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[] }[]
+  subTypePool?: SubTypeEntry[]
+  classPool?: ClassEntry[]
+  transformationPool?: TransformationEntry[]
+}
+
+/** Bonus spin descriptor — splices an extra slot into the queue. The
+ *  optional `raceWheelId` targets a specific named injected wheel (used
+ *  for class-rank wheels + magic wheels that gate on raceClass result). */
+export interface BonusSpinSpec {
+  category: string
+  displayName: string
+  raceWheelId?: string
+}
+
+export interface SubTypeEntry {
+  label: string
+  weight: number
+  element?: ElementType
+  grade?: ItemGrade
+  statBonusGrants?: StatBonusGrants
+  flatStatBonuses?: FlatStatBonuses
+  grantedPowers?: string[]
+  /** Structured power grants (with grade + element). Use alongside or in
+   *  place of the legacy string[] form when a class/rank needs a specific
+   *  grade ("Smoke Bomb (C)") that wouldn't be derivable from a label
+   *  lookup against the global powers pool. */
+  grantedPowerItems?: GrantedItem[]
+  grantedWeapons?: GrantedItem[]
+  grantedArmor?: GrantedItem[]
+  bonusSpins?: BonusSpinSpec[]
+  genderLabels?: GenderLabels
+  powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
+  abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
+}
+
+export interface ClassEntry {
+  label: string
+  weight: number
+  element?: ElementType
+  grade?: ItemGrade
+  statBonusGrants?: StatBonusGrants
+  flatStatBonuses?: FlatStatBonuses
+  grantedPowers?: string[]
+  /** Structured power grants (with grade + element). Use alongside the
+   *  legacy string[] form when a class/rank needs a specific grade. */
+  grantedPowerItems?: GrantedItem[]
+  grantedWeapons?: GrantedItem[]
+  grantedArmor?: GrantedItem[]
+  bonusSpins?: BonusSpinSpec[]
+  /** When set, the displayed result label swaps based on the rolled
+   *  gender. Engine falls back to `label` for genders not in the map. */
+  genderLabels?: GenderLabels
+  /** Strip future base spins of these categories from the queue when this
+   *  class lands. Used by Zombie Cosmic ("disables all standard
+   *  weapon/armor/power spins"). Same semantics as WheelSegment's. */
+  disableItemSpins?: ('weapon' | 'armor' | 'power')[]
+  powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
+  abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
+}
+
+export interface TransformationEntry {
+  label: string
+  weight: number
+  element?: ElementType
+  grade?: ItemGrade
+  statBonus: number
+  statBonusGrants?: StatBonusGrants
+  flatStatBonuses?: FlatStatBonuses
+  grantedPowers?: string[]
+  grantedPowerItems?: GrantedItem[]
+  grantedWeapons?: GrantedItem[]
+  grantedArmor?: GrantedItem[]
+  powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
+  abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
 }
 
 // Archetype definition — drives archetype ability spin count and special effects.
