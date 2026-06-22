@@ -54,6 +54,7 @@
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory, raceStatBonusCap, raceTierModifier } from '$lib/landingColors'
   import { describeRacialGrants, describeTwist } from '$lib/game/racialGrants'
+  import { buildSpinGrantPerks } from '$lib/game/spinGrantPerks'
   import { resolveActiveTheme } from '$lib/wheelThemes'
   import { buildIdentityCard } from '$lib/identityCard'
   import { tilt } from '$lib/actions/tilt'
@@ -3977,6 +3978,12 @@
                 last.resultLabel ?? '',
                 raceWheelDef?.raceWheelId,
               )}
+              {@const structuredGrants = buildSpinGrantPerks({
+                category:   last.category,
+                raceLabel:  results.find(r => r.category === 'race')?.resultLabel ?? raceWheelDef?.forRace,
+                label:      last.resultLabel ?? '',
+                raceWheelId: raceWheelDef?.raceWheelId,
+              })}
               {@const twistDef = last.category === 'twistSpin' ? spinQueue[currentSpinIndex] : undefined}
               {@const twistInfo = describeTwist(twistDef?.twistKind, last.resultLabel ?? '')}
               {@const baseDesc = raceWheelDesc || statDesc || extraDesc || twistInfo.flavor || ''}
@@ -3986,6 +3993,7 @@
                 ...(identityCard ? { identityCard } : {}),
                 ...(baseDesc ? { description: baseDesc } : {}),
                 ...(rewardNote ? { statEffect: rewardNote } : {}),
+                ...(structuredGrants ? { grants: structuredGrants } : {}),
               } as ResolvedMeta}
               <SpinResultReveal
                 result={last}

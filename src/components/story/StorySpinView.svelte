@@ -35,6 +35,7 @@
   import { ELEMENT_COLORS, ELEMENT_ICONS, ITEM_GRADE_INFO } from '$lib/content/elements'
   import { resolveLandingForCategory } from '$lib/landingColors'
   import { describeRacialGrants, describeTwist } from '$lib/game/racialGrants'
+  import { buildSpinGrantPerks } from '$lib/game/spinGrantPerks'
   import { resolveActiveTheme } from '$lib/wheelThemes'
   import { buildIdentityCard } from '$lib/identityCard'
   import { twistByKey, RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS } from '$lib/twists'
@@ -1569,6 +1570,12 @@
   {@const _twist = lastResult.category === 'twistSpin'
     ? describeTwist(currentDef?.twistKind, lastResult.resultLabel ?? '')
     : { flavor: null, grants: null }}
+  {@const _structuredGrants = buildSpinGrantPerks({
+    category:    lastResult.category,
+    raceLabel:   results.find(r => r.category === 'race')?.resultLabel ?? currentDef?.forRace,
+    label:       lastResult.resultLabel ?? '',
+    raceWheelId: currentDef?.raceWheelId,
+  })}
   {@const resolvedMeta = {
     element: pendingResult.element,
     grade:   pendingResult.grade,
@@ -1576,6 +1583,7 @@
     description:  pendingResult.description || _twist.flavor || undefined,
     statEffect:   [pendingResult.statEffect, _grants, _twist.grants].filter(Boolean).join('  ·  ') || undefined,
     ...(_identityCard ? { identityCard: _identityCard } : {}),
+    ...(_structuredGrants ? { grants: _structuredGrants } : {}),
   } as ResolvedMeta}
   <SpinResultReveal
     result={lastResult}

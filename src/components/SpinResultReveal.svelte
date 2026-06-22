@@ -264,7 +264,23 @@
           {#if meta.description}
             <p class="text-xs leading-relaxed" style="color: #9a907b; max-width: 30ch; font-family: 'JetBrains Mono', monospace;">{meta.description}</p>
           {/if}
-          {#if meta.statEffect}
+          {#if meta.grants && meta.grants.length > 0}
+            <!-- Structured grant list. Mirrors the identityCard perk anim
+                 so a Knight rank land reads as richly as a race land:
+                 every flatStatBonus / weapon / armor / power / floor lift /
+                 keyword / disabled-spin gets its own animated row. -->
+            <ul class="srr-id-perks" style="--accent: {panelAccent};">
+              {#each meta.grants as p, i}
+                <li class="srr-id-perk" style="animation-delay: {320 + i * 80}ms;">
+                  <span class="material-symbols-outlined srr-id-perk-icon" style="color: {panelAccent};">{p.icon}</span>
+                  <div class="srr-id-perk-text">
+                    <span class="srr-id-perk-label">{p.label}</span>
+                    {#if p.detail}<span class="srr-id-perk-detail">{p.detail}</span>{/if}
+                  </div>
+                </li>
+              {/each}
+            </ul>
+          {:else if meta.statEffect}
             <div class="srr-reward flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-xs"
               style="background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.18); color: #9a907b;">
               <span class="material-symbols-outlined srr-reward-bolt" style="font-size: 11px; color: #f0c040; font-variation-settings: 'FILL' 1;">bolt</span>
@@ -396,8 +412,32 @@
             {/each}
           </ul>
         {/if}
-      {:else if meta.description}
-        <p class="text-xs leading-relaxed" style="color: #9a907b; max-width: 30ch; font-family: 'JetBrains Mono', monospace;">{meta.description}</p>
+      {:else}
+        {#if meta.description}
+          <p class="text-xs leading-relaxed" style="color: #9a907b; max-width: 30ch; font-family: 'JetBrains Mono', monospace;">{meta.description}</p>
+        {/if}
+        {#if meta.grants && meta.grants.length > 0}
+          <!-- Animated grant rows for non-identity-card spins (class, rank,
+               magic, transformation, raceWheel). Each grant gets its own
+               icon + label + detail row, staggered fade-in. -->
+          <ul class="srr-id-perks" style="--accent: {panelAccent};">
+            {#each meta.grants as p, i}
+              <li class="srr-id-perk" style="animation-delay: {320 + i * 80}ms;">
+                <span class="material-symbols-outlined srr-id-perk-icon" style="color: {panelAccent};">{p.icon}</span>
+                <div class="srr-id-perk-text">
+                  <span class="srr-id-perk-label">{p.label}</span>
+                  {#if p.detail}<span class="srr-id-perk-detail">{p.detail}</span>{/if}
+                </div>
+              </li>
+            {/each}
+          </ul>
+        {:else if meta.statEffect}
+          <div class="srr-reward flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-xs"
+            style="background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.18); color: #9a907b;">
+            <span class="material-symbols-outlined srr-reward-bolt" style="font-size: 11px; color: #f0c040; font-variation-settings: 'FILL' 1;">bolt</span>
+            {meta.statEffect}
+          </div>
+        {/if}
       {/if}
       {#if announcement}
         <p class="text-sm" style="color: #a78bfa; max-width: 28ch; line-height: 1.4;">{announcement}</p>
