@@ -36,6 +36,7 @@
   import { resolveLandingForCategory } from '$lib/landingColors'
   import { describeRacialGrants, describeTwist } from '$lib/game/racialGrants'
   import { buildSpinGrantPerks } from '$lib/game/spinGrantPerks'
+  import { getRaceLandingFX } from '$lib/game/raceLandingFX'
   import { resolveActiveTheme } from '$lib/wheelThemes'
   import { buildIdentityCard } from '$lib/identityCard'
   import { twistByKey, RACE_TWIST_TRIGGERS, ARCHETYPE_TWIST_TRIGGERS } from '$lib/twists'
@@ -1450,7 +1451,15 @@
           wheelTheme={resolveActiveTheme(settings.activeWheelTheme, auth.user?.gamepasses)}
           replayTrigger={replayTriggerKey}
           wheelSignature={results.find(r => r.category === 'race')?.resultLabel ?? null}
-          resolveLandingColors={(_i, label) => resolveLandingForCategory(currentDef?.category, label)}
+          resolveLandingColors={(_i, label) => {
+            const base = resolveLandingForCategory(currentDef?.category, label)
+            if (!base) return base
+            const raceLabel = currentDef?.category === 'race'
+              ? label
+              : (currentDef?.forRace ?? results.find(r => r.category === 'race')?.resultLabel ?? null)
+            const fx = getRaceLandingFX(raceLabel)
+            return { ...base, raceSignature: fx?.theme ?? null }
+          }}
           onLanded={({ centerX, centerY }) => {
             wheelCenterX = centerX
             wheelCenterY = centerY

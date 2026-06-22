@@ -1394,3 +1394,431 @@ a:focus-visible {
     animation: none !important;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────
+   Per-race LANDING-FX signatures
+   Layered overlay on .lc-root (LandingCelebration). Each `.lc-race-{theme}`
+   class targets the bundled `.lc-race-overlay` element to paint a bespoke
+   one-shot animation rooted at --origin-x/--origin-y. Themes cover all
+   2026-revamped races via raceLandingFX.ts; ~25 distinct visual identities.
+   Keeps animations <1.2s so they finish before the reveal modal pops.
+   ────────────────────────────────────────────────────────────────── */
+.lc-race-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  --ox: var(--origin-x, 50vw);
+  --oy: var(--origin-y, 50vh);
+}
+
+/* ── FIRE — ember burst + heat ripple (Dragon, Kobold, Imp, Hellborn, Drakekin) */
+@keyframes lc-race-fire {
+  0%   { opacity: 0; transform: scale(0.6); filter: blur(0px); }
+  18%  { opacity: 1; transform: scale(1.4); filter: blur(0px); }
+  100% { opacity: 0; transform: scale(2.6); filter: blur(8px); }
+}
+.lc-race-fire .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(255,160,60,0.85) 0%, rgba(255,80,20,0.55) 18%,
+    rgba(200,40,0,0.0) 36%);
+  animation: lc-race-fire 1100ms cubic-bezier(0.16, 0.84, 0.44, 1) forwards;
+}
+
+/* ── ICE — frost shatter + crystal shards (cold/ice-themed races) */
+@keyframes lc-race-ice {
+  0%   { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+  22%  { opacity: 1; transform: scale(1.15) rotate(0deg); }
+  100% { opacity: 0; transform: scale(2.0) rotate(8deg); }
+}
+.lc-race-ice .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(180,235,255,0.85) 0%, rgba(120,200,255,0.45) 22%,
+    rgba(80,160,220,0) 40%),
+    conic-gradient(from 0deg at var(--ox) var(--oy),
+      rgba(220,240,255,0.0) 0deg, rgba(220,240,255,0.6) 22deg,
+      rgba(220,240,255,0.0) 44deg, rgba(220,240,255,0.6) 66deg,
+      rgba(220,240,255,0.0) 88deg);
+  filter: drop-shadow(0 0 12px rgba(180,235,255,0.8));
+  animation: lc-race-ice 1000ms ease-out forwards;
+}
+
+/* ── LIGHTNING — arc-flash + voltage crackle */
+@keyframes lc-race-lightning {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  20%  { opacity: 0.4; }
+  30%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.lc-race-lightning .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(255,250,180,0.95) 0%, rgba(180,220,255,0.6) 12%,
+    rgba(60,120,255,0.0) 28%);
+  mix-blend-mode: screen;
+  animation: lc-race-lightning 850ms ease-out forwards;
+}
+
+/* ── VOID — dark pull + reality crack (Felfolk, Wraith, void/gravity races) */
+@keyframes lc-race-void {
+  0%   { opacity: 0; transform: scale(2.4); filter: blur(8px); }
+  30%  { opacity: 1; transform: scale(1.0); filter: blur(0); }
+  100% { opacity: 0; transform: scale(0.4); filter: blur(4px); }
+}
+.lc-race-void .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(0,0,0,0.0) 0%, rgba(20,8,40,0.55) 18%,
+    rgba(60,20,90,0.35) 32%, rgba(0,0,0,0) 50%);
+  animation: lc-race-void 1200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ── BLOOD — crimson spray + drip (Vampire, Oni, Parasyte) */
+@keyframes lc-race-blood {
+  0%   { opacity: 0; transform: scale(0.5); }
+  20%  { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(2.4); filter: blur(6px); }
+}
+.lc-race-blood .lc-race-overlay {
+  background: radial-gradient(ellipse 1200px 900px at var(--ox) var(--oy),
+    rgba(180,20,30,0.6) 0%, rgba(120,10,20,0.4) 22%,
+    rgba(60,0,10,0) 44%);
+  animation: lc-race-blood 1100ms ease-out forwards;
+}
+
+/* ── HOLY — radiance + halo bloom (Lightborn, Angel-likes, Holy element) */
+@keyframes lc-race-holy {
+  0%   { opacity: 0; transform: scale(0.8); }
+  30%  { opacity: 1; transform: scale(1.4); }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+.lc-race-holy .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(255,250,220,0.85) 0%, rgba(255,230,160,0.5) 18%,
+    rgba(255,200,80,0.0) 40%);
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 24px rgba(255,230,160,0.7));
+  animation: lc-race-holy 1200ms ease-out forwards;
+}
+
+/* ── NATURE — petal scatter + verdant pulse (Treant, Dryad, Numokian, Halfling) */
+@keyframes lc-race-nature {
+  0%   { opacity: 0; transform: scale(0.7) rotate(-6deg); }
+  25%  { opacity: 1; transform: scale(1.2) rotate(0deg); }
+  100% { opacity: 0; transform: scale(2.0) rotate(10deg); filter: blur(5px); }
+}
+.lc-race-nature .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(140,220,120,0.7) 0%, rgba(80,180,80,0.4) 22%,
+    rgba(40,120,40,0) 42%);
+  animation: lc-race-nature 1100ms ease-out forwards;
+}
+
+/* ── EARTH — tremor + dust plume (Giant, Goliath, Gargoyle, Dinosaur, Golem) */
+@keyframes lc-race-earth {
+  0%   { opacity: 0; transform: scale(0.3); }
+  20%  { opacity: 0.9; transform: scale(1.6); }
+  100% { opacity: 0; transform: scale(2.6); filter: blur(10px); }
+}
+@keyframes lc-race-earth-shake {
+  0%, 100% { transform: translate(0,0); }
+  20%      { transform: translate(-3px, 2px); }
+  40%      { transform: translate(3px, -2px); }
+  60%      { transform: translate(-2px, -3px); }
+  80%      { transform: translate(2px, 3px); }
+}
+.lc-race-earth .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(140,100,60,0.7) 0%, rgba(110,80,50,0.4) 18%,
+    rgba(80,60,40,0) 40%);
+  animation: lc-race-earth 1100ms ease-out forwards,
+             lc-race-earth-shake 280ms ease-in-out 2;
+}
+
+/* ── SHADOW — ink spread + smoke veil (Goblin, Rat, Shadow/Dark) */
+@keyframes lc-race-shadow {
+  0%   { opacity: 0; transform: scale(0.4); }
+  25%  { opacity: 0.9; transform: scale(1.4); }
+  100% { opacity: 0; transform: scale(2.4); filter: blur(8px); }
+}
+.lc-race-shadow .lc-race-overlay {
+  background: radial-gradient(ellipse 1000px 1000px at var(--ox) var(--oy),
+    rgba(20,15,35,0.7) 0%, rgba(40,30,60,0.45) 22%,
+    rgba(0,0,0,0) 44%);
+  animation: lc-race-shadow 1100ms ease-out forwards;
+}
+
+/* ── ARCANE — glyph sigil + sparkle storm (Elf, Human, Bender, Elemental) */
+@keyframes lc-race-arcane {
+  0%   { opacity: 0; transform: scale(0.6) rotate(0deg); }
+  25%  { opacity: 1; transform: scale(1.2) rotate(60deg); }
+  100% { opacity: 0; transform: scale(2.4) rotate(180deg); }
+}
+.lc-race-arcane .lc-race-overlay {
+  background:
+    conic-gradient(from 0deg at var(--ox) var(--oy),
+      rgba(180,140,255,0.0) 0deg, rgba(180,140,255,0.55) 30deg,
+      rgba(180,140,255,0.0) 60deg, rgba(140,180,255,0.55) 90deg,
+      rgba(180,140,255,0.0) 120deg, rgba(180,140,255,0.55) 150deg,
+      rgba(180,140,255,0.0) 180deg),
+    radial-gradient(circle at var(--ox) var(--oy),
+      rgba(200,170,255,0.5) 0%, rgba(120,100,200,0) 28%);
+  filter: drop-shadow(0 0 18px rgba(180,140,255,0.6));
+  animation: lc-race-arcane 1200ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ── COSMIC — starfield + galaxy swirl (Alien, cosmic races) */
+@keyframes lc-race-cosmic {
+  0%   { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  30%  { opacity: 1; transform: scale(1.2) rotate(80deg); }
+  100% { opacity: 0; transform: scale(2.6) rotate(220deg); }
+}
+.lc-race-cosmic .lc-race-overlay {
+  background:
+    radial-gradient(circle at var(--ox) var(--oy),
+      rgba(80,160,255,0.5) 0%, rgba(140,80,220,0.35) 18%,
+      rgba(40,20,80,0.0) 40%),
+    conic-gradient(from 45deg at var(--ox) var(--oy),
+      rgba(255,255,255,0.0) 0deg, rgba(180,220,255,0.45) 30deg,
+      rgba(255,255,255,0.0) 60deg);
+  filter: drop-shadow(0 0 24px rgba(120,180,255,0.6));
+  animation: lc-race-cosmic 1300ms ease-out forwards;
+}
+
+/* ── SOUL — ghostly drift + ectoplasm (Ghost, Spirit, Revenant) */
+@keyframes lc-race-soul {
+  0%   { opacity: 0; transform: scale(0.8) translateY(40px); filter: blur(8px); }
+  30%  { opacity: 1; transform: scale(1.1) translateY(-10px); filter: blur(0); }
+  100% { opacity: 0; transform: scale(1.6) translateY(-80px); filter: blur(6px); }
+}
+.lc-race-soul .lc-race-overlay {
+  background: radial-gradient(ellipse 800px 1200px at var(--ox) var(--oy),
+    rgba(180,255,230,0.6) 0%, rgba(120,220,200,0.4) 22%,
+    rgba(60,160,180,0) 42%);
+  mix-blend-mode: screen;
+  animation: lc-race-soul 1300ms ease-out forwards;
+}
+
+/* ── METAL — gear-click + spark shower (Hobgoblin, Gnome, metal element) */
+@keyframes lc-race-metal {
+  0%   { opacity: 0; transform: scale(0.6); }
+  22%  { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(2.2); }
+}
+.lc-race-metal .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(220,200,160,0.7) 0%, rgba(180,160,120,0.45) 18%,
+    rgba(120,100,70,0) 40%);
+  filter: drop-shadow(0 0 12px rgba(220,200,160,0.5));
+  animation: lc-race-metal 1000ms ease-out forwards;
+}
+
+/* ── POISON — bubble burst + acid drip (Zombie, Insectoid) */
+@keyframes lc-race-poison {
+  0%   { opacity: 0; transform: scale(0.5); }
+  25%  { opacity: 0.9; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(2.2); filter: blur(6px); }
+}
+.lc-race-poison .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(120,200,60,0.7) 0%, rgba(80,160,40,0.45) 22%,
+    rgba(40,100,20,0) 44%);
+  animation: lc-race-poison 1100ms ease-out forwards;
+}
+
+/* ── WIND — gust streamers + feather flutter (Harpy, Centaur, Griffin) */
+@keyframes lc-race-wind {
+  0%   { opacity: 0; transform: scale(0.4) translateX(-60px); }
+  30%  { opacity: 1; transform: scale(1.2) translateX(0); }
+  100% { opacity: 0; transform: scale(2.0) translateX(80px); filter: blur(8px); }
+}
+.lc-race-wind .lc-race-overlay {
+  background:
+    radial-gradient(ellipse 1400px 400px at var(--ox) var(--oy),
+      rgba(200,230,255,0.6) 0%, rgba(160,200,240,0.4) 22%,
+      rgba(120,160,200,0) 44%);
+  animation: lc-race-wind 1200ms cubic-bezier(0.42, 0, 0.2, 1) forwards;
+}
+
+/* ── WATER — splash + ripple bloom (Merfolk, Lizardfolk) */
+@keyframes lc-race-water {
+  0%   { opacity: 0; transform: scale(0.4); }
+  25%  { opacity: 1; transform: scale(1.6); }
+  100% { opacity: 0; transform: scale(2.4); }
+}
+.lc-race-water .lc-race-overlay {
+  background:
+    radial-gradient(circle at var(--ox) var(--oy),
+      rgba(80,180,240,0.7) 0%, rgba(40,140,220,0.45) 18%,
+      rgba(20,80,180,0) 40%);
+  filter: drop-shadow(0 0 16px rgba(80,180,240,0.55));
+  animation: lc-race-water 1100ms ease-out forwards;
+}
+
+/* ── PSYCHIC — ripple-warp + thought wave (Lamia, psychic) */
+@keyframes lc-race-psychic {
+  0%   { opacity: 0; transform: scale(0.6); filter: blur(0); }
+  30%  { opacity: 1; transform: scale(1.4); filter: blur(2px); }
+  100% { opacity: 0; transform: scale(2.6); filter: blur(8px); }
+}
+.lc-race-psychic .lc-race-overlay {
+  background:
+    radial-gradient(circle at var(--ox) var(--oy),
+      rgba(255,140,200,0.55) 0%, rgba(220,100,200,0.4) 18%,
+      rgba(140,40,140,0) 40%),
+    radial-gradient(circle at var(--ox) var(--oy),
+      rgba(255,255,255,0) 16%, rgba(255,140,200,0.3) 18%,
+      rgba(255,255,255,0) 20%, rgba(255,140,200,0.25) 28%,
+      rgba(255,255,255,0) 30%);
+  animation: lc-race-psychic 1200ms ease-out forwards;
+}
+
+/* ── CHAOS — glitch + chromatic split (Mutant, chaos element) */
+@keyframes lc-race-chaos {
+  0%   { opacity: 0; transform: scale(0.6); filter: hue-rotate(0deg); }
+  12%  { opacity: 1; transform: scale(1.0) translate(-4px, 2px); filter: hue-rotate(80deg); }
+  24%  { opacity: 1; transform: scale(1.2) translate(4px, -3px); filter: hue-rotate(160deg); }
+  36%  { opacity: 1; transform: scale(1.0) translate(-2px, 4px); filter: hue-rotate(240deg); }
+  100% { opacity: 0; transform: scale(2.4); filter: hue-rotate(360deg); }
+}
+.lc-race-chaos .lc-race-overlay {
+  background:
+    radial-gradient(circle at var(--ox) var(--oy),
+      rgba(255,80,200,0.5) 0%, rgba(80,255,200,0.4) 18%,
+      rgba(200,80,255,0.3) 30%, rgba(0,0,0,0) 48%);
+  mix-blend-mode: screen;
+  animation: lc-race-chaos 1100ms steps(8, end) forwards;
+}
+
+/* ── SOUND — resonance ring + sonic bloom */
+@keyframes lc-race-sound {
+  0%   { opacity: 0; transform: scale(0.3); }
+  25%  { opacity: 1; transform: scale(1.4); }
+  60%  { opacity: 0.6; transform: scale(2.0); }
+  100% { opacity: 0; transform: scale(3.0); }
+}
+.lc-race-sound .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(255,255,255,0) 18%, rgba(180,140,255,0.55) 22%,
+    rgba(255,255,255,0) 28%, rgba(180,140,255,0.4) 36%,
+    rgba(255,255,255,0) 42%);
+  animation: lc-race-sound 1200ms ease-out forwards;
+}
+
+/* ── TIME — chrono-loop + clockface */
+@keyframes lc-race-time {
+  0%   { opacity: 0; transform: scale(0.6) rotate(0deg); }
+  30%  { opacity: 1; transform: scale(1.2) rotate(360deg); }
+  100% { opacity: 0; transform: scale(2.0) rotate(720deg); }
+}
+.lc-race-time .lc-race-overlay {
+  background:
+    conic-gradient(from 0deg at var(--ox) var(--oy),
+      rgba(180,220,255,0.0) 0deg, rgba(180,220,255,0.5) 60deg,
+      rgba(180,220,255,0.0) 120deg, rgba(180,220,255,0.5) 180deg,
+      rgba(180,220,255,0.0) 240deg, rgba(180,220,255,0.5) 300deg,
+      rgba(180,220,255,0.0) 360deg);
+  filter: drop-shadow(0 0 16px rgba(180,220,255,0.5));
+  animation: lc-race-time 1400ms linear forwards;
+}
+
+/* ── PRIMAL — bestial claws + roar shake (Beast, Werebeast, Orc, Ogre, Catfolk, Half-Orc) */
+@keyframes lc-race-primal {
+  0%   { opacity: 0; transform: scale(0.7); }
+  18%  { opacity: 1; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(2.2); filter: blur(6px); }
+}
+@keyframes lc-race-primal-shake {
+  0%, 100% { transform: translate(0,0); }
+  25%      { transform: translate(-4px, 2px); }
+  50%      { transform: translate(4px, -2px); }
+  75%      { transform: translate(-3px, -4px); }
+}
+.lc-race-primal .lc-race-overlay {
+  background:
+    radial-gradient(circle at var(--ox) var(--oy),
+      rgba(200,60,40,0.55) 0%, rgba(120,30,20,0.4) 18%,
+      rgba(60,10,10,0) 40%);
+  animation: lc-race-primal 950ms ease-out forwards,
+             lc-race-primal-shake 220ms ease-in-out 3;
+}
+
+/* ── MECHANICAL — circuit grid + assembly sparks (Robot, Soulforged, Cyborg, Construct, Gremlin) */
+@keyframes lc-race-mechanical {
+  0%   { opacity: 0; transform: scale(0.6); }
+  18%  { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(2.2); }
+}
+.lc-race-mechanical .lc-race-overlay {
+  background:
+    radial-gradient(circle at var(--ox) var(--oy),
+      rgba(120,200,240,0.6) 0%, rgba(80,160,220,0.4) 18%,
+      rgba(40,100,160,0) 40%),
+    repeating-linear-gradient(0deg,
+      rgba(120,200,240,0.0) 0px, rgba(120,200,240,0.08) 1px,
+      rgba(120,200,240,0.0) 2px, rgba(120,200,240,0.0) 12px),
+    repeating-linear-gradient(90deg,
+      rgba(120,200,240,0.0) 0px, rgba(120,200,240,0.08) 1px,
+      rgba(120,200,240,0.0) 2px, rgba(120,200,240,0.0) 12px);
+  animation: lc-race-mechanical 1000ms ease-out forwards;
+}
+
+/* ── BONE — rattle scatter + ash puff (Skeleton, Ghoul) */
+@keyframes lc-race-bone {
+  0%   { opacity: 0; transform: scale(0.7); }
+  20%  { opacity: 0.9; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(2.2); filter: blur(6px); }
+}
+@keyframes lc-race-bone-rattle {
+  0%, 100% { transform: translate(0,0) rotate(0); }
+  20%      { transform: translate(-2px, 1px) rotate(-1deg); }
+  40%      { transform: translate(2px, -1px) rotate(1deg); }
+  60%      { transform: translate(-1px, 0) rotate(-0.5deg); }
+  80%      { transform: translate(1px, 1px) rotate(0.5deg); }
+}
+.lc-race-bone .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(220,210,180,0.7) 0%, rgba(180,160,130,0.45) 22%,
+    rgba(120,100,80,0) 44%);
+  animation: lc-race-bone 1000ms ease-out forwards,
+             lc-race-bone-rattle 160ms linear 4;
+}
+
+/* ── FAE — pollen swirl + iridescent shimmer (Sprite, Pixie, Fairy) */
+@keyframes lc-race-fae {
+  0%   { opacity: 0; transform: scale(0.5) rotate(0deg); filter: hue-rotate(0deg); }
+  30%  { opacity: 1; transform: scale(1.2) rotate(80deg); filter: hue-rotate(120deg); }
+  100% { opacity: 0; transform: scale(2.4) rotate(240deg); filter: hue-rotate(360deg); }
+}
+.lc-race-fae .lc-race-overlay {
+  background:
+    radial-gradient(circle at var(--ox) var(--oy),
+      rgba(255,180,255,0.55) 0%, rgba(180,255,200,0.4) 18%,
+      rgba(180,200,255,0.0) 36%);
+  filter: drop-shadow(0 0 12px rgba(255,200,255,0.5));
+  animation: lc-race-fae 1300ms ease-out forwards;
+}
+
+/* ── LUMINOUS — pure light burst + lens bloom (Wisp, Lightborn) */
+@keyframes lc-race-luminous {
+  0%   { opacity: 0; transform: scale(0.4); }
+  20%  { opacity: 1; transform: scale(1.8); }
+  100% { opacity: 0; transform: scale(3.0); filter: blur(10px); }
+}
+.lc-race-luminous .lc-race-overlay {
+  background: radial-gradient(circle at var(--ox) var(--oy),
+    rgba(255,255,240,0.95) 0%, rgba(255,240,180,0.6) 14%,
+    rgba(255,220,120,0.0) 34%);
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 32px rgba(255,250,200,0.8));
+  animation: lc-race-luminous 1100ms ease-out forwards;
+}
+
+/* Performance: kill all race-FX overlays on low-tier devices.
+   The base celebration still fires; we just drop the extra layer. */
+@media (max-width: 1px), (prefers-reduced-motion: reduce) {
+  .lc-race-overlay { display: none !important; }
+}
+.lc-perf-low .lc-race-overlay { display: none !important; }

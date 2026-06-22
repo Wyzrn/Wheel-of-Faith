@@ -82,6 +82,10 @@
       elementColor?: string | null
       intensityOverride?: number
       subtitle?: string | null
+      // Per-race FX theme key (e.g. "fire", "void", "soul"). Passed
+      // through to LandingCelebration for the bespoke per-race overlay
+      // layer. Null = no race-specific FX (generic tier celebration).
+      raceSignature?: string | null
     } | null
   } = $props()
 
@@ -101,6 +105,7 @@
     subtitle: string | null
     centerX: number | null
     centerY: number | null
+    raceSignature: string | null
   } | null>(null)
   let celebrationKey = 0
   // Cached spec from the most recent celebration — used by Replay so the
@@ -720,6 +725,7 @@
                 subtitle: resolved?.subtitle ?? landedTier ?? null,
                 centerX: cx,
                 centerY: cy,
+                raceSignature: resolved?.raceSignature ?? null,
               }
               lastCelebration = celebration
             }
@@ -1150,6 +1156,7 @@
       subtitle={celebration.subtitle}
       centerX={celebration.centerX}
       centerY={celebration.centerY}
+      raceSignature={celebration.raceSignature}
       onComplete={() => { celebration = null }}
     />
   {/key}

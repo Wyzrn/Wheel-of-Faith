@@ -28,6 +28,7 @@
     centerX = null,
     centerY = null,
     durationMs,
+    raceSignature = null,
     onComplete,
   }: {
     intensity: number          // 0..1 scalar
@@ -43,6 +44,12 @@
     centerX?: number | null
     centerY?: number | null
     durationMs?: number        // override; defaults by level (mythic holds longer)
+    // Per-race FX theme key (e.g. "fire", "void", "soul"). Drives an
+    // additional `.lc-race-{theme}` CSS class on the root so every race
+    // gets its own bespoke overlay layer (ember storm, frost shatter,
+    // void rift, ectoplasmic drift, etc.) on top of the tier-based
+    // celebration. Null = generic gold/element treatment.
+    raceSignature?: string | null
     onComplete?: () => void
   } = $props()
 
@@ -368,13 +375,20 @@
        still receives clicks. -->
   <div
     use:portal
-    class="lc-root {tierKind}"
+    class="lc-root {tierKind} {raceSignature ? `lc-race-${raceSignature}` : ''}"
     class:lc-perf-low={cheap}
     class:lc-perf-mid={perfTier === 'mid'}
     class:lc-divine={isDivine}
     style="--accent: {accent}; --accent2: {accent2}; --tier-color: {tierColor}; --origin-x: {originX}; --origin-y: {originY};"
     aria-hidden="true"
   >
+    <!-- Per-race overlay layer. Empty when raceSignature isn't provided.
+         Visual driven by the `.lc-race-{theme}` class on lc-root + the
+         positioned `.lc-race-overlay` element here. Sits behind particles
+         so race FX feels like the substrate of the celebration. -->
+    {#if raceSignature}
+      <div class="lc-race-overlay" aria-hidden="true"></div>
+    {/if}
     <!-- DIVINE-ONLY: the new top-tier signature. A blinding white-gold flash, a
          radiant cross of god-rays from the origin, and slow golden halo rings —
          layered OVER the transcendent set so Divine reads as beyond cosmic. -->

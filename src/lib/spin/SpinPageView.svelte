@@ -55,6 +55,7 @@
   import { resolveLandingForCategory, raceStatBonusCap, raceTierModifier } from '$lib/landingColors'
   import { describeRacialGrants, describeTwist } from '$lib/game/racialGrants'
   import { buildSpinGrantPerks } from '$lib/game/spinGrantPerks'
+  import { getRaceLandingFX } from '$lib/game/raceLandingFX'
   import { resolveActiveTheme } from '$lib/wheelThemes'
   import { buildIdentityCard } from '$lib/identityCard'
   import { tilt } from '$lib/actions/tilt'
@@ -773,7 +774,18 @@
   // grade-based intensity for item spins; stat spins fall through to the
   // wheel's tier-based intensity ladder.
   function resolveLandingColors(_idx: number, label: string) {
-    return resolveLandingForCategory(currentDef?.category, label)
+    const base = resolveLandingForCategory(currentDef?.category, label)
+    if (!base) return base
+    // Layer per-race FX signature on top of the tier/element resolution
+    // so every wheel during a Dragon character's run pulses fire embers,
+    // every Ghost wheel drifts ectoplasm, etc. The race spin itself uses
+    // the label-as-race; downstream wheels (class, rank, magic) read the
+    // race result already on the results array.
+    const raceLabel = currentDef?.category === 'race'
+      ? label
+      : (currentDef?.forRace ?? results.find(r => r.category === 'race')?.resultLabel ?? null)
+    const fx = getRaceLandingFX(raceLabel, base.elementColor ? null : null)
+    return { ...base, raceSignature: fx?.theme ?? null }
   }
 
   // ── Segment resolver: handles race/archetype ability pools + modifiers ────
