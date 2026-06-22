@@ -273,11 +273,20 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
     // prompt, the more on-model the portrait — Flux Schnell handles long
     // identity descriptions well, and player feedback consistently asked for
     // gender + multiple powers to influence the render.
-    const spins = (character.spins as Array<{ category: string; resultLabel: string }>) ?? []
+    const spins = (character.spins as Array<{ category: string; resultLabel: string; element?: string; grade?: string }>) ?? []
     const allPowers = spins.filter(s => s.category === 'power').map(s => s.resultLabel)
     const weapon = spins.find(s => s.category === 'weapon')?.resultLabel
+    const armor = spins.find(s => s.category === 'armor')?.resultLabel
     const gender = spins.find(s => s.category === 'gender')?.resultLabel
     const height = spins.find(s => s.category === 'height')?.resultLabel
+    const raceSubType = spins.find(s => s.category === 'raceSubType')?.resultLabel
+    const raceClass = spins.find(s => s.category === 'raceClass')?.resultLabel
+    // Primary element: take the topPower's element, then weapon, else
+    // sub-type. Coarse but tilts palette toward the dominant theme.
+    const element = spins.find(s => s.category === 'power')?.element
+      ?? spins.find(s => s.category === 'weapon')?.element
+      ?? spins.find(s => s.category === 'raceClass')?.element
+    const overallTier = (character as { overallGrade?: string }).overallGrade
 
     const result = await generatePortrait({
       // Suffix the regen shareId so it lands at a new R2 key — otherwise
@@ -288,10 +297,15 @@ export const characterRoutes: FastifyPluginAsync = async (fastify) => {
       race:      character.race,
       archetype: character.archetype,
       topPower:    allPowers[0],
-      extraPowers: allPowers.slice(1, 3),
+      extraPowers: allPowers.slice(1, 4),
       weapon,
+      armor,
       gender,
       height,
+      raceSubType,
+      raceClass,
+      element,
+      overallTier,
     })
 
     if (!result.ok) {

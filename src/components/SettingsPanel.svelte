@@ -156,6 +156,23 @@
 
     <div class="divider"></div>
 
+    <!-- ─ Quill Per Spin ─ -->
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-semibold" style="color: #e9dfeb;">Quill per Spin</p>
+        <p class="text-xs mt-0.5" style="color: #9a907b;">Pop Quill up after every wheel — turn off to keep him to portrait-only</p>
+      </div>
+      <button onclick={() => { settings.quillPerSpin = !settings.quillPerSpin; settings.save() }}
+        class="toggle-btn"
+        style="background: {settings.quillPerSpin ? '#f0c040' : '#1e1a22'}; box-shadow: {settings.quillPerSpin ? '0 0 10px rgba(240,192,64,0.3)' : 'inset 2px 2px 4px rgba(0,0,0,0.5)'}; border: 1px solid {settings.quillPerSpin ? '#f0c040' : 'rgba(78,70,53,0.5)'};"
+        aria-label="Toggle Quill per spin" aria-pressed={settings.quillPerSpin}
+      >
+        <span class="toggle-knob" style="left: {settings.quillPerSpin ? '22px' : '2px'}; background: {settings.quillPerSpin ? '#0d0d16' : '#3a3848'};"></span>
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
     <!-- ─ Auto-Continue ─ -->
     <div>
       <p class="text-sm font-semibold mb-1" style="color: #e9dfeb;">Auto-Continue</p>

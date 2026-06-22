@@ -11,6 +11,7 @@
   import { guide } from '$lib/guide/store.svelte'
   import { QUILL } from '$lib/guide/scenes'
   import { goto } from '$app/navigation'
+  import { settings } from '$lib/settings.svelte'
 
   // ── Typewriter — paint the line one char at a time so the player reads
   //    rather than skims. Tap-anywhere reveals the whole line instantly.
@@ -112,6 +113,18 @@
         <div class="guide-nameplate">
           <span id="guide-name" class="guide-name">{QUILL.name}</span>
           <span class="guide-title">· {QUILL.title}</span>
+          <!-- Per-spin auto-pop toggle. ON = Quill chimes in every new
+               wheel. OFF = portrait-only summoning. Mirrors the Settings
+               panel switch so the player can mute him in-context. -->
+          <button class="guide-perspin-toggle"
+            onclick={() => { settings.quillPerSpin = !settings.quillPerSpin; settings.save() }}
+            aria-label="Toggle Quill per spin"
+            aria-pressed={settings.quillPerSpin}
+            title={settings.quillPerSpin ? 'Per-spin pop-ups: ON' : 'Per-spin pop-ups: OFF'}
+            style="background: {settings.quillPerSpin ? '#f0c040' : '#1e1a22'}; border-color: {settings.quillPerSpin ? '#f0c040' : 'rgba(78,70,53,0.5)'};">
+            <span class="guide-perspin-knob"
+              style="left: {settings.quillPerSpin ? '17px' : '2px'}; background: {settings.quillPerSpin ? '#0d0d16' : '#3a3848'};"></span>
+          </button>
           <button class="guide-close" onclick={() => guide.close()} aria-label="Close">
             <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
           </button>
@@ -234,7 +247,6 @@
     text-transform: uppercase;
   }
   .guide-close {
-    margin-left: auto;
     background: none;
     border: none;
     color: #4e4635;
@@ -243,6 +255,28 @@
     border-radius: 4px;
   }
   .guide-close:hover { color: #9a907b; background: rgba(255,255,255,0.04); }
+  .guide-perspin-toggle {
+    position: relative;
+    margin-left: auto;
+    width: 34px;
+    height: 18px;
+    border-radius: 999px;
+    border-width: 1px;
+    border-style: solid;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.18s ease, border-color 0.18s ease;
+    flex-shrink: 0;
+  }
+  .guide-perspin-knob {
+    position: absolute;
+    top: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transition: left 0.18s ease, background 0.18s ease;
+  }
+  .guide-perspin-toggle:hover { filter: brightness(1.1); }
   .guide-text-zone {
     background: none;
     border: none;

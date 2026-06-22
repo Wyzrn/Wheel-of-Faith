@@ -35,6 +35,11 @@ class SettingsStore {
   // Player can toggle at any time from Settings or an inline button above
   // the wheel during a spin session.
   autoSpin        = $state(false)
+  // Quill-per-spin: when true (default), the NPC guide auto-fires its
+  // wheel-* scene every time a new wheel becomes active. When false, only
+  // first-time scene visits + the manual "Ask Quill" portrait surface him.
+  // Toggleable from Settings AND from inside Quill's dialogue box.
+  quillPerSpin    = $state(true)
   // Force-high-quality override. When true, perf scaling is bypassed and
   // every device renders at full fidelity regardless of detected tier.
   // Useful on flagship phones that the heuristic mis-buckets as 'low'
@@ -77,6 +82,7 @@ class SettingsStore {
       if (typeof s.autoBattleSpeed === 'number')  this.autoBattleSpeed = s.autoBattleSpeed
       if (typeof s.autoContinueMs  === 'number')  this.autoContinueMs  = s.autoContinueMs
       if (typeof s.autoSpin        === 'boolean') this.autoSpin        = s.autoSpin
+      if (typeof s.quillPerSpin    === 'boolean') this.quillPerSpin    = s.quillPerSpin
       if (s.highQualityOverride === 'auto' || s.highQualityOverride === 'high') this.highQualityOverride = s.highQualityOverride
       if (typeof s.activeWheelTheme === 'string') this.activeWheelTheme = s.activeWheelTheme as WheelThemeId
       // Migrate legacy boolean cursedWheelEnabled -> activeWheelTheme.
@@ -100,6 +106,7 @@ class SettingsStore {
       autoBattleSpeed: this.autoBattleSpeed,
       autoContinueMs:  this.autoContinueMs,
       autoSpin:        this.autoSpin,
+      quillPerSpin:    this.quillPerSpin,
       highQualityOverride: this.highQualityOverride,
       activeWheelTheme: this.activeWheelTheme,
       instantBattleEnabled: this.instantBattleEnabled,

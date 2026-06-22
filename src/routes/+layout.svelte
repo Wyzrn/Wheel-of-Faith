@@ -196,6 +196,10 @@
       // surfaces them on demand). Non-wheel scenes — first-character,
       // route intros — still fire so the player sees them at least once.
       if (settings.autoSpin && sceneId.startsWith('wheel-')) return
+      // Same goes for the dedicated "Quill per spin" toggle — when off,
+      // suppress all wheel-* auto-fires. Non-wheel scenes still fire on
+      // first visit. Player can always re-summon via the portrait.
+      if (!settings.quillPerSpin && sceneId.startsWith('wheel-')) return
       // Wheel-by-wheel scenes auto-fire only once each (seen-set in the
       // store prevents repeats), so first-time-encountering a Stats wheel
       // gets a brief Quill explanation but subsequent encounters stay
