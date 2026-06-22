@@ -39,7 +39,14 @@
   // should reflect MMR. The server is authoritative on MMR via the
   // ranked_result WS message; this flag is just for UI state.
   let isRankedMatch = $state(false)
-  let lastRankedDelta = $state<{ delta: number; newMmr: number } | null>(null)
+  let lastRankedDelta = $state<{
+    delta: number
+    newMmr: number
+    prevMmr?: number
+    rankBefore?: { id: string; label: string; threshold: number; color?: string }
+    rankAfter?: { id: string; label: string; threshold: number; color?: string }
+    nextRank?: { id: string; label: string; threshold: number; color?: string } | null
+  } | null>(null)
   // Reactive rank meta derived from the auth store — used by the menu's
   // RANKED CTA and the Ranks tab. Re-evaluates whenever the auth user's
   // rankedMmr updates (e.g. after a ranked_result WS message).
@@ -101,19 +108,35 @@
     const STAT_CATS = ['strength','speed','agility','durability','iq','charisma','fightingSkill','powerMastery','weaponMastery','potential','energyLevel']
     const statScores = Object.fromEntries(STAT_CATS.map(c => [c, myResults.find(r => r.category === c)?.score ?? 0]))
     const overall = computeOverallScore(statScores)
+    // session_started_at is REQUIRED by the /api/characters schema and
+    // gated by a 90s minimum-session guard. Rivals matches don't track a
+    // session start of their own, so we use the earliest spin timestamp
+    // (the first wheel landing) and floor it 91s in the past on the off
+    // chance the player burned through all 23 wheels in under 90s with
+    // turbo + autospin — the guard isn't relevant for rivals (server-
+    // verified MMR is the actual cheat-protection).
+    const earliestSpin = myResults
+      .map(r => Date.parse(r.timestamp ?? ''))
+      .filter(t => Number.isFinite(t))
+      .reduce((a, b) => Math.min(a, b), Date.now())
+    const sessionStartMs = Math.min(earliestSpin, Date.now() - 91_000)
     const res = await fetch(apiUrl('/api/characters'), {
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: myCharName || race, race, archetype,
         overall_score: overall, overall_tier: scoreTier(overall),
         spins: myResults,
+        session_started_at: new Date(sessionStartMs).toISOString(),
         elementWeaknesses: myResults
           .filter(r => r.category === 'weakness')
           .map(r => detectWeaknessElement(r.resultLabel))
           .filter((e): e is NonNullable<typeof e> => !!e),
       }),
     })
-    if (!res.ok) throw new Error('save failed')
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '')
+      throw new Error(`save failed (${res.status}): ${detail.slice(0, 160)}`)
+    }
     const { shareId } = await res.json() as { shareId: string }
     try {
       const ex: string[] = JSON.parse(localStorage.getItem('wof_saved_chars') ?? '[]')
@@ -279,13 +302,25 @@
         break
       // Ranked match resolved — server reports the new MMR and delta
       // for THIS player. Patch the auth store optimistically so the
-      // menu chip updates without a refetch.
+      // menu chip updates without a refetch. Build the rank-before /
+      // rank-after / next-rank snapshot the result modal needs so it
+      // can render the delta + rank-up celebration + progress bar.
       case 'ranked_result': {
         const delta = typeof msg.delta === 'number' ? msg.delta : 0
         const newMmr = typeof msg.newMmr === 'number' ? msg.newMmr : (auth.user?.rankedMmr ?? 0)
-        lastRankedDelta = { delta, newMmr }
-        const rank = mmrRankFor(newMmr)
-        auth.applyRankedDelta(newMmr, rank.id, rank.label)
+        const prevMmr = newMmr - delta
+        const rankBefore = mmrRankFor(prevMmr)
+        const rankAfter = mmrRankFor(newMmr)
+        const progress = mmrProgressToNext(newMmr)
+        lastRankedDelta = {
+          delta,
+          newMmr,
+          prevMmr,
+          rankBefore,
+          rankAfter,
+          nextRank: progress.next,
+        }
+        auth.applyRankedDelta(newMmr, rankAfter.id, rankAfter.label)
         break
       }
       case 'partner_joined':
@@ -880,6 +915,7 @@
       team2Color={isBotBattle ? '#34d399' : '#f9a8d4'}
       forceManual={true}
       onSaveCharacter={() => saveRivalsWin()}
+      rankedResult={isRankedMatch && !isBotBattle ? lastRankedDelta : null}
       onComplete={(winner) => {
         const iWon = winner === 'team1'
         lastBattleWon = winner === 'draw' ? null : iWon
@@ -906,6 +942,15 @@
         partnerResults = []
         myCharName = null
         isBotBattle = false
+        // Wipe ranked + battle state so the next match's result modal
+        // doesn't flash stale MMR / win flags before its own result arrives.
+        lastRankedDelta = null
+        lastBattleWon = null
+        isRankedMatch = false
+        partnerDone = false
+        mySpinsDone = false
+        partnerName = ''
+        partnerSpins = new Map()
       }}
       onBack={() => {
         phase = 'menu'
@@ -913,6 +958,13 @@
         partnerResults = []
         myCharName = null
         isBotBattle = false
+        lastRankedDelta = null
+        lastBattleWon = null
+        isRankedMatch = false
+        partnerDone = false
+        mySpinsDone = false
+        partnerName = ''
+        partnerSpins = new Map()
       }}
       backLabel="Back to Rivals"
     />

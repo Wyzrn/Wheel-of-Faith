@@ -51,6 +51,7 @@
     onBack,
     onSaveCharacter,
     backLabel = 'Back',
+    rankedResult = null,
   }: {
     team1: BattleTeamMember[]
     team2: BattleTeamMember[]
@@ -69,6 +70,18 @@
     // resolves. Caller is responsible for the actual persistence.
     onSaveCharacter?: () => Promise<void> | void
     backLabel?: string
+    // Optional ranked-result payload from rivals WS. When present the
+    // result modal surfaces MMR delta + new total + rank-up status +
+    // distance to the next rank. Caller hydrates this once the server's
+    // `ranked_result` message arrives.
+    rankedResult?: {
+      delta: number
+      newMmr: number
+      prevMmr?: number
+      rankBefore?: { id: string; label: string; threshold: number; color?: string }
+      rankAfter?: { id: string; label: string; threshold: number; color?: string }
+      nextRank?: { id: string; label: string; threshold: number; color?: string } | null
+    } | null
   } = $props()
 
   // Saving state for the optional post-battle save action. Once the save
@@ -319,6 +332,55 @@
                       </div>
                     {/if}
                   {/each}
+                </div>
+              {/if}
+
+              <!-- Ranked MMR delta + rank progression (only when the
+                   server has reported a ranked_result for this match). -->
+              {#if rankedResult}
+                {@const won = rankedResult.delta > 0}
+                {@const rankUp = rankedResult.rankAfter && rankedResult.rankBefore && rankedResult.rankAfter.id !== rankedResult.rankBefore.id && (rankedResult.rankAfter.threshold > rankedResult.rankBefore.threshold)}
+                {@const accent = (rankedResult.rankAfter?.color) ?? (won ? '#34d399' : '#f87171')}
+                {@const nextRank = rankedResult.nextRank}
+                {@const nextProgress = nextRank
+                  ? Math.max(0, Math.min(1, (rankedResult.newMmr - (rankedResult.rankAfter?.threshold ?? 0)) / Math.max(1, nextRank.threshold - (rankedResult.rankAfter?.threshold ?? 0))))
+                  : 1}
+                <div class="mt-4 rounded-xl px-4 py-3"
+                     style="background: linear-gradient(180deg, {accent}1f, rgba(0,0,0,0.3)); border: 1px solid {accent}55;">
+                  <div class="flex items-center justify-between">
+                    <p class="font-mono text-[10px] tracking-widest uppercase" style="color: #9a907b;">
+                      {won ? 'MMR Gained' : 'MMR Lost'}
+                    </p>
+                    {#if rankUp}
+                      <p class="font-mono text-[10px] tracking-widest uppercase font-bold"
+                         style="color: {accent}; text-shadow: 0 0 8px {accent}88;">
+                        ↑ RANK UP
+                      </p>
+                    {/if}
+                  </div>
+                  <p class="font-black mt-1 flex items-baseline gap-2"
+                     style="font-family: 'Cinzel', serif; font-size: 1.4rem; color: {accent};">
+                    <span>{rankedResult.delta > 0 ? '+' : ''}{rankedResult.delta}</span>
+                    <span class="text-xs font-normal" style="color: #9a907b; font-family: 'JetBrains Mono', monospace;">
+                      total {rankedResult.newMmr}
+                    </span>
+                  </p>
+                  {#if rankedResult.rankAfter}
+                    <div class="mt-2 flex items-center justify-between text-[11px]"
+                         style="font-family: 'JetBrains Mono', monospace;">
+                      <span style="color: {accent}; font-weight: 700;">{rankedResult.rankAfter.label}</span>
+                      {#if nextRank}
+                        <span style="color: #9a907b;">→ {nextRank.label} · {Math.max(0, nextRank.threshold - rankedResult.newMmr)} MMR</span>
+                      {:else}
+                        <span style="color: #9a907b;">MAX RANK</span>
+                      {/if}
+                    </div>
+                    {#if nextRank}
+                      <div class="mt-1.5" style="height: 5px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden;">
+                        <div style="height: 100%; width: {nextProgress * 100}%; background: linear-gradient(90deg, {accent}, {nextRank.color ?? '#f0c040'}); transition: width 0.6s ease-out;"></div>
+                      </div>
+                    {/if}
+                  {/if}
                 </div>
               {/if}
 

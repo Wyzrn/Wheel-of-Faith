@@ -45,6 +45,12 @@ interface Room {
   // climbing MMR between match and result. Only set on ranked rooms.
   p1MmrAtStart?: number
   p2MmrAtStart?: number
+  // Timer that fires N seconds after the first battle_result arrives —
+  // if only one client has reported by then (the other quit, crashed,
+  // or its simulation diverged due to non-deterministic RNG), the
+  // server resolves the room using the single report so neither side
+  // is left with an unresolved match + missing MMR delta.
+  singleReportTimeout?: NodeJS.Timeout
 }
 
 interface QueueEntry {
@@ -587,16 +593,46 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
           player.battleReport = { won: !!msg.won }
           const p1 = room.p1, p2 = room.p2
           if (p1?.battleReport && p2?.battleReport && p1.battleReport.won !== p2.battleReport.won) {
+            // Both clients reported and they agreed on a winner — credit
+            // immediately. Cancel the single-report timeout if one was
+            // scheduled.
+            if (room.singleReportTimeout) {
+              clearTimeout(room.singleReportTimeout)
+              room.singleReportTimeout = undefined
+            }
+            resolveRoomBattle(room, p1.battleReport.won ? p1 : p2, p1.battleReport.won ? p2 : p1)
+          } else if (!room.singleReportTimeout) {
+            // First report in. Start a 20s fallback — if the opponent
+            // hasn't reported by then (they disconnected, their tab
+            // crashed, their local battle simulation diverged due to
+            // non-deterministic RNG), resolve the room using just this
+            // player's report so we don't strand the match unresolved
+            // and skip the MMR delta.
+            room.singleReportTimeout = setTimeout(() => {
+              if (room.resolved) return
+              const reporter = p1?.battleReport ? p1 : (p2?.battleReport ? p2 : null)
+              if (!reporter) return
+              const opponent = reporter === p1 ? p2 : p1
+              if (!opponent) return
+              const winner = reporter.battleReport!.won ? reporter : opponent
+              const loser  = reporter.battleReport!.won ? opponent : reporter
+              resolveRoomBattle(room, winner, loser)
+            }, 20_000)
+          }
+
+          /** Inner helper: credit win/loss + MMR delta + notify clients.
+           *  Hoisted into a closure so the timeout path and the agreement
+           *  path share the same crediting logic. */
+          function resolveRoomBattle(room: Room, winner: Player, loser: Player) {
+            if (room.resolved) return
             room.resolved = true
-            const winner = p1.battleReport.won ? p1 : p2
-            const loser  = p1.battleReport.won ? p2 : p1
-            // Ranked rooms also apply Ranked MMR delta (+/- 3 to 5, scaled
-            // by the MMR gap at match start so upsets and floor-drops both
-            // swing harder). Snapshots in p1MmrAtStart/p2MmrAtStart prevent
-            // mid-match MMR changes from gaming the formula.
+            if (room.singleReportTimeout) {
+              clearTimeout(room.singleReportTimeout)
+              room.singleReportTimeout = undefined
+            }
             const isRanked = room.ranked === true
-            const winnerMmrAtStart = winner === p1 ? (room.p1MmrAtStart ?? 0) : (room.p2MmrAtStart ?? 0)
-            const loserMmrAtStart  = winner === p1 ? (room.p2MmrAtStart ?? 0) : (room.p1MmrAtStart ?? 0)
+            const winnerMmrAtStart = winner === room.p1 ? (room.p1MmrAtStart ?? 0) : (room.p2MmrAtStart ?? 0)
+            const loserMmrAtStart  = winner === room.p1 ? (room.p2MmrAtStart ?? 0) : (room.p1MmrAtStart ?? 0)
             // Best-effort credit; failures here must not break the battle UX.
             ;(async () => {
               try {
@@ -616,13 +652,10 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
                     { _id: loser.userId, rankedMmr: { $gte: -loserDelta } },
                     { $inc: { rankedMmr: loserDelta } },
                   )
-                  // For players already at 0, just clamp by setting to 0.
                   await User.updateOne(
                     { _id: loser.userId, rankedMmr: { $lt: -loserDelta } },
                     { $set: { rankedMmr: 0 } },
                   )
-                  // Push the new MMR to both clients so the UI can update
-                  // its rank chip without a refetch.
                   const winUser = await User.findById(winner.userId).select('rankedMmr').lean()
                   const losUser = await User.findById(loser.userId).select('rankedMmr').lean()
                   send(winner.ws, { type: 'ranked_result', delta: winnerDelta, newMmr: winUser?.rankedMmr ?? 0 })
