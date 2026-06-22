@@ -144,6 +144,23 @@ const RACE_THEMES: Record<string, RaceLandingFX> = {
   'Atlantean':     { theme: BLOOD,    flavor: 'Drowned Court' },
   'Hybrid':        { theme: ARCANE,   flavor: 'Spliced' },
   'Chimera':       { theme: BLOOD,    flavor: 'Amalgam' },
+  // Mythological tier
+  'Eldritch Being': { theme: VOID,    flavor: 'All-Devouring' },
+  'God':            { theme: HOLY,    flavor: 'Pantheon' },
+  'Watcher':        { theme: ARCANE,  flavor: 'All-Seeing' },
+  'Void Sovereign': { theme: VOID,    flavor: 'Throne of Oblivion' },
+  'Astral Titan':   { theme: ARCANE,  flavor: 'Constellation' },
+  'Devil':          { theme: SHADOW,  flavor: 'Morningstar' },
+  // Divine tier
+  'Primordial':     { theme: ARCANE,  flavor: 'Wellspring' },
+  'Creator':        { theme: HOLY,    flavor: 'Omniscript' },
+  'Outer God':      { theme: VOID,    flavor: 'Court Beyond' },
+  'Celestials':     { theme: HOLY,    flavor: 'Verdict' },
+  'Reality Anchor': { theme: ARCANE,  flavor: 'Fixed Point' },
+  'Cosmic Dragon':  { theme: FIRE,    flavor: 'Breath of Creation' },
+  'World Eater':    { theme: VOID,    flavor: 'Endless Hunger' },
+  'Star God':       { theme: HOLY,    flavor: 'Coronal Dominion' },
+  'Chaos Lord':     { theme: VOID,    flavor: 'Entropy Absolute' },
 }
 
 // Element → theme fallback for any race that isn't in RACE_THEMES yet

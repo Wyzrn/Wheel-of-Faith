@@ -26,6 +26,12 @@ export const REVAMPED_RACES: ReadonlySet<string> = new Set([
   'Aesir', 'Krystalian', 'Kaiju',
   'Lord of Time', 'Demi-god', 'Immortal', 'Mechshifter',
   'Shinigami', 'Abyssal Leviathan', 'Atlantean', 'Hybrid', 'Chimera',
+  // Mythological tier
+  'Eldritch Being', 'God', 'Watcher', 'Void Sovereign',
+  'Astral Titan', 'Devil',
+  // Divine tier
+  'Primordial', 'Creator', 'Outer God', 'Celestials',
+  'Reality Anchor', 'Cosmic Dragon', 'World Eater', 'Star God', 'Chaos Lord',
 ])
 
 // Includes pre-revamp race labels still present on older characters (before
