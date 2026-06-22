@@ -46,9 +46,13 @@ export function describeRacialGrants(
   if (!entry) return null
 
   const parts: string[] = []
+  // statBonusGrants spawns an EXTRA stat spin — not a flat bonus. Label
+  // it as a Bonus Spin so the player isn't tricked into thinking "+Stat"
+  // means a direct stat increase. Flat shifts surface separately via
+  // the structured perk list (flatStatBonuses → "+N Stat" row).
   for (const [stat, kind] of Object.entries(entry.statBonusGrants ?? {})) {
     const name = _STAT_LABELS[stat] ?? stat
-    parts.push(kind === 'statPenalty' ? `−${name}` : `+${name}`)
+    parts.push(kind === 'statPenalty' ? `Bonus ${name} Penalty Spin` : `Bonus ${name} Spin`)
   }
   for (const p of entry.grantedPowers ?? []) parts.push(`Unlocks ${p}`)
   for (const b of entry.bonusSpins ?? []) {

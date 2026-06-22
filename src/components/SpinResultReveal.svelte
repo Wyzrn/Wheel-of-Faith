@@ -119,7 +119,12 @@
   }
 
   onMount(() => {
-    if (settings.autoContinueMs > 0) {
+    // Auto-continue only fires when the player ALSO has Quill on. Turning
+    // Quill off is the unambiguous "I want to read manually" signal — with
+    // Quill suppressed the reveal is the only thing on screen, and a
+    // sub-second auto-dismiss makes the player feel like Continue is being
+    // pressed for them. Player can still cancel by clicking Continue early.
+    if (settings.autoContinueMs > 0 && settings.quillPerSpin) {
       countdown = settings.autoContinueMs
       countdownInterval = setInterval(() => {
         countdown = Math.max(0, countdown - 100)
