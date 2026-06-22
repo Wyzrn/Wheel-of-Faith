@@ -13,6 +13,7 @@
   import { classifyAbility, generatePowerDescription, generateWeaponDescription, generateArmorDescription, generateAbilityDescription, getAbilityTypeColor, getAbilityTypeIcon, ABILITY_BATTLE_EFFECT } from '$lib/content/descriptions'
   import { generateCharacterSummary } from '$lib/characterSummary'
   import { raceGlyph } from '$lib/raceGlyphs'
+  import { isLegacyCharacter } from '$lib/game/revampedRaces'
   import { getPerfTier } from '$lib/perf'
   import { onMount, onDestroy } from 'svelte'
   import { auth } from '$lib/stores/auth.svelte'
@@ -601,6 +602,13 @@
         </p>
         {#if raceClass !== '—'}
           <p class="text-xs mt-0.5 font-semibold" style="color: #fb923c;">{raceClass}</p>
+        {/if}
+        {#if isLegacyCharacter(race === '—' ? null : race)}
+          <p class="text-[10px] mt-1 font-bold inline-flex items-center gap-1 px-1.5 py-0.5 rounded"
+            style="background: rgba(120, 113, 108, 0.35); color: #d6d3d1; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid rgba(168, 162, 158, 0.4);"
+            title="Spun before this race's revamp">
+            ⏳ Legacy
+          </p>
         {/if}
         {#if limitBreakLevel}
           <p class="text-xs mt-1 font-bold inline-flex items-center gap-1 px-2 py-0.5 rounded"

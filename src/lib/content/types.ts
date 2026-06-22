@@ -297,6 +297,10 @@ export interface ClassEntry {
   bypassHeightSpin?: boolean
   /** Tagged perks granted by this class — surfaced on the character card. */
   grantedKeywords?: string[]
+  /** When this class lands, treat the race as if the named target race
+   *  were rolled instead. Currently surfaced as a flavor tag on the
+   *  character card — full re-routing of subsequent spins is deferred. */
+  redirectToRace?: string
   powerPool?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
   abilities?: { label: string; weight: number; element?: ElementType; grade?: ItemGrade }[]
 }
