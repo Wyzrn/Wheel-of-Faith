@@ -166,7 +166,7 @@
   {@const hasAnchor = anchorX != null && anchorY != null}
   <div
     class="fixed inset-0 z-50 {hasAnchor ? '' : 'flex items-center justify-center'} px-4"
-    style="background: rgba(7,7,13,{cheapBackdrop ? '0.94' : '0.88'});{cheapBackdrop ? '' : ' backdrop-filter: blur(12px);'} animation: srrFadeIn 0.18s ease-out forwards;"
+    style="background: rgba(7,7,13,{cheapBackdrop ? '0.94' : '0.88'});{cheapBackdrop ? '' : ' backdrop-filter: blur(6px);'} animation: srrFadeIn 0.18s ease-out forwards;"
   >
     <div
       class="srr-modal-card obsidian-slab w-full max-w-sm rounded-xl p-6 text-center relative overflow-hidden"
