@@ -418,14 +418,10 @@
       // Just wait; don't touch anything.
       return
     } else if (isRevealed) {
-      // When the player turned Quill OFF they explicitly asked for the
-      // reveal to be quiet. With Quill on, autoSpin used the dialogue
-      // window as the "read the result" pause; with Quill off, advancing
-      // after 700ms blasts through the reveal before the player can read
-      // anything. Require a manual Continue tap in that case — the wheel
-      // still auto-fires, only the reveal becomes manual.
-      if (!settings.quillPerSpin) return
-      // Short pause to let the player read the result before auto-advancing.
+      // Autospin is unambiguously "I want this to run on its own" — keep
+      // the reveal auto-advance firing whether or not Quill is muted.
+      // (The original Quill-off auto-press-Continue bug is gated on the
+      // autoContinueMs path inside SpinResultReveal, not here.)
       autoSpinAdvanceTimer = setTimeout(() => { handleNextSpin() }, 700)
     } else {
       // Wheel idle → fire it. Brief delay so consecutive spins feel paced
