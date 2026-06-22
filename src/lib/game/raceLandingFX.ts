@@ -122,6 +122,28 @@ const RACE_THEMES: Record<string, RaceLandingFX> = {
   'Griffin':       { theme: WIND,     flavor: 'Skybound' },
   'Elemental':     { theme: ARCANE,   flavor: 'Primal Core' },
   'Insectoid':     { theme: POISON,   flavor: 'Chitin' },
+  // Legendary tier
+  'Undead':        { theme: VOID,     flavor: 'Cold Throne' },
+  'Zenithian':     { theme: HOLY,     flavor: 'Zenith Pulse' },
+  'Cerebrosaur':   { theme: PSYCHIC,  flavor: 'Mind-Harvest' },
+  'Null':          { theme: VOID,     flavor: 'Erasure' },
+  'Demon':         { theme: BLOOD,    flavor: 'Sulfur Crown' },
+  'Half-Dragon':   { theme: FIRE,     flavor: 'Dragonkin' },
+  'Angel':         { theme: HOLY,     flavor: 'Seraphic' },
+  'Mythological Creature': { theme: BLOOD, flavor: 'Mythic Awakening' },
+  'Victrumite':    { theme: HOLY,     flavor: 'Worldbreaker' },
+  'Aesir':         { theme: HOLY,     flavor: 'Ragnarok' },
+  'Krystalian':    { theme: HOLY,     flavor: 'Solar' },
+  'Kaiju':         { theme: VOID,     flavor: 'Cataclysm' },
+  'Lord of Time':  { theme: ARCANE,   flavor: 'Hourglass' },
+  'Demi-god':      { theme: HOLY,     flavor: 'Domain Echo' },
+  'Immortal':      { theme: SOUL,     flavor: 'Deathless' },
+  'Mechshifter':   { theme: MECHANICAL, flavor: 'Core Pulse' },
+  'Shinigami':     { theme: SOUL,     flavor: 'Final Ledger' },
+  'Abyssal Leviathan': { theme: VOID, flavor: 'Drowned Dominion' },
+  'Atlantean':     { theme: BLOOD,    flavor: 'Drowned Court' },
+  'Hybrid':        { theme: ARCANE,   flavor: 'Spliced' },
+  'Chimera':       { theme: BLOOD,    flavor: 'Amalgam' },
 }
 
 // Element → theme fallback for any race that isn't in RACE_THEMES yet

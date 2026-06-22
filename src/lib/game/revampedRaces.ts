@@ -20,6 +20,12 @@ export const REVAMPED_RACES: ReadonlySet<string> = new Set([
   'Werebeast', 'Dragon', 'Parasyte', 'Beast', 'Alien', 'Dinosaur',
   'Spirit', 'Ghoul', 'Giant', 'Golem', 'Construct', 'Revenant',
   'Griffin', 'Elemental', 'Insectoid',
+  // Legendary tier
+  'Undead', 'Zenithian', 'Cerebrosaur', 'Null', 'Demon',
+  'Half-Dragon', 'Angel', 'Mythological Creature', 'Victrumite',
+  'Aesir', 'Krystalian', 'Kaiju',
+  'Lord of Time', 'Demi-god', 'Immortal', 'Mechshifter',
+  'Shinigami', 'Abyssal Leviathan', 'Atlantean', 'Hybrid', 'Chimera',
 ])
 
 // Includes pre-revamp race labels still present on older characters (before
