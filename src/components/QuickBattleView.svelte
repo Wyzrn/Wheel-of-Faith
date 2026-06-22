@@ -12,9 +12,9 @@
 -->
 <script lang="ts">
   import { apiUrl } from '$lib/api'
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import {
-    buildBattleCharacter, formatHp,
+    buildBattleCharacter, formatHp, setBattleRng, clearBattleRng,
     type BattleCharacter,
   } from '$lib/game/battle'
   import { settings } from '$lib/settings.svelte'
@@ -52,6 +52,7 @@
     onSaveCharacter,
     backLabel = 'Back',
     rankedResult = null,
+    battleSeed = null,
   }: {
     team1: BattleTeamMember[]
     team2: BattleTeamMember[]
@@ -82,6 +83,10 @@
       rankAfter?: { id: string; label: string; threshold: number; color?: string }
       nextRank?: { id: string; label: string; threshold: number; color?: string } | null
     } | null
+    // Seed for the battle simulation RNG. Issued by the rivals server so
+    // both clients see the same fight; null/undefined falls back to
+    // Math.random for offline / bot / story-mode battles.
+    battleSeed?: number | null
   } = $props()
 
   // Saving state for the optional post-battle save action. Once the save
@@ -140,7 +145,19 @@
     }
   }
 
+  onDestroy(() => {
+    // Hand the battle RNG back to Math.random so unrelated callers (story
+    // mode, anonymous bots) aren't stuck on a stale seed once the rivals
+    // match ends.
+    clearBattleRng()
+  })
+
   onMount(() => {
+    // Seed the shared battle RNG before building characters or stepping the
+    // controller. Both clients in a ranked match get the same seed from the
+    // server so simulateBattle / BattleController1v1 read off the same
+    // stream and converge on the exact same fight.
+    setBattleRng(typeof battleSeed === 'number' ? battleSeed : null)
     const gamepasses    = auth.user?.gamepasses ?? []
     const hasCritSurge  = gamepasses.includes('crit_surge')
 

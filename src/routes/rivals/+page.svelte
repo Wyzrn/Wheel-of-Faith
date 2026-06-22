@@ -12,7 +12,7 @@
   import { getRecentlySpun, removeRecentlySpun, type RecentlySpunEntry } from '$lib/recentlySpun'
   import { MMR_RANKS, mmrRankFor, mmrProgressToNext } from '$lib/mmrRanks'
   import type { SpinResult } from '$lib/session/types'
-  import { setRivalsWs, getRivalsWs, clearRivalsWs } from '$lib/stores/rivalsWs'
+  import { setRivalsWs, getRivalsWs, clearRivalsWs, patchRivalsWs } from '$lib/stores/rivalsWs'
   import { startOfflineRivals, getOfflineRivalsResult, clearOfflineRivals } from '$lib/stores/offlineRivals'
   import { tilt } from '$lib/actions/tilt'
   import { guide } from '$lib/guide/store.svelte'
@@ -39,6 +39,11 @@
   // should reflect MMR. The server is authoritative on MMR via the
   // ranked_result WS message; this flag is just for UI state.
   let isRankedMatch = $state(false)
+  // Seed both clients use so the battle simulation reads off the same RNG
+  // stream — provided by the server in `matched` / `room_joined` /
+  // `challenge_matched`. Persisted via rivalsWs so it survives the trip to
+  // the spin page and back.
+  let battleSeed = $state<number | null>(null)
   let lastRankedDelta = $state<{
     delta: number
     newMmr: number
@@ -181,6 +186,7 @@
       roomCode = stored.roomCode
       isP1 = stored.isP1
       partnerName = stored.opponentName
+      if (typeof stored.battleSeed === 'number') battleSeed = stored.battleSeed
       mySpinsDone = true
       clearRivalsWs()
       if (stored.pendingBattle) {
@@ -267,6 +273,7 @@
       case 'room_created':
         roomCode = msg.code as string
         isP1 = true
+        if (typeof msg.battleSeed === 'number') battleSeed = msg.battleSeed
         phase = 'waiting'
         // If this room was created via a clan challenge, auto-post the join
         // code to clan chat so the target can drop in without a copy-paste.
@@ -286,6 +293,7 @@
       case 'room_joined':
         roomCode = msg.code as string
         isP1 = false
+        if (typeof msg.battleSeed === 'number') battleSeed = msg.battleSeed
         phase = 'waiting'
         break
       case 'matched':
@@ -295,6 +303,9 @@
         // Server tags ranked matches so we can show the right copy
         // post-match. The MMR delta itself comes via 'ranked_result'.
         isRankedMatch = !!msg.ranked
+        // Seed both clients on the same RNG stream so simulateBattle yields
+        // identical rounds on each side (live battle convergence).
+        if (typeof msg.battleSeed === 'number') battleSeed = msg.battleSeed
         partnerDone = false
         mySpinsDone = false
         stopSearchTimer()
@@ -321,6 +332,10 @@
           nextRank: progress.next,
         }
         auth.applyRankedDelta(newMmr, rankAfter.id, rankAfter.label)
+        // Hard-refresh from server so the menu chip + any other consumer
+        // settles on canonical truth (covers any client drift / missed
+        // increments that the optimistic patch wouldn't catch).
+        auth.refresh()
         break
       }
       case 'partner_joined':
@@ -381,7 +396,13 @@
   function navigateToSpin() {
     if (!ws) return
     storedWsForSpin = true
-    setRivalsWs({ ws, roomCode, isP1, opponentName: partnerName })
+    setRivalsWs({
+      ws,
+      roomCode,
+      isP1,
+      opponentName: partnerName,
+      battleSeed: battleSeed ?? undefined,
+    })
     goto('/?rivals=online')
   }
 
@@ -914,6 +935,7 @@
       title={isBotBattle ? `${myCharName ?? 'You'} vs BOT` : `${myCharName ?? auth.user?.username ?? 'You'} vs ${partnerName}`}
       team2Color={isBotBattle ? '#34d399' : '#f9a8d4'}
       forceManual={true}
+      battleSeed={isBotBattle ? null : battleSeed}
       onSaveCharacter={() => saveRivalsWin()}
       rankedResult={isRankedMatch && !isBotBattle ? lastRankedDelta : null}
       onComplete={(winner) => {

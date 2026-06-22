@@ -1563,8 +1563,15 @@
       const race = getRace(def.forRace ?? raceResult?.resultLabel)
       const subTypeItem = race?.subTypePool?.find(s => s.label === resultLabel)
       if (subTypeItem?.statBonusGrants) {
-        for (const [stat, bonusType] of Object.entries(subTypeItem.statBonusGrants)) {
-          pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+        // statBonusGrants now applies as a +2 flat tier shift per stat
+        // (or -2 for statPenalty) instead of spawning an extra spin. The
+        // "extra spin" semantic was confusing — players saw "+Stat" on
+        // the result label and reasonably expected a stat boost, not a
+        // separate roll. Bonus-spin spawning is now opt-in via the
+        // explicit `bonusSpins` field on the entry.
+        for (const [stat, kind] of Object.entries(subTypeItem.statBonusGrants)) {
+          const shift = kind === 'statPenalty' ? -2 : 2
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + shift
         }
       }
       if (subTypeItem?.flatStatBonuses) {
@@ -1617,11 +1624,16 @@
       const activePool = overrideClassPool ?? race?.classPool
       const classItem = activePool?.find(c => c.label === resultLabel)
       if (classItem?.statBonusGrants) {
-        for (const [stat, bonusType] of Object.entries(classItem.statBonusGrants)) {
-          pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+        // Treat statBonusGrants as a +2 flat tier shift per stat
+        // (or -2 for statPenalty) rather than spawning an extra spin.
+        // See raceSubType branch for the rationale.
+        const lines: string[] = []
+        for (const [stat, kind] of Object.entries(classItem.statBonusGrants)) {
+          const shift = kind === 'statPenalty' ? -2 : 2
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + shift
+          lines.push(`${shift > 0 ? '+' : ''}${shift} ${stat}`)
         }
-        const bonusCount = Object.keys(classItem.statBonusGrants).length
-        showAnnouncement = `${resultLabel}: unlocks ${bonusCount} stat bonus spin${bonusCount > 1 ? 's' : ''}!`
+        showAnnouncement = `${resultLabel}: ${lines.join(' · ')}`
       }
       if (classItem?.flatStatBonuses) {
         for (const [stat, n] of Object.entries(classItem.flatStatBonuses)) {
@@ -1753,11 +1765,13 @@
       const race = getRace(def.forRace ?? raceResult?.resultLabel)
       const transItem = race?.transformationPool?.find(t => t.label === resultLabel)
       if (transItem?.statBonusGrants) {
-        for (const [stat, bonusType] of Object.entries(transItem.statBonusGrants)) {
-          pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+        const lines: string[] = []
+        for (const [stat, kind] of Object.entries(transItem.statBonusGrants)) {
+          const shift = kind === 'statPenalty' ? -2 : 2
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + shift
+          lines.push(`${shift > 0 ? '+' : ''}${shift} ${stat}`)
         }
-        const bonusCount = Object.keys(transItem.statBonusGrants).length
-        showAnnouncement = `${resultLabel}: unlocks ${bonusCount} stat bonus spin${bonusCount > 1 ? 's' : ''}!`
+        showAnnouncement = `${resultLabel}: ${lines.join(' · ')}`
       }
       if (transItem?.flatStatBonuses) {
         for (const [stat, n] of Object.entries(transItem.flatStatBonuses)) {
@@ -1786,8 +1800,9 @@
       const wheel = getRaceWheel(raceLabel ?? '', def.raceWheelId)
       const seg = wheel?.segments.find(s => s.label === resultLabel)
       if (seg?.statBonusGrants) {
-        for (const [stat, bonusType] of Object.entries(seg.statBonusGrants)) {
-          pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+        for (const [stat, kind] of Object.entries(seg.statBonusGrants)) {
+          const shift = kind === 'statPenalty' ? -2 : 2
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + shift
         }
       }
       if (seg?.flatStatBonuses) {
@@ -1949,8 +1964,12 @@
       const twist = twistByKey(def.twistKind)
       const eff = twist?.effects[resultLabel]
       if (eff?.statBonusGrants) {
-        for (const [stat, bonusType] of Object.entries(eff.statBonusGrants)) {
-          pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+        // statBonusGrants now applies as a +2 flat tier shift per stat
+        // (or -2 if it's a statPenalty). No extra bonus-spin is spliced —
+        // "+stat" should mean a flat shift, not another spin.
+        for (const [stat, kind] of Object.entries(eff.statBonusGrants)) {
+          const shift = kind === 'statPenalty' ? -2 : 2
+          pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + shift
         }
       }
       if (eff?.lockElement) {
@@ -1978,8 +1997,11 @@
     } else if (def.category === 'possessionStrength') {
       const grants = POSSESSION_GRANTS[resultLabel] ?? {}
       const grantKeys = Object.keys(grants)
-      for (const [stat, bonusType] of Object.entries(grants)) {
-        pendingStatBonuses[stat] = [...(pendingStatBonuses[stat] ?? []), bonusType]
+      // Possession strength now applies as a +2/-2 flat tier shift per stat
+      // (no extra bonus-spin spliced into the queue).
+      for (const [stat, kind] of Object.entries(grants)) {
+        const shift = kind === 'statPenalty' ? -2 : 2
+        pendingFlatStatBonuses[stat] = (pendingFlatStatBonuses[stat] ?? 0) + shift
       }
 
       // ── Splice race-derived sub-spins from the POSSESSING race ─────────

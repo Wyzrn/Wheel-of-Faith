@@ -14,7 +14,7 @@
 // Segment-3 scope: 1v1 only. Team-battle controller extends this in S6.
 
 import {
-  doAction, formatHp, moveGradeMult,
+  doAction, formatHp, moveGradeMult, battleRnd,
   type BattleCharacter, type BattleMove, type RoundFxEvent,
 } from '$lib/game/battle'
 import type { ArenaRound, ArenaSide, ArenaWinner } from './arena'
@@ -223,7 +223,7 @@ function resolveMove(
   }
 }
 
-function pickRandom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
+function pickRandom<T>(arr: T[]): T { return arr[Math.floor(battleRnd() * arr.length)] }
 
 // AI / auto-mode move picker. Mirrors the simulator's behaviour (skip
 // passives; energy-rank≤5 biases toward non-power) but ALSO filters out
@@ -236,7 +236,7 @@ export function pickAutoMove(
 ): BattleMove | undefined {
   let pool = char.moves.filter(m => m.attackType !== 'passive')
   // Low-energy bias: 35% of the time, drop power moves entirely.
-  if (char.energyRank <= 5 && Math.random() < 0.35) {
+  if (char.energyRank <= 5 && battleRnd() < 0.35) {
     const nonPower = pool.filter(m => m.type !== 'power')
     if (nonPower.length > 0) pool = nonPower
   }
@@ -378,7 +378,7 @@ export class BattleController1v1 {
     // Initiative order — match simulateBattle's biasing
     const initDiff = (m1.char.initiative - m2.char.initiative) /
                      Math.max(m1.char.initiative, m2.char.initiative, 1)
-    const m1First = Math.random() < 0.50 + initDiff * 0.30
+    const m1First = battleRnd() < 0.50 + initDiff * 0.30
 
     const order = m1First ? [m1, m2] : [m2, m1]
     const actions: Array<PlayerAction | null> = m1First
@@ -550,7 +550,7 @@ export class BattleController1v1 {
       s.freeze.duration--
       if (s.freeze.duration <= 0) delete s.freeze
     }
-    if (s.paralyze && Math.random() < 0.5) blocked = blocked ?? 'paralyzed — can\'t act this turn'
+    if (s.paralyze && battleRnd() < 0.5) blocked = blocked ?? 'paralyzed — can\'t act this turn'
     if (s.paralyze) {
       s.paralyze.duration--
       if (s.paralyze.duration <= 0) delete s.paralyze

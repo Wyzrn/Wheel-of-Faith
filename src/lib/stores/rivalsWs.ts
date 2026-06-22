@@ -11,6 +11,11 @@ export interface RivalsWsData {
   isP1: boolean
   opponentName: string
   pendingBattle?: { myResults: unknown[]; opponentResults: unknown[]; myName?: string; opponentName?: string }
+  // Seed both clients share so simulateBattle / BattleController1v1 produce
+  // identical rounds on both sides — the fight reads as live rather than
+  // two independent local sims. Issued by the server in `matched` /
+  // `room_joined` / `challenge_matched`.
+  battleSeed?: number
 }
 
 let _data: RivalsWsData | null = null

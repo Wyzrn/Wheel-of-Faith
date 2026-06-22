@@ -22,6 +22,33 @@ import type { AttackType, ElementType } from '$lib/content/types'
 import { gimmickIdsForCharacter, computeBuildEffects } from '$lib/gimmicks'
 import { getRace } from '$lib/content/races'
 
+// ─── Seeded RNG (for live multiplayer battle convergence) ───────────────────
+// Replaces Math.random when a seed is set via setBattleRng. Both clients in a
+// ranked match receive the same seed from the server, so simulateBattle yields
+// identical rounds on both sides — the battle reads as truly live rather than
+// two clients running divergent simulations and then arguing about the result.
+// Single-threaded JS means the module-local rng pointer is safe to swap per
+// battle; clearBattleRng() restores Math.random.
+let _rng: () => number = Math.random
+function _mulberry32(seed: number): () => number {
+  let s = seed >>> 0
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0
+    let t = s
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+export function setBattleRng(seed: number | null | undefined): void {
+  _rng = (seed === null || seed === undefined) ? Math.random : _mulberry32(seed)
+}
+export function clearBattleRng(): void { _rng = Math.random }
+function rnd(): number { return _rng() }
+// Exported for callers (battle controller) that need to share the same RNG
+// stream so all live-battle rolls read off one deterministic source.
+export function battleRnd(): number { return _rng() }
+
 // Grade lookup maps — built once at module load
 const _powerMap  = new Map(powersPool.map(p => [p.label, p]))
 const _weaponMap = new Map(weaponsPool.map(w => [w.label, w]))
@@ -331,7 +358,7 @@ const INTIMIDATE_LINES = [
 // ─── Utility ──────────────────────────────────────────────────────────────────
 
 function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
+  return arr[Math.floor(rnd() * arr.length)]
 }
 
 // ─── Attack Type Detection ─────────────────────────────────────────────────────
@@ -779,32 +806,32 @@ export function doAction(
   const empty = (): AttackResult => ({ skipped: true, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines })
 
   // IQ low: stupid mistake (lose own turn)
-  if (attacker.iqRank <= 5 && Math.random() < 0.09) {
+  if (attacker.iqRank <= 5 && rnd() < 0.09) {
     lines.push(pick(STUPID_MISTAKES).replace('{name}', attacker.name))
     return empty()
   }
 
   // Defender high charisma: talks attacker out of it
-  if (defender.charismaRank >= 30 && Math.random() < 0.06) {
+  if (defender.charismaRank >= 30 && rnd() < 0.06) {
     lines.push(pick(CHARM_LINES).replace('{attacker}', attacker.name).replace('{defender}', defender.name))
     return empty()
   }
 
   // Attacker low charisma: fumbles
-  if (attacker.charismaRank <= 5 && Math.random() < 0.08) {
+  if (attacker.charismaRank <= 5 && rnd() < 0.08) {
     lines.push(pick(CHARISMA_FUMBLES).replace('{name}', attacker.name))
     return empty()
   }
 
   // Attacker high charisma: intimidate
   let intimidated = false
-  if (attacker.charismaRank >= 30 && Math.random() < 0.07) {
+  if (attacker.charismaRank >= 30 && rnd() < 0.07) {
     lines.push(pick(INTIMIDATE_LINES).replace('{attacker}', attacker.name).replace('{defender}', defender.name))
     intimidated = true
   }
 
   // Ancient weapon erratic miss
-  if (attacker.weaponType === 'Ancient' && Math.random() < 0.20) {
+  if (attacker.weaponType === 'Ancient' && rnd() < 0.20) {
     lines.push(`The ancient power is erratic — ${attacker.name}'s strike goes wide!`)
     return { skipped: false, damage: 0, heal: 0, reflected: 0, stun: false, shieldFraction: 0, lines }
   }
@@ -816,7 +843,7 @@ export function doAction(
     move = forcedMove
   } else {
     let available = attacker.moves.filter(m => m.attackType !== 'passive')
-    if (attacker.energyRank <= 5 && Math.random() < 0.35) {
+    if (attacker.energyRank <= 5 && rnd() < 0.35) {
       const nonPower = available.filter(m => m.type !== 'power')
       if (nonPower.length > 0) available = nonPower
     }
@@ -891,7 +918,7 @@ export function doAction(
 
   // Dodge check (AOE cannot be fully dodged — 50% reduced chance)
   const dodgeChance = move.attackType === 'aoe' ? defender.dodgeChance * 0.5 : defender.dodgeChance
-  if (Math.random() < dodgeChance) {
+  if (rnd() < dodgeChance) {
     // Flavor the dodge by the defender's standout evasion stat so the card
     // shows WHY they slipped the hit: agility (reflex), IQ (out-think), or
     // charisma (disrupt). The dodge chance itself is unchanged — this only
@@ -903,14 +930,14 @@ export function doAction(
     ]
     evasion.sort((a, b) => b[1] - a[1])
     const [topStat, topRank] = evasion[0]
-    const style = (topStat !== 'agi' && topRank >= 10 && Math.random() < 0.7) ? topStat : 'agi'
+    const style = (topStat !== 'agi' && topRank >= 10 && rnd() < 0.7) ? topStat : 'agi'
     const phrase = style === 'iq' ? pick(IQ_DODGE_PHRASES)
                  : style === 'cha' ? pick(CHA_DODGE_PHRASES)
                  : pick(DODGE_PHRASES)
     lines.push(`${defender.name} ${phrase} ${attacker.name}'s ${move.name}!`)
-    if (defender.fightingSkillRank >= 12 && Math.random() < 0.40) {
+    if (defender.fightingSkillRank >= 12 && rnd() < 0.40) {
       const riposteDmg = Math.max(1, Math.round(
-        defender.physicalDamage * (0.20 + Math.random() * 0.28) * (1 - attacker.armorReduction)
+        defender.physicalDamage * (0.20 + rnd() * 0.28) * (1 - attacker.armorReduction)
       ))
       lines.push(pick(RIPOSTE_LINES).replace('{name}', defender.name).replace('{dmg}', formatHp(riposteDmg)))
       return { skipped: false, damage: 0, heal: 0, reflected: riposteDmg, stun: false, shieldFraction: 0, lines }
@@ -920,7 +947,7 @@ export function doAction(
 
   // Berserker fury
   const hpFraction = (attackerCurrentHp ?? attacker.hp) / attacker.maxHp
-  const isBerserker = hpFraction < 0.30 && Math.random() < 0.28
+  const isBerserker = hpFraction < 0.30 && rnd() < 0.28
   if (isBerserker) lines.push(pick(BERSERKER_LINES).replace('{name}', attacker.name))
 
   // Base damage by move type; AOE hits at 65% per target
@@ -933,13 +960,13 @@ export function doAction(
   // Move variance multiplier
   let moveMult: number
   if (attacker.weaponType === 'Exotic' && move.type !== 'power') {
-    moveMult = 0.60 + Math.random() * 0.80
+    moveMult = 0.60 + rnd() * 0.80
   } else {
     moveMult = move.type === 'power'
-      ? 0.55 + Math.random() * 0.50
+      ? 0.55 + rnd() * 0.50
       : move.type === 'physical'
-        ? 0.60 + Math.random() * 0.45
-        : 0.45 + Math.random() * 0.40
+        ? 0.60 + rnd() * 0.45
+        : 0.45 + rnd() * 0.40
   }
 
   // Weapon type modifiers
@@ -981,13 +1008,13 @@ export function doAction(
 
   // IQ precision pierce
   let fullPierce = false
-  if (attacker.iqRank >= 18 && Math.random() < 0.05) {
+  if (attacker.iqRank >= 18 && rnd() < 0.05) {
     fullPierce = true
     lines.push(`${attacker.name} reads the opening perfectly — a precision strike bypasses all defenses!`)
   }
 
   // Crit
-  const isCrit   = Math.random() < attacker.critChance
+  const isCrit   = rnd() < attacker.critChance
   const critMult = isCrit ? attacker.critMultiplier : 1.0
 
   // Effective armor — power moves bypass 60%; power resist reduces further
@@ -1044,8 +1071,8 @@ export function doAction(
   // Final damage. Move-grade multiplier folds in the underlying item tier
   // so lower-grade moves hit softer and signature high-grade moves hit
   // dramatically harder — same scaling that surfaces in the hotbar preview.
-  const berserkerMult = isBerserker ? 2.2 + Math.random() * 0.8 : 1.0
-  const variance = 0.85 + Math.random() * 0.30
+  const berserkerMult = isBerserker ? 2.2 + rnd() * 0.8 : 1.0
+  const variance = 0.85 + rnd() * 0.30
   const gradeMult = moveGradeMult(move.grade)
   let damage = Math.max(1, Math.round(
     baseDmg * moveMult * gradeMult * weaponBonus * energyMult * fightingMult * powerMasteryMult * weaponMasteryMult * critMult * berserkerMult * aoeMult * selfBuffMult * weaknessMult * conceptMult * predatorMult * underdogMult * takenMult * (1 - effectiveArmor) * variance
@@ -1110,30 +1137,30 @@ export function doAction(
 
   // IQ stun
   let stun = false
-  if (attacker.iqRank >= 30 && Math.random() < 0.08) {
+  if (attacker.iqRank >= 30 && rnd() < 0.08) {
     stun = true
     lines.push(`${attacker.name}'s calculated strike leaves ${defender.name} unable to retaliate!`)
   }
 
   // Speed multi-hit
   if (attacker.speedRank >= 30) {
-    if (Math.random() < (attacker.speedRank >= 36 ? 0.22 : 0.15)) {
-      const bonusDmg = Math.max(1, Math.round(damage * (0.40 + Math.random() * 0.30)))
+    if (rnd() < (attacker.speedRank >= 36 ? 0.22 : 0.15)) {
+      const bonusDmg = Math.max(1, Math.round(damage * (0.40 + rnd() * 0.30)))
       damage += bonusDmg
       lines.push(`${attacker.name} blurs — a follow-up strike adds ${formatHp(bonusDmg)} more!`)
     }
   }
 
   // Potential burst
-  if (attacker.potentialRank >= 30 && Math.random() < 0.10) {
-    const burstDmg = Math.max(1, Math.round(damage * (0.30 + Math.random() * 0.30)))
+  if (attacker.potentialRank >= 30 && rnd() < 0.10) {
+    const burstDmg = Math.max(1, Math.round(damage * (0.30 + rnd() * 0.30)))
     damage += burstDmg
     lines.push(`${attacker.name}'s dormant power explodes — ${formatHp(burstDmg)} bonus damage!`)
   }
 
   // Combo finisher
-  if (attacker.fightingSkillRank >= 28 && Math.random() < 0.18) {
-    const comboDmg = Math.max(1, Math.round(damage * (0.35 + Math.random() * 0.25) * (1 - effectiveArmor)))
+  if (attacker.fightingSkillRank >= 28 && rnd() < 0.18) {
+    const comboDmg = Math.max(1, Math.round(damage * (0.35 + rnd() * 0.25) * (1 - effectiveArmor)))
     damage += comboDmg
     lines.push(`${attacker.name} doesn't stop — combo finisher for ${formatHp(comboDmg)} more!`)
   }
@@ -1143,13 +1170,13 @@ export function doAction(
   if (!isBerserker) {
     const tag = move.effectTag
     const el  = move.element
-    if (tag === 'burn'    && Math.random() < 0.38) applyStatus = 'burn'
-    else if (tag === 'poison' && Math.random() < 0.32) applyStatus = 'poison'
-    else if (tag === 'slow'   && Math.random() < 0.25) applyStatus = 'freeze'
-    else if (tag === 'stun'   && Math.random() < 0.22) applyStatus = 'paralyze'
+    if (tag === 'burn'    && rnd() < 0.38) applyStatus = 'burn'
+    else if (tag === 'poison' && rnd() < 0.32) applyStatus = 'poison'
+    else if (tag === 'slow'   && rnd() < 0.25) applyStatus = 'freeze'
+    else if (tag === 'stun'   && rnd() < 0.22) applyStatus = 'paralyze'
     else if (el) {
       const preferred = ELEMENT_DEBUFF[el]
-      if (preferred && Math.random() < 0.20) applyStatus = preferred
+      if (preferred && rnd() < 0.20) applyStatus = preferred
     }
     // Check immunity
     if (applyStatus && defender.statusImmunities.includes(applyStatus)) applyStatus = undefined
@@ -1183,8 +1210,8 @@ export function simulateTeamBattle(
   const statuses: Record<string, Partial<Record<StatusType, Status>>> = {}
 
   // Environmental event — fires once per battle at a random round (rounds 2-4)
-  const eventRound = 2 + Math.floor(Math.random() * 3)
-  const eventLine  = Math.random() < 0.70 ? pick(ENVIRONMENTAL_EVENTS) : null
+  const eventRound = 2 + Math.floor(rnd() * 3)
+  const eventLine  = rnd() < 0.70 ? pick(ENVIRONMENTAL_EVENTS) : null
 
   for (let roundNum = 1; roundNum <= maxRounds; roundNum++) {
     const lines: string[] = []
@@ -1261,7 +1288,7 @@ export function simulateTeamBattle(
         if (s.freeze.duration <= 0) delete s.freeze
       }
       if (s.paralyze) {
-        if (Math.random() < 0.50) skippedParalyze.add(key)
+        if (rnd() < 0.50) skippedParalyze.add(key)
         s.paralyze.duration--
         if (s.paralyze.duration <= 0) delete s.paralyze
       }
@@ -1270,8 +1297,8 @@ export function simulateTeamBattle(
     // ── Build turn order ──
     type Actor = { team: 1 | 2; idx: number; char: BattleCharacter; roll: number }
     const actorList: Actor[] = [
-      ...team1.map((c, i) => ({ team: 1 as const, idx: i, char: c, roll: c.initiative + Math.random() * 5 })),
-      ...team2.map((c, i) => ({ team: 2 as const, idx: i, char: c, roll: c.initiative + Math.random() * 5 })),
+      ...team1.map((c, i) => ({ team: 1 as const, idx: i, char: c, roll: c.initiative + rnd() * 5 })),
+      ...team2.map((c, i) => ({ team: 2 as const, idx: i, char: c, roll: c.initiative + rnd() * 5 })),
     ]
       .filter(a => (a.team === 1 ? hp1[a.idx] : hp2[a.idx]) > 0)
       .sort((a, b) => b.roll - a.roll)
@@ -1293,7 +1320,7 @@ export function simulateTeamBattle(
 
       // Pick a move to check attackType before targeting
       const available = actor.char.moves.filter(m => m.attackType !== 'passive')
-      const peekMove = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : null
+      const peekMove = available.length > 0 ? available[Math.floor(rnd() * available.length)] : null
 
       // Heal: target most injured ally
       if (peekMove?.attackType === 'heal') {
@@ -1326,7 +1353,7 @@ export function simulateTeamBattle(
         continue
       }
 
-      const targetIdx = livingIdxs[Math.floor(Math.random() * livingIdxs.length)]
+      const targetIdx = livingIdxs[Math.floor(rnd() * livingIdxs.length)]
       const targetKey  = `${enemyTeamId}-${targetIdx}`
       const result = doAction(actor.char, enemyTeam[targetIdx], actorHpArr[actor.idx])
       lines.push(...result.lines)
@@ -1479,13 +1506,13 @@ export function simulateBattle(p1: BattleCharacter, p2: BattleCharacter, maxRoun
     const p2Frozen = p2Statuses.freeze && p2Statuses.freeze.duration > 0
     if (p1Frozen) { p1Statuses.freeze!.duration--; if (p1Statuses.freeze!.duration <= 0) delete p1Statuses.freeze }
     if (p2Frozen) { p2Statuses.freeze!.duration--; if (p2Statuses.freeze!.duration <= 0) delete p2Statuses.freeze }
-    const p1Paralyzed = !!(p1Statuses.paralyze && Math.random() < 0.5)
-    const p2Paralyzed = !!(p2Statuses.paralyze && Math.random() < 0.5)
+    const p1Paralyzed = !!(p1Statuses.paralyze && rnd() < 0.5)
+    const p2Paralyzed = !!(p2Statuses.paralyze && rnd() < 0.5)
     if (p1Statuses.paralyze) { p1Statuses.paralyze.duration--; if (p1Statuses.paralyze.duration <= 0) delete p1Statuses.paralyze }
     if (p2Statuses.paralyze) { p2Statuses.paralyze.duration--; if (p2Statuses.paralyze.duration <= 0) delete p2Statuses.paralyze }
 
     const initiativeDiff = (p1.initiative - p2.initiative) / Math.max(p1.initiative, p2.initiative, 1)
-    const p1First = Math.random() < 0.50 + initiativeDiff * 0.30
+    const p1First = rnd() < 0.50 + initiativeDiff * 0.30
 
     const firstAtk  = p1First ? p1 : p2
     const secondAtk = p1First ? p2 : p1

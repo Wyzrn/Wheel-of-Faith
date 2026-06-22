@@ -106,6 +106,19 @@ export const auth = {
     if (_user) _user = { ..._user, rankedMmr: newMmr, rankedRank: rank, rankedRankLabel: rankLabel }
   },
 
+  // Server-truth refetch. Used after ranked matches resolve so the menu chip
+  // (and any other consumer of auth.user) reflects the canonical MMR even if
+  // the optimistic patch drifted from server state for any reason.
+  async refresh(): Promise<void> {
+    try {
+      const res = await fetch(`${API}/auth/me`, { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        _user = normalizeUser(data.user)
+      }
+    } catch { /* keep optimistic state */ }
+  },
+
   // Battle results are credited server-side via the rivals WebSocket
   // ('battle_result' message in rivals-ws.ts). The client only updates its
   // local optimistic counters here so the UI reflects the win immediately;

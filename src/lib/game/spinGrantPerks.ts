@@ -72,16 +72,15 @@ function appendStatBonuses(perks: IdentityPerk[], entry: PerkSourceEntry) {
       })
     }
   }
-  // Stat-bonus-spawning grants ("Bonus Stat Spin"). These splice extra
-  // spins into the queue so we surface them as separate refresh icon.
+  // statBonusGrants on race entries now applies as a +2/-2 flat tier
+  // shift (not a bonus-spin splice). Render it as a stat-shift perk row.
   if (entry.statBonusGrants) {
-    const pos = Object.entries(entry.statBonusGrants).filter(([, k]) => k === 'statBonus').map(([s]) => statName(s))
-    const neg = Object.entries(entry.statBonusGrants).filter(([, k]) => k === 'statPenalty').map(([s]) => statName(s))
-    if (pos.length) {
-      perks.push({ icon: 'autorenew', label: 'Bonus Stat Spin', detail: pos.join(' · ') })
-    }
-    if (neg.length) {
-      perks.push({ icon: 'remove_circle', label: 'Stat Penalty Spin', detail: neg.join(' · ') })
+    const lines = Object.entries(entry.statBonusGrants).map(([s, k]) => {
+      const shift = k === 'statPenalty' ? -2 : 2
+      return `${shift > 0 ? '+' : ''}${shift} ${statName(s)}`
+    })
+    if (lines.length) {
+      perks.push({ icon: 'trending_up', label: 'Stat Shift', detail: lines.join(' · ') })
     }
   }
   // Per-stat floor lifts (protected against debuffs). Distinct from cap.

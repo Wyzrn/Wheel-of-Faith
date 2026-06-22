@@ -51,7 +51,16 @@ interface Room {
   // server resolves the room using the single report so neither side
   // is left with an unresolved match + missing MMR delta.
   singleReportTimeout?: NodeJS.Timeout
+  // Seed both clients use for the battle simulation RNG. Issued at match
+  // time and broadcast in `matched`/`room_joined`/`matched_challenge` so
+  // both sides run the *same* battle (true live convergence, not two
+  // divergent local sims arguing about who won).
+  battleSeed?: number
 }
+
+// Generate a fresh seed for a new room. Math.random is fine here — we just
+// need both clients to agree, not cryptographic randomness.
+function newBattleSeed(): number { return Math.floor(Math.random() * 2 ** 31) }
 
 interface QueueEntry {
   player: Player
@@ -175,7 +184,7 @@ function rankedMmrDelta(
 function createRoom(p1: Player, p2: Player | null): Room {
   let code = generateCode()
   while (rooms.has(code)) code = generateCode()
-  const room: Room = { code, p1, p2, createdAt: Date.now() }
+  const room: Room = { code, p1, p2, createdAt: Date.now(), battleSeed: newBattleSeed() }
   rooms.set(code, room)
   // Seed activity timers immediately so the inactivity sweep can start
   // catching idle players from the moment the room exists.
@@ -300,8 +309,8 @@ setInterval(() => {
     const room = createRoom(entryA.player, entryB.player)
 
     // P1 = entryA, P2 = entryB
-    send(entryA.player.ws, { type: 'matched', code: room.code, isP1: true,  opponentUsername: entryB.player.username })
-    send(entryB.player.ws, { type: 'matched', code: room.code, isP1: false, opponentUsername: entryA.player.username })
+    send(entryA.player.ws, { type: 'matched', code: room.code, isP1: true,  opponentUsername: entryB.player.username, battleSeed: room.battleSeed })
+    send(entryB.player.ws, { type: 'matched', code: room.code, isP1: false, opponentUsername: entryA.player.username, battleSeed: room.battleSeed })
   }
 
   // ── Ranked queue ─────────────────────────────────────────────────────────
@@ -325,8 +334,8 @@ setInterval(() => {
       room.ranked = true
       room.p1MmrAtStart = a.mmr
       room.p2MmrAtStart = b.mmr
-      send(a.player.ws, { type: 'matched', code: room.code, isP1: true,  opponentUsername: b.player.username, ranked: true, opponentMmr: b.mmr })
-      send(b.player.ws, { type: 'matched', code: room.code, isP1: false, opponentUsername: a.player.username, ranked: true, opponentMmr: a.mmr })
+      send(a.player.ws, { type: 'matched', code: room.code, isP1: true,  opponentUsername: b.player.username, ranked: true, opponentMmr: b.mmr, battleSeed: room.battleSeed })
+      send(b.player.ws, { type: 'matched', code: room.code, isP1: false, opponentUsername: a.player.username, ranked: true, opponentMmr: a.mmr, battleSeed: room.battleSeed })
       // Don't restart from the same index — return so the next tick gets
       // a fresh sweep.
       return
@@ -475,15 +484,15 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
           } else {
             // rivals (fresh-spin) mode — mirror the matchmaking 'matched' flow
             // so both clients hand off to the normal spin → battle pipeline.
-            send(challenger.ws, { type: 'challenge_matched', code: room.code, isP1: true,  opponentUsername: player.username })
-            send(player.ws,     { type: 'challenge_matched', code: room.code, isP1: false, opponentUsername: challenge.fromUsername })
+            send(challenger.ws, { type: 'challenge_matched', code: room.code, isP1: true,  opponentUsername: player.username, battleSeed: room.battleSeed })
+            send(player.ws,     { type: 'challenge_matched', code: room.code, isP1: false, opponentUsername: challenge.fromUsername, battleSeed: room.battleSeed })
           }
           break
         }
 
         case 'create_room': {
           const room = createRoom(player, null)
-          send(socket, { type: 'room_created', code: room.code })
+          send(socket, { type: 'room_created', code: room.code, battleSeed: room.battleSeed })
           break
         }
 
@@ -494,7 +503,7 @@ export async function rivalsWsRoutes(app: FastifyInstance) {
           if (room.p2) { send(socket, { type: 'error', message: 'Room is full.' }); break }
           room.p2 = player
           player.room = room
-          send(socket, { type: 'room_joined', code })
+          send(socket, { type: 'room_joined', code, battleSeed: room.battleSeed })
           if (room.p1) send(room.p1.ws, { type: 'partner_joined', username: player.username })
           send(socket,  { type: 'partner_joined', username: room.p1?.username ?? 'Opponent' })
           break
