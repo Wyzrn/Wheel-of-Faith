@@ -31,6 +31,12 @@ export interface SpinResult {
   // Set when a bonus pushes a stat beyond the normal 1–130 range.
   // Examples: "F- -5" (5 tiers below F-), "Absolute+10" (10 tiers above Absolute+).
   displayLabel?: string
+  // Populated for stat spins where a flat tier shift from a racial / archetype
+  // grant moved the rolled label up or down N tiers. Drives the reveal
+  // animation: old label flashes in, +N flies into it, then the shifted label
+  // takes over. Absent on stat spins that landed un-shifted.
+  priorLabel?: string
+  bonusShift?: number
 }
 
 export interface SessionState {

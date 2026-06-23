@@ -94,6 +94,32 @@
   const _perfTier = getPerfTier()
   const cheapBackdrop = _perfTier === 'low'
 
+  // ─── Stat-bonus reveal animation ────────────────────────────────────────
+  // When a stat spin landed with priorLabel + bonusShift set, the engine
+  // captured the pre-bonus stat label and the tier shift applied. We
+  // animate the transition: phase 'before' shows the pre-bonus label,
+  // phase 'punch' has a +N glyph fly into the label, phase 'after' settles
+  // on the boosted label. Skip entirely when there's no bonus to animate.
+  let bonusAnimPhase = $state<'before' | 'punch' | 'after'>('before')
+  let hasBonusAnim = $derived(
+    typeof result.bonusShift === 'number' &&
+    result.bonusShift !== 0 &&
+    !!result.priorLabel &&
+    result.priorLabel !== result.resultLabel
+  )
+  let animatedLabel = $derived(
+    hasBonusAnim
+      ? (bonusAnimPhase === 'after' ? result.resultLabel : (result.priorLabel ?? result.resultLabel))
+      : result.resultLabel
+  )
+  let bonusSign = $derived((result.bonusShift ?? 0) > 0 ? '+' : '')
+  // Drive the animation timeline once on mount when a bonus is in play.
+  // before (0ms): pre-bonus label shown
+  // punch (700ms): +N glyph flies in and overlaps the label
+  // after (1500ms): label flashes to the boosted result
+  let _bonusT1: ReturnType<typeof setTimeout> | null = null
+  let _bonusT2: ReturnType<typeof setTimeout> | null = null
+
   // Auto-continue: when settings.autoContinueMs > 0, fire onContinue after that
   // delay so users who've seen the cards can plow through fast. Cancellable
   // by clicking Continue manually (the timer is cleared in onDestroy). The
@@ -132,10 +158,19 @@
       autoTimer = setTimeout(() => onContinue(), settings.autoContinueMs)
     }
     if (typeof window !== 'undefined') window.addEventListener('keydown', onKey)
+    // Kick off the stat-bonus reveal animation if one is in play. Skipped
+    // for non-stat spins and stat spins where no flat shift was applied.
+    if (hasBonusAnim) {
+      bonusAnimPhase = 'before'
+      _bonusT1 = setTimeout(() => { bonusAnimPhase = 'punch' }, 700)
+      _bonusT2 = setTimeout(() => { bonusAnimPhase = 'after' }, 1500)
+    }
   })
   onDestroy(() => {
     if (autoTimer) clearTimeout(autoTimer)
     if (countdownInterval) clearInterval(countdownInterval)
+    if (_bonusT1) clearTimeout(_bonusT1)
+    if (_bonusT2) clearTimeout(_bonusT2)
     if (typeof window !== 'undefined') window.removeEventListener('keydown', onKey)
   })
 
@@ -242,9 +277,12 @@
           </div>
         {/if}
 
-        <p class="srr-label font-bold leading-snug"
+        <p class="srr-label srr-label--bonus-{bonusAnimPhase} font-bold leading-snug"
           style="font-family: 'Cinzel', serif; font-size: clamp(1rem, 4.5vw, 1.35rem); color: {idCard ? idCard.accentColor : '#ffdf96'}; max-width: 26ch; {idCard ? `text-shadow: 0 0 18px ${idCard.accentColor}66, 0 0 4px ${idCard.accentColor};` : ''}">
-          {result.resultLabel}
+          <span class="srr-label-text">{animatedLabel}</span>
+          {#if hasBonusAnim && bonusAnimPhase !== 'before'}
+            <span class="srr-bonus-punch" aria-hidden="true">{bonusSign}{result.bonusShift}</span>
+          {/if}
         </p>
 
         {#if idCard}
@@ -396,8 +434,11 @@
         </div>
       {/if}
 
-      <p class="srr-label" style="font-family: 'Cinzel', serif; font-size: clamp(0.95rem, 3.5vw, 1.3rem); font-weight: 700; color: {idCard ? idCard.accentColor : '#ffdf96'}; line-height: 1.35; max-width: 26ch; {idCard ? `text-shadow: 0 0 18px ${idCard.accentColor}66, 0 0 4px ${idCard.accentColor};` : ''}">
-        {result.resultLabel}
+      <p class="srr-label srr-label--bonus-{bonusAnimPhase}" style="font-family: 'Cinzel', serif; font-size: clamp(0.95rem, 3.5vw, 1.3rem); font-weight: 700; color: {idCard ? idCard.accentColor : '#ffdf96'}; line-height: 1.35; max-width: 26ch; {idCard ? `text-shadow: 0 0 18px ${idCard.accentColor}66, 0 0 4px ${idCard.accentColor};` : ''}">
+        <span class="srr-label-text">{animatedLabel}</span>
+        {#if hasBonusAnim && bonusAnimPhase !== 'before'}
+          <span class="srr-bonus-punch" aria-hidden="true">{bonusSign}{result.bonusShift}</span>
+        {/if}
       </p>
 
       {#if idCard}
@@ -643,6 +684,70 @@
     .srr-label, .srr-id-desc, .srr-id-perk {
       animation-duration: 0.01ms !important;
       animation-delay: 0ms !important;
+    }
+  }
+
+  /* ─── Stat-bonus reveal animation ────────────────────────────────────────
+     Fires when a flat tier shift moved a stat result. Phase 'before' shows
+     the pre-bonus label. Phase 'punch' overlays a +N glyph that flies in
+     and grows. Phase 'after' flashes the label to the boosted version. */
+  .srr-label {
+    position: relative;
+  }
+  .srr-label-text {
+    display: inline-block;
+    transition: opacity 0.18s ease, transform 0.22s ease, filter 0.22s ease;
+  }
+  .srr-label--bonus-before .srr-label-text {
+    opacity: 0.92;
+  }
+  .srr-label--bonus-punch .srr-label-text {
+    opacity: 0.55;
+    transform: scale(0.97);
+    filter: blur(0.4px);
+  }
+  .srr-label--bonus-after .srr-label-text {
+    animation: srr-label-flash 0.55s ease-out;
+  }
+  @keyframes srr-label-flash {
+    0%   { opacity: 0; transform: scale(0.9); filter: brightness(1.8); }
+    35%  { opacity: 1; transform: scale(1.06); filter: brightness(2.4); text-shadow: 0 0 22px currentColor, 0 0 6px currentColor; }
+    100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+  }
+  .srr-bonus-punch {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 1.7em;
+    color: #ffe27a;
+    text-shadow: 0 0 18px #ffd54a, 0 0 6px #fffdcc, 0 2px 0 #5a3a00;
+    pointer-events: none;
+    z-index: 2;
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0;
+    animation: srr-bonus-punch-in 0.75s cubic-bezier(0.22, 1.4, 0.36, 1) forwards;
+  }
+  @keyframes srr-bonus-punch-in {
+    0%   { opacity: 0; transform: translate(-50%, -120%) scale(0.2) rotate(-12deg); }
+    45%  { opacity: 1; transform: translate(-50%, -50%) scale(1.35) rotate(4deg); }
+    65%  { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(0deg); }
+  }
+  /* Phase 'after' — the punch fades out as the label takes over */
+  .srr-label--bonus-after .srr-bonus-punch {
+    animation: srr-bonus-punch-out 0.35s ease-in forwards;
+  }
+  @keyframes srr-bonus-punch-out {
+    0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -80%) scale(0.4); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .srr-label-text,
+    .srr-bonus-punch {
+      animation: none !important;
+      transition: none !important;
     }
   }
 </style>

@@ -2594,11 +2594,19 @@
     // Step 2b: Flat tier shifts ("+N strength" mechanic — applied IN PLACE on
     // the rolled stat label, no extra spin spawned). Net positive sources buff
     // up; negatives nerf down. Cleared after use so re-rolls don't double-up.
+    //
+    // We also capture priorLabel + bonusShift on the SpinResult so the reveal
+    // component can animate the transition (old label flashes in, +N flies
+    // into it, new label takes over).
+    let bonusPriorLabel: string | undefined
+    let bonusShiftAmount: number | undefined
     if (STAT_CATEGORIES.has(def.category) && pendingFlatStatBonuses[def.category]) {
       const shift = pendingFlatStatBonuses[def.category]
       const segs = getSegmentsForCategory(def.category) as { label: string; tier?: string }[]
       const shifted = shiftTierLabel(resultLabel, shift, segs)
       if (shifted !== resultLabel) {
+        bonusPriorLabel = resultLabel
+        bonusShiftAmount = shift
         resultLabel = shifted
         const sign = shift > 0 ? '+' : ''
         const msg = `${def.displayName}: ${sign}${shift} tier from racial / archetype lineage.`
@@ -2619,6 +2627,11 @@
       // the player should see inline (e.g. "Knight (+2 Str, + Bronze
       // Shortsword (F))"). Falls back to resultLabel when unset.
       displayLabel: displayLabelOverride,
+      // Set when a flat tier shift moved this stat — drives the reveal
+      // animation that flashes the pre-bonus label, flies a +N in, then
+      // settles on the boosted label.
+      priorLabel: bonusPriorLabel,
+      bonusShift: bonusShiftAmount,
     }
 
     // For stat categories, look up tier + score from the FlavorLabel embedded data.
